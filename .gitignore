@@ -1,0 +1,50 @@
+# --- Entorno virtual ---
+venv/
+.env
+.env.*
+!.env.template
+
+# --- Cachés de Python ---
+__pycache__/
+*.pyc
+*.pyo
+
+# --- Cachés de herramientas ---
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Cobertura ---
+.coverage
+htmlcov/
+
+# --- Logs ---
+logs/*
+*.log
+!logs/.gitkeep
+
+# --- Archivos temporales y de respaldo ---
+*.tmp
+*.bak
+
+# --- Editor y SO ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# --- Datos de ejecución ---
+data/entrada/*
+data/procesamiento/*
+data/salida/*
+data/respaldo/*
+!data/**/.gitkeep
+
+# --- Archivos temporales del proyecto ---
+temp/*
+!temp/.gitkeep
+
+# --- Empaquetado ---
+*.egg-info/
+dist/
+build/
