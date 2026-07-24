@@ -110,3 +110,17 @@ class ResultadoProcesamiento(BaseModel):
     borrador_carta: str = ""
     preparacion_entrevista: str = ""
     fecha_procesamiento: datetime = Field(default_factory=datetime.now)
+
+
+class Perfil(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    tecnologias: dict[str, int] = Field(default_factory=dict)
+    experiencia_anios: int = 0
+    idiomas: dict[str, str] = Field(default_factory=dict)
+    ubicaciones_preferidas: list[str] = Field(default_factory=list)
+    modalidades_preferidas: list[str] = Field(default_factory=list)
+    salario_minimo: float | None = None
+    seniority: str = ""
+    empresas_objetivo: list[str] = Field(default_factory=list)
+    empresas_excluidas: list[str] = Field(default_factory=list)
+    educacion_nivel: str = ""

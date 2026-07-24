@@ -10,6 +10,7 @@ from shared.models import (
     Fuente,
     Oferta,
     OfertaProcesada,
+    Perfil,
     ResultadoEvaluacion,
     Ubicacion,
 )
@@ -94,4 +95,20 @@ def evaluacion_ejemplo(oferta_procesada_ejemplo: OfertaProcesada) -> Evaluacion:
         puntaje=85.0,
         decision=DecisionEvaluacion.CONTINUAR,
         justificacion="Buena coincidencia con perfil",
+    )
+
+
+@pytest.fixture
+def perfil_ejemplo() -> Perfil:
+    return Perfil(
+        tecnologias={"Python": 5, "SQL": 4, "Spark": 3},
+        experiencia_anios=8,
+        seniority="senior",
+        idiomas={"Ingles": "C1", "Espanol": "Nativo"},
+        ubicaciones_preferidas=["Madrid", "Remoto"],
+        modalidades_preferidas=["remoto", "hibrido"],
+        salario_minimo=55000,
+        empresas_objetivo=[],
+        empresas_excluidas=["EvilCorp"],
+        educacion_nivel="grado",
     )

@@ -4,68 +4,98 @@
 
 ---
 
-## Sesión 1 — 2026-07-23 17:02:00
-
+## Sesión 1 — 23/07/2026
 
 **Temas tratados:**
-- Estado actual del proyecto (fase de planificación, sin código implementado)
 - Creación del plan de ejecución del MVP en 9 fases
-- Creación del documento de seguimiento (Seguimiento MVP.md)
-- Dudas sobre el funcionamiento de OpenCode: contexto, límites, continuidad entre sesiones
-- Propuesta e implementación del sistema de persistencia de sesiones (historial, comandos save/retomar)
+- Creación de Seguimiento MVP.md y sistema de persistencia de sesiones (comandos /save y /retomar)
+- Confirmación de alcance del MVP (LinkedIn como única fuente)
+- Definición de 17 reglas de trabajo (RT-001 a RT-017), 11 criterios de aceptación (CA-001 a CA-011) y estrategia oficial de pruebas (EP-001 a EP-302)
+- Creación de estructura de directorios según DOC-07 y migración de documentación a docs/
+- Inicialización de control de versiones (git init, .gitignore, commit inicial, GitHub)
+- Ejecución completa de Fase 1 Tasks 3 a 13: venv, requirements.txt, config.yaml, .env.template, pyproject.toml, shared/* (6 módulos), tests/*, validación final
+- Reordenamiento del plan Fase 1 con dependencias correctas
+- Depuración de bugs de lint/typecheck (N818, ErrorBase, tenacity)
+- Commit y push a GitHub del trabajo completado
 
 **Decisiones:**
-- Aprobado el plan de 9 fases (Plan de ejecución del MVP.md)
-- Creado Seguimiento MVP.md como tabla de control de tareas con estado, docs fuente y observaciones
-- Se crea Historial de sesiones.md para registrar narrativa de cada sesión
-- Se crean comandos personalizados `/save` y `/retomar` en `.opencode/commands/`
-- Al retomar una sesión, se leerán 4 archivos: AGENTS.md, Plan de ejecución del MVP.md, Seguimiento MVP.md, Historial de sesiones.md
+- Aprobado plan de 9 fases
+- LinkedIn confirmada como única fuente del MVP (DOC-09 §3.10)
+- 17 reglas RT, 11 criterios CA, estrategia EP documentados en AGENTS.md
+- Se añadió tarea 1.2a (control de versiones) al plan
+- Repositorio remoto: sengtianm/automatizaci-n-busqueda-empleo
+- N818 ignorado por convención de nombres en español
+- ErrorBase renombrado a BaseError; tenacity.before_sleep_log con logging.getLogger
+- Historial de sesiones.md excluido de git
+- Reglas de sesión (RT-018 a RT-021) incorporadas: una sesión por día, guardado automático en modo build, formato DD/MM/YYYY, detalle completo y acumulativo
 
 **Acuerdos:**
-- No iniciar implementación del MVP hasta nueva orden explícita
-- Al final de cada sesión usar `/save` para registrar el resumen
-- Al iniciar una sesión usar `/retomar` para recuperar contexto completo
+- No iniciar implementación del MVP sin orden explícita
+- Las reglas RT-001 a RT-021 rigen el desarrollo del MVP
+- Al finalizar modo build, actualizar automáticamente Historial de sesiones.md
+- Una sesión por día calendario con formato DD/MM/YYYY
 
 **Estado al cierre:**
-- Todo en fase de planificación/documentación
-- Pendiente de inicio de Fase 0 (Preparación de arranque) cuando el usuario lo indique
+- Fase 0 completada (✅) — Preparación de arranque finalizada
+- Fase 1 completamente terminada (✅) — 11 tareas ejecutadas y validadas
+- 13 archivos creados (~645 líneas de código/config)
+- Validaciones: ruff 0 errors, mypy 0 errors, imports OK
+- Pendiente de aprobación del Arquitecto para iniciar Fase 2
 
 ---
 
-## Sesión 2 — 2026-07-23 17:35:00
+## Sesión 2 — 24/07/2026
 
-**Temas tratados:**
-- Recuperación de contexto completo (lectura de AGENTS.md, Plan de ejecución del MVP.md, Seguimiento MVP.md, Historial de sesiones.md)
-- Resumen del estado del proyecto: fase de planificación, todo pendiente
-- Ejecución de Fase 0.1 — Confirmar alcance del MVP: lectura y análisis cruzado de DOC-01, DOC-08 y DOC-09
-- Ejecución de Fase 0.2 — Definir reglas de trabajo con OpenCode: documentación de 17 reglas (RT-001 a RT-017) en AGENTS.md
+**Temas tratados (mañana):**
+- Revisión de reglas de guardado del historial de sesiones
+- Identificación de que el guardado en Historial de sesiones.md no estaba cubierto por las reglas formales (RT, CA, EP)
+- Propuesta y aprobación de reglas de sesión (RT-018, RT-019, RT-020, RT-021)
+- Actualización de AGENTS.md con las 4 nuevas reglas
+- Actualización de .opencode/commands/save.md para reflejar las nuevas reglas
+- Consolidación del Historial de sesiones.md (5 sesiones del 23/07/2026 fusionadas en una sola Sesión 1)
+- Aplicación del formato DD/MM/YYYY en todas las fechas del historial
+- Solicitud del usuario de añadir RT-021 para garantizar detalle completo en todas las entradas del historial y prohibir eliminación de información de sesiones pasadas
+
+**Temas tratados (tarde):**
+- Revisión de integridad de Fase 1 y detección de gap: faltaba el modelo `Perfil` para el motor de decisiones (`decision_engine`) — no existe como entidad en DOC-13/13A
+- Análisis de coherencia entre Fases 1, 2 y 3 del plan de ejecución del MVP
+- Elaboración de plan detallado de Fase 2 con orden optimizado (6 tareas) para desbloquear Fase 3 inmediatamente tras completar `ia_service.py`
+- Recomendación y aprobación del enfoque para el modelo `Perfil`: modelo de valor Pydantic cargado desde nueva sección `perfil` en `config.yaml`
+- Actualización de `Plan de ejecución del MVP.md` con la Fase 2 reescrita en detalle
+- Actualización de `Seguimiento MVP.md` con la nueva estructura de tareas de Fase 2
+
+**Temas tratados (noche — ejecución Fase 2):**
+- Ejecución completa de las 6 tareas de Fase 2 en orden:
+  - Tarea 1: Añadido modelo `Perfil` a `shared/models.py` y sección `perfil` a `config/config.yaml`
+  - Tarea 2: Creado `shared/ia_service.py` con comunicación Ollama vía httpx, prompt loader, renderizado `{{ variables }}`, reintentos con tenacity, 4 códigos de error ER-LLM (conexión, timeout, respuesta inválida, formato inesperado)
+  - Tarea 3: Creado `shared/decision_engine.py` con 6 criterios ponderados (experiencia 0.30, tecnología 0.25, ubicación 0.15, modalidad 0.10, idiomas 0.10, seniority 0.10), RapidFuzz para matching difuso, penalización por salario mínimo no cubierto, descarte automático por empresas excluidas, método `cargar_perfil()` desde config
+  - Tarea 4: Creado `shared/state_machine.py` con mapa inmutable de 6 transiciones válidas, método `transicionar()` que lanza ER-INT-010 si la transición es inválida
+  - Tarea 5: Creados 4 tests (11 de decision_engine, 10 de ia_service, 6 de persistence, 10 de state_machine) + fixture `perfil_ejemplo` en conftest.py — total 37 tests
+  - Tarea 6: Validación final — ruff 0 errors, mypy 0 errors, pytest 37/37 passed, todos los módulos importables
 
 **Decisiones:**
-- Fase 0.1 completada: sin contradicciones documentales. LinkedIn confirmada como única fuente del MVP (DOC-09 §3.10)
-- Fase 0.2 completada: 17 reglas de trabajo (RT-001 a RT-017) documentadas en AGENTS.md
-
-**Acuerdos:**
-- Se mantienen los acuerdos de la sesión 1
-- Las reglas RT-001 a RT-017 rigen el desarrollo del MVP de ahora en adelante
-
-**Estado al cierre:**
-- Fase 0: tareas 1 y 2 completadas (✅)
-- Pendientes: tarea 3 (Establecer criterio de aceptación por paso) y tarea 4 (Decidir estrategia de pruebas)
-
-## Sesión 3 — 2026-07-23
-
-**Temas tratados:**
-- Recuperación de contexto completo (lectura de AGENTS.md, Plan de ejecución del MVP.md, Seguimiento MVP.md, Historial de sesiones.md)
-- Ejecución de Fase 0.3 — Establecer criterio de aceptación: documentación de 11 criterios (CA-001 a CA-011) en AGENTS.md
-- Ejecución de Fase 0.4 — Definir estrategia oficial de pruebas: documentación de 8 secciones (EP-001 a EP-302) en AGENTS.md
-
-**Decisiones:**
-- Fase 0.3 completada: criterio de aceptación documentado sin modificaciones
-- Fase 0.4 completada: estrategia de pruebas documentada sin modificaciones
+- RT-018: una sesión por día calendario
+- RT-019: guardado automático de sesión al finalizar tarea en modo build
+- RT-020: formato de fecha DD/MM/YYYY en el historial
+- RT-021: todas las entradas deben ser detalladas; no se puede eliminar ni resumir información de sesiones pasadas
+- Reglas documentadas en AGENTS.md + save.md (aprobación del usuario)
+- Modelo `Perfil` se implementa como modelo Pydantic en `shared/models.py` y sus datos se cargan desde una nueva sección `perfil` en `config.yaml` — no se trata como entidad persistente, sino como modelo de valor, coherente con DOC-13/13A que no lo define como entidad
+- Fase 2 se reorganiza en 6 tareas con orden optimizado: (1) Perfil + config, (2) ia_service, (3) decision_engine, (4) state_machine, (5) tests, (6) validación
+- Fase 3 puede comenzar tras completar la tarea 2 (`ia_service.py`), sin esperar a `decision_engine` ni `state_machine`
+- Uso de RapidFuzz para matching difuso en tecnología y ubicación dentro del motor de decisiones
 
 **Acuerdos:**
 - Se mantienen los acuerdos de sesiones anteriores
+- Las sesiones del historial deben contener únicamente información de su propia sesión (RT-022)
+- Se corrige Estado al cierre de Sesión 2 para reflejar solo lo hecho en esta sesión
+- Pendiente de aprobación del Arquitecto para iniciar la ejecución de Fase 2
 
 **Estado al cierre:**
-- **Fase 0 completada (✅)** — Preparación de arranque finalizada
-- Siguiente: Fase 1 (Base común del sistema — infraestructura)
+- Nuevas reglas de sesión (RT-018 a RT-022) creadas y documentadas en AGENTS.md, save.md e Historial de sesiones.md
+- Historial de sesiones consolidado y fechas convertidas a DD/MM/YYYY
+- Gap de modelo `Perfil` identificado durante revisión de Fase 1
+- `Plan de ejecución del MVP.md` actualizado: Fase 2 reescrita con 6 tareas detalladas (cada una con especificación de componentes, criterios, errores y archivos)
+- `Seguimiento MVP.md` actualizado: tabla de Fase 2 con orden, documentos fuente y observaciones por tarea
+- Fase 2 completada (✅): 6 tareas ejecutadas, 37 tests pasados, ruff 0 errors, mypy 0 errors
+- 5 nuevos archivos creados (ia_service, decision_engine, state_machine + 3 tests), 3 archivos modificados (models, config, conftest)
+- Pendiente de aprobación del Arquitecto para continuar a Fase 3

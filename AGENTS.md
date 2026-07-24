@@ -254,6 +254,40 @@ OpenCode únicamente podrá crear o modificar documentación cuando la tarea cor
 
 Ante cualquier duda o conflicto, prevalecerá siempre la documentación oficial aprobada del proyecto sobre cualquier interpretación, recomendación o criterio de implementación.
 
+---
+
+## RT-018. Una sesión por día calendario
+
+Cada día calendario corresponde a una única entrada en `Historial de sesiones.md`. No pueden existir múltiples entradas de sesión en la misma fecha.
+
+---
+
+## RT-019. Actualización automática de sesión en modo build
+
+Al finalizar cada tarea del MVP ejecutada en modo build, OpenCode deberá verificar la fecha actual y actualizar la sesión del día en `Historial de sesiones.md` (o crearla si no existe), registrando los temas tratados, decisiones, acuerdos y estado al cierre. El número de sesión se incrementa secuencialmente por día.
+
+---
+
+## RT-020. Formato de fecha en historial de sesiones
+
+Todas las fechas en las entradas de `Historial de sesiones.md` deben usar el formato `DD/MM/YYYY`.
+
+---
+
+## RT-021. Detalle completo en historial de sesiones
+
+Todas las entradas de `Historial de sesiones.md` deben contener información suficientemente detallada en cada campo (Temas tratados, Decisiones, Acuerdos, Estado al cierre) para que una sesión futura pueda recuperar el contexto completo sin ambigüedad.
+
+No se puede eliminar ni resumir información de sesiones pasadas. El historial es acumulativo y debe preservar íntegramente lo registrado.
+
+---
+
+## RT-022. Cada campo del historial solo refleja la sesión actual
+
+Los campos **Acuerdos** y **Estado al cierre** de cada entrada deben contener únicamente información correspondiente a esa sesión, sin repetir ni arrastrar acuerdos o estados de sesiones anteriores.
+
+Para referenciar continuidad, basta una línea como *"Se mantienen los acuerdos de sesiones anteriores"*. El cierre debe reflejar exclusivamente qué cambió o avanzó en la sesión que termina.
+
 # Criterio de aceptación para las tareas del MVP
 
 ## 1. Propósito

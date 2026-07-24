@@ -62,21 +62,176 @@
 
 ## Fase 2. Servicios compartidos (capa transversal)
 
-1. Implementar `shared/ia_service.py`:
-   - Comunicación con Ollama (httpx a `localhost:11434`).
-   - Prompt loader desde `prompts/`.
-   - Validación de respuestas (estructura esperada, reintentos).
-   - Métodos: `analizar(prompt_id: str, contexto: dict) -> dict`.
-2. Implementar `shared/decision_engine.py`:
-   - Motor de reglas simple evaluable desde dicts.
-   - Método `evaluar(oferta: Oferta, perfil: Perfil) -> ResultadoEvaluacion`.
-   - Reglas cargadas desde `config/config.yaml` (umbrales, pesos, criterios — DOC-03).
-3. Implementar `shared/state_machine.py`:
-   - Definir estados del ciclo de vida (DOC-04, DOC-03).
-   - Transiciones válidas.
-   - Método `transicionar(oferta_id, estado_origen, estado_destino) -> bool`.
-4. Crear `tests/test_ia_service.py`, `tests/test_decision_engine.py`, `tests/test_persistence.py`.
-5. **Validación:** lint → typecheck → pytest.
+### Orden de ejecución optimizado
+
+> La Fase 3 (prompts) puede comenzar inmediatamente después de completar la **Tarea 2** (`ia_service.py`). Las tareas restantes (3, 4, 5, 6) no bloquean Fase 3.
+
+| Orden | Tarea | Depende de | ¿Bloquea Fase 3? |
+|-------|-------|------------|------------------|
+| 1 | Añadir modelo `Perfil` a `shared/models.py` + sección `perfil` en `config.yaml` | Nada | No |
+| 2 | `shared/ia_service.py` (Ollama + prompt loader) | Tarea 1 (débil) | **Sí** |
+| 3 | `shared/decision_engine.py` (reglas + puntuación) | Tarea 1 (fuerte) | No |
+| 4 | `shared/state_machine.py` (estados + transiciones) | Nada (independiente) | No |
+| 5 | Tests unitarios (ia_service, decision_engine, persistence, state_machine) | Tareas 2-4 | No |
+| 6 | Validación final (ruff → mypy → pytest) | Tarea 5 | No |
+
+---
+
+#### Tarea 1 — Modelo `Perfil` + sección en config
+
+**Archivos:** modificar `shared/models.py` y `config/config.yaml`.
+
+**Objetivo:** Crear el modelo Pydantic `Perfil` que representa el perfil profesional del usuario, necesario para que el motor de decisiones evalúe ofertas contra el perfil. Sus valores se cargan desde una nueva sección `perfil` en `config.yaml`.
+
+**Modelo `Perfil`** (añadir en `shared/models.py`):
+
+```python
+class Perfil(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    tecnologias: dict[str, int] = Field(default_factory=dict)
+    experiencia_anios: int = 0
+    idiomas: dict[str, str] = Field(default_factory=dict)
+    ubicaciones_preferidas: list[str] = Field(default_factory=list)
+    modalidades_preferidas: list[str] = Field(default_factory=list)
+    salario_minimo: float | None = None
+    seniority: str = ""
+    empresas_objetivo: list[str] = Field(default_factory=list)
+    empresas_excluidas: list[str] = Field(default_factory=list)
+    educacion_nivel: str = ""
+```
+
+**Sección `perfil`** (añadir en `config/config.yaml`):
+
+```yaml
+perfil:
+  tecnologias: {}
+  experiencia_anios: 0
+  seniority: ""
+  idiomas: {}
+  ubicaciones_preferidas: []
+  modalidades_preferidas: []
+  salario_minimo: null
+  empresas_objetivo: []
+  empresas_excluidas: []
+  educacion_nivel: ""
+```
+
+**Fundamento:** Basado en DOC-10 (tecnologías, experiencia, idiomas, preferencias laborales) y los criterios CE-001 a CE-012 de DOC-03. El `Perfil` es un modelo de valor (no entidad persistente), coherente con DOC-13/13A que no lo define como entidad.
+
+---
+
+#### Tarea 2 — `shared/ia_service.py`
+
+**Archivo a crear:** `shared/ia_service.py`
+
+**Objetivo:** Implementar el servicio único de comunicación con Ollama (SRV-002 según DOC-12).
+
+**Componentes:**
+
+| Componente | Descripción |
+|---|---|
+| `cargar_prompt(prompt_id: str) -> str` | Carga template desde `prompts/{categoria}/{prompt_id}.md`. Lanza `ErrorConfiguracion` si no existe. |
+| `renderizar_prompt(template: str, contexto: dict) -> str` | Reemplaza `{{ variable }}` con valores del contexto. |
+| `analizar(prompt_id: str, contexto: dict) -> dict` | Orquesta: cargar → renderizar → enviar a Ollama → validar respuesta → retornar dict. |
+| `_enviar_ollama(prompt: str) -> str` | httpx POST a `http://{host}:{puerto}/api/generate` con modelo y timeout desde config. |
+| `_validar_respuesta(respuesta_raw: str) -> dict` | Parseo de JSON, validación de estructura mínima esperada. |
+
+**Manejo de errores:** `ErrorLLM` con códigos ER-LLM-001 (conexión), ER-LLM-002 (timeout), ER-LLM-003 (respuesta inválida), ER-LLM-004 (formato inesperado).
+
+**Reintentos:** Usar `decorador_reintento` de `shared/retry.py` con política desde `config.yaml` → `ollama.reintentos`.
+
+**Prompt loader:** Busca en `prompts/{categoria}/{prompt_id}.md`. Soporta subdirectorios. Cada interacción se registra con Loguru.
+
+---
+
+#### Tarea 3 — `shared/decision_engine.py`
+
+**Archivo a crear:** `shared/decision_engine.py`
+
+**Objetivo:** Implementar el motor de evaluación basado en reglas (SRV-001 según DOC-12).
+
+**Componentes:**
+
+| Componente | Descripción |
+|---|---|
+| `cargar_perfil() -> Perfil` | Construye un `Perfil` a partir de la sección `perfil` de `config.yaml`. |
+| `evaluar(oferta: OfertaProcesada, perfil: Perfil) -> Evaluacion` | Evalúa compatibilidad oferta vs perfil usando criterios ponderados. |
+| `_calcular_puntaje(oferta, perfil, pesos) -> float` | Calcula puntaje 0-100 aplicando pesos configurados. |
+| `_clasificar(puntaje: float) -> ResultadoEvaluacion` | Usa umbrales de config: ≥80 → ALTA, ≥50 → MEDIA, <50 → BAJA. |
+| `_decidir(resultado: ResultadoEvaluacion) -> DecisionEvaluacion` | ALTA/MEDIA → CONTINUAR, BAJA → DESCARTAR. |
+| `_justificar(oferta, perfil, puntajes_parciales) -> str` | Genera texto con desglose de puntuación. |
+
+**Criterios evaluados** (pesos desde `config.yaml` → `evaluacion.pesos`):
+
+| Criterio | Peso configurable | Matching |
+|---|---|---|
+| Experiencia | 0.30 | `perfil.experiencia_anios` vs oferta |
+| Tecnología | 0.25 | RapidFuzz entre `perfil.tecnologias` y `oferta.tecnologias` |
+| Ubicación | 0.15 | RapidFuzz entre `perfil.ubicaciones_preferidas` y oferta |
+| Modalidad | 0.10 | Coincidencia exacta contra `perfil.modalidades_preferidas` |
+| Idiomas | 0.10 | Coincidencia de nivel entre `perfil.idiomas` y `oferta.idiomas` |
+| Seniority | 0.10 | Coincidencia entre `perfil.seniority` y oferta |
+
+**Reglas de negocio:**
+- Empresas en `perfil.empresas_excluidas` → descarte automático (puntaje = 0).
+- `perfil.salario_minimo` no cubierto → puntaje penalizado.
+- La justificación incluye desglose por criterio.
+
+---
+
+#### Tarea 4 — `shared/state_machine.py`
+
+**Archivo a crear:** `shared/state_machine.py`
+
+**Objetivo:** Implementar la máquina de estados del ciclo de vida de las ofertas (basada en DOC-03 RTD-001 a RTD-010 y DOC-04 EPD-001 a EPD-010).
+
+**Componentes:**
+
+| Componente | Descripción |
+|---|---|
+| `TRANSICIONES_VALIDAS: dict[EstadoOferta, list[EstadoOferta]]` | Mapa de transiciones permitidas. |
+| `transicionar(estado_actual: EstadoOferta, estado_destino: EstadoOferta) -> EstadoOferta` | Valida y ejecuta transición. Lanza `ErrorInterno` (ER-INT-010) si es inválida. |
+| `transiciones_posibles(estado: EstadoOferta) -> list[EstadoOferta]` | Retorna destinos válidos desde un estado. |
+
+**Transiciones definidas:**
+
+```
+DESCUBIERTA  → PREPARADA
+PREPARADA    → EVALUADA
+EVALUADA     → ACEPTADA | DESCARTA
+ACEPTADA     → PROCESADA
+DESCARTA     → FINALIZADA
+PROCESADA    → FINALIZADA
+```
+
+**Validaciones:** Aplica RTD-001 a RTD-010: solo transiciones definidas, no omitir etapas, no retroceder.
+
+---
+
+#### Tarea 5 — Tests unitarios
+
+**Archivos a crear:**
+
+| Archivo | Contenido |
+|---|---|
+| `tests/test_ia_service.py` | Tests con mock de httpx (respuesta Ollama simulada), carga de prompts, error si prompt no existe. |
+| `tests/test_decision_engine.py` | Tests con fixtures `oferta_procesada_ejemplo` + nuevo `perfil_ejemplo`. Verificar puntuaciones y clasificaciones. |
+| `tests/test_persistence.py` | Tests CRUD con `archivo_xlsx_temporal`: leer_hoja, escribir_fila, buscar_por_id, actualizar. |
+| `tests/test_state_machine.py` | Tests de transiciones válidas e inválidas. |
+
+**Fixture adicional en `conftest.py`:** `perfil_ejemplo() -> Perfil`
+
+---
+
+#### Tarea 6 — Validación final
+
+```bash
+ruff check .
+mypy .
+pytest tests/ -v
+```
+
+**Criterio:** 0 errores en ruff, 0 errores en mypy, todos los tests verdes.
 
 ---
 

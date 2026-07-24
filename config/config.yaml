@@ -54,3 +54,16 @@ reintentos:
   espera_base_segundos: 2
   espera_max_segundos: 30
   multiplicador: 2
+
+# --- Perfil profesional (DOC-10) ---
+perfil:
+  tecnologias: {}
+  experiencia_anios: 0
+  seniority: ""
+  idiomas: {}
+  ubicaciones_preferidas: []
+  modalidades_preferidas: []
+  salario_minimo: null
+  empresas_objetivo: []
+  empresas_excluidas: []
+  educacion_nivel: ""
