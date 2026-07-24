@@ -46,7 +46,9 @@
 
 ## Sesión 2 — 24/07/2026
 
-**Temas tratados (mañana):**
+**Temas tratados:**
+
+*Revisión y reglas de sesión (mañana):*
 - Revisión de reglas de guardado del historial de sesiones
 - Identificación de que el guardado en Historial de sesiones.md no estaba cubierto por las reglas formales (RT, CA, EP)
 - Propuesta y aprobación de reglas de sesión (RT-018, RT-019, RT-020, RT-021)
@@ -54,67 +56,67 @@
 - Actualización de .opencode/commands/save.md para reflejar las nuevas reglas
 - Consolidación del Historial de sesiones.md (5 sesiones del 23/07/2026 fusionadas en una sola Sesión 1)
 - Aplicación del formato DD/MM/YYYY en todas las fechas del historial
-- Solicitud del usuario de añadir RT-021 para garantizar detalle completo en todas las entradas del historial y prohibir eliminación de información de sesiones pasadas
+- Solicitud del usuario de añadir RT-021 para garantizar detalle completo
 
-**Temas tratados (tarde):**
-- Revisión de integridad de Fase 1 y detección de gap: faltaba el modelo `Perfil` para el motor de decisiones (`decision_engine`) — no existe como entidad en DOC-13/13A
-- Análisis de coherencia entre Fases 1, 2 y 3 del plan de ejecución del MVP
-- Elaboración de plan detallado de Fase 2 con orden optimizado (6 tareas) para desbloquear Fase 3 inmediatamente tras completar `ia_service.py`
-- Recomendación y aprobación del enfoque para el modelo `Perfil`: modelo de valor Pydantic cargado desde nueva sección `perfil` en `config.yaml`
-- Actualización de `Plan de ejecución del MVP.md` con la Fase 2 reescrita en detalle
-- Actualización de `Seguimiento MVP.md` con la nueva estructura de tareas de Fase 2
+*Planificación de Fase 2 (tarde):*
+- Revisión de integridad de Fase 1 y detección de gap: faltaba el modelo `Perfil` para `decision_engine` — no existe como entidad en DOC-13/13A
+- Análisis de coherencia entre Fases 1, 2 y 3 del plan de ejecución
+- Elaboración de plan detallado de Fase 2 con orden optimizado (6 tareas) para desbloquear Fase 3 inmediatamente tras `ia_service.py`
+- Recomendación y aprobación del modelo `Perfil` como modelo de valor Pydantic cargado desde nueva sección `perfil` en `config.yaml`
+- Actualización de `Plan de ejecución del MVP.md` con Fase 2 reescrita
+- Actualización de `Seguimiento MVP.md` con nueva estructura de tareas de Fase 2
 
-**Temas tratados (noche — ejecución Fase 2):**
-- Ejecución completa de las 6 tareas de Fase 2 en orden:
-  - Tarea 1: Añadido modelo `Perfil` a `shared/models.py` y sección `perfil` a `config/config.yaml`
-  - Tarea 2: Creado `shared/ia_service.py` con comunicación Ollama vía httpx, prompt loader, renderizado `{{ variables }}`, reintentos con tenacity, 4 códigos de error ER-LLM (conexión, timeout, respuesta inválida, formato inesperado)
-  - Tarea 3: Creado `shared/decision_engine.py` con 6 criterios ponderados (experiencia 0.30, tecnología 0.25, ubicación 0.15, modalidad 0.10, idiomas 0.10, seniority 0.10), RapidFuzz para matching difuso, penalización por salario mínimo no cubierto, descarte automático por empresas excluidas, método `cargar_perfil()` desde config
-  - Tarea 4: Creado `shared/state_machine.py` con mapa inmutable de 6 transiciones válidas, método `transicionar()` que lanza ER-INT-010 si la transición es inválida
-  - Tarea 5: Creados 4 tests (11 de decision_engine, 10 de ia_service, 6 de persistence, 10 de state_machine) + fixture `perfil_ejemplo` en conftest.py — total 37 tests
-  - Tarea 6: Validación final — ruff 0 errors, mypy 0 errors, pytest 37/37 passed, todos los módulos importables
-- Commit y push a GitHub del trabajo de Fase 2 (commit `32b2723`)
-- Creación de `Informe - Ejecución Fase 2.md` con el reporte detallado de la fase
+*Ejecución de Fase 2 (noche):*
+- Ejecución completa de las 6 tareas de Fase 2:
+  - Tarea 1: Modelo `Perfil` en `shared/models.py` + sección `perfil` en `config/config.yaml`
+  - Tarea 2: `shared/ia_service.py` — comunicación Ollama vía httpx, prompt loader, renderizado `{{ variables }}`, reintentos Tenacity, 4 códigos ER-LLM
+  - Tarea 3: `shared/decision_engine.py` — 6 criterios ponderados, RapidFuzz, penalización salarial, exclusión automática
+  - Tarea 4: `shared/state_machine.py` — mapa inmutable de 6 transiciones, ER-INT-010 para transiciones inválidas
+  - Tarea 5: 37 tests (11 decision_engine, 10 ia_service, 6 persistence, 10 state_machine) + fixture `perfil_ejemplo`
+  - Tarea 6: Validación — ruff 0, mypy 0, pytest 37/37
+- Commit `32b2723` y push a GitHub
+- Creación de `Informe - Ejecución Fase 2.md`
 
-**Decisiones:**
-- RT-018: una sesión por día calendario
-- RT-019: guardado automático de sesión al finalizar tarea en modo build
-- RT-020: formato de fecha DD/MM/YYYY en el historial
-- RT-021: todas las entradas deben ser detalladas; no se puede eliminar ni resumir información de sesiones pasadas
-- Reglas documentadas en AGENTS.md + save.md (aprobación del usuario)
-- Modelo `Perfil` se implementa como modelo Pydantic en `shared/models.py` y sus datos se cargan desde una nueva sección `perfil` en `config.yaml` — no se trata como entidad persistente, sino como modelo de valor, coherente con DOC-13/13A que no lo define como entidad
-- Fase 2 se reorganiza en 6 tareas con orden optimizado: (1) Perfil + config, (2) ia_service, (3) decision_engine, (4) state_machine, (5) tests, (6) validación
-- Fase 3 puede comenzar tras completar la tarea 2 (`ia_service.py`), sin esperar a `decision_engine` ni `state_machine`
-- Uso de RapidFuzz para matching difuso en tecnología y ubicación dentro del motor de decisiones
-
-**Acuerdos:**
-- Se mantienen los acuerdos de sesiones anteriores
-
-**Estado al cierre:**
-- Fase 2 completada: 6 tareas ejecutadas, commit `32b2723` pusheado a GitHub
-- Creado `Informe - Ejecución Fase 2.md` con reporte detallado de la fase
-- Pendiente de aprobación del Arquitecto para iniciar Fase 3
-
-**Temas tratados (noche — continuación):**
-- Validación de pesos en decision_engine: incorporada validación fail-fast con `math.isclose` que lanza `ErrorConfiguracion` si la suma de pesos no es 1.0. Código ER-CFG-002 alineado con DOC-06. 2 tests nuevos (pesos válidos e inválidos). 39/39 tests.
+*Mejora de robustez (noche — continuación):*
+- Validación de pesos en `decision_engine.py`: incorporada validación fail-fast con `math.isclose` que lanza `ErrorConfiguracion` (ER-CFG-002) si la suma de pesos no es 1.0
+- 2 tests nuevos (pesos válidos, pesos inválidos con verificación de mensaje)
 - Commit `3d9e8c7`
-- Análisis de coherencia entre Fase 2 → Fase 3 y Fase 3 → Fase 4. Se detectó que Fase 3 necesitaba alinear sus tareas con la plantilla oficial del Anexo 5C §C.9. Se actualizó el Plan de ejecución.
+- Análisis de coherencia entre Fase 2 → Fase 3 y Fase 3 → Fase 4
+- Se detectó que Fase 3 necesitaba alinear sus tareas con la plantilla oficial del Anexo 5C §C.9
+- Actualización del `Plan de ejecución del MVP.md` con tareas detalladas
 
-**Temas tratados (día 2 — ejecución Fase 3):**
-- Ejecución de Fase 3 completa:
-  - Tarea 1: Creado `prompts/evaluacion_inicial/compatibilidad.md` (PRM-001) para análisis cualitativo oferta-perfil
-  - Tarea 2: Creados 4 prompts en `prompts/procesamiento/`: diagnostico (PRM-002), extraccion_estrategica (PRM-003), diseno_candidatura (PRM-004), insumos (PRM-005)
-  - Tarea 3: Los 5 prompts siguen la plantilla oficial Anexo 5C §C.9 (Objetivo, Entradas, Variables, Instrucciones, Resultado esperado, Observaciones, Versión)
-  - Tarea 4: Prueba manual con Ollama no completada — los modelos qwen3.5 requieren timeout >120s en este equipo. Se documentó como pendiente.
-  - Tarea 5: Versión v1 creada, pendiente de prueba manual y aprobación
+*Ejecución de Fase 3 (sesión extendida):*
+- Tarea 1: Creado `prompts/evaluacion_inicial/compatibilidad.md` (PRM-001) — análisis cualitativo oferta-perfil con campos compatibilidad, justificacion, factores_clave, brechas, compatibilidad_cultural
+- Tarea 2: Creados 4 prompts en `prompts/procesamiento/`: diagnostico (PRM-002), extraccion_estrategica (PRM-003), diseno_candidatura (PRM-004), insumos (PRM-005)
+- Tarea 3: Los 5 prompts siguen la plantilla oficial Anexo 5C §C.9 con las 8 secciones (Objetivo, Entradas, Variables, Instrucciones, Resultado esperado, Observaciones, Versión)
+- Tarea 4: Prueba manual con Ollama no completada — los modelos qwen3.5 requieren timeout >120s en este equipo debido al proceso interno de "thinking". Se verificó que los prompts se cargan y renderizan correctamente.
+- Tarea 5: Versión v1 creada, pendiente de prueba manual y aprobación
 - Validaciones: ruff 0, mypy 0, pytest 39/39
 - Commit `7db5e3f`
+- Creación de `Informe - Ejecución Fase 3.md`
 
-**Decisiones adicionales:**
-- Se aprueba incorporar validación de suma de pesos en decision_engine como mejora de robustez
+**Decisiones:**
+
+- RT-018 a RT-021: una sesión por día calendario, guardado automático en modo build, formato DD/MM/YYYY, detalle completo y prohibición de eliminar/resumir sesiones pasadas
+- Modelo `Perfil` como modelo de valor Pydantic en `shared/models.py`, cargado desde `config.yaml` — no es entidad persistente
+- Fase 2 reorganizada en 6 tareas con orden optimizado (Fase 3 puede comenzar tras `ia_service.py`)
+- RapidFuzz para matching difuso en tecnología y ubicación del motor de decisiones
+- Se aprueba incorporar validación de suma de pesos en `decision_engine.py` como mejora de robustez (código ER-CFG-002, alineado con DOC-06)
 - Los prompts de Fase 3 se entregan como versión v1, pendientes de prueba manual con Ollama
-- La prueba manual se difiere a una sesión local del usuario debido a limitaciones de tiempo de respuesta de Ollama en este entorno
+- La prueba manual de Fase 3 se difiere a una sesión local del usuario por limitaciones de tiempo de respuesta de Ollama en este entorno
+- Fase 4 no está bloqueada por la prueba manual pendiente de Fase 3
+
+**Acuerdos:**
+
+- Se mantienen los acuerdos de sesiones anteriores
+- No iniciar implementación del MVP sin orden explícita
+- Las reglas RT-001 a RT-021 rigen el desarrollo del MVP
 
 **Estado al cierre:**
-- Fase 3 completada parcialmente (tareas 1-3 ✅, tarea 4 ⏳ pendiente de prueba local, tarea 5 ⬜ pendiente de aprobación)
-- Fase 4 puede comenzar sin depender de la prueba manual de Fase 3
-- Commit `7db5e3f` en GitHub
+
+- Fase 0 y Fase 1: completamente terminadas (✅)
+- Fase 2: completamente terminada (✅) — 6 tareas ejecutadas, commit `32b2723`
+- Fase 3: completada parcialmente — tareas 1-3 ejecutadas (✅), tarea 4 pendiente de prueba local (⏳), tarea 5 pendiente de aprobación (⬜)
+- Validación general: ruff 0, mypy 0, pytest 39/39
+- Commits del día: `32b2723` (Fase 2), `3d9e8c7` (validación pesos), `7db5e3f` (Fase 3), `f2d0063` (historial)
+- Pendiente de aprobación del Arquitecto para iniciar Fase 4
