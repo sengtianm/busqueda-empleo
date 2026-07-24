@@ -51,7 +51,7 @@
 | Orden | # | Tarea | Docs fuente | Estado | Obs |
 |-------|---|-------|-------------|--------|-----|
 | 1 | 1 | Modelo `Perfil` en `shared/models.py` + sección `perfil` en `config.yaml` | DOC-10, DOC-03 | ✅ | Se carga desde config.yaml como modelo de valor (no entidad persistente). |
-| 2 | 2 | `shared/ia_service.py` (Ollama + prompt loader) | DOC-11, DOC-12 | ✅ | httpx + Ollama. Prompt loader desde `prompts/`. Reintentos con tenacity. 4 códigos de error ER-LLM. |
+| 2 | 2 | `shared/ia_service.py` (multi-proveedor local + cloud) | DOC-11, DOC-12 | ✅ | Arquitectura híbrida: `_enviar_local` (Ollama + qwen3.5:4b) + `_enviar_cloud` (Ollama Cloud + Gemma 4 31B). Enrutamiento por propósito desde config. 4 códigos de error ER-LLM. |
 | 3 | 3 | `shared/decision_engine.py` (reglas + puntuación) | DOC-03, DOC-10 | ✅ | `evaluar(oferta, perfil)`. 6 criterios ponderados. RapidFuzz. Penalización por salario. Exclusión automática. |
 | 4 | 4 | `shared/state_machine.py` (estados + transiciones) | DOC-03, DOC-04 | ✅ | 6 transiciones definidas en mapa inmutable. Lanza ER-INT-010 si es inválida. |
 | 5 | 5 | Tests: ia_service, decision_engine, persistence, state_machine | — | ✅ | 37 tests (11 decision_engine, 10 ia_service, 6 persistence, 10 state_machine). Fixture `perfil_ejemplo`. |

@@ -70,36 +70,39 @@ Cada prompt define explícitamente:
 
 ---
 
-### 2.4. Tarea 4 — Prueba manual con Ollama (pendiente)
+### 2.4. Tarea 4 — Prueba manual con IA (pendiente)
 
 **Estado:** ⏳ No completada
 
 **Qué se verificó:**
 - Los prompts se cargan correctamente desde `shared/ia_service.py::cargar_prompt()`
 - Las variables `{{ }}` se renderizan sin errores desde `renderizar_prompt()`
-- La comunicación con Ollama funciona (verificado con `curl` y `httpx` directo)
 
-**Problema detectado:**
-- Los modelos disponibles en el equipo (`qwen3.5:9b`, `qwen3.5:4b`) incluyen un proceso interno de "thinking" que hace que las respuestas tarden entre 120 y 180 segundos
-- El timeout por defecto de 60s en `config.yaml` no es suficiente
-- Aumentando el timeout a 200s funciona, pero el tiempo total de prueba para 5 prompts secuenciales es impracticable en la sesión actual
+**Nota sobre estrategia de modelos:**
+Se adoptó una estrategia híbrida: el modelo local (`qwen3.5:4b`) se usará para PRM-001 (evaluación), y el modelo cloud (`gemma4:31b` vía Ollama Cloud) para PRM-002 al PRM-005 (procesamiento). Esto permite que la prueba manual se realice en dos pasos:
+
+1. **PRM-001** con `qwen3.5:4b` local (cabe en 4GB VRAM, respuestas rápidas)
+2. **PRM-002 al PRM-005** con `gemma4:31b` cloud (mejor calidad, requiere API Key)
 
 **Recomendación:** Ejecutar la prueba localmente con:
 ```bash
 cd /ruta/del/proyecto
-# Ajustar timeout en config/config.yaml si es necesario
-ollama run qwen3.5:9b  # Para pre-cargar el modelo
+# PRM-001 con modelo local
 python3 -c "
 from shared.ia_service import analizar
 import json
 
-oferta = { ... }  # Oferta real o de ejemplo
-perfil = { ... }  # Perfil desde config.yaml
-
 resultado = analizar('evaluacion_inicial/compatibilidad', {
     'oferta': json.dumps(oferta),
     'perfil': json.dumps(perfil)
-})
+}, proposito='evaluacion')
+print(resultado)
+"
+# PRM-002 al PRM-005 con modelo cloud
+python3 -c "
+resultado = analizar('procesamiento/diagnostico', {
+    'oferta': json.dumps(oferta)
+}, proposito='procesamiento')
 print(resultado)
 "
 ```
@@ -153,20 +156,24 @@ Los 5 prompts están creados como versión `v1` pero no se consideran aprobados 
 
 ## 7. Problemas encontrados
 
-1. **Rendimiento de Ollama:** Los modelos locales `qwen3.5:9b` y `qwen3.5:4b` incluyen un proceso de "thinking" que incrementa significativamente el tiempo de respuesta (>120s). La prueba manual no pudo completarse en esta sesión.
+1. **Rendimiento de Ollama local:** El modelo `qwen3.5:9b` (6.6 GB) no cabe en los 4GB de VRAM de la GPU, causando lentitud. Se adoptó `qwen3.5:4b` (3.4 GB) como modelo local, que sí cabe en VRAM.
 
-2. **Modelo no disponible:** El modelo configurado originalmente (`qwen:8b`) no está disponible en el equipo. Se actualizó a `qwen3.5:9b`, la versión más cercana disponible.
+2. **Estrategia híbrida:** Se reemplazó la estrategia local-only por una híbrida: `qwen3.5:4b` local para evaluación + `gemma4:31b` cloud para procesamiento. Esto requirió actualizar `DOC-11`, `ia_service.py` y la configuración.
+
+3. **Modelo no disponible:** El modelo configurado originalmente (`qwen:8b`) no está disponible en el equipo. Se actualizó a `qwen3.5:4b` como modelo local.
 
 ## 8. Riesgos identificados
 
 - Los prompts no han sido probados con un LLM real, por lo que podrían requerir ajustes en la próxima sesión de prueba
 - Si el usuario cambia de modelo LLM en el futuro, los prompts están diseñados para ser independientes del modelo (CPR-005 de DOC-05), pero puede requerir ajustes menores
+- El modelo cloud (`gemma4:31b`) requiere API Key de Ollama Cloud y conexión a Internet; sin ella el procesamiento profundo no estará disponible
 
 ## 9. Observaciones
 
 - Fase 4 (Descubrimiento) puede comenzar sin necesidad de esperar la prueba manual de Fase 3, ya que son flujos independientes
 - Los prompts de `procesamiento/` tienen dependencia secuencial: PRM-002 → PRM-003 → PRM-004 → PRM-005, donde cada uno consume la salida del anterior
-- El prompt `evaluacion_inicial/compatibilidad` es opcional en Fase 6 — el motor de reglas (`decision_engine.py`) es el que toma la decisión principal
+- El prompt `evaluacion_inicial/compatibilidad` usa modelo local (`qwen3.5:4b`) y es opcional en Fase 6 — el motor de reglas (`decision_engine.py`) es el que toma la decisión principal
+- Los prompts de `procesamiento/` (PRM-002 al PRM-005) usan modelo cloud (`gemma4:31b`) para máxima calidad
 
 ---
 

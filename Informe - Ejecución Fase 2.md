@@ -17,7 +17,7 @@ Implementar los 3 servicios compartidos restantes (`ia_service`, `decision_engin
 | Orden | Tarea | Descripción |
 |-------|-------|-------------|
 | 1 | Modelo `Perfil` + sección en `config.yaml` | Añadida clase `Perfil(BaseModel)` con 11 campos a `shared/models.py`. Añadida sección `perfil` con valores por defecto en `config/config.yaml`. |
-| 2 | `shared/ia_service.py` | Servicio Ollama: `cargar_prompt()`, `renderizar_prompt()`, `_enviar_ollama()` con httpx + tenacity, `_validar_respuesta()`, `analizar()`. 4 códigos de error ER-LLM. |
+| 2 | `shared/ia_service.py` | Servicio IA multi-proveedor: `cargar_prompt()`, `renderizar_prompt()`, `_route_provider()`, `_enviar_local()` (Ollama), `_enviar_cloud()` (Ollama Cloud), `_validar_respuesta()`, `analizar(proposito)`. 4 códigos de error ER-LLM. |
 | 3 | `shared/decision_engine.py` | Motor de reglas: `evaluar(oferta, perfil)`, 6 criterios ponderados con RapidFuzz, `cargar_perfil()` desde config, penalización por salario, exclusión automática de empresas. |
 | 4 | `shared/state_machine.py` | Máquina de estados: mapa `TRANSICIONES_VALIDAS` con 6 transiciones, `transicionar()` con validación, `transiciones_posibles()`. Lanza `ErrorInterno` ER-INT-010 si es inválida. |
 | 5 | Tests unitarios | 4 archivos creados: `test_ia_service.py` (10), `test_decision_engine.py` (11), `test_persistence.py` (6), `test_state_machine.py` (10) = **37 tests**. Añadida fixture `perfil_ejemplo` en `conftest.py`. |
@@ -29,7 +29,7 @@ Implementar los 3 servicios compartidos restantes (`ia_service`, `decision_engin
 
 | Archivo | Líneas aprox | Propósito |
 |---------|-------------|-----------|
-| `shared/ia_service.py` | ~90 | Comunicación con Ollama, prompt loader, validación de respuestas |
+| `shared/ia_service.py` | ~190 | Comunicación multi-proveedor (Ollama local + Ollama Cloud), prompt loader, routing por propósito, validación de respuestas |
 | `shared/decision_engine.py` | ~120 | Evaluación ponderada oferta vs perfil con 6 criterios |
 | `shared/state_machine.py` | ~40 | Control de transiciones de estado del ciclo de vida |
 | `tests/test_ia_service.py` | ~90 | 10 tests (mocks httpx, validación, errores ER-LLM) |
@@ -73,18 +73,24 @@ Clase Pydantic con 11 campos cargados desde `config.yaml`:
 
 ### 5.2. `shared/ia_service.py`
 
-Arquitectura del servicio:
+Arquitectura del servicio multi-proveedor:
 
 ```
-analizar(prompt_id, contexto)
+analizar(prompt_id, contexto, proposito="evaluacion")
   ├── cargar_prompt(prompt_id) → str
   │     └── Lee prompts/{categoria}/{prompt_id}.md
   │     └── ErrorConfiguracion si no existe
   ├── renderizar_prompt(template, contexto) → str
   │     └── Reemplaza {{ variable }} por valores
-  ├── _enviar_ollama(prompt) → str  [@decorador_reintento]
+  ├── _route_provider(proposito) → "local" | "cloud"
+  │     └── Routing desde config.yaml → ia_routing
+  │     └── ErrorConfiguracion si proveedor inválido
+  ├── _enviar_local(prompt) → str  [@decorador_reintento]
   │     └── httpx POST a http://{host}:{puerto}/api/generate
-  │     └── ErrorLLM-001 (conexión), ER-LLM-002 (timeout)
+  │     └── ErrorLLM-001 (conexión), ER-LLM-002 (timeout), ER-LLM-003 (HTTP)
+  ├── _enviar_cloud(prompt) → str  [@decorador_reintento]
+  │     └── httpx POST a {endpoint}/api/generate con API Key
+  │     └── ErrorLLM-001 (conexión), ER-LLM-002 (timeout), ER-LLM-003 (HTTP)
   └── _validar_respuesta(raw) → dict
         └── ErrorLLM-003 (no JSON), ER-LLM-004 (no dict)
 ```
@@ -149,7 +155,9 @@ Cualquier otra transición lanza `ErrorInterno` (ER-INT-010).
 
 ## 8. Riesgos identificados
 
-- `ia_service.py` depende de Ollama ejecutándose localmente para uso en producción; los tests utilizan mocks de httpx.
+- `ia_service.py` soporta dos proveedores: Ollama local (para evaluación) y Ollama Cloud (para procesamiento). Los tests utilizan mocks de httpx para ambos.
+- El proveedor cloud requiere conexión a Internet y una API Key de Ollama Cloud configurada en `.env`. Sin ella, el procesamiento profundo (Fase 7) no funcionará.
+- El plan gratuito de Ollama Cloud tiene límites de uso que deben monitorizarse durante la Fase 7.
 - Los pesos de evaluación en `config.yaml` (`evaluacion.pesos`) representan valores iniciales y pueden requerir ajuste fino durante la Fase 6 (Evaluación inicial) con ofertas reales.
 - El prompt loader de `ia_service` lee del directorio `prompts/` que actualmente solo contiene `.gitkeep`. Los prompts se crearán en la Fase 3.
 - El comando `git add` omitió incorrectamente `.opencode/commands/save.md` y `AGENTS.md` en commits anteriores; fueron incluidos en el commit final de esta fase.

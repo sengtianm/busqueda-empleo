@@ -37,21 +37,51 @@ def renderizar_prompt(template: str, contexto: dict[str, Any]) -> str:
     return resultado
 
 
-def _obtener_config_ollama() -> dict[str, Any]:
+def _route_provider(proposito: str) -> str:
     config = cargar()
-    ollama_cfg = config.get("ollama", {})
+    routing = config.get("ia_routing", {})
+    proveedor = routing.get(proposito, "local")
+    if not isinstance(proveedor, str):
+        proveedor = "local"
+    if proveedor not in ("local", "cloud"):
+        raise ErrorConfiguracion(
+            "003",
+            f"Proveedor de IA invalido para proposito '{proposito}': '{proveedor}'. "
+            f"Valores permitidos: 'local', 'cloud'",
+            modulo_origen="ia_service",
+        )
+    return proveedor
+
+
+def _obtener_config_local() -> dict[str, Any]:
+    config = cargar()
+    local_cfg = config.get("ia_local", {})
     env = config.get("_env", {})
     return {
-        "host": env.get("OLLAMA_HOST") or ollama_cfg.get("host", "localhost"),
-        "puerto": int(env.get("OLLAMA_PORT") or ollama_cfg.get("puerto", 11434)),
-        "modelo": env.get("OLLAMA_MODEL") or ollama_cfg.get("modelo", "qwen:8b"),
-        "timeout": int(env.get("OLLAMA_TIMEOUT") or ollama_cfg.get("timeout_segundos", 60)),
+        "host": env.get("OLLAMA_HOST") or local_cfg.get("host", "localhost"),
+        "puerto": int(env.get("OLLAMA_PORT") or local_cfg.get("puerto", 11434)),
+        "modelo": env.get("OLLAMA_MODEL") or local_cfg.get("modelo", "qwen3.5:4b"),
+        "timeout": int(local_cfg.get("timeout_segundos", 60)),
+        "reintentos": int(local_cfg.get("reintentos", 3)),
+    }
+
+
+def _obtener_config_cloud() -> dict[str, Any]:
+    config = cargar()
+    cloud_cfg = config.get("ia_cloud", {})
+    env = config.get("_env", {})
+    return {
+        "endpoint": env.get("IA_CLOUD_ENDPOINT") or cloud_cfg.get("endpoint", ""),
+        "modelo": cloud_cfg.get("modelo", "gemma4:31b"),
+        "api_key": env.get("IA_CLOUD_API_KEY") or "",
+        "timeout": int(cloud_cfg.get("timeout_segundos", 120)),
+        "reintentos": int(cloud_cfg.get("reintentos", 2)),
     }
 
 
 @decorador_reintento()
-def _enviar_ollama(prompt: str) -> str:
-    cfg = _obtener_config_ollama()
+def _enviar_local(prompt: str) -> str:
+    cfg = _obtener_config_local()
     url = f"http://{cfg['host']}:{cfg['puerto']}/api/generate"
     payload = {"model": cfg["modelo"], "prompt": prompt, "stream": False}
     try:
@@ -62,19 +92,55 @@ def _enviar_ollama(prompt: str) -> str:
     except httpx.ConnectError:
         raise ErrorLLM(
             "001",
-            f"No se pudo conectar a Ollama en {url}",
+            f"No se pudo conectar a Ollama local en {url}",
             modulo_origen="ia_service",
         )
     except httpx.TimeoutException:
         raise ErrorLLM(
             "002",
-            f"Timeout al conectar con Ollama ({cfg['timeout']}s)",
+            f"Timeout al conectar con Ollama local ({cfg['timeout']}s)",
             modulo_origen="ia_service",
         )
     except httpx.HTTPStatusError as e:
         raise ErrorLLM(
             "003",
-            f"Ollama respondio con codigo {e.response.status_code}",
+            f"Ollama local respondio con codigo {e.response.status_code}",
+            modulo_origen="ia_service",
+        )
+
+
+@decorador_reintento()
+def _enviar_cloud(prompt: str) -> str:
+    cfg = _obtener_config_cloud()
+    url = f"{cfg['endpoint']}/api/generate"
+    headers = {
+        "Authorization": f"Bearer {cfg['api_key']}",
+        "Content-Type": "application/json",
+    }
+    payload = {"model": cfg["modelo"], "prompt": prompt, "stream": False}
+    try:
+        respuesta = httpx.post(
+            url, json=payload, headers=headers, timeout=cfg["timeout"]
+        )
+        respuesta.raise_for_status()
+        data = respuesta.json()
+        return str(data.get("response", ""))
+    except httpx.ConnectError:
+        raise ErrorLLM(
+            "001",
+            f"No se pudo conectar a IA Cloud en {url}",
+            modulo_origen="ia_service",
+        )
+    except httpx.TimeoutException:
+        raise ErrorLLM(
+            "002",
+            f"Timeout al conectar con IA Cloud ({cfg['timeout']}s)",
+            modulo_origen="ia_service",
+        )
+    except httpx.HTTPStatusError as e:
+        raise ErrorLLM(
+            "003",
+            f"IA Cloud respondio con codigo {e.response.status_code}",
             modulo_origen="ia_service",
         )
 
@@ -85,7 +151,7 @@ def _validar_respuesta(respuesta_raw: str) -> dict[str, Any]:
     if not respuesta_raw.strip():
         raise ErrorLLM(
             "003",
-            "Respuesta vacia de Ollama",
+            "Respuesta vacia del modelo de IA",
             modulo_origen="ia_service",
         )
     try:
@@ -105,12 +171,20 @@ def _validar_respuesta(respuesta_raw: str) -> dict[str, Any]:
     return data
 
 
-def analizar(prompt_id: str, contexto: dict[str, Any]) -> dict[str, Any]:
+def analizar(
+    prompt_id: str, contexto: dict[str, Any], proposito: str = "evaluacion"
+) -> dict[str, Any]:
     template = cargar_prompt(prompt_id)
     prompt_final = renderizar_prompt(template, contexto)
     from loguru import logger
 
-    logger.debug("Enviando prompt a Ollama | prompt_id={}", prompt_id)
-    respuesta_raw = _enviar_ollama(prompt_final)
-    logger.debug("Respuesta recibida de Ollama | prompt_id={}", prompt_id)
+    proveedor = _route_provider(proposito)
+    logger.debug("Enviando prompt a IA | prompt_id={} | proveedor={}", prompt_id, proveedor)
+
+    if proveedor == "cloud":
+        respuesta_raw = _enviar_cloud(prompt_final)
+    else:
+        respuesta_raw = _enviar_local(prompt_final)
+
+    logger.debug("Respuesta recibida de IA | prompt_id={} | proveedor={}", prompt_id, proveedor)
     return _validar_respuesta(respuesta_raw)

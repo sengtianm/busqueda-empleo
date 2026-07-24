@@ -779,25 +779,30 @@ El modelo de lenguaje será responsable de tareas como:
 
 ## 9.3 Estrategia de inteligencia artificial
 
-El proyecto adoptará una estrategia basada en modelos de lenguaje ejecutados completamente de forma local.
+El proyecto adoptará una estrategia híbrida que combina un modelo local para tareas de alto volumen y un modelo cloud para tareas que requieren mayor calidad de razonamiento y generación de contenido.
 
-No se utilizarán servicios comerciales de inteligencia artificial ni APIs de terceros como componente principal de la automatización.
+El modelo local se ejecutará mediante Ollama y será utilizado para tareas repetitivas y evaluaciones determinísticas complementarias (módulo de evaluación inicial).
 
-Esta decisión garantiza:
+El modelo cloud se ejecutará mediante Ollama Cloud (plan gratuito) y será utilizado exclusivamente para tareas que requieren análisis profundo y generación de contenido profesional (módulo de procesamiento profundo).
 
-- Funcionamiento sin costos por uso.
-- Independencia de servicios externos.
-- Mayor privacidad de la información.
-- Funcionamiento sin conexión a Internet.
-- Control total sobre el entorno de ejecución.
+Esta decisión equilibra:
+
+- Sin costos por uso para tareas de alto volumen (local).
+- Calidad superior donde más importa (cloud).
+- Privacidad de la información sensible mediante procesamiento local.
+- Independencia operativa al mantener el flujo básico funcionando sin conexión.
 
 ---
 
-## 9.4 Motor de inferencia
+## 9.4 Motores de inferencia
 
-Se adopta **Ollama** como el motor oficial para la ejecución de modelos de lenguaje.
+El proyecto adopta dos motores de inferencia según el propósito:
 
-La selección de Ollama se fundamenta en los siguientes aspectos:
+### 9.4.1 Motor local
+
+Se adopta **Ollama** como el motor local para la ejecución de modelos de lenguaje en tareas de alto volumen.
+
+La selección de Ollama como motor local se fundamenta en:
 
 - Ejecución completamente local.
 - Instalación y administración sencillas.
@@ -806,23 +811,37 @@ La selección de Ollama se fundamenta en los siguientes aspectos:
 - Mantenimiento activo.
 - Excelente documentación.
 
+### 9.4.2 Motor cloud
+
+Se adopta **Ollama Cloud** como el motor cloud para tareas que requieren mayor capacidad de razonamiento.
+
+La selección de Ollama Cloud se fundamenta en:
+
+- Acceso a modelos de gran escala sin requerir hardware local.
+- Plan gratuito con modelos de alta capacidad.
+- Misma interfaz de API que Ollama local, facilitando la integración.
+- Sin costos operativos para el plan gratuito.
+
 ---
 
 ## 9.5 Arquitectura de integración
 
 La automatización no accederá directamente al modelo de lenguaje.
 
-Toda comunicación con el LLM deberá realizarse mediante un Servicio de IA interno que actuará como único punto de acceso al motor de inferencia.
+Toda comunicación con el LLM deberá realizarse mediante un Servicio de IA interno que actuará como único punto de acceso a los motores de inferencia.
 
 Este servicio será responsable de:
 
-- Administrar la comunicación con Ollama.
+- Administrar la comunicación con los proveedores de IA (local y cloud).
+- Enrutar cada solicitud al proveedor adecuado según el propósito.
 - Centralizar la gestión de prompts.
 - Validar las solicitudes y respuestas.
 - Gestionar errores y reintentos.
 - Desacoplar el resto de la arquitectura del modelo utilizado.
 
-Esta estrategia permitirá sustituir el modelo de lenguaje sin modificar los módulos funcionales de la automatización.
+El enrutamiento se define mediante la sección `ia_routing` en `config.yaml`, donde se asigna cada propósito (`evaluacion`, `procesamiento`) al proveedor correspondiente (`local` o `cloud`).
+
+Esta estrategia permitirá sustituir o rebalancear los modelos y proveedores sin modificar los módulos funcionales de la automatización.
 
 ---
 
@@ -836,36 +855,50 @@ Esta separación evita utilizar el LLM para tareas donde no aporta un beneficio 
 
 ---
 
-## 9.7 Selección del modelo
+## 9.7 Selección de modelos
 
-Durante la investigación tecnológica se evaluaron diferentes familias de modelos de lenguaje compatibles con ejecución local.
+El proyecto utiliza dos modelos según el propósito y el hardware disponible:
 
-Como resultado del análisis se estableció:
+### 9.7.1 Modelo local
 
-- **Familia oficial:** Qwen.
-- **Modelo oficial inicial:** Qwen 8B.
+- **Familia:** Qwen.
+- **Modelo:** Qwen 3.5 4B (`qwen3.5:4b`).
+- **Hardware objetivo:** GPU con 4 GB de VRAM (NVIDIA GTX 1650 Mobile).
 
 La selección se fundamenta en:
 
-- Excelente seguimiento de instrucciones.
-- Muy buen desempeño en español e inglés.
-- Alta calidad en razonamiento.
-- Excelente generación de respuestas estructuradas.
+- Buen seguimiento de instrucciones.
+- Buen desempeño en español e inglés.
+- Capacidad suficiente para clasificación y análisis básico.
+- Cabe completamente en 4 GB de VRAM, garantizando velocidad.
 - Compatibilidad con Ollama.
-- Buen equilibrio entre calidad y velocidad para el hardware oficial del proyecto.
+
+### 9.7.2 Modelo cloud
+
+- **Modelo:** Gemma 4 31B.
+- **Proveedor:** Ollama Cloud (plan gratuito).
+
+La selección se fundamenta en:
+
+- Alto rendimiento en razonamiento y generación de texto.
+- Excelente calidad en español e inglés.
+- Capacidad para análisis profundo y redacción profesional.
+- Acceso gratuito mediante plan free de Ollama Cloud.
 
 ---
 
-## 9.8 Evolución del modelo
+## 9.8 Evolución de los modelos
 
-La selección de Qwen 8B corresponde al modelo oficial inicial del proyecto.
+Los modelos definidos en este documento corresponden a la selección inicial del proyecto.
 
-La arquitectura permitirá sustituir el modelo en el futuro siempre que:
+La arquitectura permitirá sustituir cualquiera de los modelos en el futuro siempre que:
 
 - Exista evidencia técnica que justifique el cambio.
 - El nuevo modelo cumpla los criterios de admisión definidos por el proyecto.
 - Supere el proceso oficial de evaluación tecnológica.
 - Su incorporación no afecte la arquitectura general de la automatización.
+
+La separación por propósito (local/cloud) facilita la evolución independiente de cada modelo sin afectar al otro.
 
 ---
 
@@ -888,11 +921,12 @@ No será utilizado para tareas determinísticas que puedan resolverse mediante a
 
 La inteligencia artificial del proyecto deberá cumplir las siguientes restricciones:
 
-- Ejecutarse completamente de forma local.
-- No depender de APIs comerciales.
-- Mantener compatibilidad con Ollama.
-- Integrarse exclusivamente mediante el Servicio de IA definido por la arquitectura.
-- Poder sustituirse en el futuro sin modificar la lógica de negocio de la automatización.
+- El modelo local debe ejecutarse mediante Ollama.
+- El modelo cloud debe ser accesible mediante plan gratuito, sin costos recurrentes.
+- El enrutamiento entre modelos debe ser transparente para los módulos funcionales.
+- Toda comunicación debe realizarse exclusivamente mediante el Servicio de IA definido por la arquitectura.
+- El flujo de evaluación inicial (módulo 3) debe poder funcionar sin conexión a Internet.
+- Los modelos deben poder sustituirse en el futuro sin modificar la lógica de negocio de la automatización.
 
 ---
 
@@ -1669,8 +1703,10 @@ No se incorporarán tecnologías que:
 | Playwright | BeautifulSoup4, Tenacity, Loguru | Automatización del navegador. |
 | BeautifulSoup4 + lxml | Playwright | Procesamiento y análisis del HTML. |
 | Pydantic | Todo el sistema | Validación y serialización de datos. |
-| Ollama | Qwen | Motor de inferencia para IA. |
-| Qwen 8B | Ollama | Modelo de lenguaje oficial. |
+| Ollama | Qwen, Gemma | Motor de inferencia local para IA. |
+| Ollama Cloud | Gemma 4 31B | Motor de inferencia cloud para IA. |
+| Qwen 3.5 4B | Ollama | Modelo de lenguaje local. |
+| Gemma 4 31B | Ollama Cloud | Modelo de lenguaje cloud. |
 | openpyxl | ONLYOFFICE | Gestión del almacenamiento en archivos `.xlsx`. |
 | PyYAML | python-dotenv | Gestión de la configuración del proyecto. |
 | Loguru | Todo el stack | Registro de eventos y auditoría. |
@@ -2006,8 +2042,10 @@ Este inventario constituye la referencia oficial del stack tecnológico del proy
 | Reintentos | Tenacity | Gestión automática de reintentos. |
 | Cliente HTTP | httpx | Solicitudes HTTP cuando no se requiera el navegador. |
 | Automatización del navegador | Playwright | Automatización de navegación e interacción con sitios web. |
-| Inteligencia artificial | Ollama | Motor de inferencia para modelos de lenguaje. |
-| Modelo de lenguaje | Qwen 8B | Modelo oficial de inteligencia artificial. |
+| Inteligencia artificial (local) | Ollama | Motor de inferencia local para modelos de lenguaje. |
+| Inteligencia artificial (cloud) | Ollama Cloud | Motor de inferencia cloud para modelos de lenguaje (plan gratuito). |
+| Modelo de lenguaje (local) | Qwen 3.5 4B | Modelo local para evaluación y tareas de alto volumen. |
+| Modelo de lenguaje (cloud) | Gemma 4 31B | Modelo cloud para procesamiento profundo y generación de contenido. |
 | Almacenamiento persistente | Archivo `.xlsx` | Almacenamiento oficial de la información del proyecto. |
 | Gestión del archivo `.xlsx` | openpyxl | Lectura y escritura de la hoja de cálculo. |
 | Configuración | config.yaml | Configuración funcional de la automatización. |

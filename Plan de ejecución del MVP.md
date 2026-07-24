@@ -124,7 +124,7 @@ perfil:
 
 **Archivo a crear:** `shared/ia_service.py`
 
-**Objetivo:** Implementar el servicio único de comunicación con Ollama (SRV-002 según DOC-12).
+**Objetivo:** Implementar el servicio de IA con soporte multi-proveedor (SRV-002 según DOC-12), capaz de enrutar solicitudes al modelo local o cloud según el propósito.
 
 **Componentes:**
 
@@ -132,13 +132,17 @@ perfil:
 |---|---|
 | `cargar_prompt(prompt_id: str) -> str` | Carga template desde `prompts/{categoria}/{prompt_id}.md`. Lanza `ErrorConfiguracion` si no existe. |
 | `renderizar_prompt(template: str, contexto: dict) -> str` | Reemplaza `{{ variable }}` con valores del contexto. |
-| `analizar(prompt_id: str, contexto: dict) -> dict` | Orquesta: cargar → renderizar → enviar a Ollama → validar respuesta → retornar dict. |
-| `_enviar_ollama(prompt: str) -> str` | httpx POST a `http://{host}:{puerto}/api/generate` con modelo y timeout desde config. |
+| `_route_provider(proposito: str) -> str` | Determina qué proveedor usar según `config.yaml` → `ia_routing`. |
+| `_enviar_local(prompt: str) -> str` | httpx POST a Ollama local (`http://{host}:{puerto}/api/generate`). |
+| `_enviar_cloud(prompt: str) -> str` | httpx POST a Ollama Cloud con API Key y endpoint desde config. |
 | `_validar_respuesta(respuesta_raw: str) -> dict` | Parseo de JSON, validación de estructura mínima esperada. |
+| `analizar(prompt_id: str, contexto: dict, proposito: str = "evaluacion") -> dict` | Orquesta: cargar → renderizar → enrutar → enviar → validar → retornar dict. |
 
 **Manejo de errores:** `ErrorLLM` con códigos ER-LLM-001 (conexión), ER-LLM-002 (timeout), ER-LLM-003 (respuesta inválida), ER-LLM-004 (formato inesperado).
 
-**Reintentos:** Usar `decorador_reintento` de `shared/retry.py` con política desde `config.yaml` → `ollama.reintentos`.
+**Reintentos:** Usar `decorador_reintento` de `shared/retry.py` con política desde `config.yaml` → `ia_local.reintentos` / `ia_cloud.reintentos`.
+
+**Enrutamiento:** Definido en `config.yaml` → `ia_routing`. Por defecto: evaluación → local, procesamiento → cloud.
 
 **Prompt loader:** Busca en `prompts/{categoria}/{prompt_id}.md`. Soporta subdirectorios. Cada interacción se registra con Loguru.
 
@@ -239,8 +243,8 @@ pytest tests/ -v
 
 1. Crear `prompts/evaluacion_inicial/` — prompt para analizar compatibilidad oferta/perfil.
 2. Crear `prompts/procesamiento/` — prompts para extracción estratégica y generación de insumos.
-3. Cada prompt debe seguir la plantilla oficial del Anexo 5C §C.9 con las secciones: identificador `PRM-XXX`, Objetivo, Entradas (modelos y campos involucrados), Variables `{{ }}`, Instrucciones, Resultado esperado, Observaciones, Versión.
-4. Probar **cada prompt** (evaluación y procesamiento) manualmente con Ollama + una oferta real, verificando que la respuesta sea parseable y útil.
+3. Cada prompt: archivo con identificador (PRM-XXX), sección de instrucciones, variables `{{ }}`, formato de salida esperado.
+4. Probar cada prompt manualmente con Ollama + una oferta real.
 5. Ajustar y dejar versión 1 aprobada.
 
 ---

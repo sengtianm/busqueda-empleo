@@ -30,4 +30,4 @@ Proyecto en fase de planificación/documentación. Sin código implementado.
 
 ## Stack tecnológico
 
-Python 3.12, Playwright, BeautifulSoup4, Pydantic v2, Loguru, RapidFuzz, Tenacity, httpx, Ollama + Qwen 8B, openpyxl.
+Python 3.12, Playwright, BeautifulSoup4, Pydantic v2, Loguru, RapidFuzz, Tenacity, httpx, Ollama + Qwen 3.5 4B (local), Ollama Cloud + Gemma 4 31B (cloud), openpyxl.

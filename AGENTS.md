@@ -15,7 +15,8 @@
 - **Fuzzy matching:** RapidFuzz
 - **Reintentos:** Tenacity
 - **HTTP:** httpx
-- **LLM local:** Ollama + Qwen 8B
+- **LLM local:** Ollama + Qwen 3.5 4B (evaluación)
+- **LLM cloud:** Ollama Cloud + Gemma 4 31B (procesamiento profundo)
 - **Persistencia:** .xlsx via openpyxl
 - **Config:** PyYAML (config.yaml) + python-dotenv (.env)
 - **Deps:** pip + requirements.txt, venv
