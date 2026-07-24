@@ -33,18 +33,16 @@ ia_local:
   puerto: 11434
   modelo: "qwen3.5:4b"
   timeout_segundos: 60
-  reintentos: 3
 
-# --- IA Cloud (Ollama Cloud) ---
+# --- IA Cloud (Ollama Cloud vía proxy local) ---
 ia_cloud:
-  endpoint: "https://api.ollama.com"
-  modelo: "gemma4:31b"
+  endpoint: "http://localhost:11434"
+  modelo: "gemma4:31b-cloud"
   timeout_segundos: 120
-  reintentos: 2
 
 # --- Routing de IA por propósito ---
 ia_routing:
-  evaluacion: "local"
+  evaluacion: "cloud"
   procesamiento: "cloud"
 
 # --- Persistencia ---

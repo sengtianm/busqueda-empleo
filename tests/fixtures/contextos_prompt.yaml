@@ -1,0 +1,165 @@
+# Contextos de prueba para los 5 prompts (PRM-001 a PRM-005)
+# Cada clave es el nombre de la variable que usa el prompt.
+
+
+oferta_ejemplo:
+  titulo_limpio: "Data Engineer Senior"
+  descripcion_limpia: >
+    Buscamos un Data Engineer Senior para unirse a nuestro equipo de datos en
+    una empresa tecnológica líder en el sector financiero. Serás responsable
+    de diseñar, construir y mantener pipelines de datos escalables, optimizar
+    flujos ETL y colaborar con equipos de ciencia de datos e ingeniería.
+    Trabajarás con tecnologías cloud (AWS), Python, Spark y SQL. Valoramos
+    experiencia en streaming con Kafka y conocimientos de infraestructura
+    como código con Terraform. Ofrecemos trabajo 100% remoto, horario flexible,
+    presupuesto anual de formación, seguro médico y plan de acciones.
+  salario_min: 65000
+  salario_max: 85000
+  moneda: "EUR"
+  ubicacion_limpia: "España (Remoto)"
+  modalidad: "remoto"
+  requisitos:
+    - "5+ años de experiencia en ingeniería de datos"
+    - "Python avanzado"
+    - "SQL avanzado"
+    - "Experiencia con Apache Spark"
+    - "Experiencia con AWS (S3, Redshift, Glue, EMR)"
+    - "Conocimientos de Kafka"
+    - "Inglés B2 o superior"
+  tecnologias:
+    - "Python"
+    - "SQL"
+    - "Spark"
+    - "AWS"
+    - "Kafka"
+    - "Terraform"
+    - "Airflow"
+  idiomas:
+    - "Inglés"
+    - "Español"
+  experiencia_anios: 5
+
+
+perfil_ejemplo:
+  tecnologias:
+    Python: 7
+    SQL: 6
+    Spark: 4
+    AWS: 3
+    Airflow: 2
+    Docker: 4
+    Git: 5
+  experiencia_anios: 8
+  idiomas:
+    Español: "Nativo"
+    Inglés: "C1"
+    Catalán: "B2"
+  ubicaciones_preferidas:
+    - "Madrid"
+    - "Remoto España"
+  modalidades_preferidas:
+    - "remoto"
+    - "híbrido"
+  salario_minimo: 60000
+  seniority: "senior"
+  empresas_objetivo:
+    - "FAANG"
+    - "Bolsas y Mercados Españoles"
+    - "Fintech"
+  empresas_excluidas:
+    - "Consultora"
+    - "Accenture"
+  educacion_nivel: "grado"
+
+
+estrategia_ejemplo:
+  puntos_fuertes:
+    - "8 años de experiencia vs 5 solicitados, supera el requisito"
+    - "Stack técnico alineado: Python, SQL, Spark, AWS"
+    - "Experiencia en sector financiero (BME)"
+    - "Nivel de inglés C1"
+  brechas:
+    - "Poca experiencia con Kafka (conocimientos básicos)"
+    - "Sin experiencia con Terraform"
+  narrativa: >
+    Ingeniero de datos con 8 años de experiencia en el sector financiero,
+    especializado en pipelines ETL con Python y Spark en AWS. Combina
+    solidez técnica con conocimiento del dominio financiero, lo que le
+    permite entender tanto el negocio como la tecnología.
+  argumentos_clave:
+    - "Experiencia superior a la requerida"
+    - "Stack alineado con la oferta"
+    - "Conocimiento del dominio financiero"
+
+
+diagnostico_ejemplo:
+  diagnostico: >
+    La empresa busca un Data Engineer Senior con perfil técnico sólido
+    para liderar la construcción de la infraestructura de datos. El rol
+    combina ingeniería pura con arquitectura, requiriendo autonomía
+    técnica y capacidad de colaboración multifuncional.
+  requisitos_clave:
+    - requisito: "Python avanzado"
+      tipo: "obligatorio"
+    - requisito: "SQL avanzado"
+      tipo: "obligatorio"
+    - requisito: "Apache Spark"
+      tipo: "obligatorio"
+    - requisito: "AWS"
+      tipo: "obligatorio"
+    - requisito: "Kafka"
+      tipo: "deseable"
+    - requisito: "Terraform"
+      tipo: "deseable"
+  competencias:
+    tecnicas:
+      - "Python"
+      - "SQL"
+      - "Spark"
+      - "AWS"
+      - "ETL"
+      - "Kafka"
+    blandas:
+      - "Comunicación"
+      - "Trabajo en equipo"
+      - "Autonomía"
+      - "Resolución de problemas"
+  responsabilidades:
+    - "Diseñar y construir pipelines de datos escalables"
+    - "Optimizar flujos ETL existentes"
+    - "Colaborar con ciencia de datos e ingeniería"
+    - "Mantener infraestructura cloud"
+  beneficios:
+    - "Trabajo 100% remoto"
+    - "Horario flexible"
+    - "Presupuesto anual de formación"
+    - "Seguro médico"
+    - "Plan de acciones"
+  cultura_empresarial: >
+    Empresa tecnológica del sector financiero con cultura de innovación,
+    trabajo autónomo y colaboración horizontal. Valoran la formación
+    continua y el equilibrio vida-trabajo.
+
+
+plan_candidatura_ejemplo:
+  puntos_fuertes:
+    - "Experiencia financiera previa"
+    - "Stack técnico completo"
+    - "Nivel de inglés avanzado"
+  brechas:
+    - "Kafka: conocimientos básicos"
+    - "Terraform: sin experiencia"
+  narrativa: >
+    Ingeniero de datos senior con trayectoria en fintech, combina
+    excelencia técnica con dominio del negocio financiero.
+  estrategia_diferenciacion: >
+    Destacar la experiencia en el sector financiero como diferenciador
+    clave frente a otros candidatos puramente técnicos.
+  argumentos_clave_reclutador:
+    - "Experiencia superior a la requerida"
+    - "Conocimiento del dominio financiero"
+    - "Disponibilidad para empezar en plazo razonable"
+  acciones_recomendadas:
+    - "Repasar conceptos básicos de Kafka"
+    - "Preparar ejemplos concretos de pipelines ETL en AWS"
+    - "Investigar la empresa y sus productos financieros"

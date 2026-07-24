@@ -62,7 +62,6 @@ def _obtener_config_local() -> dict[str, Any]:
         "puerto": int(env.get("OLLAMA_PORT") or local_cfg.get("puerto", 11434)),
         "modelo": env.get("OLLAMA_MODEL") or local_cfg.get("modelo", "qwen3.5:4b"),
         "timeout": int(local_cfg.get("timeout_segundos", 60)),
-        "reintentos": int(local_cfg.get("reintentos", 3)),
     }
 
 
@@ -75,7 +74,6 @@ def _obtener_config_cloud() -> dict[str, Any]:
         "modelo": cloud_cfg.get("modelo", "gemma4:31b"),
         "api_key": env.get("IA_CLOUD_API_KEY") or "",
         "timeout": int(cloud_cfg.get("timeout_segundos", 120)),
-        "reintentos": int(cloud_cfg.get("reintentos", 2)),
     }
 
 
@@ -113,10 +111,11 @@ def _enviar_local(prompt: str) -> str:
 def _enviar_cloud(prompt: str) -> str:
     cfg = _obtener_config_cloud()
     url = f"{cfg['endpoint']}/api/generate"
-    headers = {
-        "Authorization": f"Bearer {cfg['api_key']}",
+    headers: dict[str, str] = {
         "Content-Type": "application/json",
     }
+    if cfg["api_key"]:
+        headers["Authorization"] = f"Bearer {cfg['api_key']}"
     payload = {"model": cfg["modelo"], "prompt": prompt, "stream": False}
     try:
         respuesta = httpx.post(

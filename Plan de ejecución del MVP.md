@@ -140,7 +140,7 @@ perfil:
 
 **Manejo de errores:** `ErrorLLM` con códigos ER-LLM-001 (conexión), ER-LLM-002 (timeout), ER-LLM-003 (respuesta inválida), ER-LLM-004 (formato inesperado).
 
-**Reintentos:** Usar `decorador_reintento` de `shared/retry.py` con política desde `config.yaml` → `ia_local.reintentos` / `ia_cloud.reintentos`.
+**Reintentos:** Usar `decorador_reintento` de `shared/retry.py` con política desde `config.yaml` → `reintentos` (bloque global).
 
 **Enrutamiento:** Definido en `config.yaml` → `ia_routing`. Por defecto: evaluación → local, procesamiento → cloud.
 

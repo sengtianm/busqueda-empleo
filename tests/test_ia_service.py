@@ -88,7 +88,7 @@ def test_enviar_cloud_http_error(mock_post: MagicMock) -> None:
 
 
 def test_route_provider_ok() -> None:
-    assert _route_provider("evaluacion") == "local"
+    assert _route_provider("evaluacion") == "cloud"
     assert _route_provider("procesamiento") == "cloud"
 
 

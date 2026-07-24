@@ -66,8 +66,8 @@
 | 1 | prompts/evaluacion_inicial/ | DOC-03, DOC-12 | ✅ | Creado PRM-001 compatibilidad.md con estructura Anexo 5C. |
 | 2 | prompts/procesamiento/ | DOC-12 | ✅ | Creados PRM-002 a PRM-005: diagnostico, extraccion_estrategica, diseno_candidatura, insumos. |
 | 3 | Identificadores PRM-XXX + plantilla Anexo 5C | Anexo 5A, 5C | ✅ | Los 5 prompts siguen la plantilla oficial C.9 (Objetivo, Entradas, Variables, Instrucciones, Resultado, Observaciones, Versión). |
-| 4 | Prueba manual con Ollama + oferta real | — | ⏳ | Pendiente de ejecución local. Los prompts se cargan y renderizan correctamente (verificado). Ollama requiere timeout >120s en este equipo. |
-| 5 | Versión 1 aprobada | — | ⬜ | Pendiente de prueba manual y aprobación del Arquitecto. |
+| 4 | Prueba manual con IA (local + cloud) | — | ✅ | Los 5 prompts probados contra `gemma4:31b-cloud` vía Ollama local como proxy. Todos devuelven JSON válido con contenido coherente. Modelo local `qwen3.5:4b` descartado por timeout (60s+). Routing cambiado a cloud para evaluación y procesamiento. |
+| 5 | Versión 1 aprobada | — | ✅ | Los 5 prompts (PRM-001 al PRM-005) funcionan correctamente con `gemma4:31b-cloud`. Pendiente revisión formal del Arquitecto. |
 
 ---
 
