@@ -1,0 +1,56 @@
+# --- Búsqueda ---
+busqueda:
+  keywords:
+    - Data Engineer
+    - Analista de Datos
+    - Ingeniero de Datos
+  ubicacion: ""
+  modalidad: ""
+  paginas_max: 5
+  ofertas_max_por_pagina: 25
+
+# --- Evaluación (DOC-03) ---
+evaluacion:
+  umbral_compatibilidad_alta: 80
+  umbral_compatibilidad_media: 50
+  pesos:
+    experiencia: 0.30
+    tecnologia: 0.25
+    ubicacion: 0.15
+    modalidad: 0.10
+    idiomas: 0.10
+    seniority: 0.10
+
+# --- Navegador ---
+navegador:
+  headless: true
+  timeout_segundos: 30
+  ruta_perfil: ""
+
+# --- Ollama ---
+ollama:
+  host: "localhost"
+  puerto: 11434
+  modelo: "qwen:8b"
+  timeout_segundos: 60
+  reintentos: 3
+
+# --- Persistencia ---
+persistencia:
+  ruta_data: "data"
+  archivo_entrada: "data/entrada/ofertas.xlsx"
+  archivo_procesamiento: "data/procesamiento/ofertas_procesadas.xlsx"
+  archivo_salida: "data/salida/resultados.xlsx"
+
+# --- Logging ---
+logging:
+  nivel: "DEBUG"
+  rotacion: "10 MB"
+  retencion_dias: 30
+
+# --- Reintentos (DOC-06) ---
+reintentos:
+  intentos_max: 3
+  espera_base_segundos: 2
+  espera_max_segundos: 30
+  multiplicador: 2

@@ -19,23 +19,44 @@
 
 ## Fase 1. Base común del sistema (infraestructura)
 
-1. Crear estructura de directorios según DOC-07 (raíz completa con `docs/`, `config/`, `modules/`, `shared/`, `data/`, `logs/`, `temp/`, `scripts/`, `tests/`, `prompts/`).
-2. Inicializar `venv`, crear `requirements.txt` con todo el stack (DOC-11), instalar.
-3. Crear `config/config.yaml` con parámetros funcionales + `config/.env.template`.
-4. Implementar `shared/config.py` (carga unificada de config.yaml + .env).
-5. Implementar `shared/logging_setup.py` (Loguru, formato estándar, rotación, directorio `logs/`).
-6. Implementar `shared/errors.py`:
-   - Jerarquía de excepciones por categoría (ER-RED, ER-NAV, ER-LLM, etc. — DOC-06).
-   - Atributos: código, severidad (SV-1 a SV-5), módulo_origen, oferta_id, timestamp.
-7. Implementar `shared/retry.py` (wrapper con Tenacity, políticas de DOC-06).
-8. Implementar `shared/persistence.py`:
-   - Acceso a .xlsx via openpyxl.
-   - Métodos: leer hoja, escribir fila, actualizar, buscar por ID.
-   - Path desde `config`.
-9. Implementar `shared/models.py` (modelos Pydantic v2: `Oferta`, `Evaluacion`, `Resultado`, `Empresa`, etc. — DOC-13).
-10. Configurar `pyproject.toml` (Black, Ruff, mypy).
-11. Crear `tests/conftest.py` con fixtures básicos (config de prueba, logger mock, persistence temp).
-12. **Validación:** lint → typecheck → `pytest` pasa en seco.
+#### Ya completadas
+
+1. **Estructura de directorios** según DOC-07 (raíz completa con `docs/`, `config/`, `modules/`, `shared/`, `data/`, `logs/`, `temp/`, `scripts/`, `tests/`, `prompts/`). Incluye migración de `Documentación Inicial/` a `docs/` y creación de `.gitkeep` en directorios vacíos.
+
+2. **Fase 1.2a — Inicialización del control de versiones:**
+   - `git init` en la raíz del proyecto.
+   - Crear `.gitignore` acorde al stack del proyecto.
+   - Verificar que los `.gitkeep` preservan los directorios vacíos.
+   - Primer commit con estructura base y documentación migrada.
+   - Crear repositorio remoto en GitHub y publicar.
+
+#### Pendientes (orden de ejecución)
+
+3. **venv + requirements.txt** — Inicializar `venv`, crear `requirements.txt` con todo el stack (DOC-11), instalar dependencias y ejecutar `playwright install chromium`. Validar: venv correcto, pip del venv, todos los paquetes instalados, playwright install sin errores.
+
+4. **config.yaml + .env.template** — Crear `config/config.yaml` con parámetros funcionales + `config/.env.template`.
+
+5. **pyproject.toml** — Configurar Black, Ruff, mypy para el proyecto.
+
+6. **shared/config.py** — Implementar carga unificada de config.yaml + .env.
+
+7. **shared/errors.py** — Jerarquía de excepciones por categoría (ER-RED, ER-NAV, ER-LLM, etc., DOC-06). Atributos: código, severidad (SV-1 a SV-5), módulo_origen, oferta_id, timestamp.
+
+8. **shared/logging_setup.py** — Loguru con formato estándar, rotación y directorio `logs/`.
+
+9. **shared/retry.py** — Wrapper con Tenacity, políticas según DOC-06.
+
+10. **shared/models.py** — Modelos Pydantic v2: `Oferta`, `Evaluacion`, `Resultado`, `Empresa`, etc. (DOC-13).
+
+11. **shared/persistence.py** — Acceso a .xlsx via openpyxl. Métodos: leer hoja, escribir fila, actualizar, buscar por ID. Path desde config.
+
+12. **tests/conftest.py + tests/fixtures/** — Fixtures básicos (config de prueba, logger mock, persistence temp) y directorio `tests/fixtures/` con `.gitkeep`.
+
+13. **Validación final:**
+    - `ruff check .` sin errores.
+    - `mypy .` sin errores.
+    - `python -c "import shared.config, shared.errors, shared.logging_setup, shared.retry, shared.models, shared.persistence"` — todos los módulos importables sin error.
+    - `pytest tests/` — todas las pruebas pasan.
 
 ---
 

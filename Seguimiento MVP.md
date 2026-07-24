@@ -26,20 +26,21 @@
 
 ## Fase 1. Base común del sistema (infraestructura)
 
-| # | Tarea | Docs fuente | Estado | Obs |
-|---|-------|-------------|--------|-----|
-| 1 | Estructura de directorios | DOC-07 | ✅ | 19 directorios + README.md creados. Documentación migrada de `Documentación Inicial/` a `docs/`. 17 `.gitkeep` añadidos. |
-| 2 | Inicializar venv + requirements.txt | DOC-11 | ⬜ | |
-| 3 | config.yaml + .env.template | DOC-05 | ⬜ | |
-| 4 | shared/config.py | DOC-05, DOC-11 | ⬜ | |
-| 5 | shared/logging_setup.py | DOC-06 | ⬜ | |
-| 6 | shared/errors.py (jerarquía ER) | DOC-06, Anexo 5A | ⬜ | |
-| 7 | shared/retry.py (Tenacity) | DOC-06 | ⬜ | |
-| 8 | shared/persistence.py (xlsx) | DOC-13 | ⬜ | |
-| 9 | shared/models.py (Pydantic) | DOC-13 | ⬜ | |
-| 10 | pyproject.toml (Black, Ruff, mypy) | DOC-05, DOC-11 | ⬜ | |
-| 11 | tests/conftest.py (fixtures base) | — | ⬜ | |
-| 12 | Validación: lint → typecheck → pytest | — | ⬜ | |
+| Orden | # | Tarea | Docs fuente | Estado | Obs |
+|-------|---|-------|-------------|--------|-----|
+| 1 | 1 | Estructura de directorios | DOC-07 | ✅ | 19 directorios + README.md creados. Documentación migrada a `docs/`. 17 `.gitkeep` añadidos. |
+| 2 | 2a | Inicialización del control de versiones | — | ✅ | `git init`, `.gitignore`, commit inicial. Repo: `github.com/sengtianm/busqueda-empleo`. |
+| 3 | 3 | venv + requirements.txt | DOC-11 | ✅ | Python 3.14.6 (3.12 no disponible). Stack completo. `playwright install chromium` ejecutado. |
+| 4 | 4 | config.yaml + .env.template | DOC-05 | ✅ | config.yaml con secciones de navegación, evaluación, persistencia, IA, reintentos, logging, perfil. |
+| 5 | 11 | pyproject.toml (Black, Ruff, mypy) | DOC-05, DOC-11 | ✅ | Black (100 chars, py312), Ruff (E/F/I/N/W), mypy (strict). |
+| 6 | 5 | shared/config.py | DOC-05, DOC-11 | ✅ | Carga unificada YAML + .env con caché. |
+| 7 | 7 | shared/errors.py (jerarquía ER) | DOC-06, Anexo 5A | ✅ | BaseError + 10 subclases (ER-RED, ER-NAV, ER-EXT, ER-VAL, ER-LLM, ER-DAT, ER-DB, ER-CFG, ER-INT, ER-EXTS). |
+| 8 | 6 | shared/logging_setup.py | DOC-06 | ✅ | Loguru con stdout + rotación a archivo. |
+| 9 | 8 | shared/retry.py (Tenacity) | DOC-06 | ✅ | decorador_reintento con políticas desde config + exponencial. |
+| 10 | 10 | shared/models.py (Pydantic) | DOC-13 | ✅ | Oferta, Empresa, Fuente, Ubicacion, OfertaProcesada, Evaluacion, ResultadoProcesamiento. 3 Enums. |
+| 11 | 9 | shared/persistence.py (xlsx) | DOC-13 | ✅ | leer_hoja, escribir_fila, buscar_por_id, actualizar. openpyxl, archivos temporales. |
+| 12 | 12 | tests/conftest.py + tests/fixtures/ | — | ✅ | Fixtures: limpiar_cache_config, modelos_ejemplo, archivo_xlsx_temporal. |
+| 13 | 13 | Validación final | — | ✅ | ruff → 0 errors. mypy → 0 errors. Todos los imports OK. pytest (0 tests, infra lista). |
 
 ---
 
