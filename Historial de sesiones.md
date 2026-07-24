@@ -93,3 +93,28 @@
 - Fase 2 completada: 6 tareas ejecutadas, commit `32b2723` pusheado a GitHub
 - Creado `Informe - Ejecución Fase 2.md` con reporte detallado de la fase
 - Pendiente de aprobación del Arquitecto para iniciar Fase 3
+
+**Temas tratados (noche — continuación):**
+- Validación de pesos en decision_engine: incorporada validación fail-fast con `math.isclose` que lanza `ErrorConfiguracion` si la suma de pesos no es 1.0. Código ER-CFG-002 alineado con DOC-06. 2 tests nuevos (pesos válidos e inválidos). 39/39 tests.
+- Commit `3d9e8c7`
+- Análisis de coherencia entre Fase 2 → Fase 3 y Fase 3 → Fase 4. Se detectó que Fase 3 necesitaba alinear sus tareas con la plantilla oficial del Anexo 5C §C.9. Se actualizó el Plan de ejecución.
+
+**Temas tratados (día 2 — ejecución Fase 3):**
+- Ejecución de Fase 3 completa:
+  - Tarea 1: Creado `prompts/evaluacion_inicial/compatibilidad.md` (PRM-001) para análisis cualitativo oferta-perfil
+  - Tarea 2: Creados 4 prompts en `prompts/procesamiento/`: diagnostico (PRM-002), extraccion_estrategica (PRM-003), diseno_candidatura (PRM-004), insumos (PRM-005)
+  - Tarea 3: Los 5 prompts siguen la plantilla oficial Anexo 5C §C.9 (Objetivo, Entradas, Variables, Instrucciones, Resultado esperado, Observaciones, Versión)
+  - Tarea 4: Prueba manual con Ollama no completada — los modelos qwen3.5 requieren timeout >120s en este equipo. Se documentó como pendiente.
+  - Tarea 5: Versión v1 creada, pendiente de prueba manual y aprobación
+- Validaciones: ruff 0, mypy 0, pytest 39/39
+- Commit `7db5e3f`
+
+**Decisiones adicionales:**
+- Se aprueba incorporar validación de suma de pesos en decision_engine como mejora de robustez
+- Los prompts de Fase 3 se entregan como versión v1, pendientes de prueba manual con Ollama
+- La prueba manual se difiere a una sesión local del usuario debido a limitaciones de tiempo de respuesta de Ollama en este entorno
+
+**Estado al cierre:**
+- Fase 3 completada parcialmente (tareas 1-3 ✅, tarea 4 ⏳ pendiente de prueba local, tarea 5 ⬜ pendiente de aprobación)
+- Fase 4 puede comenzar sin depender de la prueba manual de Fase 3
+- Commit `7db5e3f` en GitHub
