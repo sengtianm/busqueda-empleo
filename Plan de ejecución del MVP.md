@@ -239,8 +239,8 @@ pytest tests/ -v
 
 1. Crear `prompts/evaluacion_inicial/` — prompt para analizar compatibilidad oferta/perfil.
 2. Crear `prompts/procesamiento/` — prompts para extracción estratégica y generación de insumos.
-3. Cada prompt: archivo con identificador (PRM-XXX), sección de instrucciones, variables `{{ }}`, formato de salida esperado.
-4. Probar cada prompt manualmente con Ollama + una oferta real.
+3. Cada prompt debe seguir la plantilla oficial del Anexo 5C §C.9 con las secciones: identificador `PRM-XXX`, Objetivo, Entradas (modelos y campos involucrados), Variables `{{ }}`, Instrucciones, Resultado esperado, Observaciones, Versión.
+4. Probar **cada prompt** (evaluación y procesamiento) manualmente con Ollama + una oferta real, verificando que la respuesta sea parseable y útil.
 5. Ajustar y dejar versión 1 aprobada.
 
 ---

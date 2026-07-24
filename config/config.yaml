@@ -31,7 +31,7 @@ navegador:
 ollama:
   host: "localhost"
   puerto: 11434
-  modelo: "qwen:8b"
+  modelo: "qwen3.5:4b"
   timeout_segundos: 60
   reintentos: 3
 
