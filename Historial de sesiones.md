@@ -72,6 +72,8 @@
   - Tarea 4: Creado `shared/state_machine.py` con mapa inmutable de 6 transiciones válidas, método `transicionar()` que lanza ER-INT-010 si la transición es inválida
   - Tarea 5: Creados 4 tests (11 de decision_engine, 10 de ia_service, 6 de persistence, 10 de state_machine) + fixture `perfil_ejemplo` en conftest.py — total 37 tests
   - Tarea 6: Validación final — ruff 0 errors, mypy 0 errors, pytest 37/37 passed, todos los módulos importables
+- Commit y push a GitHub del trabajo de Fase 2 (commit `32b2723`)
+- Creación de `Informe - Ejecución Fase 2.md` con el reporte detallado de la fase
 
 **Decisiones:**
 - RT-018: una sesión por día calendario
@@ -86,16 +88,8 @@
 
 **Acuerdos:**
 - Se mantienen los acuerdos de sesiones anteriores
-- Las sesiones del historial deben contener únicamente información de su propia sesión (RT-022)
-- Se corrige Estado al cierre de Sesión 2 para reflejar solo lo hecho en esta sesión
-- Pendiente de aprobación del Arquitecto para iniciar la ejecución de Fase 2
 
 **Estado al cierre:**
-- Nuevas reglas de sesión (RT-018 a RT-022) creadas y documentadas en AGENTS.md, save.md e Historial de sesiones.md
-- Historial de sesiones consolidado y fechas convertidas a DD/MM/YYYY
-- Gap de modelo `Perfil` identificado durante revisión de Fase 1
-- `Plan de ejecución del MVP.md` actualizado: Fase 2 reescrita con 6 tareas detalladas (cada una con especificación de componentes, criterios, errores y archivos)
-- `Seguimiento MVP.md` actualizado: tabla de Fase 2 con orden, documentos fuente y observaciones por tarea
-- Fase 2 completada (✅): 6 tareas ejecutadas, 37 tests pasados, ruff 0 errors, mypy 0 errors
-- 5 nuevos archivos creados (ia_service, decision_engine, state_machine + 3 tests), 3 archivos modificados (models, config, conftest)
-- Pendiente de aprobación del Arquitecto para continuar a Fase 3
+- Fase 2 completada: 6 tareas ejecutadas, commit `32b2723` pusheado a GitHub
+- Creado `Informe - Ejecución Fase 2.md` con reporte detallado de la fase
+- Pendiente de aprobación del Arquitecto para iniciar Fase 3

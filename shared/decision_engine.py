@@ -1,6 +1,9 @@
+import math
+
 from rapidfuzz import fuzz
 
 from shared.config import cargar
+from shared.errors import ErrorConfiguracion
 from shared.models import (
     DecisionEvaluacion,
     Evaluacion,
@@ -198,6 +201,14 @@ def evaluar(oferta: OfertaProcesada, perfil: Perfil | None = None) -> Evaluacion
         perfil = cargar_perfil()
     config = cargar()
     pesos = config.get("evaluacion", {}).get("pesos", {})
+    suma_pesos = sum(pesos.values())
+    if not math.isclose(suma_pesos, 1.0, abs_tol=1e-6):
+        raise ErrorConfiguracion(
+            "002",
+            f"Pesos de evaluacion invalidos: suma={suma_pesos}, esperado=1.0. "
+            f"Revise la seccion 'evaluacion.pesos' en config/config.yaml",
+            modulo_origen="decision_engine",
+        )
     excluida = _verificar_excluidas(oferta, perfil)
     puntaje, parciales = _calcular_puntaje(oferta, perfil, pesos)
     penalizacion = _penalizar_salario(oferta, perfil)
