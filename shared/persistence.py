@@ -37,7 +37,7 @@ ESQUEMAS: dict[str, str] = {
         "url_base TEXT DEFAULT '',"
         "activa INTEGER DEFAULT 1,"
         "fecha_creacion TEXT DEFAULT '',"
-        "fecha_actualizacion TEXT DEFAULT ''"
+        "fecha_ultima_edicion TEXT DEFAULT ''"
         ")"
     ),
     "empresas": (
@@ -51,7 +51,7 @@ ESQUEMAS: dict[str, str] = {
         "tamano TEXT DEFAULT '',"
         "descripcion TEXT DEFAULT '',"
         "fecha_creacion TEXT DEFAULT '',"
-        "fecha_actualizacion TEXT DEFAULT ''"
+        "fecha_ultima_edicion TEXT DEFAULT ''"
         ")"
     ),
     "ubicaciones": (
@@ -62,26 +62,27 @@ ESQUEMAS: dict[str, str] = {
         "pais TEXT DEFAULT '',"
         "modalidad TEXT DEFAULT '',"
         "fecha_creacion TEXT DEFAULT '',"
-        "fecha_actualizacion TEXT DEFAULT ''"
+        "fecha_ultima_edicion TEXT DEFAULT ''"
         ")"
     ),
     "ofertas": (
         "CREATE TABLE IF NOT EXISTS ofertas ("
         "id TEXT PRIMARY KEY,"
-        "fuente_id TEXT REFERENCES fuentes(id),"
-        "empresa_id TEXT REFERENCES empresas(id),"
-        "ubicacion_id TEXT REFERENCES ubicaciones(id),"
         "identificador_fuente TEXT DEFAULT '',"
         "url TEXT NOT NULL,"
         "titulo TEXT NOT NULL,"
         "descripcion_original TEXT NOT NULL,"
         "fecha_publicacion TEXT DEFAULT '',"
         "fecha_descubrimiento TEXT DEFAULT '',"
-        "estado TEXT DEFAULT 'descubierta',"
-        "activa INTEGER DEFAULT 1,"
+        "estado TEXT DEFAULT 'descubierta' "
+        "CHECK(estado IN ('descubierta','preparada','evaluada',"
+        "'aceptada','descartada','procesada','finalizada')),"
         "observaciones TEXT DEFAULT '',"
         "fecha_creacion TEXT DEFAULT '',"
-        "fecha_actualizacion TEXT DEFAULT ''"
+        "fecha_ultima_edicion TEXT DEFAULT '',"
+        "fuente_id TEXT REFERENCES fuentes(id),"
+        "empresa_id TEXT REFERENCES empresas(id),"
+        "ubicacion_id TEXT REFERENCES ubicaciones(id)"
         ")"
     ),
 
@@ -203,7 +204,7 @@ def escribir_fila(tabla: str, datos: dict[str, Any]) -> str:
     ahora = _ahora()
     if not d.get("fecha_creacion"):
         d["fecha_creacion"] = ahora
-    d["fecha_actualizacion"] = ahora
+    d["fecha_ultima_edicion"] = ahora
 
     columnas = [k for k in d.keys()]
     placeholders = [":" + k for k in d.keys()]
@@ -228,7 +229,7 @@ def buscar_por_id(tabla: str, id_valor: str) -> dict[str, Any] | None:
 
 def actualizar(tabla: str, id_valor: str, datos: dict[str, Any]) -> bool:
     d = _serializar(datos)
-    d["fecha_actualizacion"] = _ahora()
+    d["fecha_ultima_edicion"] = _ahora()
     if "id" in d:
         del d["id"]
     asignaciones = ", ".join(f"{k} = :{k}" for k in d.keys())

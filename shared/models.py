@@ -30,9 +30,8 @@ class Fuente(BaseModel):
     nombre: str
     tipo: str = ""
     url_base: str = ""
-    activa: bool = True
     fecha_creacion: str = ""
-    fecha_actualizacion: str = ""
+    fecha_ultima_edicion: str = ""
 
 
 class Empresa(BaseModel):
@@ -45,7 +44,7 @@ class Empresa(BaseModel):
     tamano: str = ""
     descripcion: str = ""
     fecha_creacion: str = ""
-    fecha_actualizacion: str = ""
+    fecha_ultima_edicion: str = ""
 
 
 class Ubicacion(BaseModel):
@@ -55,7 +54,7 @@ class Ubicacion(BaseModel):
     pais: str = ""
     modalidad: str = ""
     fecha_creacion: str = ""
-    fecha_actualizacion: str = ""
+    fecha_ultima_edicion: str = ""
 
 
 class Oferta(BaseModel):
@@ -70,10 +69,9 @@ class Oferta(BaseModel):
     fecha_publicacion: datetime | None = None
     fecha_descubrimiento: datetime | None = None
     estado: EstadoOferta = EstadoOferta.DESCUBIERTA
-    activa: bool = True
     observaciones: str = ""
     fecha_creacion: str = ""
-    fecha_actualizacion: str = ""
+    fecha_ultima_edicion: str = ""
 
 
 class OfertaProcesada(BaseModel):
@@ -92,7 +90,7 @@ class OfertaProcesada(BaseModel):
     experiencia_anios: int | None = None
     fecha_procesamiento: datetime | None = None
     fecha_creacion: str = ""
-    fecha_actualizacion: str = ""
+    fecha_ultima_edicion: str = ""
 
 
 class Evaluacion(BaseModel):
@@ -107,7 +105,7 @@ class Evaluacion(BaseModel):
     fecha_evaluacion: datetime | None = None
     version_modelo: str = "v1"
     fecha_creacion: str = ""
-    fecha_actualizacion: str = ""
+    fecha_ultima_edicion: str = ""
 
 
 class ResultadoProcesamiento(BaseModel):
@@ -120,7 +118,7 @@ class ResultadoProcesamiento(BaseModel):
     preparacion_entrevista: str = ""
     fecha_procesamiento: datetime | None = None
     fecha_creacion: str = ""
-    fecha_actualizacion: str = ""
+    fecha_ultima_edicion: str = ""
 
 
 class Perfil(BaseModel):
