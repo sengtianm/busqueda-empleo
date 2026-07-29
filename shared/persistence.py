@@ -13,9 +13,6 @@ PREFIJOS: dict[str, str] = {
     "empresas": "EMP",
     "ubicaciones": "UBI",
     "ofertas": "OFE",
-    "ofertas_procesadas": "OFP",
-    "evaluaciones": "EVL",
-    "resultados_procesamiento": "RSP",
 }
 
 COLUMNAS_JSON: set[str] = {
@@ -87,56 +84,7 @@ ESQUEMAS: dict[str, str] = {
         "fecha_actualizacion TEXT DEFAULT ''"
         ")"
     ),
-    "ofertas_procesadas": (
-        "CREATE TABLE IF NOT EXISTS ofertas_procesadas ("
-        "id TEXT PRIMARY KEY,"
-        "oferta_id TEXT REFERENCES ofertas(id),"
-        "titulo_limpio TEXT DEFAULT '',"
-        "descripcion_limpia TEXT DEFAULT '',"
-        "salario_min REAL,"
-        "salario_max REAL,"
-        "moneda TEXT DEFAULT '',"
-        "ubicacion_limpia TEXT DEFAULT '',"
-        "modalidad TEXT DEFAULT '',"
-        "requisitos TEXT DEFAULT '[]',"
-        "tecnologias TEXT DEFAULT '[]',"
-        "idiomas TEXT DEFAULT '[]',"
-        "experiencia_anios INTEGER,"
-        "fecha_procesamiento TEXT DEFAULT '',"
-        "fecha_creacion TEXT DEFAULT '',"
-        "fecha_actualizacion TEXT DEFAULT ''"
-        ")"
-    ),
-    "evaluaciones": (
-        "CREATE TABLE IF NOT EXISTS evaluaciones ("
-        "id TEXT PRIMARY KEY,"
-        "oferta_procesada_id TEXT REFERENCES ofertas_procesadas(id),"
-        "resultado TEXT NOT NULL,"
-        "puntaje REAL NOT NULL,"
-        "umbral_aprobacion REAL DEFAULT 50.0,"
-        "decision TEXT NOT NULL,"
-        "justificacion TEXT DEFAULT '',"
-        "criterios_evaluados TEXT DEFAULT '',"
-        "fecha_evaluacion TEXT DEFAULT '',"
-        "version_modelo TEXT DEFAULT 'v1',"
-        "fecha_creacion TEXT DEFAULT '',"
-        "fecha_actualizacion TEXT DEFAULT ''"
-        ")"
-    ),
-    "resultados_procesamiento": (
-        "CREATE TABLE IF NOT EXISTS resultados_procesamiento ("
-        "id TEXT PRIMARY KEY,"
-        "oferta_procesada_id TEXT REFERENCES ofertas_procesadas(id),"
-        "diagnostico TEXT DEFAULT '',"
-        "extraccion_estrategica TEXT DEFAULT '',"
-        "diseno_candidatura TEXT DEFAULT '',"
-        "borrador_carta TEXT DEFAULT '',"
-        "preparacion_entrevista TEXT DEFAULT '',"
-        "fecha_procesamiento TEXT DEFAULT '',"
-        "fecha_creacion TEXT DEFAULT '',"
-        "fecha_actualizacion TEXT DEFAULT ''"
-        ")"
-    ),
+
 }
 
 
@@ -202,8 +150,7 @@ def inicializar_bd() -> None:
     conn = _conexion()
     try:
         tablas = ("secuencia_ids", "fuentes", "empresas", "ubicaciones",
-                  "ofertas", "ofertas_procesadas", "evaluaciones",
-                  "resultados_procesamiento")
+                  "ofertas")
         for nombre_tabla in tablas:
             conn.execute(ESQUEMAS[nombre_tabla])
         conn.commit()

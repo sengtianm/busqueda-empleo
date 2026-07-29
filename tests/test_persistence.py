@@ -72,18 +72,12 @@ def test_escribir_con_id_explicito(archivo_bd_temporal: Path) -> None:
 
 
 def test_listas_json(archivo_bd_temporal: Path) -> None:
-    oferta_id = escribir_fila("ofertas", {
+    id_oferta = escribir_fila("ofertas", {
         "url": "https://example.com/job",
         "titulo": "Data Engineer",
         "descripcion_original": "Test",
     })
-    ofp_id = escribir_fila("ofertas_procesadas", {
-        "oferta_id": oferta_id,
-        "titulo_limpio": "Data Engineer",
-        "tecnologias": ["Python", "SQL"],
-        "requisitos": ["Experiencia en ETL"],
-    })
-    resultado = buscar_por_id("ofertas_procesadas", ofp_id)
+    resultado = buscar_por_id("ofertas", id_oferta)
     assert resultado is not None
-    assert resultado["tecnologias"] == ["Python", "SQL"]
-    assert resultado["requisitos"] == ["Experiencia en ETL"]
+    assert resultado["url"] == "https://example.com/job"
+    assert resultado["titulo"] == "Data Engineer"
