@@ -114,6 +114,20 @@ Este catálogo constituye la única referencia oficial para la asignación de nu
 
 ---
 
+# A.9b. Prefijos de IDs de datos persistentes
+
+| Prefijo | Tabla SQLite       | Significado                  |
+| ------- | ------------------ | ---------------------------- |
+| FNT     | fuentes            | Fuente de oferta (LinkedIn)  |
+| EMP     | empresas           | Empresa empleadora           |
+| UBI     | ubicaciones        | Ubicación geográfica         |
+| OFE     | ofertas            | Oferta de empleo cruda       |
+| OFP     | ofertas_procesadas | Oferta procesada y limpia    |
+| EVL     | evaluaciones       | Evaluación de compatibilidad |
+| RSP     | resultados_procesamiento | Resultado de procesamiento profundo |
+
+---
+
 # A.10. Prefijos de configuración
 
 | Prefijo | Significado         |

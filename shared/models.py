@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
@@ -27,15 +26,17 @@ class DecisionEvaluacion(str, Enum):
 
 
 class Fuente(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
+    id: str = ""
     nombre: str
     tipo: str = ""
     url_base: str = ""
     activa: bool = True
+    fecha_creacion: str = ""
+    fecha_actualizacion: str = ""
 
 
 class Empresa(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
+    id: str = ""
     nombre: str
     nombre_normalizado: str = ""
     sitio_web: str = ""
@@ -43,37 +44,41 @@ class Empresa(BaseModel):
     sector: str = ""
     tamano: str = ""
     descripcion: str = ""
+    fecha_creacion: str = ""
+    fecha_actualizacion: str = ""
 
 
 class Ubicacion(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
+    id: str = ""
     ciudad: str = ""
     region: str = ""
     pais: str = ""
     modalidad: str = ""
+    fecha_creacion: str = ""
+    fecha_actualizacion: str = ""
 
 
 class Oferta(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
-    fuente_id: UUID
-    empresa_id: UUID
-    ubicacion_id: UUID | None = None
+    id: str = ""
+    fuente_id: str = ""
+    empresa_id: str = ""
+    ubicacion_id: str = ""
     identificador_fuente: str = ""
     url: str
     titulo: str
     descripcion_original: str
     fecha_publicacion: datetime | None = None
-    fecha_descubrimiento: datetime = Field(default_factory=datetime.now)
+    fecha_descubrimiento: datetime | None = None
     estado: EstadoOferta = EstadoOferta.DESCUBIERTA
     activa: bool = True
     observaciones: str = ""
-    fecha_creacion: datetime = Field(default_factory=datetime.now)
-    fecha_actualizacion: datetime = Field(default_factory=datetime.now)
+    fecha_creacion: str = ""
+    fecha_actualizacion: str = ""
 
 
 class OfertaProcesada(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
-    oferta_id: UUID
+    id: str = ""
+    oferta_id: str = ""
     titulo_limpio: str = ""
     descripcion_limpia: str = ""
     salario_min: float | None = None
@@ -85,35 +90,41 @@ class OfertaProcesada(BaseModel):
     tecnologias: list[str] = Field(default_factory=list)
     idiomas: list[str] = Field(default_factory=list)
     experiencia_anios: int | None = None
-    fecha_procesamiento: datetime = Field(default_factory=datetime.now)
+    fecha_procesamiento: datetime | None = None
+    fecha_creacion: str = ""
+    fecha_actualizacion: str = ""
 
 
 class Evaluacion(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
-    oferta_procesada_id: UUID
+    id: str = ""
+    oferta_procesada_id: str = ""
     resultado: ResultadoEvaluacion
     puntaje: float
     umbral_aprobacion: float = 50.0
     decision: DecisionEvaluacion
     justificacion: str
     criterios_evaluados: str = ""
-    fecha_evaluacion: datetime = Field(default_factory=datetime.now)
+    fecha_evaluacion: datetime | None = None
     version_modelo: str = "v1"
+    fecha_creacion: str = ""
+    fecha_actualizacion: str = ""
 
 
 class ResultadoProcesamiento(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
-    oferta_procesada_id: UUID
+    id: str = ""
+    oferta_procesada_id: str = ""
     diagnostico: str = ""
     extraccion_estrategica: str = ""
     diseno_candidatura: str = ""
     borrador_carta: str = ""
     preparacion_entrevista: str = ""
-    fecha_procesamiento: datetime = Field(default_factory=datetime.now)
+    fecha_procesamiento: datetime | None = None
+    fecha_creacion: str = ""
+    fecha_actualizacion: str = ""
 
 
 class Perfil(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
+    id: str = ""
     tecnologias: dict[str, int] = Field(default_factory=dict)
     experiencia_anios: int = 0
     idiomas: dict[str, str] = Field(default_factory=dict)

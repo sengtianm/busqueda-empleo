@@ -575,9 +575,9 @@ Entre ellas se encuentran:
 - re
 - json
 - hashlib
-- uuid
 - datetime
 - time
+- sqlite3
 
 Podrán utilizarse otras librerías de la biblioteca estándar cuando exista una necesidad técnica justificada, sin que ello implique modificar el stack tecnológico oficial.
 
@@ -934,7 +934,7 @@ La inteligencia artificial del proyecto deberá cumplir las siguientes restricci
 
 ## 10.1 Objetivo
 
-Definir el mecanismo oficial de almacenamiento persistente de la automatización, garantizando que la información pueda almacenarse, consultarse, actualizarse y mantenerse de forma sencilla, robusta y completamente local.
+Definir el sistema oficial de almacenamiento persistente de la automatización, garantizando que la información pueda almacenarse, consultarse, actualizarse y mantenerse de forma sencilla, robusta, consultable y completamente local.
 
 ---
 
@@ -946,10 +946,12 @@ Entre los datos que deberán conservarse se encuentran:
 
 - Ofertas de empleo.
 - Empresas.
+- Fuentes de ofertas.
+- Ubicaciones.
+- Ofertas procesadas.
 - Resultados de evaluación.
 - Estado de procesamiento.
 - Historial de ejecución.
-- Configuración persistente.
 - Información necesaria para el funcionamiento de la automatización.
 
 El almacenamiento deberá facilitar tanto el acceso automático por parte del sistema como la consulta y edición manual por parte del usuario cuando sea necesario.
@@ -964,46 +966,58 @@ Durante la investigación se evaluaron las siguientes alternativas:
 - Google Sheets.
 - Hoja de cálculo local.
 
-Después del análisis técnico y considerando los objetivos del proyecto, se concluyó que una hoja de cálculo local representa la alternativa más adecuada.
+Inicialmente se seleccionó una hoja de cálculo local. Posteriormente, durante el desarrollo del MVP, se migró a SQLite para aprovechar su capacidad de consultas estructuradas, integridad referencial y rendimiento superior.
 
 ---
 
 ## 10.4 Tecnología seleccionada
 
-Se adopta una **hoja de cálculo local en formato Microsoft Excel (.xlsx)** como mecanismo oficial de almacenamiento persistente de la automatización.
+Se adopta **SQLite** (incluido en la biblioteca estándar de Python mediante `sqlite3`) como sistema gestor de base de datos oficial.
 
-La gestión de dicha hoja de cálculo se realizará mediante la librería **openpyxl**.
+No requiere librerías externas ni instalación adicional.
 
 ---
 
 ## 10.5 Justificación técnica
 
-La selección de una hoja de cálculo local se fundamenta en los siguientes aspectos:
+La selección de SQLite se fundamenta en los siguientes aspectos:
 
-- Toda la información permanecerá almacenada localmente.
-- No requiere instalar ni administrar un sistema gestor de bases de datos.
-- Permite consultar y modificar la información utilizando una interfaz conocida por el usuario.
-- Es totalmente compatible con ONLYOFFICE.
-- Puede ser gestionada automáticamente desde Python mediante openpyxl.
-- Reduce significativamente la complejidad de mantenimiento del proyecto.
-
-Para el volumen de información previsto en la automatización, esta solución satisface los requisitos funcionales sin introducir la complejidad propia de un sistema gestor de bases de datos tradicional.
+- Forma parte de la biblioteca estándar de Python (módulo `sqlite3`).
+- No requiere instalar ni administrar un sistema gestor de bases de datos externo.
+- Toda la información permanece almacenada localmente en un único archivo.
+- Soporta integridad referencial, transacciones, consultas SQL y esquemas normalizados.
+- Permite consultar y modificar la información mediante herramientas gratuitas como DB Browser for SQLite.
+- Ofrece mejor rendimiento que una hoja de cálculo para volúmenes medios de datos.
+- Permite consultas estructuradas (filtros, joins, búsquedas) sin cargar la base completa en memoria.
+- El archivo `.db` es portátil y mantenible sin depender de software ofimático.
 
 ---
 
 ## 10.6 Organización de la información
 
-La hoja de cálculo podrá dividirse en múltiples hojas (tabs), organizadas según las necesidades funcionales de la automatización.
+La base de datos se organiza en tablas normalizadas, cada una con su identificador secuencial único y campos de auditoría (`fecha_creacion`, `fecha_actualizacion`).
 
-La estructura definitiva será definida durante el diseño del modelo de datos del proyecto.
+Las tablas oficiales son:
+
+| Tabla | Prefijo ID | Propósito |
+|-------|-----------|-----------|
+| `fuentes` | FNT | Fuentes de ofertas (LinkedIn, etc.) |
+| `empresas` | EMP | Empresas empleadoras |
+| `ubicaciones` | UBI | Ubicaciones geográficas |
+| `ofertas` | OFE | Ofertas de empleo crudas |
+| `ofertas_procesadas` | OFP | Ofertas procesadas y limpiadas |
+| `evaluaciones` | EVL | Resultados de evaluación |
+| `resultados_procesamiento` | RSP | Resultados del procesamiento profundo |
+
+Además existe la tabla interna `secuencia_ids` que gestiona los contadores para generar identificadores secuenciales con formato `{PREFIJO}-{NÚMERO:04d}` (ej. `EMP-0001`, `OFE-0042`).
 
 ---
 
 ## 10.7 Acceso a la información
 
-Toda lectura y escritura sobre la hoja de cálculo deberá realizarse exclusivamente mediante los módulos de acceso a datos desarrollados para la automatización.
+Toda lectura y escritura sobre la base de datos deberá realizarse exclusivamente mediante el servicio compartido `shared/persistence.py`.
 
-No se permitirá que los módulos funcionales manipulen directamente la estructura del archivo.
+No se permitirá que los módulos funcionales ejecuten SQL directamente.
 
 Esta separación reduce el acoplamiento y facilita futuras modificaciones del sistema de almacenamiento si fueran necesarias.
 
@@ -1011,13 +1025,10 @@ Esta separación reduce el acoplamiento y facilita futuras modificaciones del si
 
 ## 10.8 Compatibilidad
 
-El almacenamiento deberá mantenerse compatible con:
+El archivo de base de datos (`data/busqueda_empleo.db`) es compatible con:
 
-- Python.
-- openpyxl.
-- ONLYOFFICE.
-
-La utilización del formato `.xlsx` garantiza además la compatibilidad con otras herramientas de hojas de cálculo que puedan adoptarse en el futuro.
+- Python (módulo `sqlite3`).
+- DB Browser for SQLite (herramienta gráfica gratuita).
 
 ---
 
@@ -1026,10 +1037,9 @@ La utilización del formato `.xlsx` garantiza además la compatibilidad con otra
 El almacenamiento persistente del proyecto deberá cumplir las siguientes restricciones:
 
 - Permanecer completamente local.
-- Utilizar el formato oficial `.xlsx`.
-- Ser gestionado mediante openpyxl.
-- No depender de servicios externos.
-- Permitir la consulta y edición manual mediante ONLYOFFICE cuando sea necesario.
+- Utilizar SQLite como motor de base de datos.
+- Gestionar el acceso exclusivamente mediante `shared/persistence.py`.
+- No depender de servicios externos ni sistemas gestores remotos.
 
 ---
 
@@ -1048,7 +1058,7 @@ La automatización requiere almacenar parámetros de configuración que podrán 
 Entre ellos se encuentran:
 
 - Directorios de trabajo.
-- Ubicación de la hoja de cálculo principal.
+- Ruta de la base de datos principal.
 - Ubicación de la hoja de vida.
 - Ubicación del portafolio profesional.
 - Directorio de documentos generados.
@@ -1111,7 +1121,7 @@ Entre otros aspectos podrá almacenar:
 - Rutas locales.
 - Directorios de trabajo.
 - Ubicación de Ollama.
-- Ubicación de la hoja de cálculo.
+- Ruta de la base de datos.
 - Variables específicas del equipo.
 
 Este archivo permitirá trasladar la automatización a otro computador modificando únicamente la configuración del entorno, sin alterar el código fuente ni la configuración funcional.

@@ -6,7 +6,6 @@ loguru>=0.7
 rapidfuzz>=3.12
 tenacity>=9.0
 httpx>=0.28
-openpyxl>=3.1
 pyyaml>=6.0
 python-dotenv>=1.1
 

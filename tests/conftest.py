@@ -1,3 +1,4 @@
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -34,13 +35,20 @@ def ruta_fixtures(ruta_tests: Path) -> Path:
 
 
 @pytest.fixture
-def archivo_xlsx_temporal(tmp_path: Path) -> Path:
-    return tmp_path / "test.xlsx"
+def archivo_bd_temporal(tmp_path: Path) -> Generator[Path, None, None]:
+    from shared.persistence import cambiar_ruta, inicializar_bd, restablecer_ruta
+
+    ruta = tmp_path / "test.db"
+    cambiar_ruta(ruta)
+    inicializar_bd()
+    yield ruta
+    restablecer_ruta()
 
 
 @pytest.fixture
 def fuente_ejemplo() -> Fuente:
     return Fuente(
+        id="FNT-0001",
         nombre="LinkedIn",
         tipo="red_social",
         url_base="https://www.linkedin.com",
@@ -50,6 +58,7 @@ def fuente_ejemplo() -> Fuente:
 @pytest.fixture
 def empresa_ejemplo() -> Empresa:
     return Empresa(
+        id="EMP-0001",
         nombre="TechCorp",
         nombre_normalizado="techcorp",
         sector="tecnologia",
@@ -58,7 +67,7 @@ def empresa_ejemplo() -> Empresa:
 
 @pytest.fixture
 def ubicacion_ejemplo() -> Ubicacion:
-    return Ubicacion(ciudad="Madrid", region="Madrid", pais="Espana")
+    return Ubicacion(id="UBI-0001", ciudad="Madrid", region="Madrid", pais="Espana")
 
 
 @pytest.fixture
@@ -66,6 +75,7 @@ def oferta_ejemplo(
     fuente_ejemplo: Fuente, empresa_ejemplo: Empresa, ubicacion_ejemplo: Ubicacion
 ) -> Oferta:
     return Oferta(
+        id="OFE-0001",
         fuente_id=fuente_ejemplo.id,
         empresa_id=empresa_ejemplo.id,
         ubicacion_id=ubicacion_ejemplo.id,
@@ -80,6 +90,7 @@ def oferta_ejemplo(
 @pytest.fixture
 def oferta_procesada_ejemplo(oferta_ejemplo: Oferta) -> OfertaProcesada:
     return OfertaProcesada(
+        id="OFP-0001",
         oferta_id=oferta_ejemplo.id,
         titulo_limpio="Data Engineer",
         tecnologias=["Python", "SQL", "Spark"],
@@ -90,6 +101,7 @@ def oferta_procesada_ejemplo(oferta_ejemplo: Oferta) -> OfertaProcesada:
 @pytest.fixture
 def evaluacion_ejemplo(oferta_procesada_ejemplo: OfertaProcesada) -> Evaluacion:
     return Evaluacion(
+        id="EVL-0001",
         oferta_procesada_id=oferta_procesada_ejemplo.id,
         resultado=ResultadoEvaluacion.ALTA,
         puntaje=85.0,

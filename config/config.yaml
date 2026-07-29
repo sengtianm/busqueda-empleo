@@ -48,9 +48,7 @@ ia_routing:
 # --- Persistencia ---
 persistencia:
   ruta_data: "data"
-  archivo_entrada: "data/entrada/ofertas.xlsx"
-  archivo_procesamiento: "data/procesamiento/ofertas_procesadas.xlsx"
-  archivo_salida: "data/salida/resultados.xlsx"
+  archivo_bd: "data/busqueda_empleo.db"
 
 # --- Logging ---
 logging:

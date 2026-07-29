@@ -13,7 +13,7 @@
    - **Unitarias (pytest):** lógica de negocio, reglas, transformaciones. Fixtures en `tests/fixtures/`.
    - **Integración con LinkedIn real:** Playwright + selectores reales (etiquetadas `integration`).
    - **LLM:** prompts probados con Ollama local, respuestas mockeables en unitarias.
-   - **Data layer:** tests con archivos .xlsx temporales.
+   - **Data layer:** tests con archivos .db temporales (SQLite).
 
 ---
 
@@ -46,9 +46,9 @@
 
 9. **shared/retry.py** — Wrapper con Tenacity, políticas según DOC-06.
 
-10. **shared/models.py** — Modelos Pydantic v2: `Oferta`, `Evaluacion`, `Resultado`, `Empresa`, etc. (DOC-13).
+10. **shared/models.py** — Modelos Pydantic v2: `Oferta`, `Evaluacion`, `Resultado`, `Empresa`, etc. (DOC-13). IDs como string secuencial, campos `fecha_creacion`/`fecha_actualizacion` en ISO 8601.
 
-11. **shared/persistence.py** — Acceso a .xlsx via openpyxl. Métodos: leer hoja, escribir fila, actualizar, buscar por ID. Path desde config.
+11. **shared/persistence.py** — Acceso a SQLite via sqlite3. Métodos: leer, escribir, actualizar, buscar por ID, generar IDs secuenciales. Path desde config.
 
 12. **tests/conftest.py + tests/fixtures/** — Fixtures básicos (config de prueba, logger mock, persistence temp) y directorio `tests/fixtures/` con `.gitkeep`.
 
@@ -220,7 +220,7 @@ PROCESADA    → FINALIZADA
 |---|---|
 | `tests/test_ia_service.py` | Tests con mock de httpx (respuesta Ollama simulada), carga de prompts, error si prompt no existe. |
 | `tests/test_decision_engine.py` | Tests con fixtures `oferta_procesada_ejemplo` + nuevo `perfil_ejemplo`. Verificar puntuaciones y clasificaciones. |
-| `tests/test_persistence.py` | Tests CRUD con `archivo_xlsx_temporal`: leer_hoja, escribir_fila, buscar_por_id, actualizar. |
+| `tests/test_persistence.py` | Tests CRUD con `archivo_bd_temporal`: generar_id, leer_tabla, escribir_fila, buscar_por_id, actualizar. |
 | `tests/test_state_machine.py` | Tests de transiciones válidas e inválidas. |
 
 **Fixture adicional en `conftest.py`:** `perfil_ejemplo() -> Perfil`
@@ -330,7 +330,7 @@ pytest tests/ -v
 2. Implementar: historial completo por oferta, gestión de estados, seguimiento.
 3. Reportes:
    - Resumen de ofertas (procesadas, descartadas, pendientes).
-   - Exportación a .xlsx formateado (`data/salida/`).
+   - Exportación a formato compatible (`data/salida/`).
 4. Validar trazabilidad completa (cada decisión → su justificación → log).
 5. Manejo de errores: ER-DB, ER-DAT.
 6. Pruebas:

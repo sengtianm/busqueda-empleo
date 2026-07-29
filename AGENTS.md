@@ -16,7 +16,7 @@
 - **Reintentos:** Tenacity
 - **HTTP:** httpx
 - **LLM:** Ollama + Gemma 4 31B cloud (todos los propósitos, vía Ollama local como proxy)
-- **Persistencia:** .xlsx via openpyxl
+- **Persistencia:** SQLite (biblioteca estándar `sqlite3`)
 - **Config:** PyYAML (config.yaml) + python-dotenv (.env)
 - **Deps:** pip + requirements.txt, venv
 - **Herramientas:** Black, Ruff, mypy, pytest
@@ -547,7 +547,7 @@ Las pruebas manuales utilizarán Ollama local.
 
 ### Objetivo
 
-Validar todas las operaciones sobre archivos Excel.
+Validar todas las operaciones sobre la base de datos SQLite.
 
 ### Alcance
 
@@ -556,12 +556,13 @@ Validar todas las operaciones sobre archivos Excel.
 - Actualización.
 - Búsquedas.
 - Integridad de datos.
+- Generación de IDs secuenciales.
 
 ### Estrategia
 
-Todas las pruebas deberán utilizar archivos temporales.
+Todas las pruebas deberán utilizar archivos temporales (`tmp_path`).
 
-Nunca deberán modificar los archivos reales del proyecto.
+Nunca deberán modificar la base de datos real del proyecto.
 
 ---
 

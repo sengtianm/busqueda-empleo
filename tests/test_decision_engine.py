@@ -1,5 +1,4 @@
 from unittest.mock import patch
-from uuid import uuid4
 
 import pytest
 
@@ -21,20 +20,20 @@ from shared.models import (
 
 def test_puntuar_experiencia_supera() -> None:
     perfil = Perfil(experiencia_anios=8)
-    oferta = OfertaProcesada(oferta_id=uuid4(), titulo_limpio="Test", experiencia_anios=5)
+    oferta = OfertaProcesada(oferta_id="OFP-T1", titulo_limpio="Test", experiencia_anios=5)
     assert _puntuar_experiencia(oferta, perfil) == 100.0
 
 
 def test_puntuar_experiencia_parcial() -> None:
     perfil = Perfil(experiencia_anios=3)
-    oferta = OfertaProcesada(oferta_id=uuid4(), titulo_limpio="Test", experiencia_anios=6)
+    oferta = OfertaProcesada(oferta_id="OFP-T2", titulo_limpio="Test", experiencia_anios=6)
     assert _puntuar_experiencia(oferta, perfil) == 50.0
 
 
 def test_puntuar_tecnologia_coincide() -> None:
     perfil = Perfil(tecnologias={"Python": 5, "SQL": 4})
     oferta = OfertaProcesada(
-        oferta_id=uuid4(), titulo_limpio="Test", tecnologias=["Python", "SQL"]
+        oferta_id="OFP-T3", titulo_limpio="Test", tecnologias=["Python", "SQL"]
     )
     puntaje = _puntuar_tecnologia(oferta, perfil)
     assert puntaje > 90.0
@@ -63,7 +62,7 @@ def test_decidir_descartar() -> None:
 
 def test_evaluar_alta(perfil_ejemplo: Perfil) -> None:
     oferta = OfertaProcesada(
-        oferta_id=uuid4(),
+        oferta_id="OFP-T4",
         titulo_limpio="Data Engineer Senior",
         tecnologias=["Python", "SQL", "Spark"],
         experiencia_anios=5,
@@ -84,7 +83,7 @@ def test_evaluar_alta(perfil_ejemplo: Perfil) -> None:
 
 def test_evaluar_baja(perfil_ejemplo: Perfil) -> None:
     oferta = OfertaProcesada(
-        oferta_id=uuid4(),
+        oferta_id="OFP-T5",
         titulo_limpio="Junior Trainee",
         tecnologias=[],
         experiencia_anios=0,
@@ -98,7 +97,7 @@ def test_evaluar_baja(perfil_ejemplo: Perfil) -> None:
 
 def test_evaluar_excluida(perfil_ejemplo: Perfil) -> None:
     oferta = OfertaProcesada(
-        oferta_id=uuid4(),
+        oferta_id="OFP-T6",
         titulo_limpio="Senior en EvilCorp",
         tecnologias=["Python"],
     )
@@ -109,7 +108,7 @@ def test_evaluar_excluida(perfil_ejemplo: Perfil) -> None:
 
 def test_pesos_validos_continua(perfil_ejemplo: Perfil) -> None:
     oferta = OfertaProcesada(
-        oferta_id=uuid4(),
+        oferta_id="OFP-T7",
         titulo_limpio="Data Engineer",
         tecnologias=["Python"],
         experiencia_anios=3,
@@ -130,7 +129,7 @@ def test_pesos_validos_continua(perfil_ejemplo: Perfil) -> None:
 
 def test_pesos_invalidos_lanza_error(perfil_ejemplo: Perfil) -> None:
     oferta = OfertaProcesada(
-        oferta_id=uuid4(),
+        oferta_id="OFP-T8",
         titulo_limpio="Data Engineer",
         tecnologias=["Python"],
     )

@@ -38,7 +38,7 @@
 | 8 | 6 | shared/logging_setup.py | DOC-06 | ✅ | Loguru con stdout + rotación a archivo. |
 | 9 | 8 | shared/retry.py (Tenacity) | DOC-06 | ✅ | decorador_reintento con políticas desde config + exponencial. |
 | 10 | 10 | shared/models.py (Pydantic) | DOC-13 | ✅ | Oferta, Empresa, Fuente, Ubicacion, OfertaProcesada, Evaluacion, ResultadoProcesamiento. 3 Enums. |
-| 11 | 9 | shared/persistence.py (xlsx) | DOC-13 | ✅ | leer_hoja, escribir_fila, buscar_por_id, actualizar. openpyxl, archivos temporales. |
+| 11 | 9 | shared/persistence.py (SQLite) | DOC-13 | ✅ | SQLite vía sqlite3. 7 tablas + secuencia_ids. generar_id, leer_tabla, escribir_fila, buscar_por_id, actualizar. IDs secuenciales con prefijo (EMP-0001). |
 | 12 | 12 | tests/conftest.py + tests/fixtures/ | — | ✅ | Fixtures: limpiar_cache_config, modelos_ejemplo, archivo_xlsx_temporal. |
 | 13 | 13 | Validación final | — | ✅ | ruff → 0 errors. mypy → 0 errors. Todos los imports OK. pytest (0 tests, infra lista). |
 
@@ -70,6 +70,12 @@
 | 5 | Versión 1 aprobada | — | ✅ | Los 5 prompts (PRM-001 al PRM-005) funcionan correctamente con `gemma4:31b-cloud`. Pendiente revisión formal del Arquitecto. |
 
 ---
+
+## ⚙ Pre-migración (antes de Fase 4)
+
+| # | Tarea | Docs fuente | Estado | Obs |
+|---|-------|-------------|--------|-----|
+| — | Migrar persistencia: Excel/openpyxl → SQLite + IDs secuenciales | — | ✅ | shared/models.py: UUID→str, fechas ISO. shared/persistence.py: SQLite con secuencias. config.yaml: persistencia a archivo_bd. tests adaptados. Validación: ruff 0, mypy 0, pytest 47/47. Rama `modulo-1`. |
 
 ## Fase 4. Módulo 1 — Descubrimiento de oportunidades
 

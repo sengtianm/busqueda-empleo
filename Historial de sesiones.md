@@ -149,3 +149,52 @@
 - Fase 4: completamente reiniciada (⬜) — lista para reimplementar
 - HEAD en `4fc1852`
 - Validaciones pendientes de ejecutar tras el reset
+
+---
+
+## Sesión 5 — 29/07/2026
+
+**Temas tratados:**
+
+*Migración de persistencia (pre-Fase 4):*
+- Decisión de migrar de Excel/openpyxl a SQLite antes de iniciar Fase 4
+- Aprobación del plan de migración: 7 tablas normalizadas + secuencia_ids
+- IDs secuenciales con prefijo personalizado (EMP-0001, OFE-0001, etc.)
+- Uso de DB Browser for SQLite como herramienta auxiliar
+
+*Implementación:*
+- `shared/models.py`: todos los `id: UUID` → `id: str`, añadidos `fecha_creacion` y `fecha_actualizacion` a todos los modelos Pydantic
+- `config/config.yaml`: sección `persistencia` simplificada a `archivo_bd: data/busqueda_empleo.db`
+- `shared/persistence.py`: implementación completa con SQLite — 8 tablas (secuencia_ids + fuentes + empresas + ubicaciones + ofertas + ofertas_procesadas + evaluaciones + resultados_procesamiento), funciones `generar_id`, `inicializar_bd`, `leer_tabla`, `escribir_fila`, `buscar_por_id`, `actualizar`, serialización/deserialización de tipos complejos (bool, list, dict, datetime)
+- `tests/conftest.py`: `archivo_bd_temporal` con fixture generador que crea/limpia base en `tmp_path`
+- `tests/test_persistence.py`: 10 tests para SQLite (secuencias, CRUD, JSON, ID explícito)
+- `tests/test_decision_engine.py`: `uuid4()` → strings tipo `"OFP-T1"`
+- `requirements.txt`: eliminada dependencia `openpyxl`
+
+*Documentación actualizada:*
+- `docs/DOC-11 - Stack tecnológico.md`: capítulo 10 reescrito (SQLite), sección 6.4 (uuid→sqlite3)
+- `docs/anexos/DOC-Anexo 5A - Catálogo oficial de prefijos.md`: sección A.9b con prefijos FNT, EMP, UBI, OFE, OFP, EVL, RSP
+- `AGENTS.md`: stack actualizado, EP-104 actualizado (Excel→SQLite)
+- `README.md`: stack actualizado
+- `Plan de ejecución del MVP.md`: referencias a openpyxl→SQLite
+- `Seguimiento MVP.md`: tarea de migración añadida como pre-Fase 4
+
+**Decisiones:**
+- SQLite reemplaza a openpyxl/Excel como capa de persistencia
+- IDs con formato `{PREFIJO}-{NUM:04d}` mediante tabla `secuencia_ids` con ON CONFLICT
+- Fechas almacenadas en ISO 8601 (`YYYY-MM-DD HH:mm:ss`) en SQLite
+- DB Browser for SQLite como herramienta auxiliar de consulta/edición
+- Todo en rama `modulo-1`; sin merge a main sin orden explícita
+- 7 tablas normalizadas para los dominios del modelo Pydantic
+
+**Acuerdos:**
+- Se mantienen los acuerdos de sesiones anteriores
+- La migración a SQLite queda como prerrequisito completado antes de Fase 4
+- La rama `modulo-1` contendrá este cambio; se mergeará a main cuando el Arquitecto lo apruebe
+
+**Estado al cierre:**
+- Pre-migración: completada (✅) — SQLite implementado, IDs secuenciales, tests pasando
+- Fases 0, 1, 2, 3: completamente terminadas (✅)
+- Fase 4: pendiente (⬜) — módulo descubrimiento listo para implementar sobre SQLite
+- Validaciones: ruff 0, mypy 0, pytest 47/47
+- Rama activa: `modulo-1`
