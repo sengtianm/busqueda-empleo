@@ -71,9 +71,9 @@ ESQUEMAS: dict[str, str] = {
     "ofertas": (
         "CREATE TABLE IF NOT EXISTS ofertas ("
         "id TEXT PRIMARY KEY,"
-        "fuente_id TEXT DEFAULT '',"
-        "empresa_id TEXT DEFAULT '',"
-        "ubicacion_id TEXT DEFAULT '',"
+        "fuente_id TEXT REFERENCES fuentes(id),"
+        "empresa_id TEXT REFERENCES empresas(id),"
+        "ubicacion_id TEXT REFERENCES ubicaciones(id),"
         "identificador_fuente TEXT DEFAULT '',"
         "url TEXT NOT NULL,"
         "titulo TEXT NOT NULL,"
@@ -90,7 +90,7 @@ ESQUEMAS: dict[str, str] = {
     "ofertas_procesadas": (
         "CREATE TABLE IF NOT EXISTS ofertas_procesadas ("
         "id TEXT PRIMARY KEY,"
-        "oferta_id TEXT DEFAULT '',"
+        "oferta_id TEXT REFERENCES ofertas(id),"
         "titulo_limpio TEXT DEFAULT '',"
         "descripcion_limpia TEXT DEFAULT '',"
         "salario_min REAL,"
@@ -110,7 +110,7 @@ ESQUEMAS: dict[str, str] = {
     "evaluaciones": (
         "CREATE TABLE IF NOT EXISTS evaluaciones ("
         "id TEXT PRIMARY KEY,"
-        "oferta_procesada_id TEXT DEFAULT '',"
+        "oferta_procesada_id TEXT REFERENCES ofertas_procesadas(id),"
         "resultado TEXT NOT NULL,"
         "puntaje REAL NOT NULL,"
         "umbral_aprobacion REAL DEFAULT 50.0,"
@@ -126,7 +126,7 @@ ESQUEMAS: dict[str, str] = {
     "resultados_procesamiento": (
         "CREATE TABLE IF NOT EXISTS resultados_procesamiento ("
         "id TEXT PRIMARY KEY,"
-        "oferta_procesada_id TEXT DEFAULT '',"
+        "oferta_procesada_id TEXT REFERENCES ofertas_procesadas(id),"
         "diagnostico TEXT DEFAULT '',"
         "extraccion_estrategica TEXT DEFAULT '',"
         "diseno_candidatura TEXT DEFAULT '',"
