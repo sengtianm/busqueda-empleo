@@ -120,3 +120,32 @@
 - Validación general: ruff 0, mypy 0, pytest 39/39
 - Commits del día: `32b2723` (Fase 2), `3d9e8c7` (validación pesos), `7db5e3f` (Fase 3), `f2d0063` (historial)
 - Pendiente de aprobación del Arquitecto para iniciar Fase 4
+
+---
+
+## Sesión 4 — 29/07/2026
+
+**Temas tratados:**
+
+*Rollback de Fase 4:*
+- Decisión de rehacer Fase 4 desde cero
+- Reset destructivo del repositorio al commit `4fc1852` (fin de Fase 3, Sesión 2)
+- Eliminación de rama `experiment/scroll-inventario`
+- Force push a GitHub
+- Limpieza de `data/automatizacion.db`, `data/perfil_chrome/`, `__pycache__/`
+- Proyecto restaurado al estado post-Fase 3: Fases 0-3 completas, Fase 4 limpia
+
+**Decisiones:**
+- Se descarta todo el código de la implementación anterior de Fase 4 (módulo descubrimiento, migración SQLite)
+- La persistencia vuelve a openpyxl/Excel (la original de Fase 1)
+- `shared/persistence.py` en su versión Excel (pre-SQLite)
+
+**Acuerdos:**
+- Se mantienen los acuerdos de sesiones anteriores
+- Fase 4 se reimplementará desde cero
+
+**Estado al cierre:**
+- Fases 0, 1, 2, 3: completamente terminadas (✅)
+- Fase 4: completamente reiniciada (⬜) — lista para reimplementar
+- HEAD en `4fc1852`
+- Validaciones pendientes de ejecutar tras el reset
