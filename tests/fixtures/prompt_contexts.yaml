@@ -1,0 +1,151 @@
+# Contextos de prueba para los 5 prompts (PRM-001 a PRM-005)
+# Cada clave es el nombre de la variable que usa el prompt.
+
+
+oferta_ejemplo:
+  titulo_limpio: "Data Engineer Senior"
+  descripcion_limpia: >
+    Buscamos un Data Engineer Senior para unirse a nuestro equipo de datos
+    en una empresa tecnológica líder del sector financiero. Será responsable
+    de diseñar, construir y mantener pipelines de datos escalables, optimizar
+    flujos ETL y colaborar con los equipos de data science e ingeniería.
+    Trabajará con tecnologías cloud (AWS), Python, Spark y SQL. Valoramos
+    experiencia con streaming con Kafka e infraestructura como código con
+    Terraform. Ofrecemos 100% trabajo remoto, horario flexible, presupuesto
+    anual de formación, seguro médico y plan de acciones.
+  salario_min: 65000
+  salario_max: 85000
+  moneda: "EUR"
+  ubicacion_limpia: "Spain (Remote)"
+  modalidad: "remoto"
+  requisitos:
+    - "5+ years of experience in data engineering"
+    - "Advanced Python"
+    - "Advanced SQL"
+    - "Experience with Apache Spark"
+    - "Experience with AWS (S3, Redshift, Glue, EMR)"
+    - "Knowledge of Kafka"
+    - "English B2 or higher"
+  tecnologias:
+    - "Python"
+    - "SQL"
+    - "Spark"
+    - "AWS"
+    - "Kafka"
+    - "Terraform"
+    - "Airflow"
+  idiomas:
+    - "English"
+    - "Spanish"
+  experiencia_anios: 5
+
+
+perfil_ejemplo:
+  tecnologias:
+    Python: 7
+    SQL: 6
+    Spark: 4
+    AWS: 3
+    Airflow: 2
+    Docker: 4
+    Git: 5
+  experiencia_anios: 8
+  idiomas:
+    Spanish: "Native"
+    English: "C1"
+    Catalan: "B2"
+  ubicaciones_preferidas:
+    - "Madrid"
+    - "Remote Spain"
+  modalidades_preferidas:
+    - "remote"
+    - "hybrid"
+  salario_minimo: 60000
+  seniority: "senior"
+  empresas_objetivo:
+    - "FAANG"
+    - "Bolsas y Mercados Espanoles"
+    - "Fintech"
+  empresas_excluidas:
+    - "Consultora"
+    - "Accenture"
+  educacion_nivel: "bachelor"
+
+
+diagnostico_ejemplo:
+  resultado_organizacional:
+    principal: >
+      Construir y operar la infraestructura de datos que sostiene los
+      productos de análisis y los modelos de negocio del banco.
+    secundarios:
+      - "Consolidar la plataforma ETL en AWS"
+      - "Elevar la fiabilidad y la observabilidad de los pipelines"
+  problema_organizacional:
+    principal: >
+      La empresa necesita escalar su capacidad de datos sin degradar la
+      calidad ni la velocidad de entrega de los flujos existentes.
+    explicitos:
+      - "Optimizar flujos ETL existentes"
+    inferidos:
+      - "Falta de estandarización en la construcción de pipelines"
+      - "Crecimiento del volumen de datos que supera la capacidad actual"
+    no_determinables:
+      - "Estado real del legado técnico"
+  perfil_profesional_requerido:
+    capacidades_criticas:
+      - "Diseño y construcción de pipelines de datos escalables"
+      - "Optimización de flujos ETL"
+      - "Autonomía técnica en cloud (AWS)"
+    forma_de_pensar:
+      - "Orientación a resultados y a la calidad"
+      - "Colaboración transversal con data science e ingeniería"
+    experiencias:
+      - "Más de 5 años en ingeniería de datos"
+      - "Experiencia con Spark y streaming (Kafka)"
+    competencias:
+      - "Comunicación"
+      - "Trabajo en equipo"
+      - "Resolución de problemas"
+
+
+analisis_ejemplo:
+  coincidencias_perfil:
+    principales:
+      - "8 años de experiencia frente a los 5 requeridos"
+      - "Stack alineado: Python, SQL, Spark y AWS"
+      - "Experiencia en el sector financiero (BME)"
+    complementarias:
+      - "Nivel de inglés C1"
+      - "Uso de Airflow en pipelines previos"
+  logica_xyz: >
+    La empresa necesita escalar su infraestructura de datos (X); el candidato
+    ha construido y operado pipelines ETL en AWS durante 8 años, dos de ellos
+    en banca (Y); por lo tanto puede asumir el diseño y la consolidación de la
+    plataforma desde el primer día, aportando además conocimiento de dominio
+    financiero (Z).
+  hipotesis_valor: >
+    El candidato puede reducir el tiempo de incorporación y elevar la
+    fiabilidad de los pipelines al combinar experiencia técnica senior con
+    conocimiento del negocio financiero.
+  informacion_descartada:
+    - "Experiencia en desarrollo de APIs (no relevante para el rol)"
+    - "Conocimientos de Docker más allá del uso básico"
+
+
+puntuaciones_ejemplo:
+  ajuste_tecnico: 8.5
+  justificacion_ajuste_tecnico: >
+    El stack del candidato cubre el núcleo del rol (Python, SQL, Spark, AWS)
+    con nivel avanzado; la brecha en Kafka y Terraform se compensa con
+    experiencia en streaming previo y uso de infraestructura como código en
+    proyectos anteriores.
+  ajuste_funcional: 7.0
+  justificacion_ajuste_funcional: >
+    El candidato ha desempeñado roles equivalentes en banca con autonomía y
+    colaboración transversal; la diferencia de escala entre el entorno previo
+    y el objetivo introduce cierta incertidumbre en la adaptación inicial.
+  ajuste_estrategico: 9.0
+  justificacion_ajuste_estrategico: >
+    La dirección profesional del candidato (consolidar su carrera en datos
+    con dominio financiero) coincide con el resultado organizacional que la
+    empresa persigue y con su cultura de aprendizaje continuo.

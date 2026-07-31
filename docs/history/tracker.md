@@ -37,7 +37,7 @@
 | 7 | 7 | shared/errors.py (ER hierarchy) | DOC-06, Annex 5A | ✅ | BaseError + 10 subclasses (ER-RED, ER-NAV, ER-EXT, ER-VAL, ER-LLM, ER-DAT, ER-DB, ER-CFG, ER-INT, ER-EXTS). |
 | 8 | 6 | shared/logging_setup.py | DOC-06 | ✅ | Loguru with stdout + file rotation. |
 | 9 | 8 | shared/retry.py (Tenacity) | DOC-06 | ✅ | retry_decorator with config-driven policies + exponential backoff. |
-| 10 | 10 | shared/models.py (Pydantic) | DOC-13 | ✅ | Offer, Company, Source, Location, ProcessedOffer, Evaluation, ProcessingResult. 3 Enums. |
+| 10 | 10 | shared/models.py (Pydantic) | DOC-13 | ✅ | Offer, Company, Source, Location, ProcessedOffer, Evaluation, EvaluacionDetallada. 3 Enums. |
 | 11 | 9 | shared/persistence.py (SQLite) | DOC-13 | ✅ | SQLite via sqlite3. 7 tables + id_sequence. generate_id, read_table, write_row, find_by_id, update. Sequential IDs with prefix (EMP-0001). |
 | 12 | 12 | tests/conftest.py + tests/fixtures/ | — | ✅ | Fixtures: clear_config_cache, example_models, temp_xlsx_file. |
 | 13 | 13 | Final validation | — | ✅ | ruff → 0 errors. mypy → 0 errors. All imports OK. pytest (0 tests, infra ready). |
@@ -68,6 +68,7 @@
 | 3 | PRM-XXX identifiers + Annex 5C template | Annex 5A, 5C | ✅ | All 5 prompts follow official template C.9 (Objective, Inputs, Variables, Instructions, Output, Notes, Version). |
 | 4 | Manual test with AI (local + cloud) | — | ✅ | All 5 prompts tested against `gemma4:31b-cloud` via local Ollama as proxy. All return valid JSON with coherent content. Local model `qwen3.5:4b` discarded due to timeout (60s+). Routing changed to cloud for evaluation and processing. |
 | 5 | Version 1 approved | — | ✅ | All 5 prompts (PRM-001 to PRM-005) work correctly with `gemma4:31b-cloud`. Pending formal Architect review. |
+| 6 | Alignment with Detailed Evaluation (decision C2) | DOC-13A §2.7 | ✅ | PRM-002..005 redesigned to v2: each produces exactly the entity fields (resultado_organizacional, problema_organizacional, perfil_profesional_requerido / coincidencias_perfil, logica_xyz, hipotesis_valor, informacion_descartada / ajuste_tecnico, ajuste_funcional, ajuste_estrategico + justifications / riesgo_sobrecalificacion, recomendacion_final + justifications, insumos_carta_presentacion). Chained execution. `ProcessingResult` → `EvaluacionDetallada`. Retest 2026-07-30 against `gemma4:31b-cloud`: 5/5 valid JSON with expected fields and coherent content; Spanish output instruction added to the 5 prompts (see `Prompt Retest Report.md`). |
 
 ---
 

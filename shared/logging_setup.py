@@ -13,21 +13,21 @@ def _logs_path() -> Path:
 
 def _log_level() -> str:
     config = load()
-    env_nivel = config.get("_env", {}).get("LOG_LEVEL")
-    if env_nivel:
-        return str(env_nivel).upper()
-    return str(config.get("logging", {}).get("nivel", "DEBUG")).upper()
+    env_level = config.get("_env", {}).get("LOG_LEVEL")
+    if env_level:
+        return str(env_level).upper()
+    return str(config.get("logging", {}).get("level", "DEBUG")).upper()
 
 
 def _rotation() -> str:
-    return str(load().get("logging", {}).get("rotacion", "10 MB"))
+    return str(load().get("logging", {}).get("rotation", "10 MB"))
 
 
 def _retention() -> int:
-    return int(load().get("logging", {}).get("retencion_dias", 30))
+    return int(load().get("logging", {}).get("retention_days", 30))
 
 
-def configurar() -> None:
+def setup() -> None:
     logger.remove()
 
     logger.add(
@@ -41,9 +41,9 @@ def configurar() -> None:
         colorize=True,
     )
 
-    ruta = _logs_path()
-    ruta.mkdir(parents=True, exist_ok=True)
-    log_file = ruta / "ejecucion_{time:YYYY-MM-DD}.log"
+    path = _logs_path()
+    path.mkdir(parents=True, exist_ok=True)
+    log_file = path / "execution_{time:YYYY-MM-DD}.log"
 
     logger.add(
         str(log_file),

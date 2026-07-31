@@ -2,9 +2,9 @@
 """Test AI prompts against local or cloud Ollama.
 
 Usage:
-    python scripts/probar_prompt.py PRM-001
-    python scripts/probar_prompt.py PRM-001 --dry-run
-    python scripts/probar_prompt.py PRM-002 --context ruta/contexto.yaml
+    python scripts/prompt_tester.py PRM-001
+    python scripts/prompt_tester.py PRM-001 --dry-run
+    python scripts/prompt_tester.py PRM-002 --context path/to/context.yaml
 """
 
 import argparse
@@ -12,8 +12,8 @@ import json
 import sys
 from pathlib import Path
 
-_RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_RAIZ))
+_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_ROOT))
 
 import yaml  # noqa: E402
 
@@ -21,10 +21,10 @@ from shared.config import load  # noqa: E402
 from shared.ia_service import (  # noqa: E402
     analyze,
     load_prompt,
-    renderizar_prompt,
+    render_prompt,
 )
 
-_RUTA_CONTEXTOS = _RAIZ / "tests" / "fixtures" / "contextos_prompt.yaml"
+_CONTEXTS_PATH = _ROOT / "tests" / "fixtures" / "prompt_contexts.yaml"
 
 PROMPT_PATH: dict[str, str] = {
     "PRM-001": "initial_evaluation/compatibility",
@@ -45,47 +45,48 @@ PURPOSE: dict[str, str] = {
 VARS_BY_PROMPT: dict[str, list[str]] = {
     "PRM-001": ["oferta", "perfil"],
     "PRM-002": ["oferta"],
-    "PRM-003": ["oferta", "perfil"],
-    "PRM-004": ["oferta", "perfil", "diagnostico"],
-    "PRM-005": ["oferta", "perfil", "estrategia"],
+    "PRM-003": ["oferta", "perfil", "diagnostico"],
+    "PRM-004": ["oferta", "perfil", "diagnostico", "analisis"],
+    "PRM-005": ["oferta", "perfil", "diagnostico", "analisis", "puntuaciones"],
 }
 
 VARIABLE_MAPPING: dict[str, str] = {
     "oferta": "oferta_ejemplo",
     "perfil": "perfil_ejemplo",
     "diagnostico": "diagnostico_ejemplo",
-    "estrategia": "estrategia_ejemplo",
+    "analisis": "analisis_ejemplo",
+    "puntuaciones": "puntuaciones_ejemplo",
 }
 
 
-def _load_context(ruta: Path) -> dict[str, object]:
-    with open(ruta, encoding="utf-8") as f:
+def _load_context(path: Path) -> dict[str, object]:
+    with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
 def _build_context(
-    datos_crudos: dict[str, object], prompt_id: str
+    raw_data: dict[str, object], prompt_id: str
 ) -> dict[str, str]:
-    claves_necesarias = VARS_BY_PROMPT.get(prompt_id, [])
-    contexto: dict[str, str] = {}
-    for var_prompt in claves_necesarias:
-        clave_fixture = VARIABLE_MAPPING.get(var_prompt, var_prompt)
-        valor = datos_crudos.get(clave_fixture)
-        if valor is None:
+    required_vars = VARS_BY_PROMPT.get(prompt_id, [])
+    context: dict[str, str] = {}
+    for prompt_var in required_vars:
+        fixture_key = VARIABLE_MAPPING.get(prompt_var, prompt_var)
+        value = raw_data.get(fixture_key)
+        if value is None:
             print(
-                f"  [WARNING] Variable '{var_prompt}' not found in context",
+                f"  [WARNING] Variable '{prompt_var}' not found in context",
                 file=sys.stderr,
             )
-            contexto[var_prompt] = ""
+            context[prompt_var] = ""
         else:
-            contexto[var_prompt] = json.dumps(valor, ensure_ascii=False)
-    return contexto
+            context[prompt_var] = json.dumps(value, ensure_ascii=False)
+    return context
 
 
 def _prompt_name(prompt_id: str) -> str:
-    ruta = PROMPT_PATH.get(prompt_id)
-    if ruta:
-        return ruta
+    path = PROMPT_PATH.get(prompt_id)
+    if path:
+        return path
     return prompt_id
 
 
@@ -95,7 +96,7 @@ def main() -> None:
     )
     parser.add_argument(
         "prompt_id",
-        help="Prompt ID: PRM-001 .. PRM-005, or path like 'evaluacion_inicial/compatibilidad'",
+        help="Prompt ID: PRM-001 .. PRM-005, or path like 'initial_evaluation/compatibility'",
     )
     parser.add_argument(
         "--dry-run",
@@ -110,34 +111,34 @@ def main() -> None:
     args = parser.parse_args()
 
     prompt_id = args.prompt_id.upper() if args.prompt_id.startswith("PRM") else args.prompt_id
-    ruta_prompt = _prompt_name(prompt_id)
+    prompt_path = _prompt_name(prompt_id)
     purpose = PURPOSE.get(prompt_id, "evaluation")
 
-    ruta_contextos = Path(args.context) if args.context else _RUTA_CONTEXTOS
-    if not ruta_contextos.exists():
-        print(f"Error: context file not found: {ruta_contextos}", file=sys.stderr)
+    contexts_path = Path(args.context) if args.context else _CONTEXTS_PATH
+    if not contexts_path.exists():
+        print(f"Error: context file not found: {contexts_path}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Prompt:     {prompt_id} → {ruta_prompt}")
+    print(f"Prompt:     {prompt_id} → {prompt_path}")
     print(f"Purpose:  {purpose}")
-    print(f"Context:   {ruta_contextos}")
+    print(f"Context:   {contexts_path}")
 
-    datos_crudos = _load_context(ruta_contextos)
-    contexto = _build_context(datos_crudos, prompt_id)
-    print(f"Variables:  {', '.join(contexto.keys())}")
+    raw_data = _load_context(contexts_path)
+    context = _build_context(raw_data, prompt_id)
+    print(f"Variables:  {', '.join(context.keys())}")
 
     try:
-        template = load_prompt(ruta_prompt)
+        template = load_prompt(prompt_path)
     except Exception as e:
         print(f"Error loading prompt: {e}", file=sys.stderr)
         sys.exit(1)
 
-    prompt_renderizado = renderizar_prompt(template, contexto)
+    rendered_prompt = render_prompt(template, context)
 
     print(f"\n{'='*70}")
     print("RENDERED PROMPT:")
     print(f"{'='*70}")
-    print(prompt_renderizado)
+    print(rendered_prompt)
     print(f"{'='*70}")
 
     if args.dry_run:
@@ -148,11 +149,11 @@ def main() -> None:
     provider = routing.get(purpose, "local")
     print(f"\nSending to {provider}...")
     try:
-        resultado = analyze(ruta_prompt, contexto, purpose=purpose)
+        result = analyze(prompt_path, context, purpose=purpose)
         print(f"\n{'='*70}")
         print("MODEL RESPONSE:")
         print(f"{'='*70}")
-        print(json.dumps(resultado, indent=2, ensure_ascii=False))
+        print(json.dumps(result, indent=2, ensure_ascii=False))
         print(f"{'='*70}")
     except Exception as e:
         print(f"\nModel error: {e}", file=sys.stderr)

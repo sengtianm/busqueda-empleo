@@ -41,6 +41,7 @@ data/input/*
 data/processing/*
 data/output/*
 data/backup/*
+data/*.db
 !data/**/.gitkeep
 
 # --- Project temporary files ---

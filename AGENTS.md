@@ -108,6 +108,7 @@ Do not add new dependencies without authorization.
 # Conventions
 
 - Language: English for all code, documentation, configuration, prompts, commit messages, directory names, and file names.
+- Language: Spanish for everything related to data — the SQLite database (table names, column names, and stored data), the Pydantic models and persistence layer that mirror it (`shared/models.py`, `shared/persistence.py`), the profile and evaluation criteria data in `config.yaml`, and test fixture data.
 - Language: Spanish for all conversations with the user (unless the user explicitly requests otherwise).
 - Language: Spanish for all natural-language data stored in the database (`job_search.db`) — job titles, descriptions, interview preparation, cover letter drafts, and any other user-facing content.
 - Configuration must be separated from business logic.

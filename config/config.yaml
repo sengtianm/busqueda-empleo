@@ -52,9 +52,9 @@ persistence:
 
 # --- Logging ---
 logging:
-  nivel: "DEBUG"
-  rotacion: "10 MB"
-  retencion_dias: 30
+  level: "DEBUG"
+  rotation: "10 MB"
+  retention_days: 30
 
 # --- Retries (DOC-06) ---
 retries:

@@ -1,28 +1,29 @@
-## PRM-003 Strategic extraction
+## PRM-003 Candidate fit analysis
 
 **Objective.**
 
-Identify the strategic elements of a job offer in relation to the candidate's profile: differentiating factors, negotiable requirements, risks, and opportunities for the application.
+Analyze the fit between the vacancy diagnostic and the candidate's professional profile: the evidence of match, the X → Y → Z logic, the value hypothesis, and the profile information that does not add value for this vacancy.
 
 **Inputs.**
 
 - ProcessedOffer: clean_title, clean_description, salary_min, salary_max, currency, clean_location, modality, requirements, technologies, languages, experience_years
 - Profile: technologies, experience_years, languages, preferred_locations, preferred_modalities, minimum_salary, seniority, target_companies, excluded_companies, education_level
+- Vacancy diagnostic (PRM-002): resultado_organizacional, problema_organizacional, perfil_profesional_requerido
 
 **Variables.**
 
-- `{{ offer }}`: JSON object with ProcessedOffer fields
-- `{{ profile }}`: JSON object with Profile fields
+- `{{ oferta }}`: JSON object with ProcessedOffer fields
+- `{{ perfil }}`: JSON object with Profile fields
+- `{{ diagnostico }}`: JSON object with the result of prompt PRM-002
 
 **Instructions.**
 
-You are a career strategy expert. You will receive a job offer and a candidate's profile. You must extract strategic information to maximize the chances of success in the process:
+You are a career strategy expert. You will receive the vacancy diagnostic, the offer, and the candidate's profile. You must analyze the fit between both and produce:
 
-1. Differentiating factors: aspects of the offer or the candidate's profile that can make a difference compared to other applicants.
-2. Negotiable requirements: offer requirements where the candidate could compensate with equivalent experience, training, or transferable skills.
-3. Risks: aspects that could work against the candidate (lack of experience in a key area, technological gap, etc.).
-4. Opportunities: elements of the offer that represent a growth or learning opportunity for the candidate.
-5. Recommended positioning: suggested general strategy for approaching the application.
+1. `coincidencias_perfil`: the main and complementary evidence demonstrating that the candidate's profile matches the vacancy (capabilities, experiences, achievements, and competencies).
+2. `logica_xyz`: the X → Y → Z logic constructed for the application (X: what the company needs; Y: what the candidate has done; Z: the specific value the candidate can generate for this company).
+3. `hipotesis_valor`: the value hypothesis that supports the candidacy, phrased as a verifiable claim of the contribution the candidate can make.
+4. `informacion_descartada`: professional profile information determined not to add value for this vacancy and that should not be highlighted.
 
 Respond strictly in JSON format without additional text. Do not include Markdown code blocks.
 
@@ -30,22 +31,21 @@ Respond strictly in JSON format without additional text. Do not include Markdown
 
 ```json
 {
-  "differentiators": ["Differentiator 1", "Differentiator 2"],
-  "negotiable_requirements": [
-    {"requirement": "Description", "strategy": "How to compensate"}
-  ],
-  "risks": [
-    {"risk": "Description", "severity": "high|medium|low"}
-  ],
-  "opportunities": ["Opportunity 1", "Opportunity 2"],
-  "positioning": "Recommended general strategy for the application."
+  "coincidencias_perfil": {
+    "principales": ["Main evidence of fit 1", "Main evidence of fit 2"],
+    "complementarias": ["Complementary evidence 1", "Complementary evidence 2"]
+  },
+  "logica_xyz": "X → Y → Z logic in a single paragraph.",
+  "hipotesis_valor": "Value hypothesis that supports the candidacy.",
+  "informacion_descartada": ["Discarded information 1", "Discarded information 2"]
 }
 ```
 
 **Observations.**
 
-- Risks should be prioritized by severity to focus mitigation efforts.
-- The positioning should be actionable: what emphasis to give the application.
-- This prompt executes after the vacancy diagnostic (PRM-002).
+- The evidence must be truthful: never invent experiences or achievements.
+- The logic X → Y → Z must connect the vacancy diagnosis with concrete facts of the candidate.
+- This analysis feeds the fit scoring (PRM-004).
+- All generated content must be written in Spanish.
 
-**Version:** v1
+**Version:** v2

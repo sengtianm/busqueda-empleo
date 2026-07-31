@@ -774,25 +774,25 @@ The job posting has been analyzed using the initial evaluation rules and has rec
 
 ---
 
-### LC-04. Classified
+### LC-04. Accepted
 
-The job posting has been categorized according to its priority and evaluation result.
+The job posting has passed the initial evaluation and is approved to continue in the process.
 
 ---
 
-### LC-05. Processed
+### LC-05. Discarded
+
+The job posting is no longer being processed because it did not satisfy the defined rules or because the user decided to discard it.
+
+---
+
+### LC-06. Processed
 
 The job posting has been analyzed in depth, and all information required to support the application has been generated.
 
 ---
 
-### LC-06. Pending Decision
-
-The automation has completed every task it can perform autonomously and requires a user decision to continue or complete the process.
-
----
-
-### LC-07. Completed
+### LC-07. Finalized
 
 The job posting has completed its lifecycle within the automation, and all related information has been stored for future reference.
 
@@ -801,6 +801,8 @@ The job posting has completed its lifecycle within the automation, and all relat
 ## 13. Job Posting Status Catalog
 
 The system shall control the lifecycle of every job posting using a predefined set of statuses.
+
+> **Official catalog (decision 2026-07-30):** the 7 statuses below are the single source of truth for the offer lifecycle, aligned with `shared/state_machine.py`. Previous versions of this catalog (EST-001..010, EST-999 Error) are superseded.
 
 ### EST-001. Discovered
 
@@ -823,7 +825,6 @@ None
 **Next Statuses**
 
 - EST-002 Prepared
-- EST-999 Error
 
 ---
 
@@ -848,7 +849,6 @@ System
 **Next Statuses**
 
 - EST-003 Evaluated
-- EST-999 Error
 
 ---
 
@@ -872,17 +872,16 @@ System
 
 **Next Statuses**
 
-- EST-004 Classified
-- EST-010 Discarded
-- EST-999 Error
+- EST-004 Accepted
+- EST-005 Discarded
 
 ---
 
-### EST-004. Classified
+### EST-004. Accepted
 
 **Description**
 
-The job posting has been prioritized according to the evaluation results.
+The job posting has passed the initial evaluation and is approved to continue in the process.
 
 **Functional Process**
 
@@ -898,29 +897,33 @@ System
 
 **Next Statuses**
 
-- EST-005 Deep Processing
-- EST-010 Discarded
+- EST-006 Processed
 
 ---
 
-### EST-005. Deep Processing
+### EST-005. Discarded
 
 **Description**
 
-The job posting is currently being analyzed in detail.
+The job posting is no longer being processed because it did not satisfy the defined rules or because the user decided to discard it.
 
 **Functional Process**
 
-FP-05
+FP-03 — Initial Evaluation
+FP-07 — User Review
 
 **Assigned By**
 
 System
+User
 
-**Next Statuses**
+**Previous Statuses**
 
-- EST-006 Processed
-- EST-999 Error
+- EST-003
+
+**Final Status**
+
+Yes
 
 ---
 
@@ -928,92 +931,48 @@ System
 
 **Description**
 
-The in-depth analysis has been successfully completed.
+The job posting has been analyzed in depth, and all information required to support the application has been generated.
 
 **Functional Process**
 
-FP-05
-
-**Next Statuses**
-
-- EST-007 Resources Generated
-
----
-
-### EST-007. Resources Generated
-
-**Description**
-
-All resources defined to support the job application have been generated.
-
-**Functional Process**
-
-FP-06
-
-**Next Statuses**
-
-- EST-008 Pending Decision
-
----
-
-### EST-008. Pending Decision
-
-**Description**
-
-The automation requires a user decision.
-
-**Functional Process**
-
-FP-07
+FP-05 — Deep Processing
 
 **Assigned By**
 
 System
 
+**Previous Statuses**
+
+- EST-004
+
 **Next Statuses**
 
-- EST-009 Completed
-- EST-010 Discarded
+- EST-007 Finalized
 
 ---
 
-### EST-009. Completed
+### EST-007. Finalized
 
 **Description**
 
-The job posting has completed its entire processing workflow.
+The job posting has completed its lifecycle within the automation, and all related information has been stored for future reference.
 
 **Functional Process**
 
-FP-09
+FP-08 — Management and Tracking
+
+**Assigned By**
+
+System
+
+**Previous Statuses**
+
+- EST-005
+- EST-006
 
 **Final Status**
 
 Yes
-
----
-
-### EST-010. Discarded
-
-**Description**
-
-The job posting is no longer being processed because it did not satisfy the defined rules or because the user decided to discard it.
-
-**Final Status**
-
-Yes
-
----
-
-### EST-999. Error
-
-**Description**
-
-Processing was interrupted by an error and requires a retry or manual intervention.
-
-**Final Status**
-
-No
 
 ---
 

@@ -4,8 +4,8 @@ from typing import Any
 import httpx
 
 from shared.config import load
-from shared.errors import ConfigurationError, ErrorLLM
-from shared.retry import decorador_reintento
+from shared.errors import ConfigurationError, LLMError
+from shared.retry import retry_decorator
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _PROMPTS_PATH = _PROJECT_ROOT / "prompts"
@@ -29,12 +29,12 @@ def load_prompt(prompt_id: str) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def renderizar_prompt(template: str, contexto: dict[str, Any]) -> str:
-    resultado = template
-    for clave, valor in contexto.items():
-        resultado = resultado.replace("{{ " + clave + " }}", str(valor))
-        resultado = resultado.replace("{{" + clave + "}}", str(valor))
-    return resultado
+def render_prompt(template: str, context: dict[str, Any]) -> str:
+    result = template
+    for key, value in context.items():
+        result = result.replace("{{ " + key + " }}", str(value))
+        result = result.replace("{{" + key + "}}", str(value))
+    return result
 
 
 def _route_provider(purpose: str) -> str:
@@ -77,37 +77,37 @@ def _get_cloud_config() -> dict[str, Any]:
     }
 
 
-@decorador_reintento()
+@retry_decorator()
 def _send_local(prompt: str) -> str:
     cfg = _get_local_config()
     url = f"http://{cfg['host']}:{cfg['port']}/api/generate"
     payload = {"model": cfg["model"], "prompt": prompt, "stream": False}
     try:
-        respuesta = httpx.post(url, json=payload, timeout=cfg["timeout"])
-        respuesta.raise_for_status()
-        data = respuesta.json()
+        response = httpx.post(url, json=payload, timeout=cfg["timeout"])
+        response.raise_for_status()
+        data = response.json()
         return str(data.get("response", ""))
     except httpx.ConnectError:
-        raise ErrorLLM(
+        raise LLMError(
             "001",
             f"Could not connect to local Ollama at {url}",
             source_module="ia_service",
         )
     except httpx.TimeoutException:
-        raise ErrorLLM(
+        raise LLMError(
             "002",
             f"Timeout connecting to local Ollama ({cfg['timeout']}s)",
             source_module="ia_service",
         )
     except httpx.HTTPStatusError as e:
-        raise ErrorLLM(
+        raise LLMError(
             "003",
             f"Local Ollama responded with code {e.response.status_code}",
             source_module="ia_service",
         )
 
 
-@decorador_reintento()
+@retry_decorator()
 def _send_cloud(prompt: str) -> str:
     cfg = _get_cloud_config()
     url = f"{cfg['endpoint']}/api/generate"
@@ -118,51 +118,51 @@ def _send_cloud(prompt: str) -> str:
         headers["Authorization"] = f"Bearer {cfg['api_key']}"
     payload = {"model": cfg["model"], "prompt": prompt, "stream": False}
     try:
-        respuesta = httpx.post(
+        response = httpx.post(
             url, json=payload, headers=headers, timeout=cfg["timeout"]
         )
-        respuesta.raise_for_status()
-        data = respuesta.json()
+        response.raise_for_status()
+        data = response.json()
         return str(data.get("response", ""))
     except httpx.ConnectError:
-        raise ErrorLLM(
+        raise LLMError(
             "001",
             f"Could not connect to AI Cloud at {url}",
             source_module="ia_service",
         )
     except httpx.TimeoutException:
-        raise ErrorLLM(
+        raise LLMError(
             "002",
             f"Timeout connecting to AI Cloud ({cfg['timeout']}s)",
             source_module="ia_service",
         )
     except httpx.HTTPStatusError as e:
-        raise ErrorLLM(
+        raise LLMError(
             "003",
             f"AI Cloud responded with code {e.response.status_code}",
             source_module="ia_service",
         )
 
 
-def _validate_response(respuesta_raw: str) -> dict[str, Any]:
+def _validate_response(raw_response: str) -> dict[str, Any]:
     import json
 
-    if not respuesta_raw.strip():
-        raise ErrorLLM(
+    if not raw_response.strip():
+        raise LLMError(
             "003",
             "Empty response from AI model",
             source_module="ia_service",
         )
     try:
-        data = json.loads(respuesta_raw)
+        data = json.loads(raw_response)
     except json.JSONDecodeError:
-        raise ErrorLLM(
+        raise LLMError(
             "003",
             "Response is not valid JSON",
             source_module="ia_service",
         )
     if not isinstance(data, dict):
-        raise ErrorLLM(
+        raise LLMError(
             "004",
             "Unexpected response format: expected a dictionary",
             source_module="ia_service",
@@ -171,19 +171,19 @@ def _validate_response(respuesta_raw: str) -> dict[str, Any]:
 
 
 def analyze(
-    prompt_id: str, contexto: dict[str, Any], purpose: str = "evaluation"
+    prompt_id: str, context: dict[str, Any], purpose: str = "evaluation"
 ) -> dict[str, Any]:
     template = load_prompt(prompt_id)
-    prompt_final = renderizar_prompt(template, contexto)
+    final_prompt = render_prompt(template, context)
     from loguru import logger
 
     provider = _route_provider(purpose)
     logger.debug("Sending prompt to AI | prompt_id={} | provider={}", prompt_id, provider)
 
     if provider == "cloud":
-        respuesta_raw = _send_cloud(prompt_final)
+        raw_response = _send_cloud(final_prompt)
     else:
-        respuesta_raw = _send_local(prompt_final)
+        raw_response = _send_local(final_prompt)
 
     logger.debug("Response received from AI | prompt_id={} | provider={}", prompt_id, provider)
-    return _validate_response(respuesta_raw)
+    return _validate_response(raw_response)

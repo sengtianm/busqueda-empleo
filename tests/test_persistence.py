@@ -9,75 +9,75 @@ from shared.persistence import (
 )
 
 
-def test_generar_id_secuencia(archivo_bd_temporal: Path) -> None:
-    id1 = generate_id("empresas")
-    id2 = generate_id("empresas")
-    id3 = generate_id("empresas")
-    assert id1 == "EMP-0001"
-    assert id2 == "EMP-0002"
-    assert id3 == "EMP-0003"
+def test_generate_id_sequence(temp_db_file: Path) -> None:
+    id_1 = generate_id("empresas")
+    id_2 = generate_id("empresas")
+    id_3 = generate_id("empresas")
+    assert id_1 == "EMP-0001"
+    assert id_2 == "EMP-0002"
+    assert id_3 == "EMP-0003"
 
 
-def test_generar_id_por_tabla(archivo_bd_temporal: Path) -> None:
-    emp = generate_id("empresas")
-    ofe = generate_id("ofertas")
-    fnt = generate_id("fuentes")
-    assert emp.startswith("EMP-")
-    assert ofe.startswith("OFE-")
-    assert fnt.startswith("FNT-")
+def test_generate_id_per_table(temp_db_file: Path) -> None:
+    company_id = generate_id("empresas")
+    offer_id = generate_id("ofertas")
+    source_id = generate_id("fuentes")
+    assert company_id.startswith("EMP-")
+    assert offer_id.startswith("OFE-")
+    assert source_id.startswith("FNT-")
 
 
-def test_escribir_y_leer(archivo_bd_temporal: Path) -> None:
-    datos = {"nombre": "Test", "sector": "tecnologia"}
-    id_generado = write_row("empresas", datos)
-    assert id_generado.startswith("EMP-")
-    filas = read_table("empresas")
-    assert len(filas) == 1
-    assert filas[0]["nombre"] == "Test"
-    assert filas[0]["id"] == id_generado
+def test_write_and_read(temp_db_file: Path) -> None:
+    data = {"nombre": "Test", "sector": "tecnologia"}
+    generated_id = write_row("empresas", data)
+    assert generated_id.startswith("EMP-")
+    rows = read_table("empresas")
+    assert len(rows) == 1
+    assert rows[0]["nombre"] == "Test"
+    assert rows[0]["id"] == generated_id
 
 
-def test_buscar_por_id_existente(archivo_bd_temporal: Path) -> None:
-    id1 = write_row("empresas", {"nombre": "Uno", "sector": "tech"})
+def test_find_by_id_existing(temp_db_file: Path) -> None:
+    id_1 = write_row("empresas", {"nombre": "Uno", "sector": "tech"})
     write_row("empresas", {"nombre": "Dos", "sector": "fintech"})
-    resultado = find_by_id("empresas", id1)
-    assert resultado is not None
-    assert resultado["nombre"] == "Uno"
+    result = find_by_id("empresas", id_1)
+    assert result is not None
+    assert result["nombre"] == "Uno"
 
 
-def test_buscar_por_id_inexistente(archivo_bd_temporal: Path) -> None:
-    resultado = find_by_id("empresas", "EMP-9999")
-    assert resultado is None
+def test_find_by_id_missing(temp_db_file: Path) -> None:
+    result = find_by_id("empresas", "EMP-9999")
+    assert result is None
 
 
-def test_actualizar(archivo_bd_temporal: Path) -> None:
-    id1 = write_row("empresas", {"nombre": "Viejo", "sector": "tech"})
-    ok = update("empresas", id1, {"nombre": "Nuevo"})
+def test_update(temp_db_file: Path) -> None:
+    id_1 = write_row("empresas", {"nombre": "Viejo", "sector": "tech"})
+    ok = update("empresas", id_1, {"nombre": "Nuevo"})
     assert ok is True
-    filas = read_table("empresas")
-    assert filas[0]["nombre"] == "Nuevo"
+    rows = read_table("empresas")
+    assert rows[0]["nombre"] == "Nuevo"
 
 
-def test_actualizar_inexistente(archivo_bd_temporal: Path) -> None:
+def test_update_missing(temp_db_file: Path) -> None:
     ok = update("empresas", "EMP-9999", {"nombre": "Nuevo"})
     assert ok is False
 
 
-def test_escribir_con_id_explicito(archivo_bd_temporal: Path) -> None:
-    id_devuelto = write_row("empresas", {"id": "EMP-0100", "nombre": "Custom"})
-    assert id_devuelto == "EMP-0100"
-    resultado = find_by_id("empresas", "EMP-0100")
-    assert resultado is not None
-    assert resultado["nombre"] == "Custom"
+def test_write_with_explicit_id(temp_db_file: Path) -> None:
+    returned_id = write_row("empresas", {"id": "EMP-0100", "nombre": "Custom"})
+    assert returned_id == "EMP-0100"
+    result = find_by_id("empresas", "EMP-0100")
+    assert result is not None
+    assert result["nombre"] == "Custom"
 
 
-def test_listas_json(archivo_bd_temporal: Path) -> None:
-    id_oferta = write_row("ofertas", {
+def test_json_lists(temp_db_file: Path) -> None:
+    offer_id = write_row("ofertas", {
         "url": "https://example.com/job",
         "titulo": "Data Engineer",
         "descripcion_original": "Test",
     })
-    resultado = find_by_id("ofertas", id_oferta)
-    assert resultado is not None
-    assert resultado["url"] == "https://example.com/job"
-    assert resultado["titulo"] == "Data Engineer"
+    result = find_by_id("ofertas", offer_id)
+    assert result is not None
+    assert result["url"] == "https://example.com/job"
+    assert result["titulo"] == "Data Engineer"

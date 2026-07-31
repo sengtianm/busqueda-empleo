@@ -22,6 +22,8 @@ Each entity will be developed later in this document through its detailed specif
 | Configuration | Support | Configuration | Represents the configuration used by the automation during its execution. |
 | Catalog | Support | References | Represents the sets of controlled values used by the different entities of the model. |
 
+> **Scope of implemented persistence (decision 2026-07-30):** the MVP database (`job_search.db`) persists a trimmed subset of the model above: `secuencia_ids`, `fuentes`, `empresas`, `ubicaciones`, and `ofertas`. The remaining entities of this inventory are deferred to later modules and are defined in their corresponding phases. This note formalizes the actual persistence scope; the full inventory above remains the target model.
+
 ---
 
 # 2. Detailed Specification of Entities
@@ -361,7 +363,7 @@ Centralize the geographic information of job offers to facilitate their query, f
 |----------|-------------|-------------|-------------|
 | id | UUID | Yes | Unique identifier of the location. |
 | country | Text | Yes | Country where the vacancy is offered. |
-| state_province | Text | No | State, province, or department. |
+| region | Text | No | State, province, or department (actual name in `shared/models.py`). |
 | city | Text | No | City of the vacancy. |
 | address | Text | No | Specific address when available. |
 | modality | Catalog | Yes | Work modality associated with the location (on-site, remote, hybrid, etc.). |
@@ -521,6 +523,11 @@ The **Processed Offer** entity constitutes the structured representation of a jo
 
 Its existence allows preserving the original information obtained during discovery while having an optimized version available for the automation's internal processing.
 
+**Recorded deviations (PMD-020):**
+
+- `requisitos`, `tecnologias`, and `idiomas` are implemented as JSON lists (real improvement) instead of `Long Text`.
+- The `summary`, `technical_skills`, and `soft_skills` attributes are not implemented in the current model (`shared/models.py`).
+
 ---
 
 ## 2.6. Entity: Initial Evaluation
@@ -553,7 +560,7 @@ Record the result of the initial evaluation of each offer, preserving the inform
 | evaluated_criteria | Long Text | Yes | Summary of the criteria applied during the evaluation. |
 | observations | Long Text | No | Additional relevant information about the evaluation. |
 | evaluation_date | Date/Time | Yes | Date and time when the evaluation was performed. |
-| model_version | Text | Yes | Version of the model, rules, or configuration used to perform the evaluation. |
+| version_modelo | Text | Yes | Version of the model, rules, or configuration used to perform the evaluation (actual name in `shared/models.py`). |
 | creation_date | Date/Time | Yes | Date and time of record creation. |
 | update_date | Date/Time | Yes | Date and time of the last record update. |
 
@@ -636,26 +643,26 @@ Record in a structured way all the results obtained during the in-depth diagnosi
 |----------|-------------|-------------|-------------|
 | id | UUID | Yes | Unique identifier of the detailed evaluation. |
 | processed_offer_id | UUID | Yes | Reference to the evaluated processed offer. |
-| organizational_result | Long Text | Yes | Main organizational result and secondary results identified during the diagnosis. |
-| organizational_problem | Long Text | Yes | Main organizational problem, explicit problems, inferred problems, and non-determinable aspects identified. |
-| required_professional_profile | Long Text | Yes | Critical capabilities, way of thinking, experiences, and competencies required for the position. |
-| profile_matches | Long Text | Yes | Main and complementary evidence demonstrating the match between the user's profile and the vacancy. |
-| xyz_logic | Long Text | Yes | X → Y → Z logic constructed during the diagnosis. |
-| value_hypothesis | Long Text | Yes | Value hypothesis formulated to support the candidacy. |
-| discarded_information | Long Text | No | Professional profile information determined not to add value for this vacancy. |
-| technical_fit | Decimal | Yes | Technical fit score (0 to 10). |
-| technical_fit_justification | Long Text | Yes | Justification for the technical fit obtained during the evaluation. |
-| functional_fit | Decimal | Yes | Functional fit score (0 to 10). |
-| functional_fit_justification | Long Text | Yes | Justification for the functional fit obtained during the evaluation. |
-| strategic_fit | Decimal | Yes | Strategic fit score (0 to 10). |
-| strategic_fit_justification | Long Text | Yes | Justification for the strategic fit obtained during the evaluation. |
-| overqualification_risk | Catalog | Yes | Overqualification risk level (Low, Medium, or High). |
-| risk_justification | Long Text | Yes | Justification for the assigned overqualification risk level. |
-| final_recommendation | Catalog | Yes | Final recommendation on the advisability of applying (Apply, Apply with reservations, or Do not apply). |
-| recommendation_justification | Long Text | Yes | Justification for the final recommendation. |
-| cover_letter_inputs | Long Text | Yes | Summary of strategic inputs that will serve as input for the next phase of cover letter construction. |
+| resultado_organizacional | Long Text | Yes | Main organizational result and secondary results identified during the diagnosis. |
+| problema_organizacional | Long Text | Yes | Main organizational problem, explicit problems, inferred problems, and non-determinable aspects identified. |
+| perfil_profesional_requerido | Long Text | Yes | Critical capabilities, way of thinking, experiences, and competencies required for the position. |
+| coincidencias_perfil | Long Text | Yes | Main and complementary evidence demonstrating the match between the user's profile and the vacancy. |
+| logica_xyz | Long Text | Yes | X → Y → Z logic constructed during the diagnosis. |
+| hipotesis_valor | Long Text | Yes | Value hypothesis formulated to support the candidacy. |
+| informacion_descartada | Long Text | No | Professional profile information determined not to add value for this vacancy. |
+| ajuste_tecnico | Decimal | Yes | Technical fit score (0 to 10). |
+| justificacion_ajuste_tecnico | Long Text | Yes | Justification for the technical fit obtained during the evaluation. |
+| ajuste_funcional | Decimal | Yes | Functional fit score (0 to 10). |
+| justificacion_ajuste_funcional | Long Text | Yes | Justification for the functional fit obtained during the evaluation. |
+| ajuste_estrategico | Decimal | Yes | Strategic fit score (0 to 10). |
+| justificacion_ajuste_estrategico | Long Text | Yes | Justification for the strategic fit obtained during the evaluation. |
+| riesgo_sobrecalificacion | Catalog | Yes | Overqualification risk level (Bajo, Medio, or Alto). |
+| justificacion_riesgo | Long Text | Yes | Justification for the assigned overqualification risk level. |
+| recomendacion_final | Catalog | Yes | Final recommendation on the advisability of applying (Aplicar, Aplicar con reservas, or No aplicar). |
+| justificacion_recomendacion | Long Text | Yes | Justification for the final recommendation. |
+| insumos_carta_presentacion | Long Text | Yes | Summary of strategic inputs that will serve as input for the next phase of cover letter construction. |
 | evaluation_date | Date/Time | Yes | Date and time when the evaluation finished. |
-| methodology_version | Text | Yes | Version of the methodology used to perform the diagnosis. |
+| version_metodologia | Text | Yes | Version of the methodology used to perform the diagnosis. |
 | creation_date | Date/Time | Yes | Date and time of record creation. |
 | update_date | Date/Time | Yes | Date and time of the last record update. |
 
@@ -676,8 +683,8 @@ Record in a structured way all the results obtained during the in-depth diagnosi
 ### Foreign keys
 
 - processed_offer_id → Processed Offer
-- overqualification_risk → Catalog
-- final_recommendation → Catalog
+- riesgo_sobrecalificacion → Catalog
+- recomendacion_final → Catalog
 
 ---
 
@@ -1295,6 +1302,8 @@ The catalogs constitute the sets of controlled values used by the data model to 
 
 Each catalog must be managed independently and will be used through foreign keys by the entities that require them.
 
+> **Deferral (decision 2026-07-30):** the Catalog entity is **not implemented in the MVP**. The current implementation (`shared/models.py`, `shared/persistence.py`) stores catalog values as free text on the corresponding tables. Formal adoption of the Catalog entity (as a table with foreign keys) is deferred to the module that introduces traceability (Modules 2-3 onward). Only the Offer Statuses catalog (3.1) is enforced in the MVP, through `shared/state_machine.py`.
+
 ---
 
 ## 3.1. Catalog: Offer Statuses
@@ -1303,20 +1312,17 @@ Each catalog must be managed independently and will be used through foreign keys
 
 Define the states that an offer can go through during its lifecycle.
 
+> **Official catalog (decision 2026-07-30):** the 7 statuses below are the single source of truth for the offer lifecycle, aligned with `shared/state_machine.py` and DOC-01 §13. Previous versions of this catalog (12 values) are superseded.
+
 **Initial values**
 
 - Discovered
 - Prepared
-- Initial Evaluation
-- Approved for Detailed Evaluation
-- Rejected in Initial Evaluation
-- Detailed Evaluation
-- Approved for Application
-- Rejected in Detailed Evaluation
-- Documentation Generated
-- Applied
-- Closed
-- Archived
+- Evaluated
+- Accepted
+- Discarded
+- Processed
+- Finalized
 
 ---
 
@@ -1557,9 +1563,9 @@ Classify the overqualification risk identified during the detailed evaluation.
 
 **Initial values**
 
-- Low
-- Medium
-- High
+- Bajo
+- Medio
+- Alto
 
 ---
 
@@ -1571,9 +1577,9 @@ Record the final recommendation obtained during the detailed evaluation.
 
 **Initial values**
 
-- Apply
-- Apply with reservations
-- Do not apply
+- Aplicar
+- Aplicar con reservas
+- No aplicar
 
 ---
 
@@ -1774,6 +1780,258 @@ The documented information must remain synchronized with the rest of the project
 
 ---
 
+## 5.5. Attribute catalog
+
+### 5.5.1. Offer
+
+| Entity | Attribute | Description | Type | Req. | PK | AK | FK | Default | Domain | Constraints | Sensitivity | Persistence | Observations |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Offer | id | Unique identifier of the offer. | UUID | Yes | Yes | | | | | | Internal | Permanent | Actual name: `id`. |
+| Offer | source_id | Reference to the source where the offer was discovered. | UUID | Yes | | | Source | | | Mandatory source. | Internal | Permanent | Actual name: `fuente_id`. |
+| Offer | company_id | Reference to the company that publishes the offer. | UUID | Yes | | | Company | | | Mandatory company. | Internal | Permanent | Actual name: `empresa_id`. |
+| Offer | location_id | Reference to the location associated with the offer. | UUID | No | | | Location | | | | Public | Permanent | Actual name: `ubicacion_id`. |
+| Offer | source_identifier | Identifier used by the source of origin for the offer. | Text | No | | | | | | | Public | Permanent | |
+| Offer | url | Original link of the offer. | Text | Yes | | | | | | Must be preserved throughout the lifecycle. | Public | Permanent | |
+| Offer | title | Original title of the offer. | Text | Yes | | | | | | | Public | Permanent | Actual name: `titulo`. |
+| Offer | original_description | Original content of the offer obtained during discovery. | Long Text | Yes | | | | | | Must not be overwritten after discovery. | Public | Permanent | Actual name: `descripcion_original`. |
+| Offer | publication_date | Publication date indicated by the source. | Date/Time | No | | | | | | | Public | Permanent | |
+| Offer | discovery_date | Date and time when the automation discovered the offer. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Offer | status | Current status of the offer within the processing flow. | Catalog | Yes | | | Catalog | `discovered` | Offer Statuses (7 values) | Must follow the official state machine. | Internal | Permanent | Actual name: `estado`. |
+| Offer | active | Indicates whether the offer remains valid within the system. | Boolean | Yes | | | | `true` | | | Internal | Permanent | |
+| Offer | observations | Additional relevant information about the offer. | Long Text | No | | | | | | | Internal | Permanent | Actual name: `observaciones`. |
+| Offer | creation_date | Date and time of record creation. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Offer | update_date | Date and time of the last record update. | Date/Time | Yes | | | | | | | Internal | Permanent | Actual name: `last_edit_date`. |
+
+### 5.5.2. Source
+
+| Entity | Attribute | Description | Type | Req. | PK | AK | FK | Default | Domain | Constraints | Sensitivity | Persistence | Observations |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Source | id | Unique identifier of the source. | UUID | Yes | Yes | | | | | | Internal | Permanent | |
+| Source | name | Official name of the source. | Text | Yes | | | | | | Unique name. | Internal | Permanent | Actual name: `nombre`. |
+| Source | type | Type of source used by the automation. | Catalog | Yes | | | Catalog | | Source Types | Valid catalog value. | Internal | Permanent | Actual name: `tipo`. |
+| Source | main_url | Main URL of the source. | Text | Yes | | | | | | Unique URL. | Public | Permanent | Actual name: `url_base`. |
+| Source | description | General description of the source. | Long Text | No | | | | | | | Internal | Permanent | |
+| Source | active | Indicates whether the source is enabled for offer discovery. | Boolean | Yes | | | | `true` | | Inactive sources reject new offers. | Internal | Permanent | |
+| Source | query_frequency | Configured frequency for querying the source. | Catalog | No | | | Catalog | | Catalog | Valid catalog value. | Internal | Permanent | |
+| Source | last_query | Date and time of the last query performed. | Date/Time | No | | | | | | | Internal | Permanent | |
+| Source | last_update | Date and time of the last detected update on the source. | Date/Time | No | | | | | | | Internal | Permanent | |
+| Source | observations | Additional relevant information about the source. | Long Text | No | | | | | | | Internal | Permanent | |
+| Source | creation_date | Date and time of record creation. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Source | update_date | Date and time of the last record update. | Date/Time | Yes | | | | | | | Internal | Permanent | Actual name: `last_edit_date`. |
+
+### 5.5.3. Company
+
+| Entity | Attribute | Description | Type | Req. | PK | AK | FK | Default | Domain | Constraints | Sensitivity | Persistence | Observations |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Company | id | Unique identifier of the company. | UUID | Yes | Yes | | | | | | Internal | Permanent | |
+| Company | name | Official name of the company. | Text | Yes | | | | | | | Public | Permanent | Actual name: `nombre`. |
+| Company | normalized_name | Standardized name used to avoid duplicates. | Text | Yes | | | | | | | Internal | Permanent | |
+| Company | website | Official website of the company. | Text | No | | | | | | | Public | Permanent | Actual name: `sitio_web`. |
+| Company | linkedin | URL of the company's official LinkedIn profile. | Text | No | | | | | | | Public | Permanent | |
+| Company | sector | Economic sector to which the company belongs. | Catalog | No | | | Catalog | | Business Sectors | Valid catalog value. | Internal | Permanent | |
+| Company | size | Company size classification. | Catalog | No | | | Catalog | | Company Size | Valid catalog value. | Internal | Permanent | |
+| Company | description | General description of the company. | Long Text | No | | | | | | | Public | Permanent | Actual name: `descripcion`. |
+| Company | observations | Additional relevant information about the company. | Long Text | No | | | | | | | Internal | Permanent | |
+| Company | creation_date | Date and time of record creation. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Company | update_date | Date and time of the last record update. | Date/Time | Yes | | | | | | | Internal | Permanent | Actual name: `last_edit_date`. |
+
+### 5.5.4. Location
+
+| Entity | Attribute | Description | Type | Req. | PK | AK | FK | Default | Domain | Constraints | Sensitivity | Persistence | Observations |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Location | id | Unique identifier of the location. | UUID | Yes | Yes | | | | | | Internal | Permanent | |
+| Location | country | Country where the vacancy is offered. | Text | Yes | | | | | | At least the country is mandatory. | Public | Permanent | Actual name: `pais`. |
+| Location | region | State, province, or department. | Text | No | | | | | | | Public | Permanent | |
+| Location | city | City of the vacancy. | Text | No | | | | | | | Public | Permanent | Actual name: `ciudad`. |
+| Location | address | Specific address when available. | Text | No | | | | | | | Public | Permanent | |
+| Location | modality | Work modality associated with the location. | Catalog | Yes | | | Catalog | | Work Modalities | Valid catalog value. | Public | Permanent | Actual name: `modalidad`. |
+| Location | location_type | Classification of the offer location. | Catalog | Yes | | | Catalog | | Catalog | Valid catalog value. | Internal | Permanent | |
+| Location | observations | Additional information related to the location. | Long Text | No | | | | | | | Internal | Permanent | |
+| Location | creation_date | Date and time of record creation. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Location | update_date | Date and time of the last record update. | Date/Time | Yes | | | | | | | Internal | Permanent | Actual name: `last_edit_date`. |
+
+### 5.5.5. Processed Offer
+
+| Entity | Attribute | Description | Type | Req. | PK | AK | FK | Default | Domain | Constraints | Sensitivity | Persistence | Observations |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Processed Offer | id | Unique identifier of the processed offer. | UUID | Yes | Yes | | | | | | Internal | Permanent | |
+| Processed Offer | offer_id | Reference to the original offer. | UUID | Yes | | Yes | Offer | | | Unique per offer. | Internal | Permanent | |
+| Processed Offer | normalized_position | Normalized name of the identified position. | Text | Yes | | | | | | | Public | Permanent | Actual name: `clean_title`. |
+| Processed Offer | processed_description | Structured description of the offer. | Long Text | Yes | | | | | | | Public | Permanent | Actual name: `clean_description`. |
+| Processed Offer | summary | Generated summary of the offer content. | Long Text | No | | | | | | | Internal | Permanent | Not implemented (PMD-020). |
+| Processed Offer | technical_skills | List of identified technical skills. | Long Text | No | | | | | | | Internal | Permanent | Not implemented (PMD-020). |
+| Processed Offer | soft_skills | List of identified soft skills. | Long Text | No | | | | | | | Internal | Permanent | Not implemented (PMD-020). |
+| Processed Offer | technologies | Technologies identified during processing. | Long Text | No | | | | | | | Internal | Permanent | Implemented as JSON list (PMD-020); actual name: `tecnologias`. |
+| Processed Offer | experience_level | Required experience level. | Catalog | No | | | Catalog | | Experience Level | Valid catalog value. | Internal | Permanent | |
+| Processed Offer | education_level | Identified education level. | Catalog | No | | | Catalog | | Education Level | Valid catalog value. | Internal | Permanent | |
+| Processed Offer | contract_type | Identified contract type. | Catalog | No | | | Catalog | | Contract Types | Valid catalog value. | Internal | Permanent | |
+| Processed Offer | work_modality | Identified work modality. | Catalog | No | | | Catalog | | Work Modalities | Valid catalog value. | Internal | Permanent | |
+| Processed Offer | salary_range | Normalized salary information when available. | Text | No | | | | | | | Internal | Permanent | Implemented as `salario_min`, `salario_max`, `moneda`. |
+| Processed Offer | languages | Identified required or desirable languages. | Long Text | No | | | | | | | Internal | Permanent | Implemented as JSON list (PMD-020); actual name: `idiomas`. |
+| Processed Offer | benefits | Benefits identified in the offer. | Long Text | No | | | | | | | Public | Permanent | |
+| Processed Offer | requirements | Main requirements extracted from the offer. | Long Text | No | | | | | | | Public | Permanent | Implemented as JSON list (PMD-020); actual name: `requisitos`. |
+| Processed Offer | responsibilities | Identified main responsibilities. | Long Text | No | | | | | | | Public | Permanent | |
+| Processed Offer | processing_date | Date and time when processing finished. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Processed Offer | processing_version | Version of the processing process used. | Text | Yes | | | | | | | Internal | Permanent | |
+| Processed Offer | observations | Additional relevant information about the processing. | Long Text | No | | | | | | | Internal | Permanent | |
+| Processed Offer | creation_date | Date and time of record creation. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Processed Offer | update_date | Date and time of the last record update. | Date/Time | Yes | | | | | | | Internal | Permanent | Actual name: `last_edit_date`. |
+
+### 5.5.6. Initial Evaluation
+
+| Entity | Attribute | Description | Type | Req. | PK | AK | FK | Default | Domain | Constraints | Sensitivity | Persistence | Observations |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Initial Evaluation | id | Unique identifier of the initial evaluation. | UUID | Yes | Yes | | | | | | Internal | Permanent | |
+| Initial Evaluation | processed_offer_id | Reference to the evaluated processed offer. | UUID | Yes | | Yes | Processed Offer | | | Unique per processed offer. | Internal | Permanent | |
+| Initial Evaluation | result | Result obtained in the initial evaluation. | Catalog | Yes | | | Catalog | | Evaluation Result | Valid catalog value. | Internal | Permanent | Actual name: `resultado`. |
+| Initial Evaluation | score | Total score obtained during the initial evaluation. | Decimal | Yes | | | | | 0–100 | | Internal | Permanent | |
+| Initial Evaluation | pass_threshold | Minimum score required to pass the evaluation. | Decimal | Yes | | | | 50 | | | Internal | Permanent | Actual name: `approval_threshold`. |
+| Initial Evaluation | decision | Decision generated from the evaluation result. | Catalog | Yes | | | Catalog | | Decision Evaluation | Must match the result. | Internal | Permanent | |
+| Initial Evaluation | justification | Justification for the decision made. | Long Text | Yes | | | | | | | Confidential | Permanent | |
+| Initial Evaluation | evaluated_criteria | Summary of the criteria applied during the evaluation. | Long Text | Yes | | | | | | | Internal | Permanent | |
+| Initial Evaluation | observations | Additional relevant information about the evaluation. | Long Text | No | | | | | | | Internal | Permanent | |
+| Initial Evaluation | evaluation_date | Date and time when the evaluation was performed. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Initial Evaluation | version_modelo | Version of the model, rules, or configuration used to perform the evaluation. | Text | Yes | | | | `v1` | | | Internal | Permanent | Actual name (official). |
+| Initial Evaluation | creation_date | Date and time of record creation. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Initial Evaluation | update_date | Date and time of the last record update. | Date/Time | Yes | | | | | | | Internal | Permanent | Actual name: `last_edit_date`. |
+
+### 5.5.7. Detailed Evaluation
+
+| Entity | Attribute | Description | Type | Req. | PK | AK | FK | Default | Domain | Constraints | Sensitivity | Persistence | Observations |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Detailed Evaluation | id | Unique identifier of the detailed evaluation. | UUID | Yes | Yes | | | | | | Internal | Permanent | |
+| Detailed Evaluation | processed_offer_id | Reference to the evaluated processed offer. | UUID | Yes | | Yes | Processed Offer | | | Unique per processed offer. | Internal | Permanent | |
+| Detailed Evaluation | resultado_organizacional | Main and secondary organizational results identified during the diagnosis. | Long Text | Yes | | | | | | | Confidential | Permanent | |
+| Detailed Evaluation | problema_organizacional | Main, explicit, inferred, and non-determinable organizational problems. | Long Text | Yes | | | | | | | Confidential | Permanent | |
+| Detailed Evaluation | perfil_profesional_requerido | Critical capabilities, way of thinking, experiences, and competencies required. | Long Text | Yes | | | | | | | Confidential | Permanent | |
+| Detailed Evaluation | coincidencias_perfil | Main and complementary evidence of match between profile and vacancy. | Long Text | Yes | | | | | | Must be truthful evidence. | Confidential | Permanent | |
+| Detailed Evaluation | logica_xyz | X → Y → Z logic constructed during the diagnosis. | Long Text | Yes | | | | | | | Confidential | Permanent | |
+| Detailed Evaluation | hipotesis_valor | Value hypothesis formulated to support the candidacy. | Long Text | Yes | | | | | | | Confidential | Permanent | |
+| Detailed Evaluation | informacion_descartada | Profile information determined not to add value for this vacancy. | Long Text | No | | | | | | | Confidential | Permanent | |
+| Detailed Evaluation | ajuste_tecnico | Technical fit score. | Decimal | Yes | | | | | 0–10 | Must be justified. | Internal | Permanent | |
+| Detailed Evaluation | justificacion_ajuste_tecnico | Justification for the technical fit. | Long Text | Yes | | | | | | | Confidential | Permanent | |
+| Detailed Evaluation | ajuste_funcional | Functional fit score. | Decimal | Yes | | | | | 0–10 | Must be justified. | Internal | Permanent | |
+| Detailed Evaluation | justificacion_ajuste_funcional | Justification for the functional fit. | Long Text | Yes | | | | | | | Confidential | Permanent | |
+| Detailed Evaluation | ajuste_estrategico | Strategic fit score. | Decimal | Yes | | | | | 0–10 | Must be justified. | Internal | Permanent | |
+| Detailed Evaluation | justificacion_ajuste_estrategico | Justification for the strategic fit. | Long Text | Yes | | | | | | | Confidential | Permanent | |
+| Detailed Evaluation | riesgo_sobrecalificacion | Overqualification risk level. | Catalog | Yes | | | Catalog | | Overqualification Risk (Bajo/Medio/Alto) | Valid catalog value. | Confidential | Permanent | |
+| Detailed Evaluation | justificacion_riesgo | Justification for the assigned risk level. | Long Text | Yes | | | | | | | Confidential | Permanent | |
+| Detailed Evaluation | recomendacion_final | Final recommendation on the advisability of applying. | Catalog | Yes | | | Catalog | | Final Recommendation (Aplicar/Aplicar con reservas/No aplicar) | Valid catalog value. | Confidential | Permanent | |
+| Detailed Evaluation | justificacion_recomendacion | Justification for the final recommendation. | Long Text | Yes | | | | | | | Confidential | Permanent | |
+| Detailed Evaluation | insumos_carta_presentacion | Strategic inputs for the cover letter construction phase. | Long Text | Yes | | | | | | | Confidential | Permanent | |
+| Detailed Evaluation | evaluation_date | Date and time when the evaluation finished. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Detailed Evaluation | version_metodologia | Version of the methodology used to perform the diagnosis. | Text | Yes | | | `v1` | | | | Internal | Permanent | |
+| Detailed Evaluation | creation_date | Date and time of record creation. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Detailed Evaluation | update_date | Date and time of the last record update. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+
+### 5.5.8. Generated Document
+
+| Entity | Attribute | Description | Type | Req. | PK | AK | FK | Default | Domain | Constraints | Sensitivity | Persistence | Observations |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Generated Document | id | Unique identifier of the generated document. | UUID | Yes | Yes | | | | | | Internal | Permanent | |
+| Generated Document | offer_id | Reference to the offer for which the document was generated. | UUID | Yes | | | Offer | | | | Confidential | Permanent | |
+| Generated Document | detailed_evaluation_id | Reference to the detailed evaluation used as basis. | UUID | Yes | | | Detailed Evaluation | | | Requires completed evaluation. | Confidential | Permanent | |
+| Generated Document | document_type | Type of generated document. | Catalog | Yes | | | Catalog | | Document Types | Valid catalog value. | Internal | Permanent | |
+| Generated Document | document_name | Name assigned to the document. | Text | Yes | | | | | | | Confidential | Permanent | |
+| Generated Document | version | Version of the generated document. | Text | Yes | | | | | | Traceability per version. | Internal | Permanent | |
+| Generated Document | content | Complete content of the generated document. | Long Text | Yes | | | | | | | Confidential | Permanent | |
+| Generated Document | format | Document format. | Catalog | Yes | | | Catalog | | Catalog | Valid catalog value. | Internal | Permanent | |
+| Generated Document | status | Current document status. | Catalog | Yes | | | Catalog | | Document Statuses | Valid catalog value. | Internal | Permanent | |
+| Generated Document | generation_date | Date and time of document generation. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Generated Document | last_modified_date | Date and time of the last document modification. | Date/Time | No | | | | | | | Internal | Permanent | |
+| Generated Document | observations | Additional relevant information about the document. | Long Text | No | | | | | | | Internal | Permanent | |
+| Generated Document | creation_date | Date and time of record creation. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Generated Document | update_date | Date and time of the last record update. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+
+### 5.5.9. Application
+
+| Entity | Attribute | Description | Type | Req. | PK | AK | FK | Default | Domain | Constraints | Sensitivity | Persistence | Observations |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Application | id | Unique identifier of the application. | UUID | Yes | Yes | | | | | | Internal | Permanent | |
+| Application | offer_id | Reference to the offer to which the application is made. | UUID | Yes | | | Offer | | | | Confidential | Permanent | |
+| Application | main_document_id | Main document used for the application. | UUID | Yes | | | Generated Document | | | At least one document required. | Confidential | Permanent | |
+| Application | application_date | Date and time when the application was made. | Date/Time | No | | | | | | | Internal | Permanent | |
+| Application | application_channel | Means used to make the application. | Catalog | Yes | | | Catalog | | Application Channels | Valid catalog value. | Internal | Permanent | |
+| Application | status | Current application status. | Catalog | Yes | | | Catalog | | Application Statuses | Valid catalog value. | Internal | Permanent | |
+| Application | company_response | Response received from the company. | Long Text | No | | | | | | | Confidential | Permanent | |
+| Application | response_date | Date and time of the company's response. | Date/Time | No | | | | | | | Internal | Permanent | |
+| Application | next_action | Next planned action within the selection process. | Text | No | | | | | | | Confidential | Permanent | |
+| Application | next_action_date | Scheduled date for the next action. | Date/Time | No | | | | | | | Internal | Permanent | |
+| Application | observations | Additional relevant information about the application. | Long Text | No | | | | | | | Confidential | Permanent | |
+| Application | creation_date | Date and time of record creation. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Application | update_date | Date and time of the last record update. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+
+### 5.5.10. Event
+
+| Entity | Attribute | Description | Type | Req. | PK | AK | FK | Default | Domain | Constraints | Sensitivity | Persistence | Observations |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Event | id | Unique identifier of the event. | UUID | Yes | Yes | | | | | | Internal | Permanent | |
+| Event | offer_id | Reference to the offer related to the event. | UUID | Yes | | | Offer | | | Mandatory. | Internal | Permanent | |
+| Event | event_type | Type of event recorded. | Catalog | Yes | | | Catalog | | Event Types | Valid catalog value. | Internal | Permanent | |
+| Event | affected_entity | Name of the entity on which the event occurred. | Text | Yes | | | | | | | Internal | Permanent | |
+| Event | entity_id | Identifier of the record affected by the event. | UUID | Yes | | | | | | | Internal | Permanent | |
+| Event | action | Executed action. | Catalog | Yes | | | Catalog | | Catalog | Valid catalog value. | Internal | Permanent | |
+| Event | description | Detailed description of the event. | Long Text | Yes | | | | | | | Internal | Permanent | |
+| Event | result | Result of the operation associated with the event. | Catalog | Yes | | | Catalog | | Catalog | Valid catalog value. | Internal | Permanent | |
+| Event | origin | Component of the automation that generated the event. | Catalog | Yes | | | Catalog | | Catalog | Valid catalog value. | Internal | Permanent | |
+| Event | context | Additional information useful for understanding the event. | Long Text | No | | | | | | | Internal | Permanent | |
+| Event | event_date | Date and time when the event occurred. | Date/Time | Yes | | | | | | Exact moment required. | Internal | Permanent | |
+| Event | creation_date | Date and time of record creation. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Event | — | — | — | — | — | — | — | — | — | Events may not be deleted once recorded. | — | Permanent | Audit trail. |
+
+### 5.5.11. Decision
+
+| Entity | Attribute | Description | Type | Req. | PK | AK | FK | Default | Domain | Constraints | Sensitivity | Persistence | Observations |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Decision | id | Unique identifier of the decision. | UUID | Yes | Yes | | | | | | Internal | Permanent | |
+| Decision | offer_id | Reference to the offer related to the decision. | UUID | Yes | | | Offer | | | Mandatory. | Internal | Permanent | |
+| Decision | stage | Process stage in which the decision was made. | Catalog | Yes | | | Catalog | | Catalog | Valid catalog value. | Internal | Permanent | |
+| Decision | decision_type | Classification of the decision made. | Catalog | Yes | | | Catalog | | Decision Types | Valid catalog value. | Internal | Permanent | |
+| Decision | decision | Decision adopted by the automation. | Text | Yes | | | | | | | Internal | Permanent | |
+| Decision | justification | Explanation supporting the decision made. | Long Text | Yes | | | | | | Mandatory. | Confidential | Permanent | |
+| Decision | evidence | Evidence used to support the decision. | Long Text | Yes | | | | | | Mandatory. | Confidential | Permanent | |
+| Decision | confidence | Confidence level associated with the decision. | Decimal | No | | | | | | | Internal | Permanent | |
+| Decision | origin_component | Component of the automation that generated the decision. | Catalog | Yes | | | Catalog | | Catalog | Valid catalog value. | Internal | Permanent | |
+| Decision | decision_date | Date and time when the decision was made. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Decision | observations | Additional relevant information about the decision. | Long Text | No | | | | | | | Internal | Permanent | |
+| Decision | creation_date | Date and time of record creation. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Decision | — | — | — | — | — | — | — | — | — | Decisions may not be deleted once recorded. | — | Permanent | Audit trail. |
+
+### 5.5.12. Configuration
+
+| Entity | Attribute | Description | Type | Req. | PK | AK | FK | Default | Domain | Constraints | Sensitivity | Persistence | Observations |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Configuration | id | Unique identifier of the configuration parameter. | UUID | Yes | Yes | | | | | | Internal | Permanent | |
+| Configuration | category | Category to which the parameter belongs. | Catalog | Yes | | | Catalog | | Catalog | Valid catalog value. | Internal | Permanent | |
+| Configuration | name | Unique name of the configuration parameter. | Text | Yes | | Yes | | | | Unique within the system. | Internal | Permanent | |
+| Configuration | description | Description of the parameter's purpose. | Long Text | Yes | | | | | | | Internal | Permanent | |
+| Configuration | value | Value assigned to the parameter. | Long Text | Yes | | | | | | Compatible with data type. | Secret | Permanent | Secret for credential parameters. |
+| Configuration | data_type | Expected data type for the parameter value. | Catalog | Yes | | | Catalog | | Catalog | Valid catalog value. | Internal | Permanent | |
+| Configuration | default_value | Default value of the parameter. | Long Text | No | | | | | | | Internal | Permanent | |
+| Configuration | required | Indicates whether the parameter is required for system operation. | Boolean | Yes | | | | | | Required parameters always have a value. | Internal | Permanent | |
+| Configuration | editable | Indicates whether the parameter can be modified without altering the implementation. | Boolean | Yes | | | | | | | Internal | Permanent | |
+| Configuration | active | Indicates whether the parameter is enabled. | Boolean | Yes | | | | `true` | | | Internal | Permanent | |
+| Configuration | observations | Additional relevant information about the parameter. | Long Text | No | | | | | | | Internal | Permanent | |
+| Configuration | creation_date | Date and time of record creation. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Configuration | update_date | Date and time of the last record update. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+
+### 5.5.13. Catalog
+
+| Entity | Attribute | Description | Type | Req. | PK | AK | FK | Default | Domain | Constraints | Sensitivity | Persistence | Observations |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Catalog | id | Unique identifier of the catalog record. | UUID | Yes | Yes | | | | | | Internal | Permanent | |
+| Catalog | catalog_name | Name of the catalog to which the record belongs. | Text | Yes | | Yes | | | | | Internal | Permanent | |
+| Catalog | code | Unique code of the value within the catalog. | Text | Yes | | Yes | | | | | Internal | Permanent | Codes remain stable. |
+| Catalog | name | Display name of the value. | Text | Yes | | | | | | | Internal | Permanent | |
+| Catalog | description | Description of the catalog value. | Long Text | No | | | | | | | Internal | Permanent | |
+| Catalog | order | Presentation order of the value within the catalog. | Integer | No | | | | | | | Internal | Permanent | |
+| Catalog | active | Indicates whether the value can be used in the automation. | Boolean | Yes | | | | `true` | | Inactive values not used in new records. | Internal | Permanent | |
+| Catalog | observations | Additional relevant information about the value. | Long Text | No | | | | | | | Internal | Permanent | |
+| Catalog | creation_date | Date and time of record creation. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+| Catalog | update_date | Date and time of the last record update. | Date/Time | Yes | | | | | | | Internal | Permanent | |
+
+---
+
 # 6. Entity–Relationship Diagram (ERD)
 
 The Entity–Relationship Diagram (ERD) constitutes the official graphical representation of the Logical Data Model defined in this document.
@@ -1864,6 +2122,64 @@ These four artifacts must be kept permanently synchronized and will constitute t
 
 ---
 
+## 6.6. Diagram
+
+### 6.6.1. Entity–Relationship Diagram (Mermaid)
+
+```mermaid
+erDiagram
+    SOURCE ||--o{ OFFER : "publishes"
+    COMPANY ||--o{ OFFER : "publishes"
+    LOCATION ||--o{ OFFER : "is associated with"
+    OFFER ||--|| PROCESSED_OFFER : "generates"
+    PROCESSED_OFFER ||--|| INITIAL_EVALUATION : "is evaluated by"
+    PROCESSED_OFFER ||--o| DETAILED_EVALUATION : "may have"
+    DETAILED_EVALUATION ||--o{ GENERATED_DOCUMENT : "provides inputs for"
+    OFFER ||--o{ EVENT : "records events"
+    OFFER ||--o{ DECISION : "records decisions"
+    OFFER ||--o| APPLICATION : "may originate"
+    GENERATED_DOCUMENT ||--o{ APPLICATION : "is used in"
+    CONFIGURATION }o--|| CATALOG : "category, data_type"
+    CATALOG ||--o{ OFFER : "provides values"
+    CATALOG ||--o{ SOURCE : "provides values"
+    CATALOG ||--o{ COMPANY : "provides values"
+    CATALOG ||--o{ LOCATION : "provides values"
+    CATALOG ||--o{ PROCESSED_OFFER : "provides values"
+    CATALOG ||--o{ INITIAL_EVALUATION : "provides values"
+    CATALOG ||--o{ DETAILED_EVALUATION : "provides values"
+    CATALOG ||--o{ GENERATED_DOCUMENT : "provides values"
+    CATALOG ||--o{ APPLICATION : "provides values"
+    CATALOG ||--o{ EVENT : "provides values"
+    CATALOG ||--o{ DECISION : "provides values"
+    CATALOG ||--o{ CONFIGURATION : "provides values"
+```
+
+### 6.6.2. Main flow (ASCII)
+
+```
+SOURCE ──1:N──> OFFER ──1:1──> PROCESSED OFFER ──1:1──> INITIAL EVALUATION
+COMPANY ──1:N──> OFFER                                            │
+LOCATION ──1:N──> OFFER                                      1:0..1
+                                                                  ▼
+OFFER ──1:N──> EVENT ─────────────────────────────────────> DETAILED EVALUATION
+OFFER ──1:N──> DECISION                                            │
+OFFER ──1:0..1──> APPLICATION <──1:N── GENERATED DOCUMENT <──1:N───┘
+
+CATALOG ──1:N──> all entities using controlled values (support)
+CONFIGURATION ──N:1──> CATALOG (support)
+```
+
+### 6.6.3. Cardinality legend
+
+| Symbol | Meaning |
+|--------|---------|
+| `1:1` | Exactly one on each side. |
+| `1:0..1` | One on the left; zero or one on the right. |
+| `1:N` | One on the left; many on the right. |
+| `N:1` | Many on the left; one on the right. |
+
+---
+
 # 7. Version History
 
 This document must maintain an official version history in order to guarantee traceability of its evolution during the project lifecycle.
@@ -1876,7 +2192,9 @@ Any modification made to the data model must be recorded before being considered
 
 | Version | Date | Author | Change description |
 |----------|-------|--------|------------------------|
-| 1.0 | Pending | Pending | Initial creation of Document 13A – Detailed Data Model Design. |
+| 1.0 | 2026-07-30 | System | Initial creation of Document 13A – Detailed Data Model Design. |
+| 1.1 | 2026-07-30 | System | Alignment with the implementation: official Offer Statuses catalog reduced to the 7 states of `shared/state_machine.py`; attribute names aligned with `shared/models.py` (`version_modelo`, `region`); recorded deviations (PMD-020) of the Processed Offer entity; scope note of implemented persistence. |
+| 1.2 | 2026-07-30 | System | Detailed Evaluation entity redefined to Spanish attribute names (decision C2: prompts adjusted to the entity); Overqualification Risk and Final Recommendation catalog values in Spanish; Official Data Dictionary (§5.5) for the 13 entities; ERD (§6.6) in Mermaid + ASCII; sensitivity classification per DOC-12 §14.2. |
 
 ---
 

@@ -18,35 +18,35 @@ from shared.models import (
 
 
 @pytest.fixture(autouse=True)
-def limpiar_cache_config() -> None:
+def clear_config_cache() -> None:
     from shared.config import reload_config
 
     reload_config()
 
 
 @pytest.fixture
-def ruta_tests() -> Path:
+def tests_dir() -> Path:
     return Path(__file__).resolve().parent
 
 
 @pytest.fixture
-def ruta_fixtures(ruta_tests: Path) -> Path:
-    return ruta_tests / "fixtures"
+def fixtures_dir(tests_dir: Path) -> Path:
+    return tests_dir / "fixtures"
 
 
 @pytest.fixture
-def archivo_bd_temporal(tmp_path: Path) -> Generator[Path, None, None]:
+def temp_db_file(tmp_path: Path) -> Generator[Path, None, None]:
     from shared.persistence import change_path, init_db, reset_path
 
-    ruta = tmp_path / "test.db"
-    change_path(ruta)
+    path = tmp_path / "test.db"
+    change_path(path)
     init_db()
-    yield ruta
+    yield path
     reset_path()
 
 
 @pytest.fixture
-def fuente_ejemplo() -> Source:
+def example_source() -> Source:
     return Source(
         id="FNT-0001",
         nombre="LinkedIn",
@@ -56,7 +56,7 @@ def fuente_ejemplo() -> Source:
 
 
 @pytest.fixture
-def empresa_ejemplo() -> Company:
+def example_company() -> Company:
     return Company(
         id="EMP-0001",
         nombre="TechCorp",
@@ -66,19 +66,19 @@ def empresa_ejemplo() -> Company:
 
 
 @pytest.fixture
-def ubicacion_ejemplo() -> Location:
+def example_location() -> Location:
     return Location(id="UBI-0001", ciudad="Madrid", region="Madrid", pais="Espana")
 
 
 @pytest.fixture
-def oferta_ejemplo(
-    fuente_ejemplo: Source, empresa_ejemplo: Company, ubicacion_ejemplo: Location
+def example_offer(
+    example_source: Source, example_company: Company, example_location: Location
 ) -> Offer:
     return Offer(
         id="OFE-0001",
-        fuente_id=fuente_ejemplo.id,
-        empresa_id=empresa_ejemplo.id,
-        ubicacion_id=ubicacion_ejemplo.id,
+        fuente_id=example_source.id,
+        empresa_id=example_company.id,
+        ubicacion_id=example_location.id,
         url="https://www.linkedin.com/jobs/view/12345",
         titulo="Data Engineer",
         descripcion_original="Descripcion de prueba",
@@ -88,10 +88,10 @@ def oferta_ejemplo(
 
 
 @pytest.fixture
-def oferta_procesada_ejemplo(oferta_ejemplo: Offer) -> ProcessedOffer:
+def example_processed_offer(example_offer: Offer) -> ProcessedOffer:
     return ProcessedOffer(
         id="OFP-0001",
-        offer_id=oferta_ejemplo.id,
+        offer_id=example_offer.id,
         clean_title="Data Engineer",
         tecnologias=["Python", "SQL", "Spark"],
         requisitos=["Experiencia en ETL"],
@@ -99,10 +99,12 @@ def oferta_procesada_ejemplo(oferta_ejemplo: Offer) -> ProcessedOffer:
 
 
 @pytest.fixture
-def evaluacion_ejemplo(oferta_procesada_ejemplo: ProcessedOffer) -> Evaluation:
+def example_evaluation(
+    example_processed_offer: ProcessedOffer,
+) -> Evaluation:
     return Evaluation(
         id="EVL-0001",
-        processed_offer_id=oferta_procesada_ejemplo.id,
+        processed_offer_id=example_processed_offer.id,
         resultado=EvaluationResult.HIGH,
         score=85.0,
         decision=DecisionEvaluation.CONTINUE,
@@ -111,7 +113,7 @@ def evaluacion_ejemplo(oferta_procesada_ejemplo: ProcessedOffer) -> Evaluation:
 
 
 @pytest.fixture
-def perfil_ejemplo() -> Profile:
+def example_profile() -> Profile:
     return Profile(
         tecnologias={"Python": 5, "SQL": 4, "Spark": 3},
         experience_years=8,

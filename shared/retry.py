@@ -28,19 +28,19 @@ def _policies() -> dict[str, Any]:
     }
 
 
-def decorador_reintento(
+def retry_decorator(
     max_attempts: int | None = None,
     base_wait: float | None = None,
     max_wait: float | None = None,
     multiplier: float | None = None,
 ) -> Callable[[F], F]:
-    pol = _policies()
+    policy = _policies()
     return tenacity_retry(
-        stop=stop_after_attempt(max_attempts or pol["max_attempts"]),
+        stop=stop_after_attempt(max_attempts or policy["max_attempts"]),
         wait=wait_exponential(
-            multiplier=multiplier or pol["multiplier"],
-            min=base_wait or pol["base_wait"],
-            max=max_wait or pol["max_wait"],
+            multiplier=multiplier or policy["multiplier"],
+            min=base_wait or policy["base_wait"],
+            max=max_wait or policy["max_wait"],
         ),
         before_sleep=before_sleep_log(_logger, logging.WARNING),
         reraise=True,

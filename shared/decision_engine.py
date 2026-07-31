@@ -1,5 +1,6 @@
 import math
 
+from loguru import logger
 from rapidfuzz import fuzz
 
 from shared.config import load
@@ -15,87 +16,111 @@ from shared.models import (
 
 def load_profile() -> Profile:
     config = load()
-    datos = config.get("profile", {})
-    return Profile(**datos)
+    data = config.get("profile", {})
+    profile = Profile(**data)
+    _warn_if_incomplete(profile)
+    return profile
 
 
-def _score_experience(oferta: ProcessedOffer, perfil: Profile) -> float:
-    if oferta.experience_years is None or oferta.experience_years == 0:
+def _warn_if_incomplete(profile: Profile) -> None:
+    missing: list[str] = []
+    if not profile.tecnologias:
+        missing.append("tecnologias")
+    if profile.experience_years <= 0:
+        missing.append("experience_years")
+    if not profile.seniority:
+        missing.append("seniority")
+    if not profile.ubicaciones_preferidas:
+        missing.append("ubicaciones_preferidas")
+    if not profile.modalidades_preferidas:
+        missing.append("modalidades_preferidas")
+    if profile.salario_minimo is None:
+        missing.append("salario_minimo")
+    if missing:
+        logger.warning(
+            "Profile is incomplete; evaluation results may be misleading. "
+            "Missing keys: {}",
+            ", ".join(missing),
+        )
+
+
+def _score_experience(offer: ProcessedOffer, profile: Profile) -> float:
+    if offer.experience_years is None or offer.experience_years == 0:
         return 100.0
-    ratio = perfil.experience_years / oferta.experience_years
+    ratio = profile.experience_years / offer.experience_years
     return min(100.0, ratio * 100.0)
 
 
-def _score_technology(oferta: ProcessedOffer, perfil: Profile) -> float:
-    if not perfil.tecnologias or not oferta.tecnologias:
+def _score_technology(offer: ProcessedOffer, profile: Profile) -> float:
+    if not profile.tecnologias or not offer.tecnologias:
         return 0.0
-    puntajes: list[float] = []
-    for tec_oferta in oferta.tecnologias:
-        mejor = max(
-            fuzz.token_sort_ratio(tec_oferta, tec_perfil)
-            for tec_perfil in perfil.tecnologias
+    scores: list[float] = []
+    for offer_tech in offer.tecnologias:
+        best = max(
+            fuzz.token_sort_ratio(offer_tech, profile_tech)
+            for profile_tech in profile.tecnologias
         )
-        puntajes.append(float(mejor))
-    return sum(puntajes) / len(puntajes) if puntajes else 0.0
+        scores.append(float(best))
+    return sum(scores) / len(scores) if scores else 0.0
 
 
-def _score_location(oferta: ProcessedOffer, perfil: Profile) -> float:
-    if not perfil.ubicaciones_preferidas or not oferta.clean_location:
+def _score_location(offer: ProcessedOffer, profile: Profile) -> float:
+    if not profile.ubicaciones_preferidas or not offer.clean_location:
         return 50.0
-    mejor = max(
-        fuzz.partial_ratio(oferta.clean_location, pref)
-        for pref in perfil.ubicaciones_preferidas
+    best = max(
+        fuzz.partial_ratio(offer.clean_location, preferred)
+        for preferred in profile.ubicaciones_preferidas
     )
-    return float(mejor)
+    return float(best)
 
 
-def _score_modality(oferta: ProcessedOffer, perfil: Profile) -> float:
-    if not perfil.modalidades_preferidas or not oferta.modalidad:
+def _score_modality(offer: ProcessedOffer, profile: Profile) -> float:
+    if not profile.modalidades_preferidas or not offer.modalidad:
         return 50.0
-    for pref in perfil.modalidades_preferidas:
-        if pref.lower() == oferta.modalidad.lower():
+    for preferred in profile.modalidades_preferidas:
+        if preferred.lower() == offer.modalidad.lower():
             return 100.0
     return 0.0
 
 
-def _score_languages(oferta: ProcessedOffer, perfil: Profile) -> float:
-    if not oferta.idiomas or not perfil.idiomas:
+def _score_languages(offer: ProcessedOffer, profile: Profile) -> float:
+    if not offer.idiomas or not profile.idiomas:
         return 100.0
-    oferta_ids = set(i.lower() for i in oferta.idiomas)
-    perfil_ids = set(i.lower() for i in perfil.idiomas)
-    if not oferta_ids:
+    offer_languages = set(i.lower() for i in offer.idiomas)
+    profile_languages = set(i.lower() for i in profile.idiomas)
+    if not offer_languages:
         return 100.0
-    cubiertos = oferta_ids & perfil_ids
-    return (len(cubiertos) / len(oferta_ids)) * 100.0
+    covered = offer_languages & profile_languages
+    return (len(covered) / len(offer_languages)) * 100.0
 
 
-def _score_seniority(oferta: ProcessedOffer, perfil: Profile) -> float:
-    if not perfil.seniority:
+def _score_seniority(offer: ProcessedOffer, profile: Profile) -> float:
+    if not profile.seniority:
         return 100.0
-    oferta_seniority = _infer_seniority(oferta)
-    if not oferta_seniority:
+    offer_seniority = _infer_seniority(offer)
+    if not offer_seniority:
         return 50.0
-    niveles = ["jr", "junior", "semisenior", "senior", "lead", "principal"]
-    if perfil.seniority.lower() == oferta_seniority.lower():
+    levels = ["jr", "junior", "semisenior", "senior", "lead", "principal"]
+    if profile.seniority.lower() == offer_seniority.lower():
         return 100.0
-    idx_perfil = next(
-        (i for i, n in enumerate(niveles) if n in perfil.seniority.lower()),
+    profile_idx = next(
+        (i for i, n in enumerate(levels) if n in profile.seniority.lower()),
         -1,
     )
-    idx_oferta = next(
-        (i for i, n in enumerate(niveles) if n in oferta_seniority.lower()),
+    offer_idx = next(
+        (i for i, n in enumerate(levels) if n in offer_seniority.lower()),
         -1,
     )
-    if idx_perfil >= 0 and idx_oferta >= 0:
-        diff = abs(idx_perfil - idx_oferta)
+    if profile_idx >= 0 and offer_idx >= 0:
+        diff = abs(profile_idx - offer_idx)
         if diff == 1:
             return 50.0
     return 0.0
 
 
-def _infer_seniority(oferta: ProcessedOffer) -> str:
-    texto = (oferta.clean_title + " " + oferta.clean_description).lower()
-    niveles = {
+def _infer_seniority(offer: ProcessedOffer) -> str:
+    text = (offer.clean_title + " " + offer.clean_description).lower()
+    levels = {
         "principal": "principal",
         "lead": "lead",
         "senior": "senior",
@@ -106,124 +131,124 @@ def _infer_seniority(oferta: ProcessedOffer) -> str:
         "jr": "junior",
         "trainee": "jr",
     }
-    for palabra, nivel in niveles.items():
-        if palabra in texto:
-            return nivel
+    for keyword, level in levels.items():
+        if keyword in text:
+            return level
     return ""
 
 
-def _check_excluded(oferta: ProcessedOffer, perfil: Profile) -> bool:
-    if not perfil.empresas_excluidas:
+def _check_excluded(offer: ProcessedOffer, profile: Profile) -> bool:
+    if not profile.empresas_excluidas:
         return False
-    texto = (oferta.clean_title + " " + oferta.clean_description).lower()
-    for empresa in perfil.empresas_excluidas:
-        if empresa.lower() in texto:
+    text = (offer.clean_title + " " + offer.clean_description).lower()
+    for company in profile.empresas_excluidas:
+        if company.lower() in text:
             return True
     return False
 
 
-def _penalize_salary(oferta: ProcessedOffer, perfil: Profile) -> float:
-    if perfil.salario_minimo is None:
+def _penalize_salary(offer: ProcessedOffer, profile: Profile) -> float:
+    if profile.salario_minimo is None:
         return 0.0
-    salario_oferta = oferta.salario_max or oferta.salario_min
-    if salario_oferta is None:
+    offer_salary = offer.salario_max or offer.salario_min
+    if offer_salary is None:
         return 10.0
-    if salario_oferta >= perfil.salario_minimo:
+    if offer_salary >= profile.salario_minimo:
         return 0.0
-    return min(30.0, (1 - salario_oferta / perfil.salario_minimo) * 30.0)
+    return min(30.0, (1 - offer_salary / profile.salario_minimo) * 30.0)
 
 
 def _calculate_score(
-    oferta: ProcessedOffer,
-    perfil: Profile,
-    pesos: dict[str, float],
+    offer: ProcessedOffer,
+    profile: Profile,
+    weights: dict[str, float],
 ) -> tuple[float, dict[str, float]]:
-    if _check_excluded(oferta, perfil):
+    if _check_excluded(offer, profile):
         return 0.0, {"excluida": 0.0}
 
-    parciales: dict[str, float] = {}
-    parciales["experiencia"] = _score_experience(oferta, perfil)
-    parciales["tecnologia"] = _score_technology(oferta, perfil)
-    parciales["ubicacion"] = _score_location(oferta, perfil)
-    parciales["modalidad"] = _score_modality(oferta, perfil)
-    parciales["idiomas"] = _score_languages(oferta, perfil)
-    parciales["seniority"] = _score_seniority(oferta, perfil)
+    partials: dict[str, float] = {}
+    partials["experiencia"] = _score_experience(offer, profile)
+    partials["tecnologia"] = _score_technology(offer, profile)
+    partials["ubicacion"] = _score_location(offer, profile)
+    partials["modalidad"] = _score_modality(offer, profile)
+    partials["idiomas"] = _score_languages(offer, profile)
+    partials["seniority"] = _score_seniority(offer, profile)
 
-    puntaje = sum(
-        parciales.get(criterio, 0.0) * peso
-        for criterio, peso in pesos.items()
+    score = sum(
+        partials.get(criterion, 0.0) * weight
+        for criterion, weight in weights.items()
     )
-    penalizacion = _penalize_salary(oferta, perfil)
-    puntaje = max(0.0, puntaje - penalizacion)
-    return puntaje, parciales
+    penalty = _penalize_salary(offer, profile)
+    score = max(0.0, score - penalty)
+    return score, partials
 
 
-def _classify(puntaje: float) -> EvaluationResult:
+def _classify(score: float) -> EvaluationResult:
     config = load()
     eval_cfg = config.get("evaluation", {})
-    alta = float(eval_cfg.get("high_compatibility_threshold", 80))
-    media = float(eval_cfg.get("medium_compatibility_threshold", 50))
-    if puntaje >= alta:
+    high_threshold = float(eval_cfg.get("high_compatibility_threshold", 80))
+    medium_threshold = float(eval_cfg.get("medium_compatibility_threshold", 50))
+    if score >= high_threshold:
         return EvaluationResult.HIGH
-    if puntaje >= media:
+    if score >= medium_threshold:
         return EvaluationResult.MEDIUM
     return EvaluationResult.LOW
 
 
-def _decide(resultado: EvaluationResult) -> DecisionEvaluation:
-    if resultado in (EvaluationResult.HIGH, EvaluationResult.MEDIUM):
+def _decide(result: EvaluationResult) -> DecisionEvaluation:
+    if result in (EvaluationResult.HIGH, EvaluationResult.MEDIUM):
         return DecisionEvaluation.CONTINUE
     return DecisionEvaluation.DISCARD
 
 
 def _justify(
-    puntaje: float,
-    parciales: dict[str, float],
-    pesos: dict[str, float],
-    penalizacion: float,
-    excluida: bool,
+    score: float,
+    partials: dict[str, float],
+    weights: dict[str, float],
+    penalty: float,
+    excluded: bool,
 ) -> str:
-    if excluida:
+    if excluded:
         return "Offer discarded: company is in the exclusion list"
-    partes: list[str] = []
-    for criterio, peso in pesos.items():
-        val = parciales.get(criterio, 0.0)
-        contrib = val * peso
-        partes.append(f"{criterio}: {val:.1f}/100 (weight {peso:.2f}) → {contrib:.1f} pts")
-    if penalizacion > 0:
-        partes.append(f"salary penalty: -{penalizacion:.1f} pts")
-    partes.append(f"Total: {puntaje:.1f}/100")
-    return " | ".join(partes)
+    parts: list[str] = []
+    for criterion, weight in weights.items():
+        value = partials.get(criterion, 0.0)
+        contribution = value * weight
+        parts.append(f"{criterion}: {value:.1f}/100 (weight {weight:.2f}) → {contribution:.1f} pts")
+    if penalty > 0:
+        parts.append(f"salary penalty: -{penalty:.1f} pts")
+    parts.append(f"Total: {score:.1f}/100")
+    return " | ".join(parts)
 
 
-def evaluar(oferta: ProcessedOffer, perfil: Profile | None = None) -> Evaluation:
-    if perfil is None:
-        perfil = load_profile()
+def evaluate(offer: ProcessedOffer, profile: Profile | None = None) -> Evaluation:
+    if profile is None:
+        profile = load_profile()
     config = load()
-    pesos = config.get("evaluation", {}).get("weights", {})
-    suma_pesos = sum(pesos.values())
-    if not math.isclose(suma_pesos, 1.0, abs_tol=1e-6):
+    weights = config.get("evaluation", {}).get("weights", {})
+    weights_sum = sum(weights.values())
+    if not math.isclose(weights_sum, 1.0, abs_tol=1e-6):
         raise ConfigurationError(
             "002",
-            f"Invalid evaluation weights: sum={suma_pesos}, expected=1.0. "
+            f"Invalid evaluation weights: sum={weights_sum}, expected=1.0. "
             f"Check the 'evaluation.weights' section in config/config.yaml",
             source_module="decision_engine",
         )
-    excluida = _check_excluded(oferta, perfil)
-    puntaje, parciales = _calculate_score(oferta, perfil, pesos)
-    penalizacion = _penalize_salary(oferta, perfil)
-    resultado = _classify(puntaje)
-    decision = _decide(resultado)
-    justificacion = _justify(puntaje, parciales, pesos, penalizacion, excluida)
-    umbral_aprobacion = float(
+    excluded = _check_excluded(offer, profile)
+    score, partials = _calculate_score(offer, profile, weights)
+    penalty = _penalize_salary(offer, profile)
+    result = _classify(score)
+    decision = _decide(result)
+    justification = _justify(score, partials, weights, penalty, excluded)
+    approval_threshold = float(
         config.get("evaluation", {}).get("compatibility_threshold_medium", 50)
     )
     return Evaluation(
-        processed_offer_id=oferta.id,
-        resultado=resultado,
-        score=puntaje,
-        approval_threshold=umbral_aprobacion,
+        processed_offer_id=offer.id,
+        resultado=result,
+        score=score,
+        approval_threshold=approval_threshold,
         decision=decision,
-        justification=justificacion,
-        evaluated_criteria=", ".join(pesos.keys()),
+        justification=justification,
+        evaluated_criteria=", ".join(weights.keys()),
     )

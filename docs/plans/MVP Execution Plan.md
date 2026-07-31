@@ -132,7 +132,7 @@ profile:
 |---|---|
 | `load_prompt(prompt_id: str) -> str` | Loads template from `prompts/{category}/{prompt_id}.md`. Raises `ConfigError` if not found. |
 | `render_prompt(template: str, context: dict) -> str` | Replaces `{{ variable }}` with values from context. |
-| `_route_provider(purpose: str) -> str` | Determines which provider to use based on `config.yaml` → `ia_routing`. |
+| `_route_provider(purpose: str) -> str` | Determines which provider to use based on `config.yaml` → `ai_routing`. |
 | `_send_local(prompt: str) -> str` | httpx POST to local Ollama (`http://{host}:{port}/api/generate`). |
 | `_send_cloud(prompt: str) -> str` | httpx POST to Ollama Cloud with API Key and endpoint from config. |
 | `_validate_response(raw_response: str) -> dict` | JSON parsing, minimum expected structure validation. |
@@ -142,7 +142,7 @@ profile:
 
 **Retries:** Use `retry_decorator` from `shared/retry.py` with policy from `config.yaml` → `retries` (global block).
 
-**Routing:** Defined in `config.yaml` → `ia_routing`. Default: evaluation → local, processing → cloud.
+**Routing:** Defined in `config.yaml` → `ai_routing`. Official default (decision 2026-07-30): evaluation → cloud, processing → cloud; local available as fallback.
 
 **Prompt loader:** Searches in `prompts/{category}/{prompt_id}.md`. Supports subdirectories. Each interaction is logged with Loguru.
 
@@ -187,7 +187,7 @@ profile:
 
 **File to create:** `shared/state_machine.py`
 
-**Objective:** Implement the state machine for the offer lifecycle (based on DOC-03 RTD-001 to RTD-010 and DOC-04 EPD-001 to EPD-010).
+**Objective:** Implement the state machine for the offer lifecycle (based on the official EST catalog, DOC-01 §13: EST-001 to EST-007).
 
 **Components:**
 
@@ -208,7 +208,7 @@ DISCARDED   → FINALIZED
 PROCESSED   → FINALIZED
 ```
 
-**Validations:** Applies RTD-001 to RTD-010: only defined transitions, no skipping stages, no going back.
+**Validations:** Applies the transition matrix defined in DOC-01 §13: only defined transitions, no skipping stages, no going back.
 
 ---
 
@@ -275,7 +275,7 @@ pytest tests/ -v
 4. Normalize: dates (ISO 8601), salaries (number + currency), locations, modality.
 5. Validate required fields, integrity, consistency.
 6. Detect duplicates (RapidFuzz on title + company).
-7. Assign initial state (`received` / `prepared`).
+7. Assign initial state (`discovered` → `prepared`, EST-001 → EST-002).
 8. Save prepared version + transformation log.
 9. Error handling: ER-VAL, ER-DAT.
 10. Tests:

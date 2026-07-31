@@ -1,4 +1,4 @@
-from shared.errors import ErrorInterno
+from shared.errors import InternalError
 from shared.models import OfferState
 
 VALID_TRANSITIONS: dict[OfferState, list[OfferState]] = {
@@ -20,12 +20,12 @@ def transition(
         and target_state in VALID_TRANSITIONS[current_state]
     ):
         return target_state
-    raise ErrorInterno(
+    raise InternalError(
         "010",
         f"Invalid transition: {current_state.value} -> {target_state.value}",
         source_module="state_machine",
     )
 
 
-def possible_transitions(estado: OfferState) -> list[OfferState]:
-    return VALID_TRANSITIONS.get(estado, [])
+def possible_transitions(state: OfferState) -> list[OfferState]:
+    return VALID_TRANSITIONS.get(state, [])

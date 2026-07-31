@@ -11,8 +11,8 @@ Analyze qualitative compatibility between a processed job offer and the user's p
 
 **Variables.**
 
-- `{{ offer }}`: JSON object with ProcessedOffer fields
-- `{{ profile }}`: JSON object with Profile fields
+- `{{ oferta }}`: JSON object with ProcessedOffer fields
+- `{{ perfil }}`: JSON object with Profile fields
 
 **Instructions.**
 
@@ -42,5 +42,6 @@ Respond strictly in JSON format without additional text. Do not include Markdown
 - This prompt is complementary to the rule-based decision engine. It does not replace the deterministic score.
 - The analysis should be qualitative and focused on aspects that rules cannot capture (culture, narrative, context).
 - The `compatibility` field must use exactly the values ALTA, MEDIA, or BAJA.
+- All generated content must be written in Spanish.
 
 **Version:** v1

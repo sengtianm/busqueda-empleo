@@ -83,23 +83,46 @@
 ## Session 5 — 30/07/2026
 
 **Topics:**
-- Spanish-to-English translation of all Python code identifiers, config keys, error messages, docstrings, and variable names
-- `shared/models.py`: enums (`OfferState`, `EvaluationResult`, `DecisionEvaluation`), model classes (`Profile`, `Evaluation`, `ProcessedOffer`, etc.), and field names updated
-- `shared/config.py`: renamed internal variables, `load`/`reload_config` functions
-- `shared/errors.py`: `Severity`, `ConfigurationError`, parameter/attribute names translated
+- [Morning] Spanish-to-English translation of all Python code identifiers, config keys, error messages, docstrings, and variable names
+- `shared/models.py` and `shared/persistence.py`: kept entirely in Spanish (data layer, per final decision)
+- `shared/errors.py`: `Severity`, typed error hierarchy, parameter/attribute names translated; error prefixes (ER-*) preserved
 - `shared/decision_engine.py`: all functions, config keys, error strings, field accesses translated
 - `shared/ia_service.py`: all functions, config keys (`ai_local`, `ai_cloud`, `ai_routing`), error strings, parameter names translated
-- `shared/persistence.py`: functions, SQL columns, CHECK constraint, error strings translated
 - `shared/state_machine.py`, `shared/retry.py`, `shared/logging_setup.py`: functions and config keys translated
 - `config/config.yaml`: `pesos` → `weights`, profile field names aligned with model
 - All test files and fixtures updated to match
-- Ruff and mypy pass clean
+- [Afternoon] Architecture review executed and documented (`docs/reports/Architecture Review.md`)
+- Offer lifecycle unified to the 7 implemented states (DOC-01 §12/§13 and DOC-13A §3.1 rewritten)
+- Docs aligned with the cloud-primary AI strategy (DOC-11) and real names (`ai_routing`, `job_search.db`, `version_modelo`, `region`)
+- MVP persistence scope and Catalog deferral formalized in DOC-13A; deviations recorded; version history created
+- MVP plan corrected (EST catalog references, `discovered → prepared` initial state)
+- `data/*.db` added to `.gitignore`; `job_search.db` untracked (`git rm --cached`)
+- Duplicated prompt scripts removed (`test_prompt.py` deleted; `probar_prompt.py` → `prompt_tester.py`; `contextos_prompt.yaml` → `prompt_contexts.yaml`)
+- `load_profile()` now warns on incomplete profile (Loguru); test added
+- [Evening] C2 resolved (decision: prompts adjusted to the entity): PRM-002..005 redesigned to v2, chained, covering the 18 attributes of Detailed Evaluation
+- Detailed Evaluation entity attributes renamed to Spanish in DOC-13A §2.7; catalogs 3.15/3.16 in Spanish
+- `ProcessingResult` → `EvaluacionDetallada` in `shared/models.py`
+- Prompt placeholder bug fixed: `{{ offer }}`/`{{ profile }}` never matched the injected `oferta`/`perfil` — data was not injected (pre-existing)
+- Official Data Dictionary (DOC-13A §5.5, 13 entities) and ERD (§6.6, Mermaid + ASCII) created
+- [Night] Real retest of PRM-001..005 against `gemma4:31b-cloud` (local Ollama as authenticated proxy; no API key needed)
+- Variable injection confirmed working in real execution (placeholder fix validated end-to-end)
+- Finding: PRM-001..004 generated content in English; mandatory Spanish output instruction added to the 5 prompts
+- Final retest: 5/5 valid JSON, expected fields, Spanish content, correct catalog values
+- Retest report generated; C2 resolution closed with validated retest
 
 **Decisions:**
 - Inner keys of `evaluation.weights` (experiencia, tecnologia, ubicacion, etc.) kept as-is per instruction
 - Config keys `ai_routing` included in translation (`ia_routing` → `ai_routing`)
+- C1: keep the 7 implemented states; EST catalog of DOC-01 is the single source of truth
+- A3: Spanish for everything data-related (DB schema, `models.py`, `persistence.py`, profile/evaluation data in `config.yaml`, test fixture data); English for everything else
+- C3: cloud-primary AI strategy with configurable local fallback
+- A1/M1: MVP persists only `secuencia_ids`, `fuentes`, `empresas`, `ubicaciones`, `ofertas`; Catalog deferred to Modules 2-3
+- C2: prompts adjusted to the entity (PRM-002..005 redesigned to v2, chained); cover letter draft and interview preparation deferred to the document generation phase
+- Prompt placeholders fixed to match injected variables (Spanish names)
+- All prompts must include the mandatory Spanish output instruction (generated content is stored data)
+- No commit made; changes left staged in the working tree
 
 **Status:**
 - Phases 0–3 ✅, Phase 4 ⬜
-- Ruff 0, mypy 0, pytest 47/47
+- Ruff 0, mypy 0, pytest 48/48
 - Branch: `modulo-1`

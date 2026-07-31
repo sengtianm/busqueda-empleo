@@ -108,15 +108,29 @@ class Evaluation(BaseModel):
     last_edit_date: str = ""
 
 
-class ProcessingResult(BaseModel):
+class EvaluacionDetallada(BaseModel):
     id: str = ""
     processed_offer_id: str = ""
-    diagnostic: str = ""
-    strategic_extraction: str = ""
-    application_design: str = ""
-    cover_letter_draft: str = ""
-    interview_preparation: str = ""
-    processing_date: datetime | None = None
+    resultado_organizacional: str = ""
+    problema_organizacional: str = ""
+    perfil_profesional_requerido: str = ""
+    coincidencias_perfil: str = ""
+    logica_xyz: str = ""
+    hipotesis_valor: str = ""
+    informacion_descartada: str = ""
+    ajuste_tecnico: float = 0.0
+    justificacion_ajuste_tecnico: str = ""
+    ajuste_funcional: float = 0.0
+    justificacion_ajuste_funcional: str = ""
+    ajuste_estrategico: float = 0.0
+    justificacion_ajuste_estrategico: str = ""
+    riesgo_sobrecalificacion: str = ""
+    justificacion_riesgo: str = ""
+    recomendacion_final: str = ""
+    justificacion_recomendacion: str = ""
+    insumos_carta_presentacion: str = ""
+    evaluation_date: datetime | None = None
+    version_metodologia: str = "v1"
     creation_date: str = ""
     last_edit_date: str = ""
 

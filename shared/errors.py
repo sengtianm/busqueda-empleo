@@ -46,37 +46,37 @@ class BaseError(Exception):
         }
 
 
-class ErrorRed(BaseError):
+class NetworkError(BaseError):
     def __init__(self, code: str, message: str, **kwargs: Any) -> None:
         super().__init__(f"ER-RED-{code}", message, **kwargs)
 
 
-class ErrorNavegador(BaseError):
+class BrowserError(BaseError):
     def __init__(self, code: str, message: str, **kwargs: Any) -> None:
         super().__init__(f"ER-NAV-{code}", message, **kwargs)
 
 
-class ErrorExtraccion(BaseError):
+class ExtractionError(BaseError):
     def __init__(self, code: str, message: str, **kwargs: Any) -> None:
         super().__init__(f"ER-EXT-{code}", message, **kwargs)
 
 
-class ErrorValidacion(BaseError):
+class ValidationError(BaseError):
     def __init__(self, code: str, message: str, **kwargs: Any) -> None:
         super().__init__(f"ER-VAL-{code}", message, **kwargs)
 
 
-class ErrorLLM(BaseError):
+class LLMError(BaseError):
     def __init__(self, code: str, message: str, **kwargs: Any) -> None:
         super().__init__(f"ER-LLM-{code}", message, **kwargs)
 
 
-class ErrorDatos(BaseError):
+class DataError(BaseError):
     def __init__(self, code: str, message: str, **kwargs: Any) -> None:
         super().__init__(f"ER-DAT-{code}", message, **kwargs)
 
 
-class ErrorPersistencia(BaseError):
+class PersistenceError(BaseError):
     def __init__(self, code: str, message: str, **kwargs: Any) -> None:
         super().__init__(f"ER-DB-{code}", message, **kwargs)
 
@@ -86,11 +86,11 @@ class ConfigurationError(BaseError):
         super().__init__(f"ER-CFG-{code}", message, **kwargs)
 
 
-class ErrorInterno(BaseError):
+class InternalError(BaseError):
     def __init__(self, code: str, message: str, **kwargs: Any) -> None:
         super().__init__(f"ER-INT-{code}", message, **kwargs)
 
 
-class ErrorExterno(BaseError):
+class ExternalError(BaseError):
     def __init__(self, code: str, message: str, **kwargs: Any) -> None:
         super().__init__(f"ER-EXTS-{code}", message, **kwargs)

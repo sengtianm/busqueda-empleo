@@ -779,18 +779,16 @@ The language model will be responsible for tasks such as:
 
 ## 9.3 Artificial intelligence strategy
 
-The project will adopt a hybrid strategy that combines a local model for high-volume tasks and a cloud model for tasks that require higher quality of reasoning and content generation.
+The project adopts a cloud-primary strategy: all AI purposes route to the cloud model via Ollama Cloud (free plan), through a local proxy. A local model is available as an optional, configurable fallback for development and for scenarios where the cloud is unreachable.
 
-The local model will run via Ollama and will be used for repetitive tasks and complementary deterministic evaluations (initial evaluation module).
-
-The cloud model will run via Ollama Cloud (free plan) and will be used exclusively for tasks requiring deep analysis and professional content generation (deep processing module).
+> **Decision 2026-07-30 (Phase 3):** `ai_routing: evaluation=cloud, processing=cloud` is the official configuration. The offline requirement of previous versions of this document is superseded by a configurable fallback (`ai_routing` in `config.yaml`).
 
 This decision balances:
 
-- No usage costs for high-volume tasks (local).
 - Superior quality where it matters most (cloud).
-- Privacy of sensitive information through local processing.
-- Operational independence by keeping the basic flow working offline.
+- Zero recurring cost through the free plan.
+- Simple operation (single provider, no local hardware requirements).
+- Configurable local fallback to mitigate free-plan limits (usage caps, availability, term changes).
 
 ---
 
@@ -839,7 +837,7 @@ This service will be responsible for:
 - Managing errors and retries.
 - Decoupling the rest of the architecture from the model used.
 
-Routing is defined through the `ia_routing` section in `config.yaml`, where each purpose (`evaluacion`, `procesamiento`) is assigned to the corresponding provider (`local` or `cloud`).
+Routing is defined through the `ai_routing` section in `config.yaml`, where each purpose (`evaluation`, `processing`) is assigned to the corresponding provider (`cloud` or `local`).
 
 This strategy will allow replacing or rebalancing models and providers without modifying the functional modules of the automation.
 
@@ -859,11 +857,12 @@ This separation avoids using the LLM for tasks where it does not provide a techn
 
 The project uses two models according to purpose and available hardware:
 
-### 9.7.1 Local model
+### 9.7.1 Local model (optional fallback)
 
 - **Family:** Qwen.
 - **Model:** Qwen 3.5 4B (`qwen3.5:4b`).
 - **Target hardware:** GPU with 4 GB VRAM (NVIDIA GTX 1650 Mobile).
+- **Role:** optional fallback for development or when the cloud route is unavailable.
 
 The selection is based on:
 
@@ -921,11 +920,11 @@ It will not be used for deterministic tasks that can be solved using traditional
 
 The artificial intelligence of the project must comply with the following restrictions:
 
-- The local model must run via Ollama.
+- The local model must run via Ollama (when the local fallback is used).
 - The cloud model must be accessible via a free plan, with no recurring costs.
 - The routing between models must be transparent to the functional modules.
 - All communication must be carried out exclusively through the AI Service defined by the architecture.
-- The initial evaluation flow (module 3) must be able to work without an Internet connection.
+- The initial evaluation flow (module 3) must be able to work with the cloud route or, if unreachable, through a configurable local fallback.
 - The models must be replaceable in the future without modifying the business logic of the automation.
 
 ---
@@ -1025,7 +1024,7 @@ This separation reduces coupling and facilitates future modifications to the sto
 
 ## 10.8 Compatibility
 
-The database file (`data/busqueda_empleo.db`) is compatible with:
+The database file (`data/job_search.db`) is compatible with:
 
 - Python (`sqlite3` module).
 - DB Browser for SQLite (free graphical tool).
