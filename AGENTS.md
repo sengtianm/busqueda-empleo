@@ -2,88 +2,33 @@
 
 # Job Search Automation
 
-## Project Status
+## Project
 
-The project is currently in the planning phase.
+Automated solution that discovers, collects, prepares, evaluates, processes, and manages job opportunities, reducing the time and effort of the job search while supporting the user's decision-making.
 
-There is currently no implemented code.
+**Current status**: MVP in progress. Phases 0-3 completed (infrastructure, shared services, prompts tested with `gemma4:31b-cloud`). Current work: Phase 4 — Module 1 (Opportunity Discovery) on branch `modulo-1`. Phases 5-9 pending. See `docs/history/tracker.md` for the authoritative status.
 
-All official documentation is located in `/docs`.
+## Objective
 
-Development of the MVP must not begin until the corresponding documentation has been approved.
+Design, develop, and implement an automated job search pipeline — from discovering offers to generating the inputs for a high-quality application — keeping full traceability and minimizing manual intervention (see DOC-08).
 
----
-
-# General Principles
-
-- Official documentation always takes priority.
-- Never assume information that is not documented.
-- If documentation contains a contradiction, stop implementation and request a decision.
-- Do not modify the architecture, data model, workflow, technology stack, or business rules without explicit authorization.
-- The user retains all functional and strategic decision-making authority.
-
----
-
-# Workflow
-
-For each task:
-
-1. Understand the scope.
-2. Read only the necessary documentation.
-3. Present a plan.
-4. Wait for approval.
-5. Implement.
-6. Validate.
-7. Deliver a report.
-8. Wait for approval before continuing to the next task.
-
-Never work on more than one task simultaneously.
-
----
-
-# Version Control
-
-- Every new phase, module, or significant development must be developed in a dedicated branch.
-- The branch is created when work begins and remains active until the user explicitly instructs it to be merged into `main`.
-- Do not merge any branch without the user's explicit authorization.
-
----
-
-# Documentation
-
-All official documentation is located in `docs/`.
-
-Reading order:
-
-1. DOC-00 (Glossary)
-2. The document related to the current task
-3. Documents referenced by that document
-
-Do not read unnecessary documentation.
-
----
-
-# Architecture
+## Architecture
 
 Three-layer architecture:
 
-- Functional modules
-- Shared services
-- Infrastructure
+```
+Functional modules → Shared services → Infrastructure
+```
 
 General workflow:
 
-Discovery →  
-Preparation →  
-Evaluation →  
-Processing →  
-Management
+```
+Discovery → Preparation → Evaluation → Processing → Management
+```
 
-All implementations must follow this architecture.
+All implementations must follow this architecture (details in DOC-12).
 
----
-
-# Technology Stack
+## Technology Stack
 
 - Python 3.12
 - Playwright
@@ -101,83 +46,124 @@ All implementations must follow this architecture.
 - Ruff
 - mypy
 
-Do not add new dependencies without authorization.
+## Project Structure
 
----
+- `docs/` — Official documentation (project-design, plans, reports, history)
+- `config/` — Centralized system configuration (`config.yaml`, `.env.template`)
+- `prompts/` — Official prompts (kept separate from code)
+- `modules/` — Functional modules: discovery, preparation, evaluation, processing, management
+- `shared/` — Reusable resources (config, errors, logging, retry, models, persistence, ia_service, decision_engine, state_machine)
+- `data/` — Persistent data (input, processing, output, backup)
+- `logs/` — Logs and audit
+- `temp/` — Temporary files
+- `scripts/` — Auxiliary scripts (e.g., prompt tester)
+- `tests/` — Tests (fixtures in `tests/fixtures/`)
 
-# Conventions
+## Conventions
 
-- Language: English for all code, documentation, configuration, prompts, commit messages, directory names, and file names.
-- Language: Spanish for everything related to data — the SQLite database (table names, column names, and stored data), the Pydantic models and persistence layer that mirror it (`shared/models.py`, `shared/persistence.py`), the profile and evaluation criteria data in `config.yaml`, and test fixture data.
-- Language: Spanish for all conversations with the user (unless the user explicitly requests otherwise).
-- Language: Spanish for all natural-language data stored in the database (`job_search.db`) — job titles, descriptions, interview preparation, cover letter drafts, and any other user-facing content.
+- **English** for all code, documentation, configuration, prompts, commit messages, directory and file names.
+- **Spanish** for everything data-related: the SQLite database (`job_search.db`), `shared/models.py`, `shared/persistence.py`, profile and criteria in `config.yaml`, and test fixtures.
+- **Spanish** for all conversations with the user.
 - Configuration must be separated from business logic.
 - Prompts must be separated from the code.
 - No hardcoded values.
 - Every transformation must preserve the original data.
 - No functional module may access the database directly.
+- Never include API keys, tokens, passwords, or sensitive data in repository files.
 
----
+## Workflow
 
-# Validation
+For each task:
+
+1. Understand the scope.
+2. Read only the necessary documentation.
+3. Present a plan.
+4. Wait for approval.
+5. Implement.
+6. Validate.
+7. Update AGENTS.md and docs/history/tracker.md if they changed.
+8. Deliver a report (including the AGENTS.md and tracker.md changes).
+9. Wait for approval before continuing.
+
+Never work on more than one task at a time.
+
+## Keep Documents Updated
+
+- After each validated task or phase, update this file if any of its existing sections changed.
+- Only update existing sections: never add new topics or sections (new topics belong in Session History).
+- Keep the file short and useful: write it for a new developer, using clear headings and lists.
+- Update `docs/history/tracker.md` when a task or phase changes status; add new phase tables only when defined by the MVP Execution Plan.
+- Include the AGENTS.md and tracker.md diffs in the task report; they are approved together with the task.
+
+## Restrictions
+
+- Do not add new dependencies without authorization.
+- Do not modify the architecture, data model, workflow, tech stack, or business rules without authorization.
+- Do not modify official documentation without authorization.
+
+## Commands
+
+- `ruff check .` — Lint (E/F/I/N/W rules, line length 100)
+- `mypy .` — Type check (strict)
+- `pytest tests/` — Test suite (currently 47 passing)
+
+Note: local venv runs Python 3.14.6 (3.12 unavailable).
+
+## Validation (Definition of Done)
 
 Before completing a task:
 
-- Run only the validations relevant to the implemented change.
-- Review the official acceptance criteria.
-- Generate a report containing:
-  - Objective
-  - Modified files
-  - Validations performed
-  - Result
-  - Issues encountered
+- Run only the validations relevant to the change: lint, type check, and tests when code changed.
+- Review the official acceptance criteria in the MVP Execution Plan.
+- Deliver a report with: Objective, Modified files, Validations performed, Result, Issues encountered.
 
----
+Testing strategy: unit tests with fixtures in `tests/fixtures/`, integration tests tagged (Playwright), LLM responses mockable, data layer tested with temporary SQLite files.
 
-# Session History
+## Response Style
 
-At the end of each development session:
+- Respond in Spanish, concisely, using clear headings and lists.
+- Never modify files without explaining first.
 
-- Update `Session History.md` with **one entry per calendar day**.
-- Before writing, check today's date:
-  - If an entry already exists for that date, update it.
-  - Otherwise, create a new entry.
-- Keep the history cumulative.
-- Record the information in three sections using keyword-style bullet points.
+## Key Documents
 
-### Topics
+| Doc | Covers |
+|-----|--------|
+| DOC-00 | Glossary |
+| DOC-01 | Functional requirements |
+| DOC-03 | Decision model |
+| DOC-04 | Data flow |
+| DOC-05 | Project standards (naming, formats) |
+| DOC-06 | Error handling |
+| DOC-07 | Folder architecture |
+| DOC-08 | Scope and objectives |
+| DOC-09 | Job sources research (LinkedIn) |
+| DOC-11 | Technology stack |
+| DOC-12 | General system architecture |
+| DOC-13 | Data model |
+| MVP Execution Plan | Build order and acceptance criteria per task |
+| tracker.md | Current status of each phase and task |
 
-- Short keyword-style bullet points (maximum one line each).
-- Describe **what** was done, not **how** it was done (unless the implementation approach is itself the decision).
-- **Do NOT include:**
-  - Commit hashes
-  - Individual file paths
-  - Rule/AC/EP numbers unless they are the central topic
-- If the session contains multiple work blocks (morning/afternoon), separate them with bracketed headings, for example:
-  - `[Morning]`
-  - `[Afternoon]`
+Reading order: DOC-00 first, then the document related to the current task, then documents referenced by it. Do not read unnecessary documentation.
 
-### Decisions
+## Version Control
 
-- Include only decisions that are new or modified compared to previous sessions.
-- Omit anything that simply repeats previous agreements.
+- Develop every phase, module, or significant change in a dedicated branch.
+- Use descriptive branch names (e.g., `modulo-1`, `docs/...`).
+- The branch stays active until the user explicitly asks to merge into `main`.
+- Do not merge any branch without explicit authorization.
 
-### Status
+## Documentation
 
-- Mark completed and pending phases using ✅ and ⬜.
-- Include Ruff, mypy, and pytest results if changes were made.
-- Include the active branch only when applicable.
+All official documentation lives in `docs/` and is the single source of truth.
 
-If there is any doubt about whether a detail should be included or omitted, ask the user.
+## Session History
 
----
+At the end of each session, update `docs/history/session history.md` with one entry per calendar day (create or update), cumulative, in three sections:
 
-# When There Is Uncertainty
+- **Topics** — Keyword-style bullets, one line each. No commit hashes, file paths, or rule numbers. Separate work blocks with `[Morning]`/`[Afternoon]`.
+- **Decisions** — Only new or modified decisions.
+- **Status** — Completed/pending phases (✅/⬜), Ruff/mypy/pytest results if changes were made, active branch.
 
-Never invent a solution.
+## When There Is Uncertainty
 
-Stop the implementation.
-
-Explain the problem.
-
-Wait for a decision.
+Never invent a solution: stop, explain the problem, and wait for a decision.

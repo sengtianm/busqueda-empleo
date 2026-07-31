@@ -18,9 +18,9 @@
 | # | Task | Source docs | Status | Notes |
 |---|------|-------------|--------|-------|
 | 1 | Confirm MVP scope (LinkedIn single source) | DOC-01, DOC-08, DOC-09 | ✅ | No documentary contradictions. LinkedIn confirmed as MVP's only source (DOC-09 §3.10). |
-| 2 | Define work rules with OpenCode | — | ✅ | 17 rules documented in AGENTS.md (RT-001 to RT-017). |
-| 3 | Establish acceptance criteria per step | Execution Plan | ✅ | 11 criteria documented in AGENTS.md (CA-001 to CA-011). |
-| 4 | Decide testing strategy | Execution Plan | ✅ | 8 sections (EP-001 to EP-302) documented in AGENTS.md. |
+| 2 | Define work rules with OpenCode | — | ✅ | Work rules documented in AGENTS.md (Workflow, Restrictions, Response Style). |
+| 3 | Establish acceptance criteria per step | Execution Plan | ✅ | Acceptance criteria documented in AGENTS.md (Validation) and in the MVP Execution Plan. |
+| 4 | Decide testing strategy | Execution Plan | ✅ | Testing strategy documented in AGENTS.md (Validation) and MVP Execution Plan Phase 0. |
 
 ---
 
