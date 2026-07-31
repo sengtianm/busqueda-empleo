@@ -3,94 +3,94 @@ from enum import IntEnum
 from typing import Any
 
 
-class Severidad(IntEnum):
-    CRITICO = 1
-    ALTO = 2
-    MEDIO = 3
-    BAJO = 4
-    INFORMATIVO = 5
+class Severity(IntEnum):
+    CRITICAL = 1
+    HIGH = 2
+    MEDIUM = 3
+    LOW = 4
+    INFORMATIVE = 5
 
 
 class BaseError(Exception):
     def __init__(
         self,
-        codigo: str,
-        mensaje: str,
-        severidad: Severidad = Severidad.MEDIO,
-        modulo_origen: str = "",
-        oferta_id: str | None = None,
+        code: str,
+        message: str,
+        severity: Severity = Severity.MEDIUM,
+        source_module: str = "",
+        offer_id: str | None = None,
     ) -> None:
-        self.codigo = codigo
-        self.severidad = severidad
-        self.modulo_origen = modulo_origen
-        self.oferta_id = oferta_id
+        self.code = code
+        self.severity = severity
+        self.source_module = source_module
+        self.offer_id = offer_id
         self.timestamp = datetime.now(timezone.utc)
-        super().__init__(mensaje)
+        super().__init__(message)
 
     def __str__(self) -> str:
-        base = f"[{self.codigo}] SV-{self.severidad.value} | {super().__str__()}"
-        if self.modulo_origen:
-            base += f" | módulo: {self.modulo_origen}"
-        if self.oferta_id:
-            base += f" | oferta: {self.oferta_id}"
+        base = f"[{self.code}] SV-{self.severity.value} | {super().__str__()}"
+        if self.source_module:
+            base += f" | module: {self.source_module}"
+        if self.offer_id:
+            base += f" | offer: {self.offer_id}"
         return base
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "codigo": self.codigo,
-            "mensaje": super().__str__(),
-            "severidad": self.severidad.name,
-            "modulo_origen": self.modulo_origen,
-            "oferta_id": self.oferta_id,
+            "code": self.code,
+            "message": super().__str__(),
+            "severity": self.severity.name,
+            "source_module": self.source_module,
+            "offer_id": self.offer_id,
             "timestamp": self.timestamp.isoformat(),
         }
 
 
 class ErrorRed(BaseError):
-    def __init__(self, codigo: str, mensaje: str, **kwargs: Any) -> None:
-        super().__init__(f"ER-RED-{codigo}", mensaje, **kwargs)
+    def __init__(self, code: str, message: str, **kwargs: Any) -> None:
+        super().__init__(f"ER-RED-{code}", message, **kwargs)
 
 
 class ErrorNavegador(BaseError):
-    def __init__(self, codigo: str, mensaje: str, **kwargs: Any) -> None:
-        super().__init__(f"ER-NAV-{codigo}", mensaje, **kwargs)
+    def __init__(self, code: str, message: str, **kwargs: Any) -> None:
+        super().__init__(f"ER-NAV-{code}", message, **kwargs)
 
 
 class ErrorExtraccion(BaseError):
-    def __init__(self, codigo: str, mensaje: str, **kwargs: Any) -> None:
-        super().__init__(f"ER-EXT-{codigo}", mensaje, **kwargs)
+    def __init__(self, code: str, message: str, **kwargs: Any) -> None:
+        super().__init__(f"ER-EXT-{code}", message, **kwargs)
 
 
 class ErrorValidacion(BaseError):
-    def __init__(self, codigo: str, mensaje: str, **kwargs: Any) -> None:
-        super().__init__(f"ER-VAL-{codigo}", mensaje, **kwargs)
+    def __init__(self, code: str, message: str, **kwargs: Any) -> None:
+        super().__init__(f"ER-VAL-{code}", message, **kwargs)
 
 
 class ErrorLLM(BaseError):
-    def __init__(self, codigo: str, mensaje: str, **kwargs: Any) -> None:
-        super().__init__(f"ER-LLM-{codigo}", mensaje, **kwargs)
+    def __init__(self, code: str, message: str, **kwargs: Any) -> None:
+        super().__init__(f"ER-LLM-{code}", message, **kwargs)
 
 
 class ErrorDatos(BaseError):
-    def __init__(self, codigo: str, mensaje: str, **kwargs: Any) -> None:
-        super().__init__(f"ER-DAT-{codigo}", mensaje, **kwargs)
+    def __init__(self, code: str, message: str, **kwargs: Any) -> None:
+        super().__init__(f"ER-DAT-{code}", message, **kwargs)
 
 
 class ErrorPersistencia(BaseError):
-    def __init__(self, codigo: str, mensaje: str, **kwargs: Any) -> None:
-        super().__init__(f"ER-DB-{codigo}", mensaje, **kwargs)
+    def __init__(self, code: str, message: str, **kwargs: Any) -> None:
+        super().__init__(f"ER-DB-{code}", message, **kwargs)
 
 
-class ErrorConfiguracion(BaseError):
-    def __init__(self, codigo: str, mensaje: str, **kwargs: Any) -> None:
-        super().__init__(f"ER-CFG-{codigo}", mensaje, **kwargs)
+class ConfigurationError(BaseError):
+    def __init__(self, code: str, message: str, **kwargs: Any) -> None:
+        super().__init__(f"ER-CFG-{code}", message, **kwargs)
 
 
 class ErrorInterno(BaseError):
-    def __init__(self, codigo: str, mensaje: str, **kwargs: Any) -> None:
-        super().__init__(f"ER-INT-{codigo}", mensaje, **kwargs)
+    def __init__(self, code: str, message: str, **kwargs: Any) -> None:
+        super().__init__(f"ER-INT-{code}", message, **kwargs)
 
 
 class ErrorExterno(BaseError):
-    def __init__(self, codigo: str, mensaje: str, **kwargs: Any) -> None:
-        super().__init__(f"ER-EXTS-{codigo}", mensaje, **kwargs)
+    def __init__(self, code: str, message: str, **kwargs: Any) -> None:
+        super().__init__(f"ER-EXTS-{code}", message, **kwargs)

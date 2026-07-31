@@ -5,14 +5,14 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
-from shared.errors import ErrorConfiguracion, ErrorLLM
+from shared.errors import ConfigurationError, ErrorLLM
 from shared.ia_service import (
-    _enviar_cloud,
-    _enviar_local,
     _route_provider,
-    _validar_respuesta,
-    analizar,
-    cargar_prompt,
+    _send_cloud,
+    _send_local,
+    _validate_response,
+    analyze,
+    load_prompt,
     renderizar_prompt,
 )
 
@@ -26,8 +26,8 @@ def test_renderizar_prompt_simple() -> None:
 
 
 def test_cargar_prompt_inexistente() -> None:
-    with pytest.raises(ErrorConfiguracion, match="ER-CFG-001"):
-        cargar_prompt("evaluacion_inicial/inexistente")
+    with pytest.raises(ConfigurationError, match="ER-CFG-001"):
+        load_prompt("initial_evaluation/nonexistent")
 
 
 @patch("shared.ia_service.httpx.post")
@@ -35,7 +35,7 @@ def test_enviar_local_exitoso(mock_post: MagicMock) -> None:
     mock_post.return_value.status_code = 200
     mock_post.return_value.json.return_value = {"response": '{"ok": true}'}
 
-    resultado = _enviar_local("test prompt")
+    resultado = _send_local("test prompt")
     assert resultado == '{"ok": true}'
     mock_post.assert_called_once()
 
@@ -45,7 +45,7 @@ def test_enviar_local_error_conexion(mock_post: MagicMock) -> None:
     mock_post.side_effect = httpx.ConnectError("No se pudo conectar")
 
     with pytest.raises(ErrorLLM, match="ER-LLM-001"):
-        _enviar_local("test prompt")
+        _send_local("test prompt")
 
 
 @patch("shared.ia_service.httpx.post")
@@ -53,7 +53,7 @@ def test_enviar_local_timeout(mock_post: MagicMock) -> None:
     mock_post.side_effect = httpx.TimeoutException("Timeout")
 
     with pytest.raises(ErrorLLM, match="ER-LLM-002"):
-        _enviar_local("test prompt")
+        _send_local("test prompt")
 
 
 @patch("shared.ia_service.httpx.post")
@@ -61,7 +61,7 @@ def test_enviar_cloud_exitoso(mock_post: MagicMock) -> None:
     mock_post.return_value.status_code = 200
     mock_post.return_value.json.return_value = {"response": '{"ok": true}'}
 
-    resultado = _enviar_cloud("test prompt")
+    resultado = _send_cloud("test prompt")
     assert resultado == '{"ok": true}'
     mock_post.assert_called_once()
 
@@ -71,7 +71,7 @@ def test_enviar_cloud_error_conexion(mock_post: MagicMock) -> None:
     mock_post.side_effect = httpx.ConnectError("No se pudo conectar")
 
     with pytest.raises(ErrorLLM, match="ER-LLM-001"):
-        _enviar_cloud("test prompt")
+        _send_cloud("test prompt")
 
 
 @patch("shared.ia_service.httpx.post")
@@ -84,41 +84,41 @@ def test_enviar_cloud_http_error(mock_post: MagicMock) -> None:
     mock_post.return_value = mock_response
 
     with pytest.raises(ErrorLLM, match="ER-LLM-003"):
-        _enviar_cloud("test prompt")
+        _send_cloud("test prompt")
 
 
 def test_route_provider_ok() -> None:
-    assert _route_provider("evaluacion") == "cloud"
-    assert _route_provider("procesamiento") == "cloud"
+    assert _route_provider("evaluation") == "cloud"
+    assert _route_provider("processing") == "cloud"
 
 
-@patch("shared.ia_service.cargar")
-def test_route_provider_invalido(mock_cargar: MagicMock) -> None:
-    mock_cargar.return_value = {
-        "ia_routing": {"evaluacion": "local", "procesamiento": "aws"}
+@patch("shared.ia_service.load")
+def test_route_provider_invalido(mock_load: MagicMock) -> None:
+    mock_load.return_value = {
+        "ai_routing": {"evaluation": "local", "processing": "aws"}
     }
-    with pytest.raises(ErrorConfiguracion, match="ER-CFG-003"):
-        _route_provider("procesamiento")
+    with pytest.raises(ConfigurationError, match="ER-CFG-003"):
+        _route_provider("processing")
 
 
 def test_validar_respuesta_ok() -> None:
-    resultado = _validar_respuesta('{"compatibilidad": "alta"}')
+    resultado = _validate_response('{"compatibilidad": "alta"}')
     assert resultado == {"compatibilidad": "alta"}
 
 
 def test_validar_respuesta_vacia() -> None:
     with pytest.raises(ErrorLLM, match="ER-LLM-003"):
-        _validar_respuesta("")
+        _validate_response("")
 
 
 def test_validar_respuesta_no_json() -> None:
     with pytest.raises(ErrorLLM, match="ER-LLM-003"):
-        _validar_respuesta("no es json")
+        _validate_response("no es json")
 
 
 def test_validar_respuesta_no_dict() -> None:
     with pytest.raises(ErrorLLM, match="ER-LLM-004"):
-        _validar_respuesta('["lista", "no valida"]')
+        _validate_response('["lista", "no valida"]')
 
 
 @patch("shared.ia_service.httpx.post")
@@ -134,10 +134,10 @@ def test_analizar_local(mock_post: MagicMock, tmp_path: Path) -> None:
         "response": json.dumps({"compatibilidad": "alta"})
     }
 
-    resultado = analizar(
+    resultado = analyze(
         "test_categoria/test_prompt",
         {"titulo": "Data Engineer"},
-        proposito="evaluacion",
+        purpose="evaluation",
     )
     assert resultado == {"compatibilidad": "alta"}
 

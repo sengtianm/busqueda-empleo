@@ -1,33 +1,33 @@
-# Automatización de búsqueda de empleo
+# Job Search Automation
 
-Sistema automatizado de descubrimiento, evaluación y procesamiento de oportunidades laborales, con LinkedIn como fuente principal.
+Automated system for discovery, evaluation, and processing of job opportunities, with LinkedIn as the primary source.
 
-## Documentación
+## Documentation
 
-Toda la documentación oficial se encuentra en [`docs/`](docs/):
+All official documentation is located in [`docs/project-design/`](docs/project-design/):
 
-| Documento | Propósito |
-|-----------|-----------|
-| [DOC-00](docs/DOC-00%20-%20Glosario%20del%20Proyecto.md) | Glosario del proyecto |
-| [DOC-01](docs/DOC-01%20-%20Requisitos%20Funcionales.md) | Requisitos funcionales |
-| [DOC-02](docs/DOC-02%20-%20Requisitos%20No%20Funcionales.md) | Requisitos no funcionales |
-| [DOC-03](docs/DOC-03%20-%20Modelo%20de%20Decision.md) | Modelo de decisiones |
-| [DOC-04](docs/DOC-04%20-%20Flujo%20de%20Datos.md) | Flujo de datos |
-| [DOC-05](docs/DOC-05%20-%20Estandares%20del%20Proyecto.md) | Estándares del proyecto |
-| [DOC-06](docs/DOC-06%20-%20Manejo%20de%20Errores.md) | Manejo de errores |
-| [DOC-07](docs/DOC-07%20-%20Arquitectura%20de%20Carpeta.md) | Arquitectura de carpetas |
-| [DOC-08](docs/DOC-08%20-%20Alcance%20y%20Objetivos.md) | Alcance y objetivos |
-| [DOC-09](docs/DOC-09%20-%20Investigación%20de%20fuentes%20de%20empleo.md) | Investigación de fuentes (LinkedIn) |
-| [DOC-10](docs/DOC-10%20-%20Perfil%20profesional%20del%20usuario.md) | Perfil profesional del usuario |
-| [DOC-11](docs/DOC-11%20-%20Stack%20tecnológico.md) | Stack tecnológico |
-| [DOC-12](docs/DOC-12%20-%20Arquitectura%20General%20del%20sistema.md) | Arquitectura general del sistema |
-| [DOC-13](docs/DOC-13%20-%20Modelo%20de%20Datos.md) | Modelo de datos |
-| [Plan del proyecto](docs/planes/DOC%20-%20Plan%20del%20proyecto.md) | Plan general del proyecto |
+| Document | Purpose |
+|----------|---------|
+| [DOC-00](docs/project-design/DOC-00%20-%20Project%20Glossary.md) | Project Glossary |
+| [DOC-01](docs/project-design/DOC-01%20-%20Functional%20Requirements.md) | Functional Requirements |
+| [DOC-02](docs/project-design/DOC-02%20-%20Non-Functional%20Requirements.md) | Non-Functional Requirements |
+| [DOC-03](docs/project-design/DOC-03%20-%20Decision%20Model.md) | Decision Model |
+| [DOC-04](docs/project-design/DOC-04%20-%20Data%20Flow.md) | Data Flow |
+| [DOC-05](docs/project-design/DOC-05%20-%20Project%20Standards.md) | Project Standards |
+| [DOC-06](docs/project-design/DOC-06%20-%20Error%20Handling.md) | Error Handling |
+| [DOC-07](docs/project-design/DOC-07%20-%20Folder%20Architecture.md) | Folder Architecture |
+| [DOC-08](docs/project-design/DOC-08%20-%20Scope%20and%20Objectives.md) | Scope and Objectives |
+| [DOC-09](docs/project-design/DOC-09%20-%20Job%20Sources%20Research.md) | Job Sources Research |
+| [DOC-10](docs/project-design/DOC-10%20-%20User%20Professional%20Profile.md) | User Professional Profile |
+| [DOC-11](docs/project-design/DOC-11%20-%20Technology%20Stack.md) | Technology Stack |
+| [DOC-12](docs/project-design/DOC-12%20-%20General%20System%20Architecture.md) | General System Architecture |
+| [DOC-13](docs/project-design/DOC-13%20-%20Data%20Model.md) | Data Model |
+| [Project Plan](docs/planes/DOC%20-%20Plan%20del%20proyecto.md) | General Project Plan |
 
-## Estado
+## Status
 
-Proyecto en fase de planificación/documentación. Sin código implementado.
+Project in development phase. Phases 1-3 of MVP completed.
 
-## Stack tecnológico
+## Technology Stack
 
-Python 3.12, Playwright, BeautifulSoup4, Pydantic v2, Loguru, RapidFuzz, Tenacity, httpx, Ollama + Gemma 4 31B cloud (vía proxy local), SQLite.
+Python 3.12, Playwright, BeautifulSoup4, Pydantic v2, Loguru, RapidFuzz, Tenacity, httpx, Ollama + Gemma 4 31B cloud (via local proxy), SQLite.

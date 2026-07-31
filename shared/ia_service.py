@@ -3,30 +3,30 @@ from typing import Any
 
 import httpx
 
-from shared.config import cargar
-from shared.errors import ErrorConfiguracion, ErrorLLM
+from shared.config import load
+from shared.errors import ConfigurationError, ErrorLLM
 from shared.retry import decorador_reintento
 
-_RAIZ_PROYECTO = Path(__file__).resolve().parent.parent
-_RUTA_PROMPTS = _RAIZ_PROYECTO / "prompts"
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_PROMPTS_PATH = _PROJECT_ROOT / "prompts"
 
 
-def _ruta_prompt(prompt_id: str) -> Path:
-    ruta = _RUTA_PROMPTS / prompt_id
-    if not ruta.suffix:
-        ruta = ruta.with_suffix(".md")
-    return ruta
+def _prompt_path(prompt_id: str) -> Path:
+    path = _PROMPTS_PATH / prompt_id
+    if not path.suffix:
+        path = path.with_suffix(".md")
+    return path
 
 
-def cargar_prompt(prompt_id: str) -> str:
-    ruta = _ruta_prompt(prompt_id)
-    if not ruta.exists():
-        raise ErrorConfiguracion(
+def load_prompt(prompt_id: str) -> str:
+    path = _prompt_path(prompt_id)
+    if not path.exists():
+        raise ConfigurationError(
             "001",
-            f"Prompt no encontrado: {ruta}",
-            modulo_origen="ia_service",
+            f"Prompt not found: {path}",
+            source_module="ia_service",
         )
-    return ruta.read_text(encoding="utf-8")
+    return path.read_text(encoding="utf-8")
 
 
 def renderizar_prompt(template: str, contexto: dict[str, Any]) -> str:
@@ -37,51 +37,51 @@ def renderizar_prompt(template: str, contexto: dict[str, Any]) -> str:
     return resultado
 
 
-def _route_provider(proposito: str) -> str:
-    config = cargar()
-    routing = config.get("ia_routing", {})
-    proveedor = routing.get(proposito, "local")
-    if not isinstance(proveedor, str):
-        proveedor = "local"
-    if proveedor not in ("local", "cloud"):
-        raise ErrorConfiguracion(
+def _route_provider(purpose: str) -> str:
+    config = load()
+    routing = config.get("ai_routing", {})
+    provider = routing.get(purpose, "local")
+    if not isinstance(provider, str):
+        provider = "local"
+    if provider not in ("local", "cloud"):
+        raise ConfigurationError(
             "003",
-            f"Proveedor de IA invalido para proposito '{proposito}': '{proveedor}'. "
-            f"Valores permitidos: 'local', 'cloud'",
-            modulo_origen="ia_service",
+            f"Invalid AI provider for purpose '{purpose}': '{provider}'. "
+            f"Allowed values: 'local', 'cloud'",
+            source_module="ia_service",
         )
-    return proveedor
+    return provider
 
 
-def _obtener_config_local() -> dict[str, Any]:
-    config = cargar()
-    local_cfg = config.get("ia_local", {})
+def _get_local_config() -> dict[str, Any]:
+    config = load()
+    local_cfg = config.get("ai_local", {})
     env = config.get("_env", {})
     return {
         "host": env.get("OLLAMA_HOST") or local_cfg.get("host", "localhost"),
-        "puerto": int(env.get("OLLAMA_PORT") or local_cfg.get("puerto", 11434)),
-        "modelo": env.get("OLLAMA_MODEL") or local_cfg.get("modelo", "qwen3.5:4b"),
-        "timeout": int(local_cfg.get("timeout_segundos", 60)),
+        "port": int(env.get("OLLAMA_PORT") or local_cfg.get("port", 11434)),
+        "model": env.get("OLLAMA_MODEL") or local_cfg.get("model", "qwen3.5:4b"),
+        "timeout": int(local_cfg.get("timeout_seconds", 60)),
     }
 
 
-def _obtener_config_cloud() -> dict[str, Any]:
-    config = cargar()
-    cloud_cfg = config.get("ia_cloud", {})
+def _get_cloud_config() -> dict[str, Any]:
+    config = load()
+    cloud_cfg = config.get("ai_cloud", {})
     env = config.get("_env", {})
     return {
         "endpoint": env.get("IA_CLOUD_ENDPOINT") or cloud_cfg.get("endpoint", ""),
-        "modelo": cloud_cfg.get("modelo", "gemma4:31b"),
+        "model": cloud_cfg.get("model", "gemma4:31b"),
         "api_key": env.get("IA_CLOUD_API_KEY") or "",
-        "timeout": int(cloud_cfg.get("timeout_segundos", 120)),
+        "timeout": int(cloud_cfg.get("timeout_seconds", 120)),
     }
 
 
 @decorador_reintento()
-def _enviar_local(prompt: str) -> str:
-    cfg = _obtener_config_local()
-    url = f"http://{cfg['host']}:{cfg['puerto']}/api/generate"
-    payload = {"model": cfg["modelo"], "prompt": prompt, "stream": False}
+def _send_local(prompt: str) -> str:
+    cfg = _get_local_config()
+    url = f"http://{cfg['host']}:{cfg['port']}/api/generate"
+    payload = {"model": cfg["model"], "prompt": prompt, "stream": False}
     try:
         respuesta = httpx.post(url, json=payload, timeout=cfg["timeout"])
         respuesta.raise_for_status()
@@ -90,33 +90,33 @@ def _enviar_local(prompt: str) -> str:
     except httpx.ConnectError:
         raise ErrorLLM(
             "001",
-            f"No se pudo conectar a Ollama local en {url}",
-            modulo_origen="ia_service",
+            f"Could not connect to local Ollama at {url}",
+            source_module="ia_service",
         )
     except httpx.TimeoutException:
         raise ErrorLLM(
             "002",
-            f"Timeout al conectar con Ollama local ({cfg['timeout']}s)",
-            modulo_origen="ia_service",
+            f"Timeout connecting to local Ollama ({cfg['timeout']}s)",
+            source_module="ia_service",
         )
     except httpx.HTTPStatusError as e:
         raise ErrorLLM(
             "003",
-            f"Ollama local respondio con codigo {e.response.status_code}",
-            modulo_origen="ia_service",
+            f"Local Ollama responded with code {e.response.status_code}",
+            source_module="ia_service",
         )
 
 
 @decorador_reintento()
-def _enviar_cloud(prompt: str) -> str:
-    cfg = _obtener_config_cloud()
+def _send_cloud(prompt: str) -> str:
+    cfg = _get_cloud_config()
     url = f"{cfg['endpoint']}/api/generate"
     headers: dict[str, str] = {
         "Content-Type": "application/json",
     }
     if cfg["api_key"]:
         headers["Authorization"] = f"Bearer {cfg['api_key']}"
-    payload = {"model": cfg["modelo"], "prompt": prompt, "stream": False}
+    payload = {"model": cfg["model"], "prompt": prompt, "stream": False}
     try:
         respuesta = httpx.post(
             url, json=payload, headers=headers, timeout=cfg["timeout"]
@@ -127,63 +127,63 @@ def _enviar_cloud(prompt: str) -> str:
     except httpx.ConnectError:
         raise ErrorLLM(
             "001",
-            f"No se pudo conectar a IA Cloud en {url}",
-            modulo_origen="ia_service",
+            f"Could not connect to AI Cloud at {url}",
+            source_module="ia_service",
         )
     except httpx.TimeoutException:
         raise ErrorLLM(
             "002",
-            f"Timeout al conectar con IA Cloud ({cfg['timeout']}s)",
-            modulo_origen="ia_service",
+            f"Timeout connecting to AI Cloud ({cfg['timeout']}s)",
+            source_module="ia_service",
         )
     except httpx.HTTPStatusError as e:
         raise ErrorLLM(
             "003",
-            f"IA Cloud respondio con codigo {e.response.status_code}",
-            modulo_origen="ia_service",
+            f"AI Cloud responded with code {e.response.status_code}",
+            source_module="ia_service",
         )
 
 
-def _validar_respuesta(respuesta_raw: str) -> dict[str, Any]:
+def _validate_response(respuesta_raw: str) -> dict[str, Any]:
     import json
 
     if not respuesta_raw.strip():
         raise ErrorLLM(
             "003",
-            "Respuesta vacia del modelo de IA",
-            modulo_origen="ia_service",
+            "Empty response from AI model",
+            source_module="ia_service",
         )
     try:
         data = json.loads(respuesta_raw)
     except json.JSONDecodeError:
         raise ErrorLLM(
             "003",
-            "Respuesta no es JSON valido",
-            modulo_origen="ia_service",
+            "Response is not valid JSON",
+            source_module="ia_service",
         )
     if not isinstance(data, dict):
         raise ErrorLLM(
             "004",
-            "Formato de respuesta inesperado: se esperaba un diccionario",
-            modulo_origen="ia_service",
+            "Unexpected response format: expected a dictionary",
+            source_module="ia_service",
         )
     return data
 
 
-def analizar(
-    prompt_id: str, contexto: dict[str, Any], proposito: str = "evaluacion"
+def analyze(
+    prompt_id: str, contexto: dict[str, Any], purpose: str = "evaluation"
 ) -> dict[str, Any]:
-    template = cargar_prompt(prompt_id)
+    template = load_prompt(prompt_id)
     prompt_final = renderizar_prompt(template, contexto)
     from loguru import logger
 
-    proveedor = _route_provider(proposito)
-    logger.debug("Enviando prompt a IA | prompt_id={} | proveedor={}", prompt_id, proveedor)
+    provider = _route_provider(purpose)
+    logger.debug("Sending prompt to AI | prompt_id={} | provider={}", prompt_id, provider)
 
-    if proveedor == "cloud":
-        respuesta_raw = _enviar_cloud(prompt_final)
+    if provider == "cloud":
+        respuesta_raw = _send_cloud(prompt_final)
     else:
-        respuesta_raw = _enviar_local(prompt_final)
+        respuesta_raw = _send_local(prompt_final)
 
-    logger.debug("Respuesta recibida de IA | prompt_id={} | proveedor={}", prompt_id, proveedor)
-    return _validar_respuesta(respuesta_raw)
+    logger.debug("Response received from AI | prompt_id={} | provider={}", prompt_id, provider)
+    return _validate_response(respuesta_raw)

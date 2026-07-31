@@ -1,19 +1,19 @@
-# --- Búsqueda ---
-busqueda:
+# --- Search ---
+search:
   keywords:
     - Data Engineer
     - Analista de Datos
     - Ingeniero de Datos
-  ubicacion: ""
-  modalidad: ""
-  paginas_max: 5
-  ofertas_max_por_pagina: 25
+  location: ""
+  modality: ""
+  max_pages: 5
+  max_offers_per_page: 25
 
-# --- Evaluación (DOC-03) ---
-evaluacion:
-  umbral_compatibilidad_alta: 80
-  umbral_compatibilidad_media: 50
-  pesos:
+# --- Evaluation (DOC-03) ---
+evaluation:
+  high_compatibility_threshold: 80
+  medium_compatibility_threshold: 50
+  weights:
     experiencia: 0.30
     tecnologia: 0.25
     ubicacion: 0.15
@@ -21,34 +21,34 @@ evaluacion:
     idiomas: 0.10
     seniority: 0.10
 
-# --- Navegador ---
-navegador:
+# --- Browser ---
+browser:
   headless: true
-  timeout_segundos: 30
-  ruta_perfil: ""
+  timeout_seconds: 30
+  profile_path: ""
 
-# --- IA Local (Ollama) ---
-ia_local:
+# --- Local AI (Ollama) ---
+ai_local:
   host: "localhost"
-  puerto: 11434
-  modelo: "qwen3.5:4b"
-  timeout_segundos: 60
+  port: 11434
+  model: "qwen3.5:4b"
+  timeout_seconds: 60
 
-# --- IA Cloud (Ollama Cloud vía proxy local) ---
-ia_cloud:
+# --- AI Cloud (Ollama Cloud via local proxy) ---
+ai_cloud:
   endpoint: "http://localhost:11434"
-  modelo: "gemma4:31b-cloud"
-  timeout_segundos: 120
+  model: "gemma4:31b-cloud"
+  timeout_seconds: 120
 
-# --- Routing de IA por propósito ---
-ia_routing:
-  evaluacion: "cloud"
-  procesamiento: "cloud"
+# --- AI Routing by Purpose ---
+ai_routing:
+  evaluation: "cloud"
+  processing: "cloud"
 
-# --- Persistencia ---
-persistencia:
-  ruta_data: "data"
-  archivo_bd: "data/busqueda_empleo.db"
+# --- Persistence ---
+persistence:
+  data_path: "data"
+  db_file: "data/job_search.db"
 
 # --- Logging ---
 logging:
@@ -56,17 +56,17 @@ logging:
   rotacion: "10 MB"
   retencion_dias: 30
 
-# --- Reintentos (DOC-06) ---
-reintentos:
-  intentos_max: 3
-  espera_base_segundos: 2
-  espera_max_segundos: 30
-  multiplicador: 2
+# --- Retries (DOC-06) ---
+retries:
+  max_attempts: 3
+  base_wait_seconds: 2
+  max_wait_seconds: 30
+  multiplier: 2
 
-# --- Perfil profesional (DOC-10) ---
-perfil:
+# --- Professional Profile (DOC-10) ---
+profile:
   tecnologias: {}
-  experiencia_anios: 0
+  experience_years: 0
   seniority: ""
   idiomas: {}
   ubicaciones_preferidas: []

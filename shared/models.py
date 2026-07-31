@@ -4,127 +4,127 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 
-class EstadoOferta(str, Enum):
-    DESCUBIERTA = "descubierta"
-    PREPARADA = "preparada"
-    EVALUADA = "evaluada"
-    ACEPTADA = "aceptada"
-    DESCARTA = "descartada"
-    PROCESADA = "procesada"
-    FINALIZADA = "finalizada"
+class OfferState(str, Enum):
+    DISCOVERED = "discovered"
+    PREPARED = "prepared"
+    EVALUATED = "evaluated"
+    ACCEPTED = "accepted"
+    DISCARDED = "discarded"
+    PROCESSED = "processed"
+    FINALIZED = "finalized"
 
 
-class ResultadoEvaluacion(str, Enum):
-    ALTA = "alta"
-    MEDIA = "media"
-    BAJA = "baja"
+class EvaluationResult(str, Enum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
 
 
-class DecisionEvaluacion(str, Enum):
-    CONTINUAR = "continuar"
-    DESCARTAR = "descartar"
+class DecisionEvaluation(str, Enum):
+    CONTINUE = "continue"
+    DISCARD = "discard"
 
 
-class Fuente(BaseModel):
+class Source(BaseModel):
     id: str = ""
     nombre: str
     tipo: str = ""
     url_base: str = ""
-    fecha_creacion: str = ""
-    fecha_ultima_edicion: str = ""
+    creation_date: str = ""
+    last_edit_date: str = ""
 
 
-class Empresa(BaseModel):
+class Company(BaseModel):
     id: str = ""
     nombre: str
-    nombre_normalizado: str = ""
+    normalized_name: str = ""
     sitio_web: str = ""
     linkedin: str = ""
     sector: str = ""
-    tamano: str = ""
+    size: str = ""
     descripcion: str = ""
-    fecha_creacion: str = ""
-    fecha_ultima_edicion: str = ""
+    creation_date: str = ""
+    last_edit_date: str = ""
 
 
-class Ubicacion(BaseModel):
+class Location(BaseModel):
     id: str = ""
     ciudad: str = ""
     region: str = ""
     pais: str = ""
     modalidad: str = ""
-    fecha_creacion: str = ""
-    fecha_ultima_edicion: str = ""
+    creation_date: str = ""
+    last_edit_date: str = ""
 
 
-class Oferta(BaseModel):
+class Offer(BaseModel):
     id: str = ""
     fuente_id: str = ""
     empresa_id: str = ""
     ubicacion_id: str = ""
-    identificador_fuente: str = ""
+    source_identifier: str = ""
     url: str
     titulo: str
     descripcion_original: str
     fecha_publicacion: datetime | None = None
-    fecha_descubrimiento: datetime | None = None
-    estado: EstadoOferta = EstadoOferta.DESCUBIERTA
+    discovery_date: datetime | None = None
+    estado: OfferState = OfferState.DISCOVERED
     observaciones: str = ""
-    fecha_creacion: str = ""
-    fecha_ultima_edicion: str = ""
+    creation_date: str = ""
+    last_edit_date: str = ""
 
 
-class OfertaProcesada(BaseModel):
+class ProcessedOffer(BaseModel):
     id: str = ""
-    oferta_id: str = ""
-    titulo_limpio: str = ""
-    descripcion_limpia: str = ""
+    offer_id: str = ""
+    clean_title: str = ""
+    clean_description: str = ""
     salario_min: float | None = None
     salario_max: float | None = None
     moneda: str = ""
-    ubicacion_limpia: str = ""
+    clean_location: str = ""
     modalidad: str = ""
     requisitos: list[str] = Field(default_factory=list)
     tecnologias: list[str] = Field(default_factory=list)
     idiomas: list[str] = Field(default_factory=list)
-    experiencia_anios: int | None = None
-    fecha_procesamiento: datetime | None = None
-    fecha_creacion: str = ""
-    fecha_ultima_edicion: str = ""
+    experience_years: int | None = None
+    processing_date: datetime | None = None
+    creation_date: str = ""
+    last_edit_date: str = ""
 
 
-class Evaluacion(BaseModel):
+class Evaluation(BaseModel):
     id: str = ""
-    oferta_procesada_id: str = ""
-    resultado: ResultadoEvaluacion
-    puntaje: float
-    umbral_aprobacion: float = 50.0
-    decision: DecisionEvaluacion
-    justificacion: str
-    criterios_evaluados: str = ""
-    fecha_evaluacion: datetime | None = None
+    processed_offer_id: str = ""
+    resultado: EvaluationResult
+    score: float
+    approval_threshold: float = 50.0
+    decision: DecisionEvaluation
+    justification: str
+    evaluated_criteria: str = ""
+    evaluation_date: datetime | None = None
     version_modelo: str = "v1"
-    fecha_creacion: str = ""
-    fecha_ultima_edicion: str = ""
+    creation_date: str = ""
+    last_edit_date: str = ""
 
 
-class ResultadoProcesamiento(BaseModel):
+class ProcessingResult(BaseModel):
     id: str = ""
-    oferta_procesada_id: str = ""
-    diagnostico: str = ""
-    extraccion_estrategica: str = ""
-    diseno_candidatura: str = ""
-    borrador_carta: str = ""
-    preparacion_entrevista: str = ""
-    fecha_procesamiento: datetime | None = None
-    fecha_creacion: str = ""
-    fecha_ultima_edicion: str = ""
+    processed_offer_id: str = ""
+    diagnostic: str = ""
+    strategic_extraction: str = ""
+    application_design: str = ""
+    cover_letter_draft: str = ""
+    interview_preparation: str = ""
+    processing_date: datetime | None = None
+    creation_date: str = ""
+    last_edit_date: str = ""
 
 
-class Perfil(BaseModel):
+class Profile(BaseModel):
     id: str = ""
     tecnologias: dict[str, int] = Field(default_factory=dict)
-    experiencia_anios: int = 0
+    experience_years: int = 0
     idiomas: dict[str, str] = Field(default_factory=dict)
     ubicaciones_preferidas: list[str] = Field(default_factory=list)
     modalidades_preferidas: list[str] = Field(default_factory=list)

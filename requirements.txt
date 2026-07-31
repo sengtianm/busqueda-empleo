@@ -9,7 +9,7 @@ httpx>=0.28
 pyyaml>=6.0
 python-dotenv>=1.1
 
-# --- Herramientas de desarrollo ---
+# --- Development tools ---
 black>=24
 ruff>=0.8
 mypy>=1.13

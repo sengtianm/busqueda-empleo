@@ -4,18 +4,18 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
 
-from shared.config import cargar
+from shared.config import load
 
 _DB_PATH: Path | None = None
 
-PREFIJOS: dict[str, str] = {
+PREFIXES: dict[str, str] = {
     "fuentes": "FNT",
     "empresas": "EMP",
     "ubicaciones": "UBI",
     "ofertas": "OFE",
 }
 
-COLUMNAS_JSON: set[str] = {
+JSON_COLUMNS: set[str] = {
     "requisitos",
     "tecnologias",
     "idiomas",
@@ -36,22 +36,22 @@ ESQUEMAS: dict[str, str] = {
         "tipo TEXT DEFAULT '',"
         "url_base TEXT DEFAULT '',"
         "activa INTEGER DEFAULT 1,"
-        "fecha_creacion TEXT DEFAULT '',"
-        "fecha_ultima_edicion TEXT DEFAULT ''"
+        "creation_date TEXT DEFAULT '',"
+        "last_edit_date TEXT DEFAULT ''"
         ")"
     ),
     "empresas": (
         "CREATE TABLE IF NOT EXISTS empresas ("
         "id TEXT PRIMARY KEY,"
         "nombre TEXT NOT NULL,"
-        "nombre_normalizado TEXT DEFAULT '',"
+        "normalized_name TEXT DEFAULT '',"
         "sitio_web TEXT DEFAULT '',"
         "linkedin TEXT DEFAULT '',"
         "sector TEXT DEFAULT '',"
-        "tamano TEXT DEFAULT '',"
+        "size TEXT DEFAULT '',"
         "descripcion TEXT DEFAULT '',"
-        "fecha_creacion TEXT DEFAULT '',"
-        "fecha_ultima_edicion TEXT DEFAULT ''"
+        "creation_date TEXT DEFAULT '',"
+        "last_edit_date TEXT DEFAULT ''"
         ")"
     ),
     "ubicaciones": (
@@ -61,25 +61,25 @@ ESQUEMAS: dict[str, str] = {
         "region TEXT DEFAULT '',"
         "pais TEXT DEFAULT '',"
         "modalidad TEXT DEFAULT '',"
-        "fecha_creacion TEXT DEFAULT '',"
-        "fecha_ultima_edicion TEXT DEFAULT ''"
+        "creation_date TEXT DEFAULT '',"
+        "last_edit_date TEXT DEFAULT ''"
         ")"
     ),
     "ofertas": (
         "CREATE TABLE IF NOT EXISTS ofertas ("
         "id TEXT PRIMARY KEY,"
-        "identificador_fuente TEXT DEFAULT '',"
+        "source_identifier TEXT DEFAULT '',"
         "url TEXT NOT NULL,"
         "titulo TEXT NOT NULL,"
         "descripcion_original TEXT NOT NULL,"
         "fecha_publicacion TEXT DEFAULT '',"
-        "fecha_descubrimiento TEXT DEFAULT '',"
-        "estado TEXT DEFAULT 'descubierta' "
-        "CHECK(estado IN ('descubierta','preparada','evaluada',"
-        "'aceptada','descartada','procesada','finalizada')),"
+        "discovery_date TEXT DEFAULT '',"
+        "estado TEXT DEFAULT 'discovered' "
+        "CHECK(estado IN ('discovered','prepared','evaluated',"
+        "'accepted','discarded','processed','finalized')),"
         "observaciones TEXT DEFAULT '',"
-        "fecha_creacion TEXT DEFAULT '',"
-        "fecha_ultima_edicion TEXT DEFAULT '',"
+        "creation_date TEXT DEFAULT '',"
+        "last_edit_date TEXT DEFAULT '',"
         "fuente_id TEXT REFERENCES fuentes(id),"
         "empresa_id TEXT REFERENCES empresas(id),"
         "ubicacion_id TEXT REFERENCES ubicaciones(id)"
@@ -89,25 +89,25 @@ ESQUEMAS: dict[str, str] = {
 }
 
 
-def _ruta_bd() -> Path:
+def _db_path() -> Path:
     if _DB_PATH is not None:
         return _DB_PATH
-    cfg = cargar()
-    return Path(cfg.get("persistencia", {}).get("archivo_bd", "data/busqueda_empleo.db"))
+    cfg = load()
+    return Path(cfg.get("persistence", {}).get("db_file", "data/busqueda_empleo.db"))
 
 
-def cambiar_ruta(ruta: Path) -> None:
+def change_path(ruta: Path) -> None:
     global _DB_PATH
     _DB_PATH = ruta
 
 
-def restablecer_ruta() -> None:
+def reset_path() -> None:
     global _DB_PATH
     _DB_PATH = None
 
 
-def _conexion() -> sqlite3.Connection:
-    ruta = _ruta_bd()
+def _connection() -> sqlite3.Connection:
+    ruta = _db_path()
     ruta.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(ruta))
     conn.row_factory = sqlite3.Row
@@ -116,11 +116,11 @@ def _conexion() -> sqlite3.Connection:
     return conn
 
 
-def _ahora() -> str:
+def _now() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def _serializar(datos: dict[str, Any]) -> dict[str, Any]:
+def _serialize(datos: dict[str, Any]) -> dict[str, Any]:
     d = dict(datos)
     for k, v in d.items():
         if isinstance(v, datetime):
@@ -132,14 +132,14 @@ def _serializar(datos: dict[str, Any]) -> dict[str, Any]:
     return d
 
 
-def _deserializar(fila: sqlite3.Row | None) -> dict[str, Any] | None:
+def _deserialize(fila: sqlite3.Row | None) -> dict[str, Any] | None:
     if fila is None:
         return None
     d = dict(fila)
     for k, v in d.items():
         if isinstance(v, int) and k == "activa":
             d[k] = bool(v)
-        elif isinstance(v, str) and k in COLUMNAS_JSON:
+        elif isinstance(v, str) and k in JSON_COLUMNS:
             try:
                 d[k] = json.loads(v)
             except (json.JSONDecodeError, TypeError):
@@ -147,8 +147,8 @@ def _deserializar(fila: sqlite3.Row | None) -> dict[str, Any] | None:
     return d
 
 
-def inicializar_bd() -> None:
-    conn = _conexion()
+def init_db() -> None:
+    conn = _connection()
     try:
         tablas = ("secuencia_ids", "fuentes", "empresas", "ubicaciones",
                   "ofertas")
@@ -159,12 +159,12 @@ def inicializar_bd() -> None:
         conn.close()
 
 
-def generar_id(tabla: str) -> str:
-    prefijo = PREFIJOS.get(tabla)
+def generate_id(tabla: str) -> str:
+    prefijo = PREFIXES.get(tabla)
     if prefijo is None:
-        disponibles = list(PREFIJOS.keys())
-        raise ValueError(f"Tabla desconocida: {tabla}. Prefijos disponibles: {disponibles}")
-    conn = _conexion()
+        disponibles = list(PREFIXES.keys())
+        raise ValueError(f"Unknown table: {tabla}. Available prefixes: {disponibles}")
+    conn = _connection()
     try:
         conn.execute(
             "INSERT INTO secuencia_ids (tabla_nombre, prefijo, ultimo_numero) VALUES (?, ?, 1) "
@@ -183,33 +183,33 @@ def generar_id(tabla: str) -> str:
         conn.close()
 
 
-def leer_tabla(tabla: str) -> list[dict[str, Any]]:
-    conn = _conexion()
+def read_table(tabla: str) -> list[dict[str, Any]]:
+    conn = _connection()
     try:
         cursor = conn.execute(f"SELECT * FROM {tabla}")
-        resultados: list[dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
         for f in cursor.fetchall():
-            r = _deserializar(f)
+            r = _deserialize(f)
             if r is not None:
-                resultados.append(r)
-        return resultados
+                results.append(r)
+        return results
     finally:
         conn.close()
 
 
-def escribir_fila(tabla: str, datos: dict[str, Any]) -> str:
-    d = _serializar(datos)
+def write_row(tabla: str, datos: dict[str, Any]) -> str:
+    d = _serialize(datos)
     if "id" not in d or not d["id"]:
-        d["id"] = generar_id(tabla)
-    ahora = _ahora()
-    if not d.get("fecha_creacion"):
-        d["fecha_creacion"] = ahora
-    d["fecha_ultima_edicion"] = ahora
+        d["id"] = generate_id(tabla)
+    ahora = _now()
+    if not d.get("creation_date"):
+        d["creation_date"] = ahora
+    d["last_edit_date"] = ahora
 
     columnas = [k for k in d.keys()]
     placeholders = [":" + k for k in d.keys()]
     sql = f"INSERT INTO {tabla} ({', '.join(columnas)}) VALUES ({', '.join(placeholders)})"
-    conn = _conexion()
+    conn = _connection()
     try:
         conn.execute(sql, d)
         conn.commit()
@@ -218,24 +218,24 @@ def escribir_fila(tabla: str, datos: dict[str, Any]) -> str:
         conn.close()
 
 
-def buscar_por_id(tabla: str, id_valor: str) -> dict[str, Any] | None:
-    conn = _conexion()
+def find_by_id(tabla: str, id_valor: str) -> dict[str, Any] | None:
+    conn = _connection()
     try:
         cursor = conn.execute(f"SELECT * FROM {tabla} WHERE id = ?", (id_valor,))
-        return _deserializar(cursor.fetchone())
+        return _deserialize(cursor.fetchone())
     finally:
         conn.close()
 
 
-def actualizar(tabla: str, id_valor: str, datos: dict[str, Any]) -> bool:
-    d = _serializar(datos)
-    d["fecha_ultima_edicion"] = _ahora()
+def update(tabla: str, id_valor: str, datos: dict[str, Any]) -> bool:
+    d = _serialize(datos)
+    d["last_edit_date"] = _now()
     if "id" in d:
         del d["id"]
     asignaciones = ", ".join(f"{k} = :{k}" for k in d.keys())
     d["_id_valor"] = id_valor
     sql = f"UPDATE {tabla} SET {asignaciones} WHERE id = :_id_valor"
-    conn = _conexion()
+    conn = _connection()
     try:
         cursor = conn.execute(sql, d)
         conn.commit()

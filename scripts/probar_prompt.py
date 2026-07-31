@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Prueba prompts de IA contra Ollama local o cloud.
+"""Test AI prompts against local or cloud Ollama.
 
-Uso:
+Usage:
     python scripts/probar_prompt.py PRM-001
     python scripts/probar_prompt.py PRM-001 --dry-run
     python scripts/probar_prompt.py PRM-002 --context ruta/contexto.yaml
@@ -17,32 +17,32 @@ sys.path.insert(0, str(_RAIZ))
 
 import yaml  # noqa: E402
 
-from shared.config import cargar  # noqa: E402
+from shared.config import load  # noqa: E402
 from shared.ia_service import (  # noqa: E402
-    analizar,
-    cargar_prompt,
+    analyze,
+    load_prompt,
     renderizar_prompt,
 )
 
 _RUTA_CONTEXTOS = _RAIZ / "tests" / "fixtures" / "contextos_prompt.yaml"
 
-RUTA_PROMPT: dict[str, str] = {
-    "PRM-001": "evaluacion_inicial/compatibilidad",
-    "PRM-002": "procesamiento/diagnostico",
-    "PRM-003": "procesamiento/extraccion_estrategica",
-    "PRM-004": "procesamiento/diseno_candidatura",
-    "PRM-005": "procesamiento/insumos",
+PROMPT_PATH: dict[str, str] = {
+    "PRM-001": "initial_evaluation/compatibility",
+    "PRM-002": "processing/diagnostic",
+    "PRM-003": "processing/strategic_extraction",
+    "PRM-004": "processing/application_design",
+    "PRM-005": "processing/inputs",
 }
 
-PROPOSITO: dict[str, str] = {
-    "PRM-001": "evaluacion",
-    "PRM-002": "procesamiento",
-    "PRM-003": "procesamiento",
-    "PRM-004": "procesamiento",
-    "PRM-005": "procesamiento",
+PURPOSE: dict[str, str] = {
+    "PRM-001": "evaluation",
+    "PRM-002": "processing",
+    "PRM-003": "processing",
+    "PRM-004": "processing",
+    "PRM-005": "processing",
 }
 
-VARS_POR_PROMPT: dict[str, list[str]] = {
+VARS_BY_PROMPT: dict[str, list[str]] = {
     "PRM-001": ["oferta", "perfil"],
     "PRM-002": ["oferta"],
     "PRM-003": ["oferta", "perfil"],
@@ -50,7 +50,7 @@ VARS_POR_PROMPT: dict[str, list[str]] = {
     "PRM-005": ["oferta", "perfil", "estrategia"],
 }
 
-MAPEO_VARIABLES: dict[str, str] = {
+VARIABLE_MAPPING: dict[str, str] = {
     "oferta": "oferta_ejemplo",
     "perfil": "perfil_ejemplo",
     "diagnostico": "diagnostico_ejemplo",
@@ -58,22 +58,22 @@ MAPEO_VARIABLES: dict[str, str] = {
 }
 
 
-def _cargar_contexto(ruta: Path) -> dict[str, object]:
+def _load_context(ruta: Path) -> dict[str, object]:
     with open(ruta, encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
-def _construir_contexto(
+def _build_context(
     datos_crudos: dict[str, object], prompt_id: str
 ) -> dict[str, str]:
-    claves_necesarias = VARS_POR_PROMPT.get(prompt_id, [])
+    claves_necesarias = VARS_BY_PROMPT.get(prompt_id, [])
     contexto: dict[str, str] = {}
     for var_prompt in claves_necesarias:
-        clave_fixture = MAPEO_VARIABLES.get(var_prompt, var_prompt)
+        clave_fixture = VARIABLE_MAPPING.get(var_prompt, var_prompt)
         valor = datos_crudos.get(clave_fixture)
         if valor is None:
             print(
-                f"  [ADVERTENCIA] Variable '{var_prompt}' no encontrada en contexto",
+                f"  [WARNING] Variable '{var_prompt}' not found in context",
                 file=sys.stderr,
             )
             contexto[var_prompt] = ""
@@ -82,8 +82,8 @@ def _construir_contexto(
     return contexto
 
 
-def _nombre_prompt(prompt_id: str) -> str:
-    ruta = RUTA_PROMPT.get(prompt_id)
+def _prompt_name(prompt_id: str) -> str:
+    ruta = PROMPT_PATH.get(prompt_id)
     if ruta:
         return ruta
     return prompt_id
@@ -91,71 +91,71 @@ def _nombre_prompt(prompt_id: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Prueba prompts de IA con Ollama (local o cloud)"
+        description="Test AI prompts with Ollama (local or cloud)"
     )
     parser.add_argument(
         "prompt_id",
-        help="ID del prompt: PRM-001 .. PRM-005, o ruta como 'evaluacion_inicial/compatibilidad'",
+        help="Prompt ID: PRM-001 .. PRM-005, or path like 'evaluacion_inicial/compatibilidad'",
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Solo mostrar el prompt renderizado sin enviar al modelo",
+        help="Only show the rendered prompt without sending to model",
     )
     parser.add_argument(
         "--context",
         default=None,
-        help="Ruta alternativa al archivo de contexto YAML",
+        help="Alternative path to the YAML context file",
     )
     args = parser.parse_args()
 
     prompt_id = args.prompt_id.upper() if args.prompt_id.startswith("PRM") else args.prompt_id
-    ruta_prompt = _nombre_prompt(prompt_id)
-    proposito = PROPOSITO.get(prompt_id, "evaluacion")
+    ruta_prompt = _prompt_name(prompt_id)
+    purpose = PURPOSE.get(prompt_id, "evaluation")
 
     ruta_contextos = Path(args.context) if args.context else _RUTA_CONTEXTOS
     if not ruta_contextos.exists():
-        print(f"Error: archivo de contexto no encontrado: {ruta_contextos}", file=sys.stderr)
+        print(f"Error: context file not found: {ruta_contextos}", file=sys.stderr)
         sys.exit(1)
 
     print(f"Prompt:     {prompt_id} → {ruta_prompt}")
-    print(f"Propósito:  {proposito}")
-    print(f"Contexto:   {ruta_contextos}")
+    print(f"Purpose:  {purpose}")
+    print(f"Context:   {ruta_contextos}")
 
-    datos_crudos = _cargar_contexto(ruta_contextos)
-    contexto = _construir_contexto(datos_crudos, prompt_id)
+    datos_crudos = _load_context(ruta_contextos)
+    contexto = _build_context(datos_crudos, prompt_id)
     print(f"Variables:  {', '.join(contexto.keys())}")
 
     try:
-        template = cargar_prompt(ruta_prompt)
+        template = load_prompt(ruta_prompt)
     except Exception as e:
-        print(f"Error al cargar prompt: {e}", file=sys.stderr)
+        print(f"Error loading prompt: {e}", file=sys.stderr)
         sys.exit(1)
 
     prompt_renderizado = renderizar_prompt(template, contexto)
 
     print(f"\n{'='*70}")
-    print("PROMPT RENDERIZADO:")
+    print("RENDERED PROMPT:")
     print(f"{'='*70}")
     print(prompt_renderizado)
     print(f"{'='*70}")
 
     if args.dry_run:
-        print("\nModo dry-run: no se envió al modelo.")
+        print("\nDry-run mode: not sent to model.")
         return
 
-    routing = cargar().get("ia_routing", {})
-    proveedor = routing.get(proposito, "local")
-    print(f"\nEnviando a {proveedor}...")
+    routing = load().get("ai_routing", {})
+    provider = routing.get(purpose, "local")
+    print(f"\nSending to {provider}...")
     try:
-        resultado = analizar(ruta_prompt, contexto, proposito=proposito)
+        resultado = analyze(ruta_prompt, contexto, purpose=purpose)
         print(f"\n{'='*70}")
-        print("RESPUESTA DEL MODELO:")
+        print("MODEL RESPONSE:")
         print(f"{'='*70}")
         print(json.dumps(resultado, indent=2, ensure_ascii=False))
         print(f"{'='*70}")
     except Exception as e:
-        print(f"\nError del modelo: {e}", file=sys.stderr)
+        print(f"\nModel error: {e}", file=sys.stderr)
         sys.exit(1)
 
 

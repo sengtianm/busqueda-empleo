@@ -5,27 +5,27 @@
 oferta_ejemplo:
   titulo_limpio: "Data Engineer Senior"
   descripcion_limpia: >
-    Buscamos un Data Engineer Senior para unirse a nuestro equipo de datos en
-    una empresa tecnológica líder en el sector financiero. Serás responsable
-    de diseñar, construir y mantener pipelines de datos escalables, optimizar
-    flujos ETL y colaborar con equipos de ciencia de datos e ingeniería.
-    Trabajarás con tecnologías cloud (AWS), Python, Spark y SQL. Valoramos
-    experiencia en streaming con Kafka y conocimientos de infraestructura
-    como código con Terraform. Ofrecemos trabajo 100% remoto, horario flexible,
-    presupuesto anual de formación, seguro médico y plan de acciones.
+    We are looking for a Senior Data Engineer to join our data team at
+    a leading technology company in the financial sector. You will be responsible
+    for designing, building and maintaining scalable data pipelines, optimizing
+    ETL flows and collaborating with data science and engineering teams.
+    You will work with cloud technologies (AWS), Python, Spark and SQL. We value
+    experience with Kafka streaming and infrastructure as code with Terraform.
+    We offer 100% remote work, flexible hours, annual training budget,
+    health insurance and stock plan.
   salario_min: 65000
   salario_max: 85000
   moneda: "EUR"
-  ubicacion_limpia: "España (Remoto)"
+  ubicacion_limpia: "Spain (Remote)"
   modalidad: "remoto"
   requisitos:
-    - "5+ años de experiencia en ingeniería de datos"
-    - "Python avanzado"
-    - "SQL avanzado"
-    - "Experiencia con Apache Spark"
-    - "Experiencia con AWS (S3, Redshift, Glue, EMR)"
-    - "Conocimientos de Kafka"
-    - "Inglés B2 o superior"
+    - "5+ years of experience in data engineering"
+    - "Advanced Python"
+    - "Advanced SQL"
+    - "Experience with Apache Spark"
+    - "Experience with AWS (S3, Redshift, Glue, EMR)"
+    - "Knowledge of Kafka"
+    - "English B2 or higher"
   tecnologias:
     - "Python"
     - "SQL"
@@ -35,8 +35,8 @@ oferta_ejemplo:
     - "Terraform"
     - "Airflow"
   idiomas:
-    - "Inglés"
-    - "Español"
+    - "English"
+    - "Spanish"
   experiencia_anios: 5
 
 
@@ -51,66 +51,66 @@ perfil_ejemplo:
     Git: 5
   experiencia_anios: 8
   idiomas:
-    Español: "Nativo"
-    Inglés: "C1"
-    Catalán: "B2"
+    Spanish: "Native"
+    English: "C1"
+    Catalan: "B2"
   ubicaciones_preferidas:
     - "Madrid"
-    - "Remoto España"
+    - "Remote Spain"
   modalidades_preferidas:
-    - "remoto"
-    - "híbrido"
+    - "remote"
+    - "hybrid"
   salario_minimo: 60000
   seniority: "senior"
   empresas_objetivo:
     - "FAANG"
-    - "Bolsas y Mercados Españoles"
+    - "Bolsas y Mercados Espanoles"
     - "Fintech"
   empresas_excluidas:
     - "Consultora"
     - "Accenture"
-  educacion_nivel: "grado"
+  educacion_nivel: "bachelor"
 
 
 estrategia_ejemplo:
   puntos_fuertes:
-    - "8 años de experiencia vs 5 solicitados, supera el requisito"
-    - "Stack técnico alineado: Python, SQL, Spark, AWS"
-    - "Experiencia en sector financiero (BME)"
-    - "Nivel de inglés C1"
+    - "8 years of experience vs 5 required, exceeds the requirement"
+    - "Technical stack aligned: Python, SQL, Spark, AWS"
+    - "Experience in financial sector (BME)"
+    - "English level C1"
   brechas:
-    - "Poca experiencia con Kafka (conocimientos básicos)"
-    - "Sin experiencia con Terraform"
+    - "Little experience with Kafka (basic knowledge)"
+    - "No experience with Terraform"
   narrativa: >
-    Ingeniero de datos con 8 años de experiencia en el sector financiero,
-    especializado en pipelines ETL con Python y Spark en AWS. Combina
-    solidez técnica con conocimiento del dominio financiero, lo que le
-    permite entender tanto el negocio como la tecnología.
+    Data engineer with 8 years of experience in the financial sector,
+    specialized in ETL pipelines with Python and Spark on AWS. Combines
+    technical strength with financial domain knowledge, allowing
+    understanding of both business and technology.
   argumentos_clave:
-    - "Experiencia superior a la requerida"
-    - "Stack alineado con la oferta"
-    - "Conocimiento del dominio financiero"
+    - "Experience exceeds requirements"
+    - "Stack aligned with the offer"
+    - "Financial domain knowledge"
 
 
 diagnostico_ejemplo:
   diagnostico: >
-    La empresa busca un Data Engineer Senior con perfil técnico sólido
-    para liderar la construcción de la infraestructura de datos. El rol
-    combina ingeniería pura con arquitectura, requiriendo autonomía
-    técnica y capacidad de colaboración multifuncional.
+    The company is looking for a Senior Data Engineer with a strong technical
+    profile to lead the construction of data infrastructure. The role
+    combines pure engineering with architecture, requiring technical
+    autonomy and cross-functional collaboration skills.
   requisitos_clave:
-    - requisito: "Python avanzado"
-      tipo: "obligatorio"
-    - requisito: "SQL avanzado"
-      tipo: "obligatorio"
+    - requisito: "Advanced Python"
+      tipo: "mandatory"
+    - requisito: "Advanced SQL"
+      tipo: "mandatory"
     - requisito: "Apache Spark"
-      tipo: "obligatorio"
+      tipo: "mandatory"
     - requisito: "AWS"
-      tipo: "obligatorio"
+      tipo: "mandatory"
     - requisito: "Kafka"
-      tipo: "deseable"
+      tipo: "preferred"
     - requisito: "Terraform"
-      tipo: "deseable"
+      tipo: "preferred"
   competencias:
     tecnicas:
       - "Python"
@@ -120,46 +120,46 @@ diagnostico_ejemplo:
       - "ETL"
       - "Kafka"
     blandas:
-      - "Comunicación"
-      - "Trabajo en equipo"
-      - "Autonomía"
-      - "Resolución de problemas"
+      - "Communication"
+      - "Teamwork"
+      - "Autonomy"
+      - "Problem solving"
   responsabilidades:
-    - "Diseñar y construir pipelines de datos escalables"
-    - "Optimizar flujos ETL existentes"
-    - "Colaborar con ciencia de datos e ingeniería"
-    - "Mantener infraestructura cloud"
+    - "Design and build scalable data pipelines"
+    - "Optimize existing ETL flows"
+    - "Collaborate with data science and engineering"
+    - "Maintain cloud infrastructure"
   beneficios:
-    - "Trabajo 100% remoto"
-    - "Horario flexible"
-    - "Presupuesto anual de formación"
-    - "Seguro médico"
-    - "Plan de acciones"
+    - "100% remote work"
+    - "Flexible hours"
+    - "Annual training budget"
+    - "Health insurance"
+    - "Stock plan"
   cultura_empresarial: >
-    Empresa tecnológica del sector financiero con cultura de innovación,
-    trabajo autónomo y colaboración horizontal. Valoran la formación
-    continua y el equilibrio vida-trabajo.
+    Technology company in the financial sector with a culture of innovation,
+    autonomous work and horizontal collaboration. They value continuous
+    learning and work-life balance.
 
 
 plan_candidatura_ejemplo:
   puntos_fuertes:
-    - "Experiencia financiera previa"
-    - "Stack técnico completo"
-    - "Nivel de inglés avanzado"
+    - "Previous financial experience"
+    - "Complete technical stack"
+    - "Advanced English level"
   brechas:
-    - "Kafka: conocimientos básicos"
-    - "Terraform: sin experiencia"
+    - "Kafka: basic knowledge"
+    - "Terraform: no experience"
   narrativa: >
-    Ingeniero de datos senior con trayectoria en fintech, combina
-    excelencia técnica con dominio del negocio financiero.
+    Senior data engineer with fintech background, combining technical
+    excellence with financial business domain knowledge.
   estrategia_diferenciacion: >
-    Destacar la experiencia en el sector financiero como diferenciador
-    clave frente a otros candidatos puramente técnicos.
+    Highlight financial sector experience as a key differentiator
+    compared to purely technical candidates.
   argumentos_clave_reclutador:
-    - "Experiencia superior a la requerida"
-    - "Conocimiento del dominio financiero"
-    - "Disponibilidad para empezar en plazo razonable"
+    - "Experience exceeds requirements"
+    - "Financial domain knowledge"
+    - "Availability to start within reasonable time"
   acciones_recomendadas:
-    - "Repasar conceptos básicos de Kafka"
-    - "Preparar ejemplos concretos de pipelines ETL en AWS"
-    - "Investigar la empresa y sus productos financieros"
+    - "Review basic Kafka concepts"
+    - "Prepare concrete examples of ETL pipelines on AWS"
+    - "Research the company and its financial products"

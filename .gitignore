@@ -1,20 +1,20 @@
-# --- Entorno virtual ---
+# --- Virtual environment ---
 venv/
 .env
 .env.*
 !.env.template
 
-# --- Cachés de Python ---
+# --- Python caches ---
 __pycache__/
 *.pyc
 *.pyo
 
-# --- Cachés de herramientas ---
+# --- Tool caches ---
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 
-# --- Cobertura ---
+# --- Coverage ---
 .coverage
 htmlcov/
 
@@ -23,11 +23,11 @@ logs/*
 *.log
 !logs/.gitkeep
 
-# --- Archivos temporales y de respaldo ---
+# --- Temporary and backup files ---
 *.tmp
 *.bak
 
-# --- Editor y SO ---
+# --- Editor and OS ---
 .idea/
 .vscode/
 .DS_Store
@@ -36,18 +36,18 @@ Thumbs.db
 *.db-wal
 *.db-journal
 
-# --- Datos de ejecución ---
-data/entrada/*
-data/procesamiento/*
-data/salida/*
-data/respaldo/*
+# --- Execution data ---
+data/input/*
+data/processing/*
+data/output/*
+data/backup/*
 !data/**/.gitkeep
 
-# --- Archivos temporales del proyecto ---
+# --- Project temporary files ---
 temp/*
 !temp/.gitkeep
 
-# --- Empaquetado ---
+# --- Packaging ---
 *.egg-info/
 dist/
 build/

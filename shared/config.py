@@ -4,32 +4,32 @@ from typing import Any
 import yaml
 from dotenv import dotenv_values
 
-_RAIZ_PROYECTO = Path(__file__).resolve().parent.parent
-_RUTA_CONFIG = _RAIZ_PROYECTO / "config" / "config.yaml"
-_RUTA_ENV = _RAIZ_PROYECTO / "config" / ".env"
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_CONFIG_PATH = _PROJECT_ROOT / "config" / "config.yaml"
+_ENV_PATH = _PROJECT_ROOT / "config" / ".env"
 
 
-def _cargar_yaml(ruta: Path) -> dict[str, Any]:
-    with open(ruta, encoding="utf-8") as f:
+def _load_yaml(path: Path) -> dict[str, Any]:
+    with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
-def _cargar_env(ruta: Path) -> dict[str, str]:
-    return {k: v for k, v in dotenv_values(ruta).items() if v is not None}
+def _load_env(path: Path) -> dict[str, str]:
+    return {k: v for k, v in dotenv_values(path).items() if v is not None}
 
 
 _config_cache: dict[str, Any] | None = None
 
 
-def cargar() -> dict[str, Any]:
+def load() -> dict[str, Any]:
     global _config_cache
     if _config_cache is not None:
         return _config_cache
 
-    base = _cargar_yaml(_RUTA_CONFIG)
+    base = _load_yaml(_CONFIG_PATH)
 
-    if _RUTA_ENV.exists():
-        env_vars = _cargar_env(_RUTA_ENV)
+    if _ENV_PATH.exists():
+        env_vars = _load_env(_ENV_PATH)
         base["_env"] = env_vars
     else:
         base["_env"] = {}
@@ -38,7 +38,7 @@ def cargar() -> dict[str, Any]:
     return _config_cache
 
 
-def recargar() -> dict[str, Any]:
+def reload_config() -> dict[str, Any]:
     global _config_cache
     _config_cache = None
-    return cargar()
+    return load()

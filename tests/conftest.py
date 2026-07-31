@@ -4,24 +4,24 @@ from pathlib import Path
 import pytest
 
 from shared.models import (
-    DecisionEvaluacion,
-    Empresa,
-    EstadoOferta,
-    Evaluacion,
-    Fuente,
-    Oferta,
-    OfertaProcesada,
-    Perfil,
-    ResultadoEvaluacion,
-    Ubicacion,
+    Company,
+    DecisionEvaluation,
+    Evaluation,
+    EvaluationResult,
+    Location,
+    Offer,
+    OfferState,
+    ProcessedOffer,
+    Profile,
+    Source,
 )
 
 
 @pytest.fixture(autouse=True)
 def limpiar_cache_config() -> None:
-    from shared.config import recargar
+    from shared.config import reload_config
 
-    recargar()
+    reload_config()
 
 
 @pytest.fixture
@@ -36,18 +36,18 @@ def ruta_fixtures(ruta_tests: Path) -> Path:
 
 @pytest.fixture
 def archivo_bd_temporal(tmp_path: Path) -> Generator[Path, None, None]:
-    from shared.persistence import cambiar_ruta, inicializar_bd, restablecer_ruta
+    from shared.persistence import change_path, init_db, reset_path
 
     ruta = tmp_path / "test.db"
-    cambiar_ruta(ruta)
-    inicializar_bd()
+    change_path(ruta)
+    init_db()
     yield ruta
-    restablecer_ruta()
+    reset_path()
 
 
 @pytest.fixture
-def fuente_ejemplo() -> Fuente:
-    return Fuente(
+def fuente_ejemplo() -> Source:
+    return Source(
         id="FNT-0001",
         nombre="LinkedIn",
         tipo="red_social",
@@ -56,25 +56,25 @@ def fuente_ejemplo() -> Fuente:
 
 
 @pytest.fixture
-def empresa_ejemplo() -> Empresa:
-    return Empresa(
+def empresa_ejemplo() -> Company:
+    return Company(
         id="EMP-0001",
         nombre="TechCorp",
-        nombre_normalizado="techcorp",
+        normalized_name="techcorp",
         sector="tecnologia",
     )
 
 
 @pytest.fixture
-def ubicacion_ejemplo() -> Ubicacion:
-    return Ubicacion(id="UBI-0001", ciudad="Madrid", region="Madrid", pais="Espana")
+def ubicacion_ejemplo() -> Location:
+    return Location(id="UBI-0001", ciudad="Madrid", region="Madrid", pais="Espana")
 
 
 @pytest.fixture
 def oferta_ejemplo(
-    fuente_ejemplo: Fuente, empresa_ejemplo: Empresa, ubicacion_ejemplo: Ubicacion
-) -> Oferta:
-    return Oferta(
+    fuente_ejemplo: Source, empresa_ejemplo: Company, ubicacion_ejemplo: Location
+) -> Offer:
+    return Offer(
         id="OFE-0001",
         fuente_id=fuente_ejemplo.id,
         empresa_id=empresa_ejemplo.id,
@@ -82,39 +82,39 @@ def oferta_ejemplo(
         url="https://www.linkedin.com/jobs/view/12345",
         titulo="Data Engineer",
         descripcion_original="Descripcion de prueba",
-        identificador_fuente="12345",
-        estado=EstadoOferta.DESCUBIERTA,
+        source_identifier="12345",
+        estado=OfferState.DISCOVERED,
     )
 
 
 @pytest.fixture
-def oferta_procesada_ejemplo(oferta_ejemplo: Oferta) -> OfertaProcesada:
-    return OfertaProcesada(
+def oferta_procesada_ejemplo(oferta_ejemplo: Offer) -> ProcessedOffer:
+    return ProcessedOffer(
         id="OFP-0001",
-        oferta_id=oferta_ejemplo.id,
-        titulo_limpio="Data Engineer",
+        offer_id=oferta_ejemplo.id,
+        clean_title="Data Engineer",
         tecnologias=["Python", "SQL", "Spark"],
         requisitos=["Experiencia en ETL"],
     )
 
 
 @pytest.fixture
-def evaluacion_ejemplo(oferta_procesada_ejemplo: OfertaProcesada) -> Evaluacion:
-    return Evaluacion(
+def evaluacion_ejemplo(oferta_procesada_ejemplo: ProcessedOffer) -> Evaluation:
+    return Evaluation(
         id="EVL-0001",
-        oferta_procesada_id=oferta_procesada_ejemplo.id,
-        resultado=ResultadoEvaluacion.ALTA,
-        puntaje=85.0,
-        decision=DecisionEvaluacion.CONTINUAR,
-        justificacion="Buena coincidencia con perfil",
+        processed_offer_id=oferta_procesada_ejemplo.id,
+        resultado=EvaluationResult.HIGH,
+        score=85.0,
+        decision=DecisionEvaluation.CONTINUE,
+        justification="Buena coincidencia con perfil",
     )
 
 
 @pytest.fixture
-def perfil_ejemplo() -> Perfil:
-    return Perfil(
+def perfil_ejemplo() -> Profile:
+    return Profile(
         tecnologias={"Python": 5, "SQL": 4, "Spark": 3},
-        experiencia_anios=8,
+        experience_years=8,
         seniority="senior",
         idiomas={"Ingles": "C1", "Espanol": "Nativo"},
         ubicaciones_preferidas=["Madrid", "Remoto"],

@@ -1,7 +1,7 @@
 [project]
-name = "busqueda-empleo"
+name = "job-search"
 version = "0.1.0"
-description = "Automatización de búsqueda de empleo"
+description = "Job Search Automation"
 requires-python = ">=3.12"
 
 [tool.black]

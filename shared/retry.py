@@ -11,36 +11,36 @@ from tenacity import (
     retry as tenacity_retry,
 )
 
-from shared.config import cargar
+from shared.config import load
 
 _logger = logging.getLogger(__name__)
 
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def _politicas() -> dict[str, Any]:
-    cfg = cargar().get("reintentos", {})
+def _policies() -> dict[str, Any]:
+    cfg = load().get("retries", {})
     return {
-        "intentos_max": cfg.get("intentos_max", 3),
-        "espera_base": cfg.get("espera_base_segundos", 2),
-        "espera_max": cfg.get("espera_max_segundos", 30),
-        "multiplicador": cfg.get("multiplicador", 2),
+        "max_attempts": cfg.get("max_attempts", 3),
+        "base_wait": cfg.get("base_wait_seconds", 2),
+        "max_wait": cfg.get("max_wait_seconds", 30),
+        "multiplier": cfg.get("multiplier", 2),
     }
 
 
 def decorador_reintento(
-    intentos_max: int | None = None,
-    espera_base: float | None = None,
-    espera_max: float | None = None,
-    multiplicador: float | None = None,
+    max_attempts: int | None = None,
+    base_wait: float | None = None,
+    max_wait: float | None = None,
+    multiplier: float | None = None,
 ) -> Callable[[F], F]:
-    pol = _politicas()
+    pol = _policies()
     return tenacity_retry(
-        stop=stop_after_attempt(intentos_max or pol["intentos_max"]),
+        stop=stop_after_attempt(max_attempts or pol["max_attempts"]),
         wait=wait_exponential(
-            multiplier=multiplicador or pol["multiplicador"],
-            min=espera_base or pol["espera_base"],
-            max=espera_max or pol["espera_max"],
+            multiplier=multiplier or pol["multiplier"],
+            min=base_wait or pol["base_wait"],
+            max=max_wait or pol["max_wait"],
         ),
         before_sleep=before_sleep_log(_logger, logging.WARNING),
         reraise=True,

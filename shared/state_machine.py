@@ -1,31 +1,31 @@
 from shared.errors import ErrorInterno
-from shared.models import EstadoOferta
+from shared.models import OfferState
 
-TRANSICIONES_VALIDAS: dict[EstadoOferta, list[EstadoOferta]] = {
-    EstadoOferta.DESCUBIERTA: [EstadoOferta.PREPARADA],
-    EstadoOferta.PREPARADA: [EstadoOferta.EVALUADA],
-    EstadoOferta.EVALUADA: [EstadoOferta.ACEPTADA, EstadoOferta.DESCARTA],
-    EstadoOferta.ACEPTADA: [EstadoOferta.PROCESADA],
-    EstadoOferta.DESCARTA: [EstadoOferta.FINALIZADA],
-    EstadoOferta.PROCESADA: [EstadoOferta.FINALIZADA],
+VALID_TRANSITIONS: dict[OfferState, list[OfferState]] = {
+    OfferState.DISCOVERED: [OfferState.PREPARED],
+    OfferState.PREPARED: [OfferState.EVALUATED],
+    OfferState.EVALUATED: [OfferState.ACCEPTED, OfferState.DISCARDED],
+    OfferState.ACCEPTED: [OfferState.PROCESSED],
+    OfferState.DISCARDED: [OfferState.FINALIZED],
+    OfferState.PROCESSED: [OfferState.FINALIZED],
 }
 
 
-def transicionar(
-    estado_actual: EstadoOferta,
-    estado_destino: EstadoOferta,
-) -> EstadoOferta:
+def transition(
+    current_state: OfferState,
+    target_state: OfferState,
+) -> OfferState:
     if (
-        estado_actual in TRANSICIONES_VALIDAS
-        and estado_destino in TRANSICIONES_VALIDAS[estado_actual]
+        current_state in VALID_TRANSITIONS
+        and target_state in VALID_TRANSITIONS[current_state]
     ):
-        return estado_destino
+        return target_state
     raise ErrorInterno(
         "010",
-        f"Transicion invalida: {estado_actual.value} → {estado_destino.value}",
-        modulo_origen="state_machine",
+        f"Invalid transition: {current_state.value} -> {target_state.value}",
+        source_module="state_machine",
     )
 
 
-def transiciones_posibles(estado: EstadoOferta) -> list[EstadoOferta]:
-    return TRANSICIONES_VALIDAS.get(estado, [])
+def possible_transitions(estado: OfferState) -> list[OfferState]:
+    return VALID_TRANSITIONS.get(estado, [])
