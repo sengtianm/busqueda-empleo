@@ -158,11 +158,14 @@ All official documentation lives in `docs/` and is the single source of truth.
 
 ## Session History
 
-At the end of each session, update `docs/history/session history.md` with one entry per calendar day (create or update), cumulative, in three sections:
+At the end of each session, update `docs/history/session history.md` with one entry per OpenCode session (create or update the entry for the current session number), newest first, cumulative, in three sections:
 
-- **Topics** — Keyword-style bullets, one line each. No commit hashes, file paths, or rule numbers. Separate work blocks with `[Morning]`/`[Afternoon]`.
+- The session number is sequential (last number + 1). Each entry includes its OpenCode session ID, obtained from the local database: `sqlite3 ~/.local/share/opencode/opencode.db "SELECT id, substr(title,1,60) FROM session ORDER BY time_updated DESC LIMIT 1;"`.
+- Keep every entry short and useful for a new developer: clear keyword-style lists, one line per bullet.
+- **Topics** — Keyword-style bullets, one line each. No commit hashes, file paths, or rule numbers.
 - **Decisions** — Only new or modified decisions.
 - **Status** — Completed/pending phases (✅/⬜), Ruff/mypy/pytest results if changes were made, active branch.
+- Past detail is preserved in git; never expand old entries with new information.
 
 ## When There Is Uncertainty
 

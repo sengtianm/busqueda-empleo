@@ -6,8 +6,8 @@ Read the following files to recover the full project context:
 
 1. `AGENTS.md`
 2. `MVP Execution Plan.md`
-3. `MVP Tracker.md`
-4. `Session History.md`
+3. `docs/history/tracker.md`
+4. `docs/history/session history.md`
 
 After reading them, produce a brief summary of:
 
