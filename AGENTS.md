@@ -73,16 +73,27 @@ All implementations must follow this architecture (details in DOC-12).
 
 ## Workflow
 
+Work cycle: `Context → Define task → Analyze → Plan → Implement → Verify → Close`. Each user request starts a task that goes through these stages; the user defines the task and approves the plan and the close. Each stage has a mandatory check invoked as a `/check-*` command. Apply the check at its stage before moving on; the checklist and expected response format are defined in the command itself.
+
+| Stage | Check command |
+|-------|---------------|
+| Context (resume project state) | `/resume` |
+| Define the task | `/check-planeacion` |
+| Analyze the affected area before proposing the plan | `/check-analisis` |
+| Confirm the minimal plan before implementing | `/check-implementacion` |
+| Verify tests, lint and typecheck after the change | `/check-tests` |
+| Verify completion and close | `/check-cierre` |
+
 For each task:
 
-1. Understand the scope.
-2. Read only the necessary documentation.
-3. Present a plan.
-4. Wait for approval.
-5. Implement.
-6. Validate.
+1. Resume context (apply `/resume`). The user defines the task.
+2. Apply `/check-planeacion` to confirm the task is well defined; ask only the questions needed.
+3. Apply `/check-analisis` (relevant files, flow, risks, minimal plan) and read only the necessary documentation.
+4. Present a plan and wait for approval.
+5. Apply `/check-implementacion` and implement the minimal approved change.
+6. Validate (apply `/check-tests`).
 7. Update AGENTS.md and docs/history/tracker.md if they changed.
-8. Deliver a report (including the AGENTS.md and tracker.md changes).
+8. Deliver a report applying `/check-cierre` (including the AGENTS.md and tracker.md changes).
 9. Wait for approval before continuing.
 
 Never work on more than one task at a time.
