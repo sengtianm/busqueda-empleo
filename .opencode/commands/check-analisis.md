@@ -1,35 +1,47 @@
 ---
-description: Check de análisis y alcance antes de modificar código
+description: Check de análisis y alcance antes de ejecutar una tarea
 ---
 
-Antes de modificar código, analiza únicamente el área necesaria para esta tarea.
-No hagas cambios todavía. No analices partes del proyecto que no sean relevantes para el objetivo actual.
+Este check lo aplica el agente automáticamente, inmediatamente después de cada solicitud del usuario; no requiere que el usuario lo invoque.
+Analiza qué pide la solicitud contra el estado actual del proyecto. No generes código ni un plan formal todavía (ese es el `check-planeacion`).
 
 Verifica y marca cada punto:
 
-- [ ] Archivos relevantes: ¿qué archivos participan directamente en el cambio?
-- [ ] Responsabilidades: ¿qué hace cada archivo o módulo involucrado?
-- [ ] Flujo actual: ¿cómo funciona el comportamiento actual relacionado con la tarea?
-- [ ] Dependencias: ¿hay dependencias internas o externas que puedan verse afectadas?
-- [ ] Riesgos: ¿qué puntos podrían romper comportamiento existente?
-- [ ] Plan mínimo: ¿cuál es el cambio más pequeño posible para cumplir el objetivo?
-- [ ] Validación de comprensión: ¿el análisis coincide con el objetivo y el fuera de alcance definidos?
+- [ ] Tarea interpretada: ¿qué pide la solicitud en una frase? ¿qué queda fuera de alcance?
+- [ ] Gate de comprensión: si la solicitud es ambigua, detente el análisis y haz solo preguntas de desbloqueo antes de continuar.
+- [ ] Estado del proyecto: ¿qué existe ya en el proyecto para ejecutar esta tarea (archivos, servicios, configuración, prompts, documentación)?
+- [ ] Brecha: ¿qué falta para ejecutarla (componentes inexistentes, dependencias ausentes, autorizaciones pendientes)?
+- [ ] Impacto: ¿qué cambia en el proyecto (archivos nuevos/modificados y efecto colateral) y qué no se toca?
+- [ ] Riesgos: ¿qué podría romper el comportamiento existente o desviar el alcance?
+- [ ] Enfoques viables: ¿qué caminos posibles existen? Solo opciones con pros/contras en bruto, sin plan formal.
+- [ ] Alcance del análisis: ¿solo se revisó el área que el objetivo pide, sin expandirse?
 
 Formato de respuesta esperado:
 
-1. Archivos relevantes:
-   - archivo: responsabilidad
+1. Tarea interpretada:
+   - objetivo:
+   - fuera de alcance:
 
-2. Flujo actual:
-   - resumen breve
+2. Estado del proyecto relevante:
+   - qué existe hoy: resumen breve
 
-3. Riesgos:
+3. Brecha (qué falta):
+   - falta 1
+   - falta 2
+
+4. Impacto (qué cambia):
+   - cambio 1
+   - cambio 2
+
+5. Riesgos:
    - riesgo 1
    - riesgo 2
 
-4. Plan mínimo:
-   - paso 1
-   - paso 2
-   - paso 3
+6. Enfoques viables:
+   - opción A: pros/contras resumidos
+   - opción B: pros/contras resumidos
 
-Si el análisis no es suficiente, indica qué falta antes de implementar.
+7. Decisión mínima:
+   - apto para planear: OK / FALTA INFORMACIÓN
+
+Si la solicitud es ambigua o el análisis no es suficiente, detente e indica solo las preguntas necesarias para desbloquearla. No implementes nada aquí.

@@ -73,28 +73,29 @@ All implementations must follow this architecture (details in DOC-12).
 
 ## Workflow
 
-Work cycle: `Context → Define task → Analyze → Plan → Implement → Verify → Close`. Each user request starts a task that goes through these stages; the user defines the task and approves the plan and the close. Each stage has a mandatory check invoked as a `/check-*` command. Apply the check at its stage before moving on; the checklist and expected response format are defined in the command itself.
+Work cycle: `Context → Define task → Analyze → Plan → Implement → Verify → Close → Save`. Every user request is a task that goes through these stages; the user defines the task with the request itself and approves the plan and the implementation. The stage gates are `/check` commands: some are user-invoked, others are applied automatically by the agent. The checklist and expected response format of each are defined in the command itself.
 
-| Stage | Check command |
-|-------|---------------|
-| Context (resume project state) | `/resume` |
-| Define the task | `/check-planeacion` |
-| Analyze the affected area before proposing the plan | `/check-analisis` |
-| Confirm the minimal plan before implementing | `/check-implementacion` |
-| Verify tests, lint and typecheck after the change | `/check-tests` |
-| Verify completion and close | `/check-cierre` |
+| Command | Stage | Who and when |
+|---------|-------|--------------|
+| `/resume` | Context | User-invoked |
+| — | Define the task | The user's request itself; every request is a task |
+| `/check-analisis` | Analyze | **Automatic**: the agent applies it right after each request, before anything else |
+| `/check-planeacion` | Plan | User-invoked: the agent then creates the plan and waits for approval |
+| `/check-implementacion` | Implement | User-invoked: approves the plan and authorizes implementation |
+| `/check-tests` | Verify | Only when the request requires tests; otherwise skipped |
+| `/check-cierre` | Close | **Automatic**: the agent self-verifies after implementation, including the reviewers |
+| `/save` | Save | User-invoked when closing the session |
 
 For each task:
 
-1. Resume context (apply `/resume`). The user defines the task.
-2. Apply `/check-planeacion` to confirm the task is well defined; ask only the questions needed.
-3. Apply `/check-analisis` (relevant files, flow, risks, minimal plan) and read only the necessary documentation.
-4. Present a plan and wait for approval.
-5. Apply `/check-implementacion` and implement the minimal approved change.
-6. Validate (apply `/check-tests`).
-7. Update AGENTS.md and docs/history/tracker.md if they changed.
-8. Deliver a report applying `/check-cierre` (including the AGENTS.md and tracker.md changes).
-9. Wait for approval before continuing.
+1. The user invokes `/resume` to restore context and then sends the request, which defines the task.
+2. Automatically apply `/check-analisis` (task readiness, gap, impact, risks, viable approaches) and read only the necessary documentation. Never skip it, not even for requests that seem like simple inspections or read-only.
+3. Create the plan only when the user invokes `/check-planeacion`.
+4. Apply `/check-implementacion` and implement the minimal approved change only after the user approves it.
+5. Validate after the change: lint and typecheck always when code changed; run `/check-tests` only when the request requires tests.
+6. Apply `/check-cierre` automatically: verify the acceptance criteria, review the diff, run the reviewers (code-reviewer, docs-reviewer), and update AGENTS.md and docs/history/tracker.md if they changed.
+7. Deliver the closing report and wait for approval before continuing.
+8. The user invokes `/save` at the end of the session to update the session history.
 
 Never work on more than one task at a time.
 
@@ -116,7 +117,7 @@ Never work on more than one task at a time.
 
 - `ruff check .` — Lint (E/F/I/N/W rules, line length 100)
 - `mypy .` — Type check (strict)
-- `pytest tests/` — Test suite (currently 47 passing)
+- `pytest tests/` — Test suite (currently 48 passing)
 
 Note: local venv runs Python 3.14.6 (3.12 unavailable).
 
@@ -124,7 +125,7 @@ Note: local venv runs Python 3.14.6 (3.12 unavailable).
 
 Before completing a task:
 
-- Run only the validations relevant to the change: lint, type check, and tests when code changed.
+- Run only the validations relevant to the change: lint and typecheck always when code changed; pytest only when the change requires tests.
 - Review the official acceptance criteria in the MVP Execution Plan.
 - Deliver a report with: Objective, Modified files, Validations performed, Result, Issues encountered.
 
