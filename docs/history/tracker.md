@@ -80,17 +80,23 @@
 
 ## Phase 4. Module 1 — Opportunity Discovery
 
-| # | Task | Source docs | Status | Notes |
+> Build strategy: node-by-node, strictly in flow order per the technical sheet (Ficha técnica — Diagrama de flujo, Módulo 1). Each node goes through its own work cycle. See the MVP Execution Plan Phase 4.
+
+| # | Node (ficha spec) | Source docs | Status | Notes |
 |---|------|-------------|--------|-------|
-| 1 | Structure modules/discovery/ | DOC-07 | ⬜ | |
-| 2 | Playwright: LinkedIn login/logout | DOC-09, Annex 9A | ⬜ | |
-| 3 | Playwright: search with filters | DOC-09 | ⬜ | |
-| 4 | Playwright: result pagination | DOC-09 | ⬜ | |
-| 5 | HTML parsing → Offer (BS4 + lxml) | DOC-13 | ⬜ | |
-| 6 | Persistence of discovered offers | DOC-04 | ⬜ | |
-| 7 | Logs and error handling (ER-NAV, ER-RED, ER-EXT) | DOC-06 | ⬜ | |
-| 8 | Unit and integration tests | — | ⬜ | |
-| 9 | Validation | — | ⬜ | |
+| 1 | INICIO (v1.3) | Ficha técnica | ⬜ | Run instantiation, config, DB, concurrency lock, source validation. |
+| 2 | ¿Existe al menos una fuente configurada? (v1.0) | Ficha técnica | ⬜ | Decision node. |
+| 3 | ¿Quedan fuentes por procesar en esta corrida? (v1.0) | Ficha técnica | ⬜ | Decision node. |
+| 4 | Seleccionar la siguiente fuente pendiente (v1.0) | Ficha técnica | ⬜ | |
+| 5 | Entrar a la fuente seleccionada (v1.1) | Ficha técnica, DOC-09, Annex 9A | ⬜ | LinkedIn login, credentials, retries. |
+| 6 | ¿El ingreso fue exitoso? (v1.0) | Ficha técnica | ⬜ | Decision node. |
+| 7 | Aplicar filtros básicos (v1.1) | Ficha técnica, DOC-09 | ⬜ | Search by filter sets. |
+| 8 | ¿Se encontraron ofertas? (v1.1) | Ficha técnica | ⬜ | Decision node. |
+| 9 | Capturar ofertas (v1.0) | Ficha técnica, DOC-09 | ⬜ | Capture policies + HTML parsing → Offer. |
+| 10 | Registrar ofertas en "Ofertas Totales" (v1.0) | Ficha técnica, DOC-13, DOC-04 | ⬜ | Raw transactional insert. |
+| 11 | ¿Quedan ofertas por capturar? (v1.0) | Ficha técnica | ⬜ | Decision node. |
+| 12 | ¿Quedan sets de filtros por aplicar? (v1.0) | Ficha técnica | ⬜ | Decision node. |
+| 13 | Finalizar Proceso (spec draft) | Ficha técnica | ⬜ | Termination, lock release. |
 
 ---
 
