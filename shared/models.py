@@ -72,6 +72,115 @@ class Offer(BaseModel):
     observaciones: str = ""
     creation_date: str = ""
     last_edit_date: str = ""
+    run_id: str | None = None
+    session_id: str | None = None
+    set_indice: int | None = None
+    id_externo_url: str | None = None
+
+
+class GrupoCodigo(str, Enum):
+    GRUPO_A = "grupo_a"
+    GRUPO_B = "grupo_b"
+
+
+class TipoEvento(str, Enum):
+    ERROR = "error"
+    SUCESO = "suceso"
+
+
+class EstadoCorrida(str, Enum):
+    EN_EJECUCION = "en_ejecucion"
+    COMPLETADA = "completada"
+    ERROR = "error"
+    CONCURRENCIA = "concurrencia"
+
+
+class Corrida(BaseModel):
+    run_id: str
+    timestamp_inicio: datetime | None = None
+    estado: EstadoCorrida = EstadoCorrida.EN_EJECUCION
+
+
+class EventoAlmacen(BaseModel):
+    evento_id: str = ""
+    run_id: str
+    source_id: str = ""
+    session_id: str | None = None
+    set_indice: int | None = None
+    timestamp: datetime | None = None
+    tipo: TipoEvento
+    codigo: str
+    evidencia: str = ""
+    offer_id: str | None = None
+
+
+class AuditoriaSesion(BaseModel):
+    session_id: str
+    run_id: str
+    source_id: str
+    set_indice: int | None = None
+    timestamp: datetime | None = None
+    total_declarado: int | None = None
+    conteo: int = 0
+    estado: str = ""
+
+
+class PoliticasCaptura(BaseModel):
+    max_paginas: int = 5
+    max_ofertas_por_corrida: int = 25
+    pausa_entre_lotes_segundos: int = 10
+    estrategia_anti_bloqueo: str = "pausa_aleatoria"
+
+
+class FichaFuente(BaseModel):
+    source_id: str
+    nombre: str
+    url: str = ""
+    tipo_acceso: str = ""
+    credenciales_referencia: list[str] = Field(default_factory=list)
+    criterio_exito: str = ""
+    timeout_segundos: int = 30
+
+
+class SetFiltros(BaseModel):
+    source_id: str
+    indice: int
+    filtros: list[dict[str, str | list[str]]] = Field(default_factory=list)
+
+
+class EntryResult(BaseModel):
+    estado: str = ""
+    codigo_motivo: str = ""
+    evidencia_acotada: str = ""
+    numero_de_intentos: int = 0
+
+
+class SearchResult(BaseModel):
+    estado: str = ""
+    codigo_motivo: str = ""
+    evidencia_acotada: str = ""
+    ofertas_primera_pagina: list[Offer] = Field(default_factory=list)
+    estado_paginacion: str = ""
+    total_declarado: int | None = None
+    set_indice: int | None = None
+    numero_de_intentos: int = 0
+
+
+class CaptureBatch(BaseModel):
+    ofertas: list[Offer] = Field(default_factory=list)
+    run_id: str = ""
+    source_id: str = ""
+    session_id: str | None = None
+    set_indice: int | None = None
+    paginas_consumidas: int = 0
+
+
+class EstadoCaptura(BaseModel):
+    estado: str = ""
+    codigo_motivo: str = ""
+    paginas_consumidas: int = 0
+    capturadas_acumuladas_fuente: int = 0
+    limite_alcanzado: bool = False
 
 
 class ProcessedOffer(BaseModel):

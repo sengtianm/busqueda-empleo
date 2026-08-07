@@ -1,13 +1,48 @@
-# --- Search ---
-search:
-  keywords:
-    - Data Engineer
-    - Analista de Datos
-    - Ingeniero de Datos
-  location: ""
-  modality: ""
-  max_pages: 5
-  max_offers_per_page: 25
+# --- Discovered sources (Module 1) ---
+fuentes:
+  - source_id: "linkedin"
+    nombre: "LinkedIn"
+    ficha_acceso:
+      url: "https://www.linkedin.com/jobs/search"
+      tipo_acceso: "con_autenticacion"
+      credenciales_referencia:
+        - "LINKEDIN_EMAIL"
+        - "LINKEDIN_PASSWORD"
+      criterio_exito: "global-nav"
+      timeout_segundos: 30
+    sets_de_filtros:
+      - set_indice: 0
+        filtros:
+          - tipo: "keywords"
+            valor: ["Data Engineer", "Analista de Datos", "Ingeniero de Datos"]
+          - tipo: "ubicacion"
+            valor: ""
+          - tipo: "modalidad"
+            valor: ""
+    politicas_de_captura:
+      max_paginas: 5
+      max_ofertas_por_corrida: 25
+      pausa_entre_lotes_segundos: 10
+      estrategia_anti_bloqueo: "pausa_aleatoria"
+
+# --- Capture defaults (Module 1, global) ---
+captura:
+  max_paginas: 5
+  max_ofertas_por_corrida: 25
+  pausa_entre_lotes_segundos: 10
+  estrategia_anti_bloqueo: "pausa_aleatoria"
+
+# --- Concurrency (Module 1, lock) ---
+concurrencia:
+  umbral_obsolescencia_minutos: 120
+
+# --- Credential storage (D4) ---
+almacen_credenciales:
+  mecanismo: ".env"
+  archivo: "config/.env"
+  referencias:
+    - "LINKEDIN_EMAIL"
+    - "LINKEDIN_PASSWORD"
 
 # --- Evaluation (DOC-03) ---
 evaluation:
