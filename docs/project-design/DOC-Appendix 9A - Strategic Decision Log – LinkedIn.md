@@ -292,6 +292,38 @@ Delegating prioritization to LinkedIn's algorithm would reduce process transpare
 
 ---
 
+# DE-LI-010. Implementation criteria for Module 1
+
+## Related chapter
+
+6. LinkedIn implementation specification (DOC-09, Section 6).
+
+## Decision
+
+The implementation of the "Enter the source", "Apply filters", and "Capture offers" nodes of the Opportunity Discovery module (Module 1) shall follow the specifications defined in DOC-09 (Section 6).
+
+Consequently, the following are adopted as official implementation criteria:
+
+- The entry shall be considered successful only when a verifiable DOM criterion of the authenticated session is met within a configured timeout (`timeout_ingreso`), using the `global-nav` element of LinkedIn as official evidence of authenticated session.
+- The queries shall be composed from the official filter sets defined in the system configuration, mapping each field to its corresponding LinkedIn search parameter.
+- Capture shall respect the configured default policies (`max_paginas`, `max_ofertas_por_corrida`, `pausa_entre_lotes`, `estrategia_anti_bloqueo`).
+- Evidence of a captcha or platform blocking shall terminate the run with the `bloqueo_plataforma` code (Group A, no retry), while the expiration of the session shall use the `sesion_expirada` code with controlled re-entry.
+
+## Justification
+
+The research determined that account protection takes priority over execution volume or speed (DE-LI-006, DE-LI-007), and hence entry verification, controlled interaction, and the express prohibition of retrying after a captcha are mandatory for the integration.
+
+Transforming platform behavior into verifiable criteria and official codes allows implementing the module nodes using exclusively the documented information.
+
+## Implications for the project
+
+- The implementation of Module 1 requires a verifiable entry criterion per source.
+- The filter mapping is part of the platform, defined in the configuration, not hardcoded.
+- Capture limits and pauses follow the default policies of the global configuration.
+- The captcha/blocking handling is governed by the error catalog (DOC-06, Section 11).
+
+---
+
 # A.2 Final observations
 
 This log brings together the strategic decisions made during the LinkedIn analysis carried out in Document 9.

@@ -288,7 +288,66 @@ The platform analysis shall be considered accepted only when all chapters define
 
 ---
 
-## 6. Document index
+## 6. LinkedIn implementation specification for Module 1
+
+This chapter establishes the official specifications for the implementation of the integration with LinkedIn within the Opportunity Discovery module (Module 1) of the automation MVP.
+
+Its purpose is to provide the register of rules and contracts necessary to implement the nodes "Enter the source", "Apply filters", and "Capture offers" of the official Discovery flow, defined in the MVP Execution Plan and the reference data flow (DOC-04, Section 15), using exclusively the information documented in this chapter together with the technical sheet of the module.
+
+### 6.1. Verifiable entry criteria
+
+Entry to the platform shall be considered successful only when, after executing the accreditation process (user account) of the session, all of the following criteria are verified:
+
+- The authenticated LinkedIn session shows the navigation bar element that confirms the authenticated session (DOM element `global-nav`).
+- The element is visible within the timeout configured as `timeout_ingreso` in the source access configuration.
+
+The automation shall proceed with the capture only when the criteria are met; otherwise, it shall abort the entry returning the corresponding `codigo_motivo` established in the error catalog (DOC-06, Section 11) without retrying.
+
+### 6.2. Official filter sets
+
+The search strategy shall use the official filter sets defined for the source, composed of the following fields:
+
+| Set field | LinkedIn search parameter | Typical value |
+|-----------|--------------------------|---------------|
+| `keywords` | `keywords` | Professional profile terms |
+| `ubicacion` | `location` | Geographic location |
+| `modalidad` | `f_WT` | Work type: `2` (Remote), `3` (Hybrid), etc. |
+| `fecha_publicacion` | `f_TPR` | Publication period: `r86400` (24 hours), `r604800` (7 days), etc. |
+| `nivel_experiencia` | `f_JT` | Experience level: `1` (internship), `2` (entry), `3` (associate), etc. |
+
+The set order is defined by the value `set_indice` (starting at 0); an empty set (`keywords` not defined) means the base search.
+
+The complete list of official filter sets per source is defined in the system configuration (`config.yaml`, section `fuentes`) and cannot be modified without updating the official documentation.
+
+### 6.3. Capture policies (defaults)
+
+The capture limits and pauses shall use the following default policies, defined in the system configuration and applicable when the source does not define its own values:
+
+| Policy | Default | Scope |
+|---------------------------|-------------------------------------|--------------------------------------|
+| `max_paginas` | Configured globally | Pagination consumption of a set |
+| `max_ofertas_por_corrida` | Configured globally | Total captured offers per run |
+| `pausa_entre_lotes` | Configured globally | Minimum interval between batches |
+| `estrategia_anti_bloqueo` | `pausa_aleatoria` | Mitigation strategy (`pausa_aleatoria` / `retraso_fijo` / `none`) |
+
+The defaults above are not hardcoded values: the actual values are defined in `config/config.yaml` (section `captura`) and are resolved applying the global default unless the source defines specific values (see `politicas_de_captura` per source).
+
+---
+
+### 6.4. Treatment of captcha/blocking
+
+When the platform shows a captcha or blocking evidence during entry or search, the run shall be terminated with the corresponding status defined in the error catalog (DOC-06, Section 11):
+
+| Evidence | `codigo_motivo` | Result |
+|---------------------------|------------------|--------------------------------|
+| Challenge/captcha shown | `bloqueo_plataforma` | Abort, Group A (no retry) |
+| Session expired | `sesion_expirada` | Abort the batch, controlled re-entry permitted |
+
+Retrying after a captcha is expressly prohibited: it increases the account blocking risk (DE-LI-006, DE-LI-007). The current run shall be aborted and the evidence must be logged without preserving credentials.
+
+---
+
+## 7. Document index
 
 ### Document structure
 
@@ -297,7 +356,8 @@ The platform analysis shall be considered accepted only when all chapters define
 3. Criteria for selecting job sources.
 4. General recommendations.
 5. Acceptance criteria.
-6. Document index.
+6. LinkedIn implementation specification for Module 1.
+7. Document index.
 
 ---
 

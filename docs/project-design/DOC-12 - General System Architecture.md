@@ -277,6 +277,26 @@ The official components of the architecture are as follows.
 
 Responsible for locating, collecting, and registering new job opportunities from the official sources defined for the project.
 
+#### CMP-001 internal structure
+
+The component is organized into the following internal elements, whose structure must be derivable one-to-one in the `modules/discovery/` package:
+
+- `run_context.py`: maintains the context of the current run (Run), including its identifier, configuration snapshot, active session, and accumulated state during the process.
+- Discovery nodes: the thirteen nodes that make up the official Discovery flow defined in the MVP Execution Plan (Phase 4) and modeled in DOC-04 (Section 15). Each node is responsible for one stage of the flow and communicates with the following nodes exclusively through the contracts defined in the technical sheet.
+- `adapters/`: platform adapters that implement the `INT-001. Job search platform` interface and use the `INT-003. Automated browser` integration to interact with each official source.
+
+The module uses the cross-cutting services of the architecture as follows:
+
+| Internal element | Shared services it depends on |
+|------------------|-------------------------------|
+| Run manager | SRV-004 (Persistence) and SRV-005 (Configuration management) |
+| Lock manager | SRV-004 (Persistence) |
+| Platform adapters | SRV-003 (Web automation engine), SRV-006 (Logging) |
+
+The run manager is responsible for orchestrating the execution of the official Discovery flow, and the lock manager guarantees, through the lock store, that no more than one run is in progress concurrently per source.
+
+Official credentials used by the platform adapters must be stored in the secure credential repository defined by the architecture's Configuration Management service (SRV-005), accessed exclusively through its public interfaces and never persisted in the application database, logs, or execution records (see Section 14, Credentials and secrets).
+
 ### CMP-002. Initial offer preparation
 
 Responsible for normalizing, structuring, and preparing the information obtained during the discovery process for subsequent evaluation stages.
@@ -641,6 +661,12 @@ Manage the configuration parameters of the system.
 **Responsibility**
 
 Allow adjusting the behavior of the automation without modifying the implementation.
+
+**Credentials storage**
+
+Credentials and secrets used by the integrations must be stored in a secure repository managed by this service. For the first version (MVP) of the automation, such a repository is implemented as an environment variable file (`.env`) loaded exclusively through an official environment loader, and its values must be referenced in the system configuration without being embedded in the configuration itself.
+
+Credentials must never be included in version-controlled files, application database, logs, or execution records.
 
 ---
 
