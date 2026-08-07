@@ -84,6 +84,7 @@
 
 | # | Node (ficha spec) | Source docs | Status | Notes |
 |---|------|-------------|--------|-------|
+| 0 | Prerequisite: update DOC-13 and Document 13A | Análisis comparativo M1 (2026-08-07) | ✅ | D1 (active como atributo de catálogo), D2 (almacén único SQLite con 5 tablas lógicas del M1), D3 (auditoría de sesión mínima — 8 campos), C5 (ofertas con estado `discovered`); Evento formalizado (run_id obligatorio, tipología error/suceso, código, evidencia); entidades nuevas Corrida, Sesion, Bloqueo; inventario, modelo lógico, diccionario y ERD actualizados (13A v1.3). |
 | 1 | INICIO (v1.3) | Ficha técnica | ⬜ | Run instantiation, config, DB, concurrency lock, source validation. |
 | 2 | ¿Existe al menos una fuente configurada? (v1.0) | Ficha técnica | ⬜ | Decision node. |
 | 3 | ¿Quedan fuentes por procesar en esta corrida? (v1.0) | Ficha técnica | ⬜ | Decision node. |

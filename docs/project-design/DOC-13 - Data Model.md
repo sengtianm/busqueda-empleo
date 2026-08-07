@@ -1270,6 +1270,15 @@ Any modification related to persistence or storage of information must be docume
 
 Modifications must preserve the integrity, compatibility, and coherence with the rest of the official project documentation.
 
+---
+
+### 13.8. Discovery module (module 1) — 2026-08-07
+
+The Opportunity Discovery module defines the following persistence decisions:
+
+- **D1 — `active` of the Source entity:** catalog attribute for external (manual) administration; the module's runtime does not filter sources by it.
+- **D2 — single store:** all logical stores of the module — offers (`ofertas`), events (`eventos`), sessions (`sesiones`), runs (`corridas`), and lock (`bloqueo`) — persist as tables of the same single SQLite database (`job_search.db`), in accordance with section 13.6 (technology independence) and the Technology Stack decision that set SQLite as the MVP single store.
+- **D3 — session audit (minimal viable):** the session audit table registers successful sessions only and contains the essential fields: `session_id`, `run_id`, `source_id`, `set_indice`, `timestamp`, `total_declarado`, `conteo`, `estado`. Failed attempts are reported as events, never as sessions. Credentials, tokens, and cookies are never stored (per the technical sheet).
 
 ---
 
