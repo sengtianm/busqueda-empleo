@@ -125,6 +125,10 @@ This catalog constitutes the only official reference for assigning new prefixes.
 | OFP     | processed_offers    | Processed and cleaned offer |
 | EVL     | evaluations         | Compatibility evaluation  |
 | RSP     | processing_results  | Deep processing result    |
+| COR     | corridas            | Run of the Discovery module (Module 1) |
+| SES     | sesiones            | Platform session of the Discovery module |
+| EVT     | eventos             | Event (error or success) of the Discovery module |
+| BLO     | bloqueo             | Concurrency lock record (Module 1) |
 
 ---
 

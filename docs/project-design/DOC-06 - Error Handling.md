@@ -3305,7 +3305,94 @@ Its purpose is to facilitate consultation, cross-referencing, implementation, an
 
 # 11. Error Handling by Module
 
-No specific prefixes were defined for this chapter, as it reuses the categories, strategies, and official policies established previously.
+## Module 1: Opportunity Discovery — Error Catalog and Retry Policy
+
+The Discovery module (Module 1) defines its own business error codes per node, complementing (never replacing) the official technical categories (`ER-*`, CER-001..010). Dual naming (see C7 of the comparative analysis): `ERR-nn` / `EVT-01` are business codes per node; `ER-<CATEGORIA>-<n>` remain the technical layer.
+
+### Catalog of business codes per node
+
+Each node uses its own `ERR-xx`/`EVT-xx` codes (local scope by node, following the technical sheet). Accounts:
+
+| Node | Codes | codigo_motivo |
+|------|-------|---------------|
+| INICIO | ERR-01..ERR-12 | Local start, oracle, config, DB, lock, duplicate identifiers, discarded source |
+| ¿Existe al menos una fuente configurada? | ERR-01 | Abort on context contract violation |
+| ¿Quedan fuentes por procesar...? | ERR-01 | Abort on iterator contract violation |
+| Seleccionar la siguiente fuente pendiente | ERR-01..03 | Internal context failures |
+| Entrar a la fuente seleccionada | ERR-01..09 | `fuente_inalcanzable`, `timeout_ingreso`, `autenticacion_rechazada`, `bloqueo_plataforma`, `criterio_no_cumplido`, `error_interno_fuente`, context corruption |
+| ¿El ingreso fue exitoso? | ERR-01..02 | `entry_result` absent/corrupt |
+| Aplicar los filtros... | ERR-01..08 | `filtros_no_aplicables`, `fuente_inalcanzable`, `timeout_consulta`, `sesion_expirada`, `respuesta_invalida`, `error_interno_consulta` |
+| ¿Se encontraron ofertas? | ERR-01..02 | `search_result` absent/corrupt |
+| Capturar ofertas | ERR-01..09 + EVT-01 | `fuente_inalcanzable`, `timeout_captura`, `sesion_expirada`, `bloqueo_plataforma`, `respuesta_invalida`, `error_interno_captura`; `oferta_no_capturada` (EVT-01) |
+| Registrar ofertas capturadas | ERR-01..02 | `capture_batch` absent/corrupt; write/transaction failure |
+| ¿Quedan ofertas por capturar? | ERR-01..02 | `estado_captura` absent/invalid |
+| ¿Quedan sets de filtros...? | ERR-01..02 | Iterators inconsistent |
+| Finalizar Proceso | — | Best-effort; the obsolescence threshold protects a stuck lock (ERR-07) |
+
+### Official error catalog (business codes + motive mapping)
+
+| Code | Motive (`codigo_motivo`) | Technical category (ER-*) | Retry? |
+|------|--------------------------|---------------------------|--------|
+| ERR-01 | `colision_run_id` | ER-INT | No |
+| ERR-02 | `config_ausente` | ER-CFG | No |
+| ERR-03 | `config_ilegible` | ER-CFG | No |
+| ERR-04 | `config_corrupta` | ER-CFG | No |
+| ERR-05 | `bd_indisponible` | ER-DB | No |
+| ERR-06 | `concurrencia_activa` | ER-DB | No |
+| ERR-07 | `bloqueo_obsoleto` | ER-DB | No |
+| ERR-08 | `bloqueo_no_decidible` | ER-DB | No |
+| ERR-09 | `contienda_bloqueo` | ER-DB | No |
+| ERR-10 | `fallo_estado_interno` | ER-INT | No |
+| ERR-11 | `identificadores_duplicados` | ER-CFG | No |
+| ERR-12 | `ficha_incompleta` | ER-CFG | No |
+
+Contract violations in the decision nodes (absent/corrupt successor contract) are registered with the local `ERR-01..02` codes of each decision node and classified as `ER-INT` (internal contract error); they abort the run with state `error`.
+
+The node-local codes (`ERR-01..09`) of "Entrar a la fuente" map to `ER-*` as follows:
+
+| Motive (`codigo_motivo`) | Technical category (ER-*) | Retry? |
+|--------------------------|---------------------------|--------|
+| `fuente_inalcanzable` | ER-RED / ER-EXT | **Yes** |
+| `timeout_ingreso` | ER-RED | **Yes** |
+| `autenticacion_rechazada` | ER-NAV | No |
+| `bloqueo_plataforma` | ER-NAV | No |
+| `criterio_no_cumplido` | ER-NAV | No |
+| `error_interno_fuente` | ER-INT | No |
+| `filtros_no_aplicables` | ER-EXT | No |
+| `timeout_consulta` / `timeout_captura` | ER-RED | **Yes** |
+| `sesion_expirada` | ER-NAV | No |
+| `respuesta_invalida` | ER-EXT | No |
+| `error_interno_consulta` / `error_interno_captura` | ER-INT | No |
+| `oferta_no_capturada` | ER-EXT | No (EVT-01) |
+
+### Conditional retry policy
+
+Only the motives `fuente_inalcanzable` and `timeout_*` (timeout of entry, consultation, or capture) are retried, with backoff and from a closed channel. All other codes are immediately non-retryable: they produce an immediate failure (per-node registration, without re-entering or continuing as defined by the technical sheet RN-03/RN-06). Retry limits are per-run configuration.
+
+| Motive | Retry? | Notes |
+|--------|--------|-------|
+| `fuente_inalcanzable` | Yes | With backoff; if exhausted → failure evidence, continue with remaining sets/sources |
+| `timeout_ingreso`, `timeout_consulta`, `timeout_captura` | Yes | Backoff; exhausted → continuation per node policy |
+| Everything else | No | Immediate failure; registration per node |
+
+### Grupo A / Grupo B classification
+
+| Group | Meaning | Applies to (motives) |
+|-------|---------|----------------------|
+| **A — Compromise of the source** | The source is compromised and cannot continue in this run; the node/source is closed or the run terminates (abort) | `autenticacion_rechazada`, `bloqueo_plataforma`, `criterio_no_cumplido`, `sesion_expirada` (when it implies credential loss), `error_interno_fuente`, `bloqueo_plataforma` during capture, contract/abort codes |
+| **B — Own of the set** | The failure belongs to the current filter set; the set is closed and iteration continues with the next set | `filtros_no_aplicables`, `respuesta_invalida`, `timeout_*` exhausted, `error_interno_consulta`, `error_interno_captura`, `EVT-01 oferta_no_capturada` |
+
+When Group A occurs the node/source is closed; when Group B occurs the run continues with the next set (technical sheet, "¿Quedan sets de filtros por aplicar?").
+
+### Termination states
+
+| State | Motives | Event type |
+|-------|---------|------------|
+| `normal` | `corrida_completada`, `sin_fuentes` | suceso |
+| `concurrencia` | `concurrencia` (lock held by another run) | suceso |
+| `error` | Any abort (context corruption, contract violations, fatal non-retryable) | error |
+
+Every event is registered in "errores o sucesos" (with `run_id`, `timestamp`, `tipo`, `codigo`, `evidencia`); if the store is not available, the local critical log (Loguru) acts as the fallback (technical sheet, INICIO §1.11).
 
 ---
 
