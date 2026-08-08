@@ -85,7 +85,7 @@
 | # | Sub-phase (nodes) | Source docs | Status | Notes |
 |---|---|---|---|---|
 | 0 | Prerequisite: preparation plan (7 phases) completed | Análisis comparativo M1, Plan de Preparación | ✅ | DOC-13/13A, DOC-04, DOC-06, DOC-01, DOC-12, DOC-09/9A, DOC-00/5A, config.yaml, models.py, persistence.py, errors.py, retry.py, conftest.py, discovery/ scaffold, linkedin adapter. 102 tests passing. |
-| 4.1 | Startup and source control (INICIO + 3 nodes) | Ficha técnica | ⬜ | Run instantiation, config, DB, concurrency lock, source validation, source iteration. |
+| 4.1 | Startup and source control (INICIO + 3 nodes) | Ficha técnica | ⏳ | INICIO node implemented and validated: run instantiation, config (ERR-02..04/11), DB probe (ERR-05), concurrency lock (ERR-06..09), source validation with ERR-12 discard, run state (ERR-10). 123 tests passing. The 3 decision nodes pending. |
 | 4.2 | Platform entry (2 nodes) | Ficha técnica, DOC-09, Annex 9A | ⬜ | LinkedIn login, credentials, conditional retries, entry_result. |
 | 4.3 | Filter search (2 nodes) | Ficha técnica, DOC-09 | ⬜ | Set iterator, adapter search, search_result. |
 | 4.4 | Capture and registration (4 nodes) | Ficha técnica, DOC-09, DOC-13, DOC-04 | ⬜ | Capture policies, batch write, Grupo A/B, pagination loop. |

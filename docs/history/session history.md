@@ -10,10 +10,39 @@
 
 | № | Date | Session ID | Summary |
 |---|------|------------|---------|
+| 9 | 08/08/2026 | `ses_01ebcd885ffe7UB5IsfCrylV90` | Sub-fase 4.1: INICIO node implemented and validated (123 tests), reviewer fixes applied, branch `fase-4` created |
 | 8 | 07/08/2026 | `ses_021c087e1ffePrh0h4O4Zzb4BY` | Module 1 preparation: discovery scaffold (run context + LinkedIn adapter), full validation passed, build ready |
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+---
+
+## Session 9 — 08/08/2026
+
+**ID:** `ses_01ebcd885ffe7UB5IsfCrylV90` · **Branch:** `fase-4`
+
+**Topics:**
+- Sub-fase 4.1 execution: INICIO node of the Discovery flow (technical sheet v1.3, Section 1)
+- Branch `fase-4` created from `main`; Phase 4 work restricted to it, no merge without authorization
+- `run_context.py`: `permitir_vacio` parameter (empty source list is not an INICIO error)
+- `shared/persistence.py`: atomic lock acquisition (`BEGIN IMMEDIATE`), `forzar` overwrite with CAS, `probe_write`, `write_corrida`, `write_evento`, public `umbral_obsolescencia_minutos`
+- `inicio.py`: 7 steps, ERR-01..ERR-12, controlled concurrency termination, ERR-12 source discard, run `en_ejecucion` registration
+- Reviewer cycle: 1 blocker (lock atomicity) + 1 major (source_id/nombre validation) + minors fixed
+- Fixes: obsolete-lock semantics unified (umbral ≤ 0 → never stale), strategy validation per DOC-09, global defaults in capture policies, ES identifiers exception authorized
+- Validation: 123 tests passing, ruff 0, mypy 0
+
+**Decisions:**
+- INICIO validates `source_id`/`nombre` required to discard with ERR-12 instead of aborting with ERR-10
+- `acquire_lock` rework: `BEGIN IMMEDIATE` for atomic first acquisition; CAS (`UPDATE ... WHERE run_id`) for `forzar` branch
+- Authorities exception in AGENTS.md: `modules/discovery/` uses Spanish identifiers for domain concepts (consistent with `run_context.py` precedent)
+- `corridas.estado` 5 values vs DOC-13A termination-reason reconciliation pending before Finalizar Proceso node (documented, not resolved)
+- Decisions from previous sessions remain in effect
+
+**Status:**
+- Phase 4.1 ⏳: INICIO node done and validated; the 3 decision nodes pending
+- Ruff 0, mypy 0 (29 files), pytest 123/123
+- Branch: `fase-4`
 
 ---
 

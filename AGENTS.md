@@ -6,7 +6,7 @@
 
 Automated solution that discovers, collects, prepares, evaluates, processes, and manages job opportunities, reducing the time and effort of the job search while supporting the user's decision-making.
 
-**Current status**: MVP in progress. Phases 0-3 completed (infrastructure, shared services, prompts tested with `gemma4:31b-cloud`). Current work: Phase 4 — Module 1 (Opportunity Discovery) on branch `modulo-1`. Phases 5-9 pending. See `docs/history/tracker.md` for the authoritative status.
+**Current status**: MVP in progress. Phases 0-3 completed (infrastructure, shared services, prompts tested with `gemma4:31b-cloud`). Current work: Phase 4 — Module 1 (Opportunity Discovery) on branch `fase-4`; sub-phase 4.1 (INICIO node) implemented and validated, pending approval. Phases 5-9 pending. See `docs/history/tracker.md` for the authoritative status.
 
 ## Objective
 
@@ -63,6 +63,7 @@ All implementations must follow this architecture (details in DOC-12).
 
 - **English** for all code, documentation, configuration, prompts, commit messages, directory and file names.
 - **Spanish** for everything data-related: the SQLite database (`job_search.db`), `shared/models.py`, `shared/persistence.py`, profile and criteria in `config.yaml`, and test fixtures.
+- **Authorized exception**: `modules/discovery/` (including its node files and tests) uses Spanish identifiers for domain concepts (e.g., `ejecutar_inicio`, `ResultadoInicio`, `fuentes_filtradas`), consistent with the approved `run_context.py` precedent and the Spanish data layer. Spanish docstrings/error-evidence strings are allowed in this module; code elsewhere stays English.
 - **Spanish** for all conversations with the user.
 - Configuration must be separated from business logic.
 - Prompts must be separated from the code.
@@ -117,7 +118,7 @@ Never work on more than one task at a time.
 
 - `ruff check .` — Lint (E/F/I/N/W rules, line length 100)
 - `mypy .` — Type check (strict)
-- `pytest tests/` — Test suite (currently 48 passing)
+- `pytest tests/` — Test suite (currently 123 passing)
 
 Note: local venv runs Python 3.14.6 (3.12 unavailable).
 
