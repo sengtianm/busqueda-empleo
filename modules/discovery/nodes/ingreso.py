@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass
 
 from loguru import logger
@@ -63,10 +64,6 @@ def ejecutar_ingreso(contexto: RunContext) -> ResultadoIngreso:
         contexto, adapter, max_attempts, base_wait, multiplier, max_wait
     )
 
-    # Redoing the loop with manual playwright management
-    return _ejecutar_ingreso_loop(contexto, adapter, max_attempts, base_wait, multiplier, max_wait)
-
-
 def _ejecutar_ingreso_loop(
     contexto: RunContext,
     adapter: LinkedInAdapter,
@@ -75,7 +72,7 @@ def _ejecutar_ingreso_loop(
     multiplier: float,
     max_wait: float,
 ) -> ResultadoIngreso:
-    import time
+    # import time moved to top-level
 
     playwright_instance = None
     browser = None
@@ -111,7 +108,6 @@ def _ejecutar_ingreso_loop(
                     None if ficha.tipo_acceso == "publico"
                     else _obtener_credenciales(ficha),
                 )
-
 
                 # Éxito
                 contexto.session_id = generate_id("sesiones")
@@ -151,10 +147,13 @@ def _ejecutar_ingreso_loop(
                 logger.error(f"ERR-09: Error interno en nodo ingreso: {e}")
                 return ResultadoIngreso(estado="error", codigo="ERR-09", descripcion=str(e))
     finally:
-        # If we failed, we must clean up the playwright instance too if it was started
-        if contexto.entry_result and contexto.entry_result.estado == "fallo":
+        # Ensure the playwright instance is stopped if the run was NOT successful
+        # Success is defined by having a session_id and handle_sesion assigned
+        if not (contexto.session_id and contexto.handle_sesion):
             if playwright_instance:
                 playwright_instance.stop()
+
+
 
 def _obtener_credenciales(ficha: FichaFuente) -> dict[str, str]:
     env_vars = load().get("_env", {})

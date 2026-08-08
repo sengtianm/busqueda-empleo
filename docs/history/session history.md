@@ -7,18 +7,42 @@
 ---
 
 ## Sessions index
-
+ 
 | № | Date | Session ID | Summary |
 |---|------|------------|---------|
+| 10 | 08/08/2026 | `ses_01d9bc5d2ffe0OwXiVc3MrXgBo` | Sub-fase 4.2: Ingreso flow implemented (3 nodes) and validated (152 tests) |
 | 9 | 08/08/2026 | `ses_01ebcd885ffe7UB5IsfCrylV90` | Sub-fase 4.1: INICIO node implemented and validated (123 tests), reviewer fixes applied, branch `fase-4` created |
 | 8 | 07/08/2026 | `ses_021c087e1ffePrh0h4O4Zzb4BY` | Module 1 preparation: discovery scaffold (run context + LinkedIn adapter), full validation passed, build ready |
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
-
+ 
+---
+ 
+## Session 10 — 08/08/2026
+ 
+**ID:** `ses_01d9bc5d2ffe0OwXiVc3MrXgBo` · **Branch:** `fase-4`
+ 
+**Topics:**
+- Sub-fase 4.2 complete: "Entrar a la fuente", "¿Ingreso exitoso?" and "Registrar evento" nodes
+- Integration with LinkedInAdapter (navigation, auth, success criteria)
+- Conditional retry logic for source unavailability and timeouts
+- session_id generation (SES-NNNN) and handle_sesion management (Playwright page)
+- Event logging for both successes and failures in persistence layer
+- Validation of entry result consistency
+ 
+**Decisions:**
+- Browser instance created per attempt to ensure clean state
+- Playwright instance started manually to prevent page closure on successful node exit
+- Decisions from previous sessions remain in effect
+ 
+**Status:**
+- Phase 4.2 ✅: Platform entry nodes done and validated
+- Ruff 0, mypy clean (logic), pytest 152/152
+- Branch: `fase-4`
+ 
 ---
 
-## Session 9 — 08/08/2026
 
 **ID:** `ses_01ebcd885ffe7UB5IsfCrylV90` · **Branch:** `fase-4`
 
