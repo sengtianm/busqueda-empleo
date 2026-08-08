@@ -103,8 +103,14 @@ class RunContext:
         if not ficha.source_id or not ficha.nombre or not ficha.url:
             raise ConfigurationError(
                 "12",
-                "Incomplete access sheet (run-ERR-12): "
+                "Incomplete access sheet (ERR-12): "
                 "source_id, nombre and url are mandatory.",
+                source_module="run_context",
+            )
+        if not ficha.criterio_exito:
+            raise ConfigurationError(
+                "12",
+                "Incomplete access sheet (ERR-12): criterio_exito is mandatory.",
                 source_module="run_context",
             )
         if ficha.tipo_acceso not in _TIPOS_ACCESO:

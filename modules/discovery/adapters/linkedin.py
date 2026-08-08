@@ -62,8 +62,6 @@ _SEL_DESCRIPCION_DETALLE = "div.jobs-description__content"
 
 _RE_ID_EXTERNO = re.compile(r"/jobs/view/(\d+)")
 
-_BASE_URL = "https://www.linkedin.com"
-
 
 class FlowError(Exception):
     """Expected platform failure carrying a DOC-06 `codigo_motivo`."""
@@ -157,7 +155,7 @@ class LinkedInAdapter:
                 ) from exc
             html = self._contenido(page)
             self._revisar_estado_captura(html, "timeout_captura")
-            referencias = self._extraer_referencias(html)
+            referencias = self._extraer_referencias(html, ficha.url)
             if not referencias:
                 break
             restantes = politicas.max_ofertas_por_corrida - len(ofertas_capturadas)
@@ -209,8 +207,6 @@ class LinkedInAdapter:
     def _criterio_ingreso_cumplido(self, page: Any, ficha: FichaFuente) -> bool:
         html = self._contenido(page)
         self._revisar_estado_pagina(html, "timeout_ingreso")
-        if not ficha.criterio_exito:
-            return True
         return ficha.criterio_exito in html
 
     def _revisar_estado_pagina(self, html: str, codigo_timeout: str) -> None:
@@ -242,7 +238,7 @@ class LinkedInAdapter:
             href = str(enlace.get("href") or "")
             if "/jobs/view/" not in href:
                 continue
-            url = _url_absoluta(href)
+            url = _url_absoluta(href, ficha.url)
             tarjeta = enlace.parent
             titulo = _texto_de(tarjeta, _SEL_TITULO_TARJETA)
             ofertas.append(
@@ -267,13 +263,13 @@ class LinkedInAdapter:
             numero_de_intentos=1,
         )
 
-    def _extraer_referencias(self, html: str) -> list[str]:
+    def _extraer_referencias(self, html: str, base: str) -> list[str]:
         soup = BeautifulSoup(html, "lxml")
         urls: list[str] = []
         for enlace in soup.select(_SEL_ENLACE_TARJETA):
             href = str(enlace.get("href") or "")
             if "/jobs/view/" in href:
-                urls.append(_url_absoluta(href))
+                urls.append(_url_absoluta(href, base))
         return urls
 
     def _hay_pagina_siguiente(self, html: str) -> bool:
@@ -362,10 +358,11 @@ class LinkedInAdapter:
         return urlunparse(partes._replace(query=urlencode(qs, doseq=True)))
 
 
-def _url_absoluta(href: str) -> str:
+def _url_absoluta(href: str, base: str) -> str:
     if href.startswith("http"):
         return href
-    return f"{_BASE_URL}{href}"
+    origen = urlparse(base)
+    return f"{origen.scheme}://{origen.netloc}{href}"
 
 
 def _texto_de(elemento: Any, selector: str) -> str:
