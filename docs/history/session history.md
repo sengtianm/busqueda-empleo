@@ -10,9 +10,36 @@
 
 | № | Date | Session ID | Summary |
 |---|------|------------|---------|
+| 8 | 07/08/2026 | `ses_021c087e1ffePrh0h4O4Zzb4BY` | Module 1 preparation: discovery scaffold (run context + LinkedIn adapter), full validation passed, build ready |
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+---
+
+## Session 8 — 07/08/2026
+
+**ID:** `ses_021c087e1ffePrh0h4O4Zzb4BY` · **Branch:** `modulo-1`
+
+**Topics:**
+- Context recovery: preparation plan phases 1–5 completed and committed, phase 6 scaffolded (run context + LinkedIn adapter)
+- Fase 6 of the preparation plan: discovery scaffold with 4 methods, 8 new conftest fixtures, 20 new tests, HTML fixtures
+- Code-review fixes from reviewers: entry criterion enforced as mandatory in validated config and base URL derived from source URL
+- Documentation correction: `credenciales_no_disponibles` registered in the official `codigo_motivo` catalog as non-retryable config error, outside retry groups A/B
+- Fase 7 validation finished: full checklist vs docs + suite green (102/102), verdict "READY TO BUILD PHASE 4"
+- Git state verified: working tree clean at session start, all phase work already committed and pushed
+- Session history updated (this entry)
+
+**Decisions:**
+- `credenciales_no_disponibles` → ER-CFG, non-retryable, belongs neither to retry Group A nor B (it occurs before a channel opens, deterministic at step 2 of "Entrar a la fuente")
+- Node construction of Phase 4 starts only after explicit user confirmation
+- Reviewer minor findings stay documented as-is pending future authorization (adapter error class outside the BaseError hierarchy)
+- Decisions from previous sessions remain in effect
+
+**Status:**
+- Phases 0–3 ✅; Module 1 preparation plan phases 1–7 ✅ (validation verdict "ready to build"); Phase 4 node construction ⬜ pending approval
+- Ruff 0, mypy 0 (27 files), pytest 102/102
+- Branch: `modulo-1`
 
 ---
 
