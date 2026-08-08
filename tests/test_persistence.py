@@ -260,3 +260,58 @@ def test_migracion_c2_idempotente(tmp_path: Path) -> None:
         assert columnas["descripcion_original"] == 0
     finally:
         reset_path()
+
+
+def test_probe_write_no_deja_filas(temp_db_file: Path) -> None:
+    from shared.persistence import probe_write, read_table
+
+    probe_write()
+    assert read_table("bloqueo") == []
+
+
+def test_write_corrida_idempotente(temp_db_file: Path) -> None:
+    from shared.persistence import read_table, write_corrida
+
+    datos = {
+        "run_id": "COR-0009",
+        "timestamp_inicio": "2026-08-07 10:00:00",
+        "estado": "en_ejecucion",
+    }
+    write_corrida(datos)
+    write_corrida(datos)
+    filas = read_table("corridas")
+    assert len(filas) == 1
+    assert filas[0]["run_id"] == "COR-0009"
+    assert filas[0]["estado"] == "en_ejecucion"
+
+
+def test_write_evento_genera_evento_id(temp_db_file: Path) -> None:
+    from shared.persistence import read_table, write_evento
+
+    evt_id = write_evento(
+        {
+            "run_id": "RUN-0001",
+            "source_id": "linkedin",
+            "tipo": "suceso",
+            "codigo": "ERR-07",
+            "evidencia": "lock sobrescrito",
+            "timestamp": "2026-08-07 10:00:00",
+        }
+    )
+    assert evt_id.startswith("EVT-")
+    filas = read_table("eventos")
+    assert len(filas) == 1
+    assert filas[0]["evento_id"] == evt_id
+
+
+def test_lock_forzar_sobrescribe_y_contienda_mantiene(temp_db_file: Path) -> None:
+    import datetime
+
+    from shared.persistence import acquire_lock, check_lock
+
+    ahora = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    assert acquire_lock("COR-0001", ahora) is True
+    assert acquire_lock("COR-0002", ahora, forzar=True) is True
+    lock = check_lock()
+    assert lock is not None
+    assert lock["run_id"] == "COR-0002"

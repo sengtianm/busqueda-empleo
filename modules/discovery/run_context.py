@@ -38,8 +38,9 @@ class RunContext:
         config_fuentes: list[dict[str, Any]],
         config_captura: dict[str, Any] | None = None,
         run_id: str | None = None,
+        permitir_vacio: bool = False,
     ) -> None:
-        if not config_fuentes:
+        if not config_fuentes and not permitir_vacio:
             raise ConfigurationError(
                 "12", "No sources defined in configuration.", source_module="run_context"
             )
@@ -163,28 +164,46 @@ class RunContext:
     ) -> PoliticasCaptura:
         politicas_raw = conf.get("politicas_de_captura")
         if not isinstance(politicas_raw, dict):
-            return PoliticasCaptura(
-                max_paginas=int(config_captura.get("max_paginas", 5)),
-                max_ofertas_por_corrida=int(
-                    config_captura.get("max_ofertas_por_corrida", 25)
-                ),
-                pausa_entre_lotes_segundos=int(
-                    config_captura.get("pausa_entre_lotes_segundos", 10)
-                ),
-                estrategia_anti_bloqueo=str(
-                    config_captura.get("estrategia_anti_bloqueo", "pausa_aleatoria")
-                ),
-            )
+            return self._politicas_desde_global(config_captura)
         return PoliticasCaptura(
-            max_paginas=int(politicas_raw.get("max_paginas", 5)),
+            max_paginas=int(
+                politicas_raw.get(
+                    "max_paginas", config_captura.get("max_paginas", 5)
+                )
+            ),
             max_ofertas_por_corrida=int(
-                politicas_raw.get("max_ofertas_por_corrida", 25)
+                politicas_raw.get(
+                    "max_ofertas_por_corrida",
+                    config_captura.get("max_ofertas_por_corrida", 25),
+                )
             ),
             pausa_entre_lotes_segundos=int(
-                politicas_raw.get("pausa_entre_lotes_segundos", 10)
+                politicas_raw.get(
+                    "pausa_entre_lotes_segundos",
+                    config_captura.get("pausa_entre_lotes_segundos", 10),
+                )
             ),
             estrategia_anti_bloqueo=str(
-                politicas_raw.get("estrategia_anti_bloqueo", "pausa_aleatoria")
+                politicas_raw.get(
+                    "estrategia_anti_bloqueo",
+                    config_captura.get("estrategia_anti_bloqueo", "pausa_aleatoria"),
+                )
+            ),
+        )
+
+    def _politicas_desde_global(
+        self, config_captura: dict[str, Any]
+    ) -> PoliticasCaptura:
+        return PoliticasCaptura(
+            max_paginas=int(config_captura.get("max_paginas", 5)),
+            max_ofertas_por_corrida=int(
+                config_captura.get("max_ofertas_por_corrida", 25)
+            ),
+            pausa_entre_lotes_segundos=int(
+                config_captura.get("pausa_entre_lotes_segundos", 10)
+            ),
+            estrategia_anti_bloqueo=str(
+                config_captura.get("estrategia_anti_bloqueo", "pausa_aleatoria")
             ),
         )
 

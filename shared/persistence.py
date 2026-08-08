@@ -1,10 +1,12 @@
 import json
 import sqlite3
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
 
 from shared.config import load
+from shared.errors import PersistenceError
 
 _DB_PATH: Path | None = None
 
@@ -139,7 +141,7 @@ def _db_path() -> Path:
     if _DB_PATH is not None:
         return _DB_PATH
     cfg = load()
-    return Path(cfg.get("persistence", {}).get("db_file", "data/busqueda_empleo.db"))
+    return Path(cfg.get("persistence", {}).get("db_file", "data/job_search.db"))
 
 
 def change_path(ruta: Path) -> None:
@@ -349,35 +351,66 @@ def write_batch(tabla: str, filas: list[dict[str, Any]]) -> None:
         conn.close()
 
 
-def _umbral_obsolescencia_minutos() -> int:
-    cfg = load().get("concurrencia", {})
-    return int(cfg.get("umbral_obsolescencia_minutos", 120))
+def umbral_obsolescencia_minutos(config: dict[str, Any] | None = None) -> int:
+    cfg = config if config is not None else load()
+    valor = (cfg.get("concurrencia") or {}).get(
+        "umbral_obsolescencia_minutos", 120
+    )
+    try:
+        return int(valor)
+    except (TypeError, ValueError):
+        return 120
 
 
-def acquire_lock(run_id: str, timestamp: str) -> bool:
+def acquire_lock(
+    run_id: str,
+    timestamp: str,
+    forzar: bool = False,
+    umbral_minutos: int | None = None,
+) -> bool:
     conn = _connection()
     try:
+        conn.execute("BEGIN IMMEDIATE")
         fila = conn.execute(
             "SELECT * FROM bloqueo ORDER BY timestamp DESC LIMIT 1"
         ).fetchone()
         if fila is None:
-            conn.execute(
-                "INSERT OR REPLACE INTO bloqueo (run_id, timestamp) VALUES (?, ?)",
-                (run_id, timestamp),
+            try:
+                conn.execute(
+                    "INSERT INTO bloqueo (run_id, timestamp) VALUES (?, ?)",
+                    (run_id, timestamp),
+                )
+            except sqlite3.IntegrityError:
+                conn.rollback()
+                return False
+            conn.commit()
+            return True
+        if forzar:
+            cursor = conn.execute(
+                "UPDATE bloqueo SET run_id = ?, timestamp = ? WHERE run_id = ?",
+                (run_id, timestamp, fila["run_id"]),
             )
+            if cursor.rowcount == 0:
+                conn.rollback()
+                return False
             conn.commit()
             return True
         actual = datetime.strptime(fila["timestamp"], "%Y-%m-%d %H:%M:%S")
-        umbral_minutos = _umbral_obsolescencia_minutos()
+        if umbral_minutos is None:
+            umbral_minutos = umbral_obsolescencia_minutos()
         vigente = (
             datetime.now() - actual
         ).total_seconds() / 60 < umbral_minutos if umbral_minutos > 0 else True
         if vigente:
+            conn.rollback()
             return False
-        conn.execute(
-            "INSERT OR REPLACE INTO bloqueo (run_id, timestamp) VALUES (?, ?)",
-            (run_id, timestamp),
+        cursor = conn.execute(
+            "UPDATE bloqueo SET run_id = ?, timestamp = ? WHERE run_id = ?",
+            (run_id, timestamp, fila["run_id"]),
         )
+        if cursor.rowcount == 0:
+            conn.rollback()
+            return False
         conn.commit()
         return True
     finally:
@@ -400,5 +433,61 @@ def check_lock() -> dict[str, Any] | None:
             "SELECT * FROM bloqueo ORDER BY timestamp DESC LIMIT 1"
         ).fetchone()
         return dict(fila) if fila is not None else None
+    finally:
+        conn.close()
+
+
+def probe_write() -> None:
+    """VAL-03 probe: INSERT with immediate rollback on the bloqueo table."""
+    try:
+        conn = _connection()
+    except sqlite3.Error as exc:
+        raise PersistenceError("01", f"Connection failed: {exc}") from exc
+    try:
+        conn.execute(
+            "INSERT INTO bloqueo (run_id, timestamp) VALUES (?, ?)",
+            (f"PROBE-{uuid.uuid4().hex[:8]}", _now()),
+        )
+        conn.rollback()
+    except sqlite3.Error as exc:
+        raise PersistenceError("01", f"Write probe failed: {exc}") from exc
+    finally:
+        conn.close()
+
+
+def write_corrida(datos: dict[str, Any]) -> None:
+    """Registers a run row in `corridas`, idempotent per run_id."""
+    d = _serialize(datos)
+    conn = _connection()
+    try:
+        conn.execute(
+            "INSERT INTO corridas (run_id, timestamp_inicio, estado) "
+            "VALUES (:run_id, :timestamp_inicio, :estado) "
+            "ON CONFLICT (run_id) DO NOTHING",
+            {
+                "run_id": d["run_id"],
+                "timestamp_inicio": d.get("timestamp_inicio") or _now(),
+                "estado": d.get("estado") or "",
+            },
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def write_evento(datos: dict[str, Any]) -> str:
+    """Registers an event/success row in `eventos`; returns its evento_id."""
+    d = _serialize(datos)
+    evento_id = str(d.get("evento_id") or generate_id("eventos"))
+    d["evento_id"] = evento_id
+    if not d.get("timestamp"):
+        d["timestamp"] = _now()
+    columnas = ", ".join(d.keys())
+    placeholders = ", ".join(f":{k}" for k in d.keys())
+    conn = _connection()
+    try:
+        conn.execute(f"INSERT INTO eventos ({columnas}) VALUES ({placeholders})", d)
+        conn.commit()
+        return evento_id
     finally:
         conn.close()
