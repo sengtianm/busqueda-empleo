@@ -3357,6 +3357,7 @@ The node-local codes (`ERR-01..09`) of "Entrar a la fuente" map to `ER-*` as fol
 | `autenticacion_rechazada` | ER-NAV | No |
 | `bloqueo_plataforma` | ER-NAV | No |
 | `criterio_no_cumplido` | ER-NAV | No |
+| `credenciales_no_disponibles` | ER-CFG | No |
 | `error_interno_fuente` | ER-INT | No |
 | `filtros_no_aplicables` | ER-EXT | No |
 | `timeout_consulta` / `timeout_captura` | ER-RED | **Yes** |
@@ -3383,6 +3384,8 @@ Only the motives `fuente_inalcanzable` and `timeout_*` (timeout of entry, consul
 | **B — Own of the set** | The failure belongs to the current filter set; the set is closed and iteration continues with the next set | `filtros_no_aplicables`, `respuesta_invalida`, `timeout_*` exhausted, `error_interno_consulta`, `error_interno_captura`, `EVT-01 oferta_no_capturada` |
 
 When Group A occurs the node/source is closed; when Group B occurs the run continues with the next set (technical sheet, "¿Quedan sets de filtros por aplicar?").
+
+`credenciales_no_disponibles` belongs to neither group: it occurs before entering the source (step 2 of "Entrar la fuente", credential resolution), so it neither compromises the source nor belongs to a filter set. It is a deterministic configuration failure (ER-CFG) that is not retried (RN-03 of "Entrar" v1.1).
 
 ### Termination states
 
