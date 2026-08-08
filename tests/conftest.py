@@ -3,16 +3,23 @@ from pathlib import Path
 
 import pytest
 
+from modules.discovery.run_context import RunContext
 from shared.models import (
+    CaptureBatch,
     Company,
     DecisionEvaluation,
+    EntryResult,
     Evaluation,
     EvaluationResult,
+    FichaFuente,
     Location,
     Offer,
     OfferState,
+    PoliticasCaptura,
     ProcessedOffer,
     Profile,
+    SearchResult,
+    SetFiltros,
     Source,
 )
 
@@ -125,4 +132,138 @@ def example_profile() -> Profile:
         empresas_objetivo=[],
         empresas_excluidas=["EvilCorp"],
         educacion_nivel="grado",
+    )
+
+
+@pytest.fixture
+def example_ficha_fuente() -> FichaFuente:
+    return FichaFuente(
+        source_id="linkedin",
+        nombre="LinkedIn",
+        url="https://www.linkedin.com/jobs/search",
+        tipo_acceso="con_autenticacion",
+        credenciales_referencia=["LINKEDIN_EMAIL", "LINKEDIN_PASSWORD"],
+        criterio_exito="global-nav",
+        timeout_segundos=30,
+    )
+
+
+@pytest.fixture
+def example_set_filtros(example_ficha_fuente: FichaFuente) -> SetFiltros:
+    return SetFiltros(
+        source_id=example_ficha_fuente.source_id,
+        indice=0,
+        filtros=[
+            {"tipo": "keywords", "valor": ["Data Engineer", "Analista de Datos"]},
+            {"tipo": "ubicacion", "valor": "Madrid"},
+            {"tipo": "modalidad", "valor": "remoto"},
+        ],
+    )
+
+
+@pytest.fixture
+def example_politicas_captura() -> PoliticasCaptura:
+    return PoliticasCaptura(
+        max_paginas=5,
+        max_ofertas_por_corrida=25,
+        pausa_entre_lotes_segundos=10,
+        estrategia_anti_bloqueo="pausa_aleatoria",
+    )
+
+
+@pytest.fixture
+def example_run_context() -> RunContext:
+    config_fuentes = [
+        {
+            "source_id": "linkedin",
+            "nombre": "LinkedIn",
+            "ficha_acceso": {
+                "url": "https://www.linkedin.com/jobs/search",
+                "tipo_acceso": "con_autenticacion",
+                "credenciales_referencia": ["LINKEDIN_EMAIL", "LINKEDIN_PASSWORD"],
+                "criterio_exito": "global-nav",
+                "timeout_segundos": 30,
+            },
+            "sets_de_filtros": [
+                {
+                    "set_indice": 0,
+                    "filtros": [
+                        {"tipo": "keywords", "valor": ["Data Engineer"]},
+                    ],
+                }
+            ],
+            "politicas_de_captura": {
+                "max_paginas": 2,
+                "max_ofertas_por_corrida": 10,
+                "pausa_entre_lotes_segundos": 1,
+                "estrategia_anti_bloqueo": "none",
+            },
+        }
+    ]
+    return RunContext(config_fuentes=config_fuentes, run_id="COR-0001")
+
+
+@pytest.fixture
+def example_entry_result() -> EntryResult:
+    return EntryResult(estado="exito", evidencia_acotada="global-nav", numero_de_intentos=1)
+
+
+@pytest.fixture
+def example_entry_result_fallo() -> EntryResult:
+    return EntryResult(
+        estado="error",
+        codigo_motivo="bloqueo_plataforma",
+        evidencia_acotada="captcha",
+    )
+
+
+@pytest.fixture
+def example_search_result() -> SearchResult:
+    ofertas = [
+        Offer(
+            url="https://www.linkedin.com/jobs/view/12345",
+            titulo="Data Engineer",
+            descripcion_original="",
+            fuente_id="linkedin",
+            set_indice=0,
+            id_externo_url="12345",
+        ),
+        Offer(
+            url="https://www.linkedin.com/jobs/view/12346",
+            titulo="Analista de Datos",
+            descripcion_original="",
+            fuente_id="linkedin",
+            set_indice=0,
+            id_externo_url="12346",
+        ),
+    ]
+    return SearchResult(
+        estado="ok",
+        ofertas_primera_pagina=ofertas,
+        estado_paginacion="hay_mas",
+        total_declarado=42,
+        set_indice=0,
+        numero_de_intentos=1,
+    )
+
+
+@pytest.fixture
+def example_capture_batch() -> CaptureBatch:
+    ofertas = [
+        Offer(
+            url="https://www.linkedin.com/jobs/view/12345",
+            titulo="Data Engineer",
+            descripcion_original="Descripcion de prueba",
+            fuente_id="linkedin",
+            set_indice=0,
+            id_externo_url="12345",
+        )
+    ]
+    return CaptureBatch(
+        ofertas=ofertas,
+        run_id="COR-0001",
+        source_id="linkedin",
+        session_id="SES-0001",
+        set_indice=0,
+        paginas_consumidas=1,
     )
