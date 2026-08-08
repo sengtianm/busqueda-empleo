@@ -6,7 +6,7 @@
 
 Automated solution that discovers, collects, prepares, evaluates, processes, and manages job opportunities, reducing the time and effort of the job search while supporting the user's decision-making.
 
-**Current status**: MVP in progress. Phases 0-3 completed (infrastructure, shared services, prompts tested with `gemma4:31b-cloud`). Current work: Phase 4 — Module 1 (Opportunity Discovery) on branch `fase-4`; sub-phase 4.1 (INICIO node) implemented and validated, pending approval. Phases 5-9 pending. See `docs/history/tracker.md` for the authoritative status.
+**Current status**: MVP in progress. Phases 0-3 completed (infrastructure, shared services, prompts tested with `gemma4:31b-cloud`). Current work: Phase 4 — Module 1 (Opportunity Discovery) on branch `fase-4`; sub-phase 4.1 (INICIO + 3 control nodes) implemented and validated. Phases 5-9 pending. See `docs/history/tracker.md` for the authoritative status.
 
 ## Objective
 
@@ -118,7 +118,7 @@ Never work on more than one task at a time.
 
 - `ruff check .` — Lint (E/F/I/N/W rules, line length 100)
 - `mypy .` — Type check (strict)
-- `pytest tests/` — Test suite (currently 123 passing)
+- `pytest tests/` — Test suite (currently 136 passing)
 
 Note: local venv runs Python 3.14.6 (3.12 unavailable).
 

@@ -23,14 +23,13 @@
 **ID:** `ses_01ebcd885ffe7UB5IsfCrylV90` · **Branch:** `fase-4`
 
 **Topics:**
-- Sub-fase 4.1 execution: INICIO node of the Discovery flow (technical sheet v1.3, Section 1)
+- Sub-fase 4.1 complete: INICIO node + 3 control nodes (existence, iteration, selection) of the Discovery flow (technical sheet v1.0/v1.3)
 - Branch `fase-4` created from `main`; Phase 4 work restricted to it, no merge without authorization
-- `run_context.py`: `permitir_vacio` parameter (empty source list is not an INICIO error)
+- `run_context.py`: `permitir_vacio` parameter; new context fields (`fuente_corriente`, `posicion_fuente_corriente`, `motivo_terminacion`, `timestamp_terminacion`)
 - `shared/persistence.py`: atomic lock acquisition (`BEGIN IMMEDIATE`), `forzar` overwrite with CAS, `probe_write`, `write_corrida`, `write_evento`, public `umbral_obsolescencia_minutos`
-- `inicio.py`: 7 steps, ERR-01..ERR-12, controlled concurrency termination, ERR-12 source discard, run `en_ejecucion` registration
-- Reviewer cycle: 1 blocker (lock atomicity) + 1 major (source_id/nombre validation) + minors fixed
-- Fixes: obsolete-lock semantics unified (umbral ≤ 0 → never stale), strategy validation per DOC-09, global defaults in capture policies, ES identifiers exception authorized
-- Validation: 123 tests passing, ruff 0, mypy 0
+- `control_fuentes.py`: 3 nodes, pure context evaluation, ERR-01..03 local codes, termination reasons fixed on context (sin_fuentes/corrida_completada), traceability run_id+source_id
+- Reviewer cycle: blockers resolved, minors fixed (iterador range validation, run_id empty → Loguru-only, atomic mutation docs)
+- Validation: 136 tests passing, ruff 0, mypy 0
 
 **Decisions:**
 - INICIO validates `source_id`/`nombre` required to discard with ERR-12 instead of aborting with ERR-10
@@ -40,8 +39,8 @@
 - Decisions from previous sessions remain in effect
 
 **Status:**
-- Phase 4.1 ⏳: INICIO node done and validated; the 3 decision nodes pending
-- Ruff 0, mypy 0 (29 files), pytest 123/123
+- Phase 4.1 ✅: INICIO + 3 control nodes done and validated
+- Ruff 0, mypy 0 (31 files), pytest 136/136
 - Branch: `fase-4`
 
 ---

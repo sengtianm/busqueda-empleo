@@ -61,6 +61,10 @@ class RunContext:
         self.bloqueo_adquirido = False
         self.session_id: str | None = None
         self.handle_sesion: Any | None = None
+        self.fuente_corriente: FichaFuente | None = None
+        self.posicion_fuente_corriente: int = -1
+        self.motivo_terminacion: str = ""
+        self.timestamp_terminacion: str = ""
         self.entry_result: EntryResult | None = None
         self.search_result: SearchResult | None = None
         self.capture_batch: CaptureBatch | None = None
@@ -230,6 +234,10 @@ class RunContext:
         self.bloqueo_adquirido = False
         self.session_id = None
         self.handle_sesion = None
+        self.fuente_corriente = None
+        self.posicion_fuente_corriente = -1
+        self.motivo_terminacion = ""
+        self.timestamp_terminacion = ""
         self.entry_result = None
         self.search_result = None
         self.capture_batch = None
