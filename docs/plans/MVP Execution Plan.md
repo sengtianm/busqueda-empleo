@@ -251,21 +251,17 @@ pytest tests/ -v
 
 ## Phase 4. Module 1 — Opportunity Discovery
 
-> **Build order:** each node is built one at a time, strictly in flow order, following its canonical specification in `docs/diagrams/Ficha técnica - Diagrama de flujo (Descubrimiento de oportunidades).md` (technical sheet, which together with the flow diagram is the authoritative source for this module). Each node goes through its own complete work cycle (analysis → plan → implementation → validation → close, per AGENTS.md) and is approved before the next one begins. The six decision nodes act as contract validators of their immediate predecessor.
+> **Build strategy:** functional sub-phases that group nodes by testable unit, following its canonical specification in `docs/diagrams/Ficha técnica - Diagrama de flujo (Descubrimiento de oportunidades).md` (technical sheet, which together with the flow diagram is the authoritative source for this module). Each sub-phase goes through its own complete work cycle (analysis → plan → implementation → validation → close, per AGENTS.md) and is approved before the next one begins. The six decision nodes act as contract validators of their immediate predecessor.
 
-1. **"INICIO"** (spec v1.3) — instantiate the run and initialize the execution context: `run_id`, global configuration validation (including unique source identifiers), database availability, concurrency lock, per-source validation with discarded-source events (ERR-12), and run state (source iterator + counters).
-2. Decision **"¿Existe al menos una fuente/plataforma de empleo configurada?"** (spec v1.0) — Sí → next node; No → Finalizar Proceso with motive `sin_fuentes`.
-3. Decision **"¿Quedan fuentes por procesar en esta corrida?"** (spec v1.0) — Sí → next node; No → Finalizar Proceso with motive `corrida_completada`.
-4. **"Seleccionar la siguiente fuente pendiente"** (spec v1.0) — advance the iterator, mark the source as processed at selection time, set the current source exposing its access parameters and basic filter sets.
-5. **"Entrar a la fuente seleccionada"** (spec v1.1) — resolve credentials, open the session channel, access the platform within the configured timeout, apply conditional retries (`fuente_inalcanzable`, `timeout_ingreso`), build `entry_result`, and create `session_id` only on success.
-6. Decision **"¿El ingreso fue exitoso?"** (spec v1.0) — Sí → apply filter sets; No → register in "errores o sucesos".
-7. **"Aplicar los filtros básicos establecidos para esa fuente/plataforma para encontrar ofertas laborales"** (spec v1.1) — per-set search: set iterator (reset on source change), execute the search within the session, interpret the response and build `search_result` (first-page references + pagination state + `set_indice`).
-8. Decision **"¿Se encontraron ofertas?"** (spec v1.1) — Sí → capture; No → register and continue with the remaining sets.
-9. **"Capturar ofertas"** (spec v1.0) — capture batches applying the effective capture policies (`max_paginas`, `max_ofertas_por_corrida`, `pausa_entre_lotes`, anti-block strategy), write the session audit on first batch of each set, and build `capture_batch` + `estado_captura`.
-10. **"Registrar ofertas capturadas en 'Ofertas Totales'"** (spec v1.0) — transactional raw insert of the batch with full traceability (`run_id`, `source_id`, `session_id`, `set_indice`, `id_externo_url`); no deduplication (belongs to Module 2).
-11. Decision **"¿Quedan ofertas por capturar en la búsqueda actual (según políticas)?"** (spec v1.0) — Sí → next batch; No → set evaluation.
-12. Decision **"¿Quedan sets de filtros por aplicar en esta fuente?"** (spec v1.0) — Sí → next set; No (including source compromised by Grupo A codes or limit reached) → source iteration.
-13. **"Finalizar Proceso"** (spec draft — approval items open) — persist the termination event, release the concurrency lock (only if owned by this run), and close open resources.
+| Sub-phase | Nodes included | Type |
+|---|---|---|
+| 4.1 — Startup and source control | INICIO (v1.3) + ¿Existe al menos una fuente configurada? (v1.0) + ¿Quedan fuentes por procesar? (v1.0) + Seleccionar la siguiente fuente pendiente (v1.0) | 1 process + 2 decisions + 1 process |
+| 4.2 — Platform entry | Entrar a la fuente seleccionada (v1.1) + ¿El ingreso fue exitoso? (v1.0) | 1 process + 1 decision |
+| 4.3 — Filter search | Aplicar los filtros básicos (v1.1) + ¿Se encontraron ofertas? (v1.1) | 1 process + 1 decision |
+| 4.4 — Capture and registration | Capturar ofertas (v1.0) + Registrar ofertas en "Ofertas Totales" (v1.0) + ¿Quedan ofertas por capturar? (v1.0) + ¿Quedan sets de filtros por aplicar? (v1.0) | 2 processes + 2 decisions |
+| 4.5 — Closure and orchestrator | Finalizar Proceso (spec draft) + orquestador del flujo completo (conectar todos los nodos) | 1 terminal + 1 integration |
+
+> Within each sub-phase, nodes are implemented in flow order. Decision nodes are grouped with their immediately preceding process node because they are pure in-memory evaluations that only make sense with their contract input.
 
 ---
 

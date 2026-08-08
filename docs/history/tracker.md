@@ -80,24 +80,16 @@
 
 ## Phase 4. Module 1 — Opportunity Discovery
 
-> Build strategy: node-by-node, strictly in flow order per the technical sheet (Ficha técnica — Diagrama de flujo, Módulo 1). Each node goes through its own work cycle. See the MVP Execution Plan Phase 4.
+> Build strategy: functional sub-phases grouping nodes by testable unit. Each sub-phase goes through its own work cycle. See the MVP Execution Plan Phase 4.
 
-| # | Node (ficha spec) | Source docs | Status | Notes |
-|---|------|-------------|--------|-------|
-| 0 | Prerequisite: update DOC-13 and Document 13A | Análisis comparativo M1 (2026-08-07) | ✅ | D1 (active como atributo de catálogo), D2 (almacén único SQLite con 5 tablas lógicas del M1), D3 (auditoría de sesión mínima — 8 campos), C5 (ofertas con estado `discovered`); Evento formalizado (run_id obligatorio, tipología error/suceso, código, evidencia); entidades nuevas Corrida, Sesion, Bloqueo; inventario, modelo lógico, diccionario y ERD actualizados (13A v1.3). |
-| 1 | INICIO (v1.3) | Ficha técnica | ⬜ | Run instantiation, config, DB, concurrency lock, source validation. |
-| 2 | ¿Existe al menos una fuente configurada? (v1.0) | Ficha técnica | ⬜ | Decision node. |
-| 3 | ¿Quedan fuentes por procesar en esta corrida? (v1.0) | Ficha técnica | ⬜ | Decision node. |
-| 4 | Seleccionar la siguiente fuente pendiente (v1.0) | Ficha técnica | ⬜ | |
-| 5 | Entrar a la fuente seleccionada (v1.1) | Ficha técnica, DOC-09, Annex 9A | ⬜ | LinkedIn login, credentials, retries. |
-| 6 | ¿El ingreso fue exitoso? (v1.0) | Ficha técnica | ⬜ | Decision node. |
-| 7 | Aplicar filtros básicos (v1.1) | Ficha técnica, DOC-09 | ⬜ | Search by filter sets. |
-| 8 | ¿Se encontraron ofertas? (v1.1) | Ficha técnica | ⬜ | Decision node. |
-| 9 | Capturar ofertas (v1.0) | Ficha técnica, DOC-09 | ⬜ | Capture policies + HTML parsing → Offer. |
-| 10 | Registrar ofertas en "Ofertas Totales" (v1.0) | Ficha técnica, DOC-13, DOC-04 | ⬜ | Raw transactional insert. |
-| 11 | ¿Quedan ofertas por capturar? (v1.0) | Ficha técnica | ⬜ | Decision node. |
-| 12 | ¿Quedan sets de filtros por aplicar? (v1.0) | Ficha técnica | ⬜ | Decision node. |
-| 13 | Finalizar Proceso (spec draft) | Ficha técnica | ⬜ | Termination, lock release. |
+| # | Sub-phase (nodes) | Source docs | Status | Notes |
+|---|---|---|---|---|
+| 0 | Prerequisite: preparation plan (7 phases) completed | Análisis comparativo M1, Plan de Preparación | ✅ | DOC-13/13A, DOC-04, DOC-06, DOC-01, DOC-12, DOC-09/9A, DOC-00/5A, config.yaml, models.py, persistence.py, errors.py, retry.py, conftest.py, discovery/ scaffold, linkedin adapter. 102 tests passing. |
+| 4.1 | Startup and source control (INICIO + 3 nodes) | Ficha técnica | ⬜ | Run instantiation, config, DB, concurrency lock, source validation, source iteration. |
+| 4.2 | Platform entry (2 nodes) | Ficha técnica, DOC-09, Annex 9A | ⬜ | LinkedIn login, credentials, conditional retries, entry_result. |
+| 4.3 | Filter search (2 nodes) | Ficha técnica, DOC-09 | ⬜ | Set iterator, adapter search, search_result. |
+| 4.4 | Capture and registration (4 nodes) | Ficha técnica, DOC-09, DOC-13, DOC-04 | ⬜ | Capture policies, batch write, Grupo A/B, pagination loop. |
+| 4.5 | Closure and orchestrator (2 nodes) | Ficha técnica | ⬜ | Termination, lock release, full flow integration. |
 
 ---
 
