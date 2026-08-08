@@ -19,11 +19,19 @@ class BaseError(Exception):
         severity: Severity = Severity.MEDIUM,
         source_module: str = "",
         offer_id: str | None = None,
+        run_id: str | None = None,
+        source_id: str | None = None,
+        session_id: str | None = None,
+        set_indice: int | None = None,
     ) -> None:
         self.code = code
         self.severity = severity
         self.source_module = source_module
         self.offer_id = offer_id
+        self.run_id = run_id
+        self.source_id = source_id
+        self.session_id = session_id
+        self.set_indice = set_indice
         self.timestamp = datetime.now(timezone.utc)
         super().__init__(message)
 
@@ -33,6 +41,14 @@ class BaseError(Exception):
             base += f" | module: {self.source_module}"
         if self.offer_id:
             base += f" | offer: {self.offer_id}"
+        if self.run_id:
+            base += f" | run: {self.run_id}"
+        if self.source_id:
+            base += f" | source: {self.source_id}"
+        if self.session_id:
+            base += f" | session: {self.session_id}"
+        if self.set_indice is not None:
+            base += f" | set: {self.set_indice}"
         return base
 
     def to_dict(self) -> dict[str, Any]:
@@ -42,6 +58,10 @@ class BaseError(Exception):
             "severity": self.severity.name,
             "source_module": self.source_module,
             "offer_id": self.offer_id,
+            "run_id": self.run_id,
+            "source_id": self.source_id,
+            "session_id": self.session_id,
+            "set_indice": self.set_indice,
             "timestamp": self.timestamp.isoformat(),
         }
 

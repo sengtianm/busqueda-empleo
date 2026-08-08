@@ -13,6 +13,10 @@ PREFIXES: dict[str, str] = {
     "empresas": "EMP",
     "ubicaciones": "UBI",
     "ofertas": "OFE",
+    "corridas": "COR",
+    "sesiones": "SES",
+    "eventos": "EVT",
+    "bloqueo": "BLO",
 }
 
 JSON_COLUMNS: set[str] = {
@@ -70,8 +74,8 @@ ESQUEMAS: dict[str, str] = {
         "id TEXT PRIMARY KEY,"
         "source_identifier TEXT DEFAULT '',"
         "url TEXT NOT NULL,"
-        "titulo TEXT NOT NULL,"
-        "descripcion_original TEXT NOT NULL,"
+        "titulo TEXT DEFAULT '',"
+        "descripcion_original TEXT DEFAULT '',"
         "fecha_publicacion TEXT DEFAULT '',"
         "discovery_date TEXT DEFAULT '',"
         "estado TEXT DEFAULT 'discovered' "
@@ -82,10 +86,52 @@ ESQUEMAS: dict[str, str] = {
         "last_edit_date TEXT DEFAULT '',"
         "fuente_id TEXT REFERENCES fuentes(id),"
         "empresa_id TEXT REFERENCES empresas(id),"
-        "ubicacion_id TEXT REFERENCES ubicaciones(id)"
+        "ubicacion_id TEXT REFERENCES ubicaciones(id),"
+        "run_id TEXT DEFAULT '',"
+        "session_id TEXT DEFAULT '',"
+        "set_indice INTEGER DEFAULT '',"
+        "id_externo_url TEXT DEFAULT ''"
         ")"
     ),
-
+    "corridas": (
+        "CREATE TABLE IF NOT EXISTS corridas ("
+        "run_id TEXT PRIMARY KEY,"
+        "timestamp_inicio TEXT NOT NULL,"
+        "estado TEXT NOT NULL"
+        ")"
+    ),
+    "eventos": (
+        "CREATE TABLE IF NOT EXISTS eventos ("
+        "evento_id TEXT PRIMARY KEY,"
+        "run_id TEXT NOT NULL,"
+        "source_id TEXT DEFAULT '',"
+        "session_id TEXT DEFAULT '',"
+        "set_indice INTEGER DEFAULT '',"
+        "timestamp TEXT NOT NULL,"
+        "tipo TEXT NOT NULL CHECK(tipo IN ('error','suceso')),"
+        "codigo TEXT NOT NULL,"
+        "evidencia TEXT DEFAULT '',"
+        "offer_id TEXT DEFAULT ''"
+        ")"
+    ),
+    "sesiones": (
+        "CREATE TABLE IF NOT EXISTS sesiones ("
+        "session_id TEXT PRIMARY KEY,"
+        "run_id TEXT NOT NULL,"
+        "source_id TEXT NOT NULL,"
+        "set_indice INTEGER DEFAULT '',"
+        "timestamp TEXT NOT NULL,"
+        "total_declarado INTEGER DEFAULT '',"
+        "conteo INTEGER DEFAULT '',"
+        "estado TEXT NOT NULL"
+        ")"
+    ),
+    "bloqueo": (
+        "CREATE TABLE IF NOT EXISTS bloqueo ("
+        "run_id TEXT PRIMARY KEY,"
+        "timestamp TEXT NOT NULL"
+        ")"
+    ),
 }
 
 
@@ -151,12 +197,42 @@ def init_db() -> None:
     conn = _connection()
     try:
         tablas = ("secuencia_ids", "fuentes", "empresas", "ubicaciones",
-                  "ofertas")
+                  "ofertas", "corridas", "eventos", "sesiones", "bloqueo")
         for nombre_tabla in tablas:
             conn.execute(ESQUEMAS[nombre_tabla])
+        _migrate_ofertas(conn)
         conn.commit()
     finally:
         conn.close()
+
+
+def _migrate_ofertas(conn: sqlite3.Connection) -> None:
+    """C2 migration: "lo crudo se conserva crudo".
+
+    SQLite cannot drop a NOT NULL constraint in place, so the `ofertas` table
+    is rebuilt without NOT NULL on `titulo` and `descripcion_original`, allowing
+    capturing raw listings that lack those fields. The columns of traceability
+    (`run_id`, `session_id`, `set_indice`, `id_externo_url`) are included in the
+    new schema. Migration is idempotent: it only runs when the current schema
+    still declares `titulo NOT NULL`.
+    """
+    columnas = {
+        fila["name"]: fila["notnull"]
+        for fila in conn.execute("PRAGMA table_info(ofertas)").fetchall()
+    }
+    if "titulo" in columnas and columnas["titulo"] == 0:
+        return
+    conn.execute(
+        ESQUEMAS["ofertas"].replace("TABLE IF NOT EXISTS ofertas", "TABLE ofertas_nueva")
+    )
+    comunes = [c for c in conn.execute("PRAGMA table_info(ofertas)").fetchall()]
+    nombres = [fila["name"] for fila in comunes]
+    lista = ", ".join(nombres)
+    conn.execute(
+        f"INSERT INTO ofertas_nueva ({lista}) SELECT {lista} FROM ofertas"
+    )
+    conn.execute("DROP TABLE ofertas")
+    conn.execute("ALTER TABLE ofertas_nueva RENAME TO ofertas")
 
 
 def generate_id(tabla: str) -> str:
@@ -240,5 +316,89 @@ def update(tabla: str, id_valor: str, datos: dict[str, Any]) -> bool:
         cursor = conn.execute(sql, d)
         conn.commit()
         return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+
+def write_batch(tabla: str, filas: list[dict[str, Any]]) -> None:
+    if not filas:
+        return
+    now = _now()
+    preparadas: list[dict[str, Any]] = []
+    for datos in filas:
+        d = _serialize(datos)
+        if "id" not in d or not d["id"]:
+            d["id"] = generate_id(tabla)
+        if not d.get("creation_date"):
+            d["creation_date"] = now
+        d["last_edit_date"] = now
+        preparadas.append(d)
+
+    columnas = sorted({k for d in preparadas for k in d.keys()})
+    placeholders = ", ".join(f":{k}" for k in columnas)
+    sql = f"INSERT INTO {tabla} ({', '.join(columnas)}) VALUES ({placeholders})"
+    conn = _connection()
+    try:
+        for d in preparadas:
+            conn.execute(sql, {k: d.get(k) for k in columnas})
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def _umbral_obsolescencia_minutos() -> int:
+    cfg = load().get("concurrencia", {})
+    return int(cfg.get("umbral_obsolescencia_minutos", 120))
+
+
+def acquire_lock(run_id: str, timestamp: str) -> bool:
+    conn = _connection()
+    try:
+        fila = conn.execute(
+            "SELECT * FROM bloqueo ORDER BY timestamp DESC LIMIT 1"
+        ).fetchone()
+        if fila is None:
+            conn.execute(
+                "INSERT OR REPLACE INTO bloqueo (run_id, timestamp) VALUES (?, ?)",
+                (run_id, timestamp),
+            )
+            conn.commit()
+            return True
+        actual = datetime.strptime(fila["timestamp"], "%Y-%m-%d %H:%M:%S")
+        umbral_minutos = _umbral_obsolescencia_minutos()
+        vigente = (
+            datetime.now() - actual
+        ).total_seconds() / 60 < umbral_minutos if umbral_minutos > 0 else True
+        if vigente:
+            return False
+        conn.execute(
+            "INSERT OR REPLACE INTO bloqueo (run_id, timestamp) VALUES (?, ?)",
+            (run_id, timestamp),
+        )
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def release_lock(run_id: str) -> None:
+    conn = _connection()
+    try:
+        conn.execute("DELETE FROM bloqueo WHERE run_id = ?", (run_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def check_lock() -> dict[str, Any] | None:
+    conn = _connection()
+    try:
+        fila = conn.execute(
+            "SELECT * FROM bloqueo ORDER BY timestamp DESC LIMIT 1"
+        ).fetchone()
+        return dict(fila) if fila is not None else None
     finally:
         conn.close()
