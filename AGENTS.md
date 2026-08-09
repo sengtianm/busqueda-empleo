@@ -85,7 +85,7 @@ Work cycle: `Context → Define task → Analyze → Plan → Implement → Veri
 | `/check-implementacion` | Implement | User-invoked: approves the plan and authorizes implementation |
 | `/check-tests` | Verify | Only when the request requires tests; otherwise skipped |
 | `/check-cierre` | Close | **Automatic**: the agent self-verifies after implementation, including the reviewers |
-| `/save` | Save | User-invoked when closing the session |
+| `/save` | Save | User-invoked when closing the session; never automatic or anticipated by the agent |
 
 For each task:
 
@@ -170,6 +170,8 @@ Reading order: DOC-00 first, then the document related to the current task, then
 All official documentation lives in `docs/` and is the single source of truth.
 
 ## Session History
+
+`/save` is the only command that updates the session history, the tracker and their commit/push, and it runs **only** when the user invokes it; the agent never executes it — nor anticipates it — on its own initiative.
 
 At the end of each session, update `docs/history/session history.md` with one entry per OpenCode session (create or update the entry for the current session number), newest first, cumulative, in three sections:
 
