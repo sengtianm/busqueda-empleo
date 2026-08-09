@@ -10,6 +10,7 @@
  
 | № | Date | Session ID | Summary |
 |---|------|------------|---------|
+| 14 | 09/08/2026 | `ses_01bcc78adffemcqFEiZxT52Eli` | Sub-fase 4.4: capture/registration nodes implemented, audited, and post-audit fixes applied (FK-free schema, name columns, upsert tests) |
 | 13 | 08/08/2026 | `ses_01be77680ffeuyoKct4Qrfx1GG` | Repo sync to fase-4; new `/save` section with general git commit and push guidance |
 | 12 | 08/08/2026 | `ses_01c089ce2ffe9MvQT4F1pC0MJN` | Sub-fase 4.2 deep audit + post-audit fixes (credentials mapping, playwright lifecycle) |
 | 11 | 08/08/2026 | `ses_01c312689ffewPDBUxLcQIRb5L` | Sub-fase 4.3: Filter search + generic register implemented and validated (171 tests) |
@@ -20,6 +21,33 @@
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
  
+---
+
+## Session 14 — 09/08/2026
+
+**ID:** `ses_01bcc78adffemcqFEiZxT52Eli` · **Branch:** `fase-4`
+
+**Topics:**
+- Context recovery: AGENTS.md, MVP Plan, tracker, session history
+- Sub-fase 4.4 implementation: capture nodes (capturar_ofertas, registrar_ofertas, quedan_ofertas_por_capturar, quedan_sets_por_aplicar)
+- upsert_oferta by id_externo_url + timestamp_ultima_verificacion (+ read_table filters + migration)
+- First upsert commit reverted on request; reimplementation with full test coverage (22 node tests)
+- Second audit: FK constraint failed on capture (empty empresa_id/ubicacion_id referencing missing catalogs)
+- Post-audit fixes: FK-free ofertas schema, empresa_nombre/ubicacion_nombre columns, idempotent migration, 5 upsert integration tests
+- Docs aligned: ficha técnica NOTA + RN-02/03, DOC-13 decision D4, DOC-13A v1.4, tracker 4.4 ✅, AGENTS.md update
+- Fixed pre-existing migration bug on real DB (obsolete Spanish columns)
+
+**Decisions:**
+- Dedup by id_externo_url stays in Module 1 (upsert), documented as approved deviation over the 1.0 spec
+- empresa_id/ubicacion_id stored NULL in the MVP; raw adapter strings kept in empresa_nombre/ubicacion_nombre; fuente_id stores the source_id with no FK constraint (decision D4 2026-08-09)
+- Schema migrations copy only columns present in the target schema (intersection) to survive legacy DBs
+- Decisions from previous sessions remain in effect
+
+**Status:**
+- Sub-fase 4.4 ✅ complete: capture/registration nodes validated with audit fixes
+- Ruff 0, mypy 0 (39 files), pytest 199/199
+- Branch: `fase-4`; fix committed on it (no merge)
+
 ---
 
 ## Session 13 — 08/08/2026
