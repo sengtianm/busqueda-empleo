@@ -92,7 +92,8 @@ ESQUEMAS: dict[str, str] = {
         "run_id TEXT DEFAULT '',"
         "session_id TEXT DEFAULT '',"
         "set_indice INTEGER DEFAULT '',"
-        "id_externo_url TEXT DEFAULT ''"
+        "id_externo_url TEXT DEFAULT '',"
+        "timestamp_ultima_verificacion TEXT DEFAULT ''"
         ")"
     ),
     "corridas": (
@@ -203,6 +204,7 @@ def init_db() -> None:
         for nombre_tabla in tablas:
             conn.execute(ESQUEMAS[nombre_tabla])
         _migrate_ofertas(conn)
+        _migrate_ofertas_timestamp_ultima_verificacion(conn)
         conn.commit()
     finally:
         conn.close()
@@ -237,6 +239,23 @@ def _migrate_ofertas(conn: sqlite3.Connection) -> None:
     conn.execute("ALTER TABLE ofertas_nueva RENAME TO ofertas")
 
 
+def _migrate_ofertas_timestamp_ultima_verificacion(conn: sqlite3.Connection) -> None:
+    """4.4 migration: ensure `ofertas.timestamp_ultima_verificacion` exists.
+
+    The capture upsert refreshes this column for re-seen listings. The column
+    is added on first init if absent; subsequent inits are no-ops.
+    """
+    columnas = {
+        fila["name"]
+        for fila in conn.execute("PRAGMA table_info(ofertas)").fetchall()
+    }
+    if "timestamp_ultima_verificacion" not in columnas:
+        conn.execute(
+            "ALTER TABLE ofertas ADD COLUMN "
+            "timestamp_ultima_verificacion TEXT DEFAULT ''"
+        )
+
+
 def generate_id(tabla: str) -> str:
     prefijo = PREFIXES.get(tabla)
     if prefijo is None:
@@ -261,10 +280,17 @@ def generate_id(tabla: str) -> str:
         conn.close()
 
 
-def read_table(tabla: str) -> list[dict[str, Any]]:
+def read_table(
+    tabla: str, filtros: dict[str, Any] | None = None
+) -> list[dict[str, Any]]:
     conn = _connection()
     try:
-        cursor = conn.execute(f"SELECT * FROM {tabla}")
+        if filtros:
+            condiciones = " AND ".join(f"{k} = :{k}" for k in filtros.keys())
+            sql = f"SELECT * FROM {tabla} WHERE {condiciones}"
+            cursor = conn.execute(sql, dict(filtros))
+        else:
+            cursor = conn.execute(f"SELECT * FROM {tabla}")
         results: list[dict[str, Any]] = []
         for f in cursor.fetchall():
             r = _deserialize(f)
@@ -473,6 +499,32 @@ def write_corrida(datos: dict[str, Any]) -> None:
         conn.commit()
     finally:
         conn.close()
+
+
+def upsert_oferta(oferta: dict[str, Any]) -> str:
+    """Inserts or updates an offer by `id_externo_url`.
+
+    If a row with the same `id_externo_url` already exists, only its
+    `timestamp_ultima_verificacion` is refreshed and its `id` is returned.
+    Otherwise a new `id` is generated and the row is inserted.
+
+    Returns:
+        The offer `id` (str).
+    """
+    d = dict(oferta)
+    id_externo = d.get("id_externo_url")
+    if id_externo:
+        existentes = read_table("ofertas", {"id_externo_url": id_externo})
+        if existentes:
+            update(
+                "ofertas",
+                cast(str, existentes[0]["id"]),
+                {"timestamp_ultima_verificacion": _now()},
+            )
+            return cast(str, existentes[0]["id"])
+    if "id" not in d or not d["id"]:
+        d["id"] = generate_id("ofertas")
+    return write_row("ofertas", d)
 
 
 def write_evento(datos: dict[str, Any]) -> str:
