@@ -22,11 +22,23 @@ Rules:
 
 After updating the documentation, record it in a single commit and share it:
 
-- Verify the scope first: `git status` and `git diff` must show only the files expected from this session. Any unrelated untracked file must not be included.
-- Exclude what is never committed: secrets, `.env` (but not `.env.template`, which is versioned), `data/*.db`, `temp/`, `logs/`, and any unrelated file.
-- Stage explicitly, never `git add -A` by default, and review `git diff --cached` before committing to catch anything unintended.
-- Commit in English, conventional format, imperative mood, subject ≤ 72 characters: `<type>(<scope>): <short summary>` (e.g. `docs(history): add session 13 entry`).
-- Commit only once per closing, when the documentation is finished and consistent.
-- Push the commit: `git push origin <current-branch>`. If the push fails (remote diverged), stop and report; never force-push.
-- Report the commit hash and the push result.
-- Merges and any branch push beyond this commit remain governed by the Version Control rules in AGENTS.md; they are never performed here.
+- The commit scope is the whole project: every file modified or created during
+  the session must be part of the commit (tracked changes and new files alike).
+  Nothing is left uncommitted.
+- Exclusions come only from `.gitignore` (secrets, `.env`, `data/*.db`,
+  `temp/`, `logs/`) — note `.env.template` is versioned and must be kept.
+- Verify with `git status` and `git diff`: the changes must match what the
+  session produced. If any non-ignored file is unexpected, stop and ask the
+  user instead of excluding it silently.
+- Stage everything project-wide (`git add -A`) after the check above, and
+  review `git diff --cached` before committing to confirm the staged content.
+- Commit in English, conventional format, imperative mood, subject
+  ≤ 72 characters: `<type>(<scope>): <short summary>` (e.g.
+  `docs(commands): ...`).
+- Commit only once per closing, when the documentation is finished and
+  consistent.
+- Push the commit: `git push origin <current-branch>`. If the push fails
+  (remote diverged), stop and report; never force-push.
+- Report the commit hash, the push result and confirm the worktree is clean.
+- Merges and any branch push beyond this commit remain governed by the
+  Version Control rules in AGENTS.md; they are never performed here.
