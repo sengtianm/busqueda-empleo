@@ -95,6 +95,9 @@ ESQUEMAS: dict[str, str] = {
         "id_externo_url TEXT DEFAULT ''"
         ")"
     ),
+    "_ofertas_alter_timestamp_ultima_verificacion": (
+        "ALTER TABLE ofertas ADD COLUMN timestamp_ultima_verificacion TEXT DEFAULT ''"
+    ),
     "corridas": (
         "CREATE TABLE IF NOT EXISTS corridas ("
         "run_id TEXT PRIMARY KEY,"
@@ -203,6 +206,7 @@ def init_db() -> None:
         for nombre_tabla in tablas:
             conn.execute(ESQUEMAS[nombre_tabla])
         _migrate_ofertas(conn)
+        _migrate_ofertas_timestamp_ultima_verificacion(conn)
         conn.commit()
     finally:
         conn.close()
@@ -235,6 +239,21 @@ def _migrate_ofertas(conn: sqlite3.Connection) -> None:
     )
     conn.execute("DROP TABLE ofertas")
     conn.execute("ALTER TABLE ofertas_nueva RENAME TO ofertas")
+
+
+def _migrate_ofertas_timestamp_ultima_verificacion(conn: sqlite3.Connection) -> None:
+    """4.4 migration: ensure `ofertas.timestamp_ultima_verificacion` exists.
+
+    The capture upsert updates this column for re-seen listings. The column
+    is added on first init if absent; subsequent inits are no-ops.
+    """
+    columnas = {
+        fila["name"]
+        for fila in conn.execute("PRAGMA table_info(ofertas)").fetchall()
+    }
+    if "timestamp_ultima_verificacion" in columnas:
+        return
+    conn.execute(ESQUEMAS["_ofertas_alter_timestamp_ultima_verificacion"])
 
 
 def generate_id(tabla: str) -> str:
@@ -473,6 +492,34 @@ def write_corrida(datos: dict[str, Any]) -> None:
         conn.commit()
     finally:
         conn.close()
+
+
+def upsert_oferta(oferta: dict[str, Any]) -> str:
+    """Inserts or updates an offer by `id_externo_url`.
+
+    If a row with the same `id_externo_url` exists, only its
+    `timestamp_ultima_verificacion` is refreshed and its `id` is returned.
+    Otherwise a new `id` is generated and the row is inserted.
+
+    Returns:
+        The offer `id` (str).
+    """
+    d = dict(oferta)
+    id_externo = d.get("id_externo_url")
+    if not id_externo:
+        raise PersistenceError("01", "upsert_oferta: id_externo_url is required")
+    existentes = read_table("ofertas")
+    for fila in existentes:
+        if fila.get("id_externo_url") == id_externo:
+            update(
+                "ofertas",
+                cast(str, fila["id"]),
+                {"timestamp_ultima_verificacion": _now()},
+            )
+            return cast(str, fila["id"])
+    if "id" not in d or not d["id"]:
+        d["id"] = generate_id("ofertas")
+    return write_row("ofertas", d)
 
 
 def write_evento(datos: dict[str, Any]) -> str:
