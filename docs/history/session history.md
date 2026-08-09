@@ -10,6 +10,7 @@
  
 | № | Date | Session ID | Summary |
 |---|------|------------|---------|
+| 13 | 08/08/2026 | `ses_01be77680ffeuyoKct4Qrfx1GG` | Repo sync to fase-4; new `/save` section with general git commit and push guidance |
 | 12 | 08/08/2026 | `ses_01c089ce2ffe9MvQT4F1pC0MJN` | Sub-fase 4.2 deep audit + post-audit fixes (credentials mapping, playwright lifecycle) |
 | 11 | 08/08/2026 | `ses_01c312689ffewPDBUxLcQIRb5L` | Sub-fase 4.3: Filter search + generic register implemented and validated (171 tests) |
 | 10 | 08/08/2026 | `ses_01d9bc3d2ffe0OwXiVc3Mw8NWO` | Sub-fase 4.2: Ingreso flow implemented (3 nodes) and validated (152 tests) |
@@ -19,6 +20,30 @@
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
  
+---
+
+## Session 13 — 08/08/2026
+
+**ID:** `ses_01be77680ffeuyoKct4Qrfx1GG` · **Branch:** `fase-4`
+
+**Topics:**
+- Context recovery and current status summary
+- Remote sync of last commit on fase-4 branch
+- Investigation: no documented rules existed for how to commit/push from /save
+- Drafted a general, phase-independent git commit + push section for the /save command
+- Added the section to the /save command file and pushed to fase-4
+
+**Decisions:**
+- Place the general git commit + push guidance in the /save command (not in AGENTS.md or elsewhere), keeping it close to the action it governs
+- Keep merges and branch pushes out of /save; those remain governed by AGENTS.md Version Control rules
+- Section covers: scope verification, excluded files, explicit staging, review of staged diff, conventional English commit message ≤ 72 chars, single commit per closing, push of the commit with no force-push
+- Decisions from previous sessions remain in effect
+
+**Status:**
+- /save section added, committed and pushed on fase-4 (no merge to main)
+- No code changes; ruff/mypy/pytest not applicable
+- Branch: `fase-4`
+
 ---
 
 ## Session 12 — 08/08/2026
