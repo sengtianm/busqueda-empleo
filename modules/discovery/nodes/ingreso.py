@@ -34,10 +34,9 @@ def ejecutar_ingreso(contexto: RunContext) -> ResultadoIngreso:
         )
 
     # Paso 2: Resolver credenciales
-    credenciales = None
     if ficha.tipo_acceso == "con_autenticacion":
         env_vars = load().get("_env", {})
-        credenciales = {}
+        valores: list[str] = []
         for ref in ficha.credenciales_referencia:
             val = env_vars.get(ref)
             if not val:
@@ -49,7 +48,7 @@ def ejecutar_ingreso(contexto: RunContext) -> ResultadoIngreso:
                     numero_de_intentos=0,
                 )
                 return ResultadoIngreso(estado="ok", contexto=contexto)
-            credenciales[ref] = val
+            valores.append(val)
 
     # Paso 3, 4, 5: Abrir canal y acceder con reintentos
     cfg_retries = load().get("retries", {})
@@ -77,6 +76,7 @@ def _ejecutar_ingreso_loop(
     playwright_instance = None
     browser = None
     page = None
+    playwright_activo = False
     attempt = 0
 
     try:
@@ -87,6 +87,7 @@ def _ejecutar_ingreso_loop(
                 # when exiting the block. We start it manually to keep the page open.
                 if playwright_instance is None:
                     playwright_instance = sync_playwright().start()
+                    playwright_activo = True
 
                 headless = load().get("browser", {}).get("headless", True)
                 browser = playwright_instance.chromium.launch(headless=headless)
@@ -113,6 +114,7 @@ def _ejecutar_ingreso_loop(
                 contexto.session_id = generate_id("sesiones")
                 contexto.handle_sesion = page
                 contexto.entry_result = res
+                playwright_activo = False  # se conserva la sesión para los nodos siguientes
                 return ResultadoIngreso(estado="ok", contexto=contexto)
 
             except FlowError as fe:
@@ -147,11 +149,14 @@ def _ejecutar_ingreso_loop(
                 logger.error(f"ERR-09: Error interno en nodo ingreso: {e}")
                 return ResultadoIngreso(estado="error", codigo="ERR-09", descripcion=str(e))
     finally:
-        # Ensure the playwright instance is stopped if the run was NOT successful
-        # Success is defined by having a session_id and handle_sesion assigned
-        if not (contexto.session_id and contexto.handle_sesion):
+        # El flag local es la fuente de verdad: si esta invocación arrancó
+        # un playwright y no estamos en éxito, lo cerramos. Esto evita leaks
+        # cuando llegan valores stale de session_id/handle_sesion desde una
+        # fuente previa (multi-fuente).
+        if playwright_activo:
             if playwright_instance:
                 playwright_instance.stop()
+            playwright_activo = False
 
     # Path unreachable with max_attempts > 0; satisfies mypy strict.
     return ResultadoIngreso(estado="error", codigo="ERR-09", descripcion="sin intentos")
@@ -159,8 +164,19 @@ def _ejecutar_ingreso_loop(
 
 
 def _obtener_credenciales(ficha: FichaFuente) -> dict[str, str]:
+    """Mapea las referencias declaradas en la ficha a las claves canónicas
+    que consume el adaptador (`username`, `password`).
+
+    Convención (MVP): ``credenciales_referencia[0]`` → ``username``,
+    ``credenciales_referencia[1]`` → ``password``. El resto de refs (si
+    existieran) se ignoran para mantener el contrato con el adaptador.
+    """
     env_vars = load().get("_env", {})
-    return {ref: env_vars.get(ref, "") for ref in ficha.credenciales_referencia}
+    valores = [env_vars.get(ref, "") for ref in ficha.credenciales_referencia]
+    return {
+        "username": valores[0] if len(valores) > 0 else "",
+        "password": valores[1] if len(valores) > 1 else "",
+    }
 
 
 def ingreso_exitoso(contexto: RunContext) -> ResultadoIngreso:

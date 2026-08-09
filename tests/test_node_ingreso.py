@@ -191,6 +191,33 @@ def test_ejecutar_ingreso_criterio_no_cumplido(
     assert _entry_result(mock_context).codigo_motivo == "criterio_no_cumplido"
 
 
+def test_ejecutar_ingreso_credenciales_claves_canonicas(
+    mock_context: RunContext,
+    mock_adapter: MagicMock,
+    mock_playwright: MagicMock,
+) -> None:
+    """El dict de credenciales entregado al adaptador usa las claves
+    canónicas `username` y `password`, no las referencias del .env.
+    """
+    ficha = mock_context.fuentes_filtradas[0]
+    ficha.tipo_acceso = "con_autenticacion"
+    ficha.credenciales_referencia = ["LINKEDIN_EMAIL", "LINKEDIN_PASSWORD"]
+    mock_context.fuente_corriente = ficha
+
+    with patch("modules.discovery.nodes.ingreso.load") as mock_load:
+        mock_load.return_value = {
+            "_env": {"LINKEDIN_EMAIL": "x@y.com", "LINKEDIN_PASSWORD": "s3cr3t"}
+        }
+        mock_adapter.enter_source.return_value = EntryResult(
+            estado="exito", evidencia_acotada="ok", numero_de_intentos=1
+        )
+
+        ejecutar_ingreso(mock_context)
+
+        creds_pasadas = mock_adapter.enter_source.call_args.args[2]
+        assert creds_pasadas == {"username": "x@y.com", "password": "s3cr3t"}
+
+
 def test_ejecutar_ingreso_fuente_ausente(mock_context: RunContext) -> None:
     mock_context.fuente_corriente = None
 
