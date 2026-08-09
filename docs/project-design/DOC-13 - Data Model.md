@@ -1,2260 +1,882 @@
-# Document 13 - Data Model
+# Documento 13 – Modelo de Datos (Optimizado)
 
-## 1. Purpose of the document
-
-This document defines the official data model for the job search automation.
-
-Its purpose is to establish, organize, and document the logical structure of the information used by the automation, ensuring that all entities, attributes, relationships, constraints, integrity rules, and persistence mechanisms are consistent with the objectives, scope, requirements, and architecture defined for the project.
-
-This document constitutes the official reference for the design, implementation, maintenance, and evolution of the data model. No element related to information management shall be added, modified, or removed without having been previously analyzed and documented in accordance with the criteria established in this document.
-
-The decisions documented herein must remain consistent with Documents 0 through 12, including the functional and non-functional requirements, the decision model, the data flow, the project standards, the error handling model, the folder architecture, the scope and objectives, the technology stack, and the general system architecture.
-
-The data model must guarantee the integrity, consistency, traceability, maintainability, and scalability of the information throughout the entire lifecycle of the job offers and the processes executed by the automation.
-
-Likewise, this document will serve as the foundation for the implementation of the persistence layer, data access, and MVP development, ensuring that all implementation decisions are supported by a previously analyzed, justified, and approved data model.
-
-Any modification to the data model must be documented, justified, and formally approved before being incorporated into the project, preserving historical traceability and coherence with the rest of the official documentation.
-
----
-
-## 2. Data model principles
-
-The design, implementation, maintenance, and evolution of the automation's data model must be carried out in accordance with the principles defined in this chapter.
-
-These principles constitute the official rules that must be respected during the definition of entities, attributes, relationships, constraints, validation rules, and any other component of the data model.
-
-Every decision related to the data model must be properly justified and remain consistent with the previously approved official documentation.
-
-The following official principles are established:
-
-### PMD-001. Data integrity
-
-The data model must permanently preserve the integrity of the information, avoiding inconsistent states or invalid relationships.
-
-### PMD-002. Consistency
-
-All stored information must remain consistent across the different modules, processes, and components of the automation.
-
-### PMD-003. Uniqueness
-
-Each entity must have mechanisms that allow unequivocal identification of each of its records where applicable.
-
-### PMD-004. Normalization
-
-The data model must minimize unnecessary information redundancy through a logical and structured organization of entities and their relationships.
-
-### PMD-005. No data duplication
-
-The same information must not be stored multiple times when it can be maintained through correctly defined relationships.
-
-### PMD-006. Modularity
-
-The data model must be organized in a modular fashion, facilitating its understanding, maintenance, and evolution.
-
-### PMD-007. Scalability
-
-The model structure must allow the incorporation of new entities, attributes, and relationships without requiring a significant reorganization of the existing model.
-
-### PMD-008. Traceability
-
-The data model must allow the reconstruction of the history of processes, decisions, and relevant changes made during the lifecycle of each job offer.
-
-### PMD-009. Auditability
-
-The information necessary for auditing and diagnosis must be preservable without affecting the integrity of the model.
-
-### PMD-010. Controlled persistence
-
-All persistent information must be stored according to clearly defined rules, avoiding orphaned, inconsistent, or unnecessary data.
-
-### PMD-011. Technology independence
-
-The data model must be defined independently of the database engine or any specific storage technology.
-
-### PMD-012. Data validation
-
-The model must facilitate the validation of data before its incorporation, modification, or use within the automation.
-
-### PMD-013. Maintainability
-
-The model structure must facilitate its updating, correction, and understanding throughout the entire useful life of the project.
-
-### PMD-014. Extensibility
-
-The model must allow the incorporation of new functional requirements through controlled extensions, preserving compatibility with existing information.
-
-### PMD-015. Information security
-
-The data model must facilitate the protection of the integrity, availability, and confidentiality of information in accordance with the project requirements.
-
-### PMD-016. Separation between logical model and physical model
-
-The conceptual and logical definition of the data must remain independent of its physical implementation in the database.
-
-### PMD-017. Compatibility with the general architecture
-
-The data model must be fully compatible with the general system architecture approved for the project.
-
-### PMD-018. Compatibility with the data flow
-
-The information structure must correctly support all transformations and movements defined in the official Data Flow.
-
-### PMD-019. Compatibility with the decision model
-
-The model must store all information necessary to support the approved Decision Model, preserving the traceability of each decision.
-
-### PMD-020. Controlled evolution
-
-Any modification to the data model must be documented, justified, and formally approved before being incorporated into the project.
-
----
-
-## General principles of the data model
-
-The data model must guarantee:
-
-- Integrity and consistency of information.
-- Elimination of unnecessary redundancies.
-- Modularity and maintainability.
-- Scalability and extensibility.
-- Traceability and auditability.
-- Technology independence.
-- Compatibility with the general system architecture.
-- Compatibility with the data flow and the decision model.
-- Controlled evolution of the model.
-- Coherence with all official project documentation.
-
----
-
-## 3. Objectives of the data model
-
-The objectives of the data model define the results that the information structure of the automation must achieve to efficiently, consistently, and traceably support all project processes.
-
-Each objective represents a capability that must be preserved during the design, implementation, maintenance, and evolution of the data model.
-
----
-
-### OMD-001. Centralize official information
-
-Establish a data model that acts as the official source of information for all modules, processes, and components of the automation.
-
----
-
-### OMD-002. Represent the project domain
-
-Model in a structured way all entities, relationships, and attributes necessary to represent the complete process of searching and processing job opportunities.
-
----
-
-### OMD-003. Guarantee information integrity
-
-Ensure that all stored information maintains its consistency, validity, and coherence throughout its entire lifecycle.
-
----
-
-### OMD-004. Support the offer lifecycle
-
-Allow the storage and tracking of all information generated from the discovery of a job offer until the completion of its processing.
-
----
-
-### OMD-005. Guarantee traceability
-
-Preserve the information necessary to reconstruct the history of states, decisions, transformations, and operations performed on each job offer.
-
----
-
-### OMD-006. Facilitate information exchange
-
-Provide a uniform structure that allows consistent information exchange between all modules of the automation.
-
----
-
-### OMD-007. Minimize redundancy
-
-Organize information in a way that avoids unnecessary storage of duplicate data, favoring reuse through appropriate relationships.
-
----
-
-### OMD-008. Facilitate auditing
-
-Allow the recording and querying of information necessary for auditing, diagnosis, and operational monitoring of the system.
-
----
-
-### OMD-009. Promote scalability
-
-Design a model that allows the incorporation of new entities, relationships, and attributes without significantly affecting the existing structure.
-
----
-
-### OMD-010. Promote maintainability
-
-Maintain a clear, modular, and consistent organization that facilitates the evolution and understanding of the data model.
-
----
-
-### OMD-011. Optimize information access
-
-Provide a structure that facilitates the queries, searches, and operations required by the different modules of the system.
-
----
-
-### OMD-012. Preserve technology independence
-
-Define the data model independently of the database engine and any specific storage technology.
-
----
-
-### OMD-013. Support project evolution
-
-Allow the controlled incorporation of new functional requirements without compromising compatibility with previously stored information.
-
----
-
-## General principles of data model objectives
-
-The data model objectives must:
-
-- Contribute directly to the fulfillment of the general project objectives.
-- Maintain coherence with all official documentation.
-- Guarantee the integrity, consistency, and traceability of information.
-- Facilitate integration between automation modules.
-- Promote the scalability and maintainability of the model.
-- Remain independent of specific technologies.
-- Serve as a reference for the design, validation, and evolution of the data model.
-
----
-
-## 4. General architecture of the data model
-
-The general architecture of the data model defines the conceptual organization of the information used by the job search automation.
-
-Its purpose is to structure the data model in a modular, coherent way aligned with the general system architecture, the data flow, and the previously defined functional processes.
-
-The organization established in this chapter constitutes the official model that must be respected during the design of all entities, relationships, attributes, and other components of the data model.
-
----
-
-### 4.1. Architectural model
-
-The data model adopts an architecture organized by functional domains, where each set of entities represents a specific responsibility within the automation.
-
-This organization facilitates domain understanding, reduces coupling between entities, and promotes the independent evolution of each functional area of the system.
-
----
-
-### 4.2. Opportunity discovery domain
-
-Groups the entities responsible for representing the information obtained during the process of identifying and collecting job offers.
-
-Entities belonging to this domain must store only the information corresponding to this stage of the operational flow.
-
----
-
-### 4.3. Initial preparation domain
-
-Groups the entities related to normalization, initial validation, and preparation of information before its evaluation.
-
-This domain will be responsible for representing the data generated during the offer preparation stage.
-
----
-
-### 4.4. Initial evaluation domain
-
-Groups the entities responsible for representing the results obtained during the automatic evaluation of job offers.
-
-Includes the information necessary to support the decision model and the initial classification of opportunities.
-
----
-
-### 4.5. Offer processing domain
-
-Groups the entities that represent the information generated during the deep processing of selected offers.
-
-This domain will contain data related to diagnoses, analyses, document generation, results, and other specialized processes.
-
----
-
-### 4.6. Shared services domain
-
-Groups the entities reused by several modules of the automation.
-
-Its purpose is to avoid data duplication and centralize common information used by different system processes.
-
----
-
-### 4.7. Configuration domain
-
-Groups the entities responsible for storing parameters, configurations, preferences, and other information used to control the behavior of the automation.
-
----
-
-### 4.8. Audit and operation domain
-
-Groups the entities intended for the operational monitoring of the system.
-
-Includes the information necessary for auditing, traceability, error handling, execution logs, relevant events, and monitoring of the automation.
-
----
-
-### 4.9. Relationships between domains
-
-Each domain must maintain relationships only when there is a clearly identified functional need.
-
-Relationships must minimize coupling between domains and preserve the functional independence of each one.
-
-Any interaction between domains must respect the official data flow defined for the automation.
-
----
-
-### 4.10. Principles of data model architecture
-
-The general architecture of the data model must permanently preserve the following principles:
-
-- Organization by functional domains.
-- Low coupling between domains.
-- High cohesion within each domain.
-- Modularity.
-- Scalability.
-- Information reuse.
-- Data integrity and consistency.
-- Complete information traceability.
-- Compatibility with the general system architecture.
-- Controlled evolution of the model.
-
----
-
-### 4.11. Architecture evolution
-
-Any incorporation, modification, or deletion of entities must respect the general architecture defined in this document.
-
-Any structural change must be documented, justified, and formally approved before its implementation, guaranteeing compatibility with the rest of the data model and with the official project documentation.
-
----
-
-## 5. System entities
-
-System entities represent the fundamental elements that make up the official data model of the job search automation.
-
-Each entity must model a unique concept of the project domain, have a clearly defined responsibility, and maintain coherence with the data model principles, the general system architecture, the data flow, and the decision model.
-
-Official entities are classified into the following categories:
-
----
-
-### 5.1. Main entities
-
-Correspond to the central elements of the automation's business domain.
-
-These entities represent the main information on which the functional processes of the system are executed.
-
-Every main entity must:
-
-- Represent a concept specific to the project domain.
-- Have a clearly defined lifecycle.
-- Be able to relate to other entities through explicit rules.
-- Maintain independence from its physical implementation.
-
----
-
-### 5.2. Supporting entities
-
-Correspond to entities used to complement, parameterize, or enrich the information of the main entities.
-
-Their purpose is to avoid redundancy, promote information reuse, and facilitate the evolution of the model.
-
-Supporting entities may be shared by multiple automation modules.
-
----
-
-### 5.3. Operational entities
-
-Correspond to entities used to represent the internal functioning of the automation.
-
-They include the information necessary for:
-
-- State management.
-- Internal processing.
-- Auditing.
-- Error handling.
-- Operational logs.
-- Executions.
-- Events.
-- Configuration.
-- Traceability.
-
-These entities do not represent business concepts, but rather aspects of the system's own operation.
-
----
-
-### 5.4. Official entity inventory
-
-The official entity inventory of the project must be derived exclusively from previously approved official documentation.
-
-Each entity incorporated into the data model must meet, at a minimum, the following conditions:
-
-- Have a clearly identified functional need.
-- Be supported by one or more functional requirements.
-- Be compatible with the official data flow.
-- Maintain coherence with the decision model.
-- Respect the general system architecture.
-- Not duplicate responsibilities of another existing entity.
-- Be integrable with the rest of the data model without generating inconsistencies.
-
-Entities that are not properly justified from a functional or architectural standpoint may not be incorporated.
-
----
-
-### 5.5. Entity inventory evolution
-
-Any incorporation, modification, unification, or deletion of entities must be documented and formally justified before becoming part of the official data model.
-
-Modifications must preserve compatibility with existing information, historical traceability, and coherence with the rest of the official project documentation.
-
----
-
-## 6. Relationships between entities
-
-Relationships between entities define how the different elements of the data model interact with each other to coherently represent the functional domain of the automation.
-
-Every relationship must respond to a clearly identified functional need, respect the general system architecture, and maintain the integrity of the data model.
-
-The relationships defined in this document constitute the normative framework that must be respected during the construction of the logical model and the physical implementation of the database.
-
----
-
-### 6.1. General principles of relationships
-
-Every relationship between entities must comply with the following principles:
-
-- Respond to a functional requirement of the project.
-- Maintain referential integrity.
-- Avoid unnecessary redundancies.
-- Minimize coupling between domains.
-- Facilitate information traceability.
-- Maintain coherence with the official data flow.
-- Respect the modular architecture of the system.
-- Allow controlled evolution of the data model.
-
----
-
-### 6.2. Intra-domain relationships
-
-Entities belonging to the same functional domain may establish relationships when such relationships are necessary to correctly represent the behavior of that domain.
-
-These relationships must maintain high cohesion and avoid unnecessary dependencies with other domains.
-
----
-
-### 6.3. Inter-domain relationships
-
-Relationships between entities belonging to different domains may only be established when there is a clearly documented functional need.
-
-These relationships must be designed seeking the lowest possible level of coupling between domains.
-
----
-
-### 6.4. Relationship cardinality
-
-Every relationship must explicitly define its cardinality during the construction of the logical data model.
-
-At a minimum, the following types of relationship must be identified where applicable:
-
-- One-to-one (1:1).
-- One-to-many (1:N).
-- Many-to-many (N:M).
-
-The selection of cardinality must be justified according to the functional needs of the project.
-
----
-
-### 6.5. Referential integrity
-
-Relationships must permanently preserve the referential integrity of the information.
-
-Relationships that generate orphaned records, inconsistencies, or invalid dependencies between entities are not permitted.
-
-Specific update and deletion rules will be defined during the logical model design and physical implementation.
-
----
-
-### 6.6. Dependencies between entities
-
-Dependencies between entities must be kept to the minimum necessary to correctly represent the project domain.
-
-Every dependency must be properly justified and documented.
-
----
-
-### 6.7. Prevention of unnecessary relationships
-
-Relationships that do any of the following are not permitted:
-
-- Duplicate information already represented by other relationships.
-- Introduce unjustified circular dependencies.
-- Unnecessarily increase the complexity of the model.
-- Contradict the general system architecture or the official data flow.
-
----
-
-### 6.8. Compatibility with the data flow
-
-Relationships between entities must facilitate the exchange of information between the different modules of the automation according to the official processing flow.
-
-The relational structure must not hinder the execution of any process stage.
-
----
-
-### 6.9. Evolution of relationships
-
-Any incorporation, modification, or deletion of relationships must be documented, justified, and formally approved before being incorporated into the official data model.
-
-Modifications must preserve compatibility with existing information, model integrity, and coherence with the rest of the official project documentation.
-
----
-
-## 7. Entity attributes
-
-Entity attributes represent the properties that describe the information stored by each element of the data model.
-
-Every attribute must provide a clear functional meaning, maintain coherence with the domain it represents, and comply with the principles established for the data model.
-
-The detailed definition of individual attributes will be carried out in the Official Data Dictionary. This chapter only establishes the general rules that all model attributes must comply with.
-
----
-
-### 7.1. General principles of attributes
-
-Every attribute must comply with the following principles:
-
-- Represent a single property of the domain.
-- Have a clear and unambiguous meaning.
-- Be supported by a functional need.
-- Maintain coherence with the entity to which it belongs.
-- Comply with the official project naming standards.
-- Be validable according to objective rules.
-- Avoid unnecessary redundancies.
-- Maintain independence from physical implementation.
-
----
-
-### 7.2. Attribute classification
-
-Data model attributes are officially classified into the following categories:
-
-#### Identification attributes
-
-Allow the unique identification of an instance of an entity.
-
-These attributes constitute the basis for the logical identification of records within the model.
-
----
-
-#### Business attributes
-
-Represent the information specific to the functional domain of the entity.
-
-They describe the main characteristics of the modeled concept and constitute most of the information used by the automation.
-
----
-
-#### Relationship attributes
-
-Allow establishing links between entities and representing the associations defined by the data model.
-
-Their use must preserve referential integrity and minimize coupling between entities.
-
----
-
-#### Control attributes
-
-Represent information used to manage the lifecycle of records.
-
-They include, among others, states, version indicators, operational dates, and other elements necessary to control the behavior of the information.
-
----
-
-#### Audit attributes
-
-Allow recording the information necessary to guarantee traceability and historical tracking of records.
-
-Their use must facilitate diagnosis, auditing, and analysis of information evolution.
-
----
-
-### 7.3. Attribute typing
-
-Every attribute must define a data type compatible with the nature of the information it represents.
-
-The selection of the data type must prioritize:
-
-- Precision.
-- Consistency.
-- Efficiency.
-- Ease of validation.
-- Compatibility with the logical model.
-
-Specific data types will be defined during the logical model design and documented in the Official Data Dictionary.
-
----
-
-### 7.4. Attribute mandatory status
-
-Each attribute must be classified as mandatory or optional according to the functional requirements of the project.
-
-Mandatory status must be functionally justified and remain consistent throughout the evolution of the model.
-
----
-
-### 7.5. Attribute validation
-
-Every attribute must have validation rules that guarantee the quality and integrity of the information.
-
-Validation rules may include, where applicable:
-
-- Length.
-- Format.
-- Value domain.
-- Allowed ranges.
-- Uniqueness.
-- Mandatory status.
-- Consistency with other attributes.
-
-Specific rules will be documented in the Official Data Dictionary.
-
----
-
-### 7.6. Derived attributes
-
-Information that can be obtained deterministically from other attributes shall not be stored, unless there is a duly documented technical or functional justification.
-
-When a derived attribute is persisted, mechanisms must be established that permanently guarantee its consistency with the source information.
-
----
-
-### 7.7. Attribute evolution
-
-Any incorporation, modification, or deletion of attributes must be documented, justified, and formally approved before becoming part of the official data model.
-
-Modifications must preserve compatibility with existing information, model integrity, and coherence with the rest of the official project documentation.
-
----
-
-## 8. Data integrity rules
-
-Data integrity rules establish the official criteria that must guarantee the consistency, validity, reliability, and coherence of all information managed by the automation.
-
-These rules shall be mandatory during data model design, database implementation, validation processes, information exchange between modules, and any operation involving creation, modification, deletion, or querying of data.
-
----
-
-### 8.1. Entity integrity
-
-Every entity must have a mechanism that allows the unique identification of each of its records.
-
-The existence of ambiguous records or records that cannot be unequivocally identified within the data model is not permitted.
-
----
-
-### 8.2. Referential integrity
-
-Every relationship between entities must preserve the coherence between related records.
-
-References to non-existent entities or relationships that generate orphaned or inconsistent records are not allowed.
-
-Specific update and deletion rules will be defined during the logical model design.
-
----
-
-### 8.3. Domain integrity
-
-Each attribute may only admit values compatible with its nature, meaning, and functional purpose.
-
-Valid domains must be defined through clearly documented validation rules.
-
----
-
-### 8.4. Functional integrity
-
-All stored information must comply with the functional rules established in the project requirements, the decision model, and the official processing flow.
-
-Information that contradicts the expected behavior of the automation shall not be stored.
-
----
-
-### 8.5. Temporal integrity
-
-The evolution of information must respect the logical and chronological order defined for the lifecycle of each job offer and associated processes.
-
-Transitions, states, or temporal sequences incompatible with the official automation flow may not occur.
-
----
-
-### 8.6. Audit integrity
-
-Every relevant operation that modifies information must be reconstructable through the official audit and traceability mechanisms of the project.
-
-The deletion or modification of information must not compromise the reconstruction of the history when it must be preserved.
-
----
-
-### 8.7. Operational integrity
-
-The automation must prevent execution errors, processing interruptions, or recoverable failures from generating inconsistent states within the data model.
-
-Recovery mechanisms must preserve information coherence throughout the entire processing cycle.
-
----
-
-### 8.8. Semantic integrity
-
-Information generated by automatic processes or through artificial intelligence must be validated before being incorporated into the data model where applicable.
-
-Validation must guarantee that such information is coherent with the functional context, project rules, and the rest of the previously stored information.
-
-The incorporation of automatically generated information must not compromise the consistency or reliability of the data model.
-
----
-
-### 8.9. Integrity validation
-
-Validation mechanisms must be executed before, during, or after data operations, as appropriate to the nature of each integrity rule.
-
-Any violation of an integrity rule must be managed according to the Error Handling Model approved for the project.
-
----
-
-### 8.10. Evolution of integrity rules
-
-Any incorporation, modification, or deletion of integrity rules must be documented, justified, and formally approved before being incorporated into the official data model.
-
-Modifications must preserve compatibility with existing information, model coherence, and compliance with all official project documentation.
-
----
-
-## 9. Catalogs and reference tables
-
-Catalogs and reference tables constitute the official mechanism for centralizing reusable information used by the job search automation.
-
-Their purpose is to guarantee data consistency, reduce information duplication, and facilitate the administration of values shared by the different system modules.
-
-The incorporation of a catalog must always respond to a clearly identified functional need and respect the data model principles defined in this document.
-
----
-
-### 9.1. Purpose of catalogs
-
-Catalogs must provide a single source of information for those sets of values used recurrently within the automation.
-
-Their use must promote:
-
-- Information normalization.
-- Data reuse.
-- Consistency between modules.
-- Simplified maintenance.
-- Controlled evolution of the data model.
-
----
-
-### 9.2. Criteria for catalog creation
-
-A set of values may only be modeled as a catalog when it meets one or more of the following criteria:
-
-- Is reused by multiple entities.
-- Is used by different automation modules.
-- Requires centralized administration.
-- Can be modified without altering system logic.
-- Represents a stable concept of the project domain.
-- Is necessary for validation or normalization processes.
-- Contributes to reducing information redundancy.
-
-The creation of catalogs that do not provide a functional or architectural benefit should be avoided.
-
----
-
-### 9.3. Catalog classification
-
-Official project catalogs may be classified into the following categories:
-
-#### Functional catalogs
-
-Represent concepts specific to the business domain used during job offer processing.
-
----
-
-#### Geographic catalogs
-
-Represent information related to geographic locations used by the automation.
-
----
-
-#### Technical catalogs
-
-Represent information used for the internal functioning of the system, including states, types, classifications, and other technical elements.
-
----
-
-#### Configuration catalogs
-
-Represent values used to parameterize the behavior of the automation without requiring modifications to system logic.
-
----
-
-### 9.4. Catalog reuse
-
-Any entity that requires information represented by an official catalog must reuse that catalog instead of storing the same information again.
-
-Duplicate catalogs representing the same functional concept are not permitted.
-
----
-
-### 9.5. Catalog integrity
-
-The values contained in catalogs must remain consistent, complete, and compatible with the rest of the data model.
-
-Any modification to a catalog must preserve the referential integrity of the entities that depend on it.
-
----
-
-### 9.6. Catalog administration
-
-The incorporation, modification, deactivation, or deletion of values belonging to a catalog must be carried out through controlled procedures that guarantee the consistency of the data model.
-
-Specific rules for the administration of each catalog will be defined during the logical model design and documented in the Official Data Dictionary.
-
----
-
-### 9.7. Alternatives to catalogs
-
-When a set of values does not meet the established criteria to become an official catalog, it may be represented through other implementation mechanisms, provided that such decision is technically justified and does not compromise the maintainability, consistency, or evolution of the data model.
-
-The selection of the most appropriate mechanism must be made during the logical model design and kept documented according to the project architecture.
-
----
-
-### 9.8. Catalog evolution
-
-Any incorporation, modification, or deletion of an official catalog must be documented, justified, and formally approved before being incorporated into the data model.
-
-Modifications must preserve compatibility with existing information, model integrity, and coherence with the rest of the official project documentation.
-
----
-
-## 10. System states
-
-System states represent the functional or operational situation of the entities that make up the data model during their lifecycle within the automation.
-
-Their purpose is to control the evolution of information, guarantee processing consistency, and allow complete tracking of each entity from its creation until the end of its participation in the system.
-
-Every entity whose behavior evolves through different stages must manage its lifecycle through clearly defined states.
-
----
-
-### 10.1. General principles of states
-
-System states must comply with the following principles:
-
-- Represent real situations of the domain or of the internal functioning of the system.
-- Maintain coherence with the official data flow.
-- Respect the project's Decision Model.
-- Facilitate processing traceability.
-- Allow auditing of transitions.
-- Promote controlled recovery from errors.
-- Maintain independence from technological implementation.
-
----
-
-### 10.2. State classification
-
-Official data model states may be classified into the following categories:
-
-#### Business states
-
-Represent the functional progress of entities within the job opportunity search and processing process.
-
----
-
-#### Operational states
-
-Represent the execution status of internal automation processes.
-
----
-
-#### Control states
-
-Represent administrative, technical, or temporal conditions necessary to control the behavior of the system.
-
----
-
-### 10.3. State machine-based model
-
-Every entity that has a lifecycle must be conceptually modeled as a state machine.
-
-Each state machine must define, at a minimum:
-
-- The initial state.
-- The allowed states.
-- The valid transitions.
-- The conditions necessary for each transition.
-- The final states, where applicable.
-
-Transitions that have not been defined as valid for the corresponding entity are not permitted.
-
----
-
-### 10.4. State transitions
-
-Every transition must respond to a clearly identified functional or operational event.
-
-Transitions must:
-
-- Maintain coherence with the official processing flow.
-- Respect the rules of the Decision Model.
-- Preserve the integrity of the information.
-- Prevent sequences incompatible with the entity's lifecycle.
-
----
-
-### 10.5. Transition recording
-
-Every relevant transition between states must be recorded through the official traceability and audit mechanisms defined for the project.
-
-The record must allow the reconstruction of the complete evolution history of the entity when necessary.
-
----
-
-### 10.6. State validation
-
-Before performing a transition, the system must verify that:
-
-- The entity is in a valid state.
-- The requested transition is allowed.
-- The necessary functional conditions are met.
-- The integrity of the data model is not compromised.
-
-Specific validations will be defined during the logical model design and system implementation.
-
----
-
-### 10.7. Recovery from inconsistent states
-
-When an automation process detects an invalid transition or an inconsistent state, it must apply the strategies defined in the Error Handling Model.
-
-Recovery must not compromise the integrity, traceability, or consistency of the stored information.
-
----
-
-### 10.8. State model evolution
-
-Any incorporation, modification, or deletion of states or transitions must be documented, justified, and formally approved before becoming part of the official data model.
-
-Modifications must preserve compatibility with existing information, entity history, and coherence with the rest of the official project documentation.
-
----
-
-## 11. Identifiers and keys
-
-Identifiers and keys constitute the official mechanisms for guaranteeing the unique identification of entities and the correct representation of relationships within the data model.
-
-Their purpose is to preserve referential integrity, facilitate information traceability, and maintain model stability throughout the evolution of the automation.
-
-Every entity in the data model must have identification mechanisms defined according to the principles established in this chapter.
-
----
-
-### 11.1. General principles
-
-Identifiers and keys must comply with the following principles:
-
-- Guarantee the unique identification of each record.
-- Maintain stability throughout the entire lifecycle of the entity.
-- Preserve the referential integrity of the data model.
-- Maintain independence from changes in business information.
-- Facilitate the evolution and maintainability of the system.
-- Avoid ambiguities in relationships between entities.
-
----
-
-### 11.2. Technical identifiers
-
-Every persistent entity must have a stable technical identifier that represents its identity within the system.
-
-Technical identifiers must:
-
-- Be unique.
-- Remain immutable throughout the entire existence of the record.
-- Not depend on information subject to modification.
-- Not be reused once assigned.
-- Be used as the primary identification mechanism within the data model.
-
-The specific strategy for generating these identifiers will be defined during the logical model design.
-
----
-
-### 11.3. Primary keys
-
-Every entity must have a primary key that allows the unequivocal identification of each of its records.
-
-The primary key must be built using the official technical identifier of the entity, unless there is a documented architectural justification to adopt a different strategy.
-
----
-
-### 11.4. Alternate keys
-
-When an entity has one or more identifiers specific to the functional domain, these may be defined as alternate keys.
-
-Alternate keys must:
-
-- Maintain uniqueness where applicable.
-- Not replace the primary key.
-- Be modifiable when the nature of the business so requires.
-- Maintain consistency with the functional rules of the project.
-
----
-
-### 11.5. Foreign keys
-
-Relationships between entities must be implemented using foreign keys that preserve the referential integrity of the data model.
-
-Every foreign key must:
-
-- Reference an existing entity.
-- Maintain coherence with the relationships defined in the logical model.
-- Comply with the update and deletion rules established for each relationship.
-
----
-
-### 11.6. Uniqueness constraints
-
-When the functional nature of the information so requires, the data model must establish additional uniqueness constraints on one or more attributes.
-
-These constraints will complement the technical identification of entities and guarantee the consistency of business information.
-
----
-
-### 11.7. Identifier reuse
-
-Technical identifiers belonging to previously existing records shall not be reused, even when such records have been deleted, archived, or deactivated.
-
-This principle guarantees the preservation of historical traceability and avoids ambiguities during system evolution.
-
----
-
-### 11.8. Evolution of identifiers and keys
-
-Any modification related to identification mechanisms or data model keys must be documented, justified, and formally approved before being incorporated into the official model.
-
-Modifications must preserve referential integrity, compatibility with existing information, and coherence with the rest of the official project documentation.
-
----
-
-## 12. Logical data model
-
-The logical data model constitutes the official representation of the logical structure of the information managed by the job search automation.
-
-Its purpose is to consolidate the organization of entities, their relationships, identification mechanisms, and structural rules, providing a representation independent of any specific storage technology.
-
-The logical model will serve as a direct reference for the implementation of the physical data model and must maintain coherence with all official project documentation.
-
----
-
-### 12.1. Purpose of the logical model
-
-The logical model must represent completely, consistently, and structurally all the components that make up the automation's data model.
-
-Its design must guarantee:
-
-- Structural coherence.
-- Information integrity.
-- Technology independence.
-- Scalability.
-- Traceability.
-- Compatibility with the general system architecture.
-
----
-
-### 12.2. Scope of the logical model
-
-The logical model must integrate, at a minimum:
-
-- The official system entities.
-- The relationships between entities.
-- The cardinalities.
-- The identification mechanisms.
-- The primary keys.
-- The alternate keys.
-- The foreign keys.
-- The related catalogs.
-- The applicable state machines.
-- The logical constraints necessary to preserve the integrity of the model.
-
-The complete detail of individual attributes will remain documented exclusively in the Official Data Dictionary.
-
----
-
-### 12.3. Uniform entity structure
-
-Every entity incorporated into the logical model must be documented using a uniform structure that facilitates its understanding, maintenance, and evolution.
-
-At a minimum, each entity must include:
-
-- Official name.
-- Functional domain.
-- Entity type.
-- Functional description.
-- Main responsibility.
-- Relevant relationships.
-- Cardinalities.
-- Technical identifier.
-- Alternate keys, where they exist.
-- Foreign keys, where applicable.
-- Associated catalogs.
-- State machine, where applicable.
-- Relevant architectural observations.
-
----
-
-### 12.4. Structural coherence
-
-Every entity and relationship incorporated into the logical model must maintain coherence with:
-
-- The functional and non-functional requirements.
-- The official data flow.
-- The Decision Model.
-- The General System Architecture.
-- The data model principles.
-- The integrity rules.
-- The official identification mechanisms.
-
-Elements that contradict the approved project architecture may not be incorporated.
-
----
-
-### 12.5. Independence from the physical model
-
-The logical model must remain independent of any database engine, persistence technology, or specific implementation decision.
-
-Decisions related to physical data types, indexes, storage optimizations, or database management system-specific configurations will be part of the physical model and not the logical model.
-
----
-
-### 12.6. Logical model validation
-
-Before approving the logical model, it must be verified that:
-
-- All official entities are represented.
-- All relationships are consistent.
-- Cardinalities are correctly defined.
-- The identification mechanisms are coherent.
-- The integrity rules can be correctly applied.
-- The model fully supports the functional flow of the automation.
-
----
-
-### 12.7. Logical model evolution
-
-Any modification to the logical model must be documented, justified, and formally approved before being incorporated into the official data model.
-
-Modifications must preserve compatibility with existing information, the general system architecture, and the rest of the official project documentation.
-
-
----
-
-## 13. Persistence and storage
-
-Persistence and storage define the official principles for the conservation, administration, and availability of information used by the job search automation.
-
-Their purpose is to guarantee that all information managed by the system maintains its integrity, consistency, traceability, and availability for as long as necessary, regardless of the technology used for its storage.
-
-Decisions related to the physical implementation of persistence must respect the principles established in this chapter and remain aligned with the Technology Stack approved for the project.
-
----
-
-### 13.1. General principles of persistence
-
-All information persisted by the automation must comply with the following principles:
-
-- Maintain integrity and consistency throughout its entire lifecycle.
-- Preserve information traceability where applicable.
-- Avoid unnecessary redundancies.
-- Promote recovery from errors.
-- Maintain independence from the physical storage mechanism.
-- Guarantee compatibility with the official data model.
-- Facilitate the future evolution of the system.
-
----
-
-### 13.2. Information classification according to persistence
-
-Information managed by the system shall be officially classified according to its lifecycle.
-
-#### Permanent information
-
-Corresponds to information that constitutes the main knowledge of the system and whose preservation is necessary throughout the entire useful life of the project.
-
-Its deletion may only be carried out through formally authorized procedures.
-
----
-
-#### Historical information
-
-Corresponds to information used to preserve traceability, auditing, and reconstruction of the history of processes executed by the automation.
-
-Its preservation must guarantee the possibility of performing historical analysis when necessary.
-
----
-
-#### Temporary information
-
-Corresponds to information used only during certain processing stages and whose permanence is no longer necessary once its function is completed.
-
-Its lifecycle must be managed through controlled cleanup and deletion policies.
-
----
-
-#### Configuration information
-
-Corresponds to information used to control the behavior of the automation.
-
-Its persistence must guarantee the reproducibility of executions and the operational stability of the system.
-
----
-
-### 13.3. Information retention
-
-Any retention policy must be established considering:
-
-- The functional nature of the information.
-- The audit and traceability requirements.
-- The operational needs of the system.
-- The project maintenance criteria.
-
-Information whose preservation is necessary to guarantee the integrity or traceability of the system should not be deleted.
-
----
-
-### 13.4. Information deletion
-
-The deletion of information must be carried out only through controlled procedures that preserve the consistency of the data model.
-
-Every deletion must respect:
-
-- The referential integrity rules.
-- The existing dependencies between entities.
-- The audit needs.
-- The official retention policies.
-
----
-
-### 13.5. Information availability
-
-Persistence must guarantee that information remains available for authorized automation processes when needed.
-
-Specific access mechanisms will be defined during the physical implementation of the system.
-
----
-
-### 13.6. Technology independence
-
-The persistence rules established in this document must remain independent of the database engine, storage mechanism, or any specific technology used during implementation.
-
-Corresponding technology decisions will be governed by the official Technology Stack of the project.
-
----
-
-### 13.7. Evolution of the persistence strategy
-
-Any modification related to persistence or storage of information must be documented, justified, and formally approved before being incorporated into the official data model.
-
-Modifications must preserve the integrity, compatibility, and coherence with the rest of the official project documentation.
-
----
-
-### 13.8. Discovery module (module 1) — 2026-08-07
-
-The Opportunity Discovery module defines the following persistence decisions:
-
-- **D1 — `active` of the Source entity:** catalog attribute for external (manual) administration; the module's runtime does not filter sources by it.
-- **D2 — single store:** all logical stores of the module — offers (`ofertas`), events (`eventos`), sessions (`sesiones`), runs (`corridas`), and lock (`bloqueo`) — persist as tables of the same single SQLite database (`job_search.db`), in accordance with section 13.6 (technology independence) and the Technology Stack decision that set SQLite as the MVP single store.
-- **D3 — session audit (minimal viable):** the session audit table registers successful sessions only and contains the essential fields: `session_id`, `run_id`, `source_id`, `set_indice`, `timestamp`, `total_declarado`, `conteo`, `estado`. Failed attempts are reported as events, never as sessions. Credentials, tokens, and cookies are never stored (per the technical sheet).
-- **D4 — capture registration without catalog FKs (2026-08-09, Sub-fase 4.4):** `ofertas` does not declare FK constraints; `empresa_id` and `ubicacion_id` are nullable and stored as `NULL` in the MVP capture, while the raw adapter strings are kept in `empresa_nombre` and `ubicacion_nombre` (and the source `source_id` in `fuente_id`). Registration is an upsert deduplicating by `id_externo_url` and refreshing `timestamp_ultima_verificacion`. Rationale: the catalogs are not resolved in Module 1, so FK constraints rejected valid captures (FOREIGN KEY constraint failed).
-
----
-
-## 14. Versioning and evolution of the data model
-
-The data model constitutes a strategic component of the automation architecture and must evolve in a controlled manner throughout the entire lifecycle of the project.
-
-Every modification must preserve the integrity of the model, guarantee compatibility with existing information, and maintain coherence with the official project documentation.
-
-The evolution process of the data model must be fully documented, justified, and traceable.
-
----
-
-### 14.1. General principles of evolution
-
-Every evolution of the data model must comply with the following principles:
-
-- Maintain the structural integrity of the model.
-- Preserve the consistency of existing information.
-- Minimize the impact on system modules.
-- Maintain compatibility with the general architecture.
-- Promote project scalability.
-- Guarantee traceability of all modifications.
-- Allow recovery of previous versions when necessary.
-
----
-
-### 14.2. Data model versioning
-
-The data model must maintain a formal versioning scheme that allows clearly identifying each of its official revisions.
-
-Each version must be associated, at a minimum, with:
-
-- A version identifier.
-- The approval date.
-- The description of the changes made.
-- The corresponding functional or architectural justification.
-- The impact analysis performed.
-- The formal approval of the change.
-
----
-
-### 14.3. Change classification
-
-Modifications made to the data model may be officially classified as:
-
-#### Evolutionary changes
-
-Incorporate new capabilities or expand the existing model without altering its general purpose.
-
----
-
-#### Corrective changes
-
-Correct errors, inconsistencies, or improvements identified during the evolution of the project.
-
----
-
-#### Structural changes
-
-Modify the general organization of the data model and require an exhaustive impact analysis before their incorporation.
-
----
-
-### 14.4. Change compatibility
-
-Every modification must also be classified according to its impact on the existing model.
-
-#### Compatible changes
-
-Are those that preserve compatibility with existing information and do not require significant modifications in the components that use the data model.
-
-As a general criterion, this type of change may include:
-
-- Incorporation of new independent entities.
-- Addition of optional attributes.
-- Incorporation of new catalogs.
-- Compatible extensions with the existing architecture.
-
----
-
-#### Incompatible changes
-
-Are those that may affect the structure of the model, the stored information, or the operation of the automation modules.
-
-As a general criterion, this type of change may include:
-
-- Deletion of entities.
-- Modification of identification mechanisms.
-- Changes in cardinalities.
-- Deletion of attributes used by other components.
-- Alterations that compromise compatibility with previous versions.
-
-Every incompatible change must be supported by a specific impact analysis before its approval.
-
----
-
-### 14.5. Change history management
-
-The evolution history of the data model must remain available throughout the entire useful life of the project.
-
-Each modification must record:
-
-- The affected version.
-- The modified elements.
-- The nature of the change.
-- The corresponding justification.
-- The related architectural decisions.
-
----
-
-### 14.6. Impact assessment
-
-Before approving any modification to the data model, an impact assessment must be carried out that considers, at a minimum:
-
-- The compatibility with existing information.
-- The integrity of the model.
-- The general system architecture.
-- The official data flow.
-- The Decision Model.
-- The persistence mechanisms.
-- The audit and traceability processes.
-
----
-
-### 14.7. Change approval
-
-Every modification to the data model must be documented, justified, and formally approved before being incorporated into a new official version.
-
-Changes whose functional or architectural need has not been duly demonstrated may not be incorporated.
-
----
-
-### 14.8. Controlled evolution
-
-The evolution of the data model must be carried out in a planned manner, guaranteeing at all times the stability of the system, the maintainability of the project, and the coherence with the rest of the official documentation.
-
-Every new version must preserve the architectural principles established in this document.
-
-
----
-
-## 15. Traceability and auditing
-
-Traceability and auditing constitute the official mechanisms for guaranteeing complete tracking of the information managed by the automation and the operations performed throughout its entire lifecycle.
-
-Their purpose is to allow process reconstruction, facilitate incident diagnosis, support the decision model, and preserve the reliability of stored information.
-
-The entire data model architecture must be designed so that relevant information can be traced, audited, and analyzed when necessary.
-
----
-
-### 15.1. General principles of traceability and auditing
-
-Traceability and auditing must comply with the following principles:
-
-- Preserve the historical integrity of information.
-- Allow the reconstruction of relevant processes.
-- Maintain coherence with the official data flow.
-- Promote incident diagnosis.
-- Support the Decision Model.
-- Facilitate the evolution and maintenance of the system.
-- Maintain independence from technological implementation.
-
----
-
-### 15.2. Scope of traceability
-
-Traceability must cover, at a minimum:
-
-- The lifecycle of main entities.
-- The transitions between states.
-- The relevant operations performed on the information.
-- The functional decisions that affect processing.
-- The operational events necessary to understand the evolution of the system.
-
-The recorded information must be sufficient to reconstruct the processes when necessary.
-
----
-
-### 15.3. Audit classification
-
-The official project audit may be classified into the following categories.
-
-#### Functional audit
-
-Records events related to the functional behavior of the automation and the processing of job offers.
-
----
-
-#### Technical audit
-
-Records events related to the internal operation of the system, process execution, and the functioning of technical components.
-
----
-
-#### Change audit
-
-Records modifications made to persistent information and to relevant elements of the data model.
-
----
-
-### 15.4. Traceability of decision context
-
-Every relevant decision generated during automation must be contextualizable when necessary.
-
-The traceability information must allow identifying, at a minimum:
-
-- The process that originated the decision.
-- The moment when it was made.
-- The information used as input.
-- The result obtained.
-- The component responsible for execution.
-- The version of the applicable rules, configurations, or models where applicable.
-
-The level of detail recorded must be sufficient to explain the functional context of the decision without compromising the efficiency or maintainability of the system.
-
----
-
-### 15.5. Audit integrity
-
-Audit records must remain protected against unauthorized modifications that compromise the reliability of historical information.
-
-Any alteration to audit information must be duly documented and authorized.
-
----
-
-### 15.6. Audit information retention
-
-Audit information must be preserved according to the official persistence policies defined for the project.
-
-Its deletion may only be carried out through controlled procedures that do not compromise the traceability of relevant processes.
-
----
-
-### 15.7. Access to audit information
-
-Access to audit information must be carried out only for functional, operational, diagnostic, maintenance, or analysis purposes authorized by the system architecture.
-
-The organization of the information must facilitate its consultation without affecting the integrity of the data model.
-
----
-
-### 15.8. Evolution of traceability mechanisms
-
-Any modification related to traceability or auditing must be documented, justified, and formally approved before being incorporated into the official data model.
-
-Modifications must preserve compatibility with existing information, historical integrity, and coherence with the rest of the official project documentation.
-
----
-
-## 16. Data security and protection
-
-Data security and protection establish the official principles for preserving the confidentiality, integrity, availability, and proper use of information managed by the job search automation.
-
-Their purpose is to guarantee that information is managed securely throughout its entire lifecycle, maintaining coherence with the general system architecture, the data model, and the principles established for the project.
-
-Decisions related to specific technological protection mechanisms must be governed by the Technology Stack and by the system implementation, without altering the principles defined in this document.
-
----
-
-### 16.1. General security principles
-
-Information management must comply, at a minimum, with the following principles:
-
-- Preserve the confidentiality of information.
-- Guarantee data integrity.
-- Maintain information availability when necessary.
-- Promote traceability of relevant operations.
-- Protect information against unauthorized modifications.
-- Maintain coherence with the Error Handling Model.
-- Preserve the stability of the data model.
-
----
-
-### 16.2. Information classification according to sensitivity
-
-All information managed by the automation must be classified according to the level of protection it requires.
-
-#### Public information
-
-Corresponds to information whose disclosure does not represent a significant impact for the project or the user.
-
-Its use does not require special protection measures other than those defined by the general architecture.
-
----
-
-#### Internal use information
-
-Corresponds to information used exclusively by the automation for the operation of its internal processes.
-
-Its access must be limited to authorized components of the system architecture.
-
----
-
-#### Sensitive information
-
-Corresponds to information whose disclosure, modification, loss, or improper use could affect the user, the operation of the automation, or the integrity of the project.
-
-This type of information must receive a level of protection commensurate with its criticality during system implementation.
-
----
-
-### 16.3. Data integrity protection
-
-Every operation on information must preserve the consistency of the data model and respect the official integrity rules defined for the project.
-
-Mechanisms that compromise the reliability of stored information may not be incorporated.
-
----
-
-### 16.4. Protection during the information lifecycle
-
-Protection measures must cover all stages of the information lifecycle, including:
-
-- Creation.
-- Processing.
-- Storage.
-- Query.
-- Modification.
-- Archiving.
-- Deletion.
-
-The protection strategy must remain consistent throughout all these stages.
-
 ---
 
-### 16.5. Access to information
+## 1. Propósito y Alcance
 
-Access to information must be limited exclusively to the processes, components, and mechanisms authorized by the system architecture.
+Define el **modelo de datos oficial** de la automatización de búsqueda laboral: estructura lógica de la información, incluyendo entidades, atributos, relaciones, restricciones, reglas de integridad y mecanismos de persistencia.
 
-The organization of the data model must facilitate the application of access controls during implementation, without depending on a specific technological mechanism.
+**Función:** referencia oficial para diseño, implementación, mantenimiento y evolución del modelo de datos. Ningún elemento de información se agrega, modifica o elimina sin análisis y documentación previa conforme a este documento.
 
----
+**Coherencia obligatoria:** las decisiones deben alinearse con los Documentos 0–12 (requisitos funcionales/no funcionales, modelo de decisión, flujo de datos, estándares, manejo de errores, arquitectura de carpetas, alcance y objetivos, stack tecnológico, arquitectura general del sistema).
 
-### 16.6. Protection of historical information
+**Garantías del modelo:** integridad, consistencia, trazabilidad, mantenibilidad y escalabilidad de la información durante todo el ciclo de vida de las ofertas y procesos.
 
-Information used for auditing, traceability, and history must be protected in a way that permanently preserves its integrity and reliability.
+**Base para:** implementación de la capa de persistencia, acceso a datos y desarrollo del MVP. Toda decisión de implementación debe estar respaldada por este modelo previamente analizado, justificado y aprobado.
 
-Any modification to historical information must be duly justified, documented, and authorized.
+**Control de cambios:** toda modificación debe documentarse, justificarse y aprobarse formalmente antes de incorporarse, preservando trazabilidad histórica y coherencia documental.
 
 ---
-
-### 16.7. Compatibility with the security architecture
-
-The rules established in this chapter must remain compatible with:
 
-- The General System Architecture.
-- The official Technology Stack.
-- The Error Handling Model.
-- The official persistence policies.
-- The audit and traceability mechanisms.
+## 2. Regla Transversal de Evolución Controlada (REC)
 
----
-
-### 16.8. Evolution of protection policies
+Para evitar repetición en cada capítulo, se establece una única regla aplicable a **todo** elemento del modelo de datos (entidades, relaciones, atributos, reglas de integridad, catálogos, estados, identificadores, modelo lógico, persistencia, validaciones, migraciones, mecanismos de trazabilidad, políticas de seguridad):
 
-Any modification related to the security or protection of information must be documented, justified, and formally approved before being incorporated into the official data model.
+> **REC-001.** Toda incorporación, modificación o eliminación de un elemento del modelo de datos debe:
+> 1. Documentarse, justificarse y aprobarse formalmente antes de incorporarse.
+> 2. Preservar compatibilidad con la información existente.
+> 3. Preservar integridad y coherencia del modelo.
+> 4. Mantener alineación con el resto de la documentación oficial del proyecto.
+> 5. Registrar trazabilidad histórica del cambio.
 
-Modifications must preserve the integrity of the model, compatibility with existing information, and coherence with the rest of the official project documentation.
+Cuando un capítulo específico añada condiciones adicionales a esta regla, se explicitarán en ese capítulo. En caso contrario, REC-001 aplica íntegramente.
 
 ---
 
-## 17. Data validation rules
+## 3. Principios del Modelo de Datos (PMD)
 
-Data validation rules establish the official principles that must guarantee that all information incorporated into the data model is consistent, complete, valid, and compatible with the automation architecture.
+Reglas oficiales obligatorias durante definición de entidades, atributos, relaciones, restricciones, validaciones y cualquier componente del modelo. Toda decisión debe justificarse y alinearse con la documentación oficial aprobada.
 
-Their purpose is to prevent the incorporation of incorrect information, preserve the integrity of the data model, and ensure that all information used by the automation complies with the functional and architectural rules of the project.
+| ID | Principio | Definición |
+|---|---|---|
+| PMD-001 | Integridad | Preservar permanentemente la integridad de la información; evitar estados inconsistentes o relaciones inválidas |
+| PMD-002 | Consistencia | Toda información almacenada permanece consistente entre módulos, procesos y componentes |
+| PMD-003 | Unicidad | Cada entidad tiene mecanismos para identificar inequívocamente cada registro donde aplique |
+| PMD-004 | Normalización | Minimizar redundancia innecesaria mediante organización lógica y estructurada de entidades y relaciones |
+| PMD-005 | No duplicación | La misma información no se almacena múltiples veces cuando puede mantenerse mediante relaciones correctamente definidas |
+| PMD-006 | Modularidad | Organización modular que facilite comprensión, mantenimiento y evolución |
+| PMD-007 | Escalabilidad | Estructura permite incorporar nuevas entidades, atributos y relaciones sin reorganización significativa |
+| PMD-008 | Trazabilidad | Permite reconstruir historia de procesos, decisiones y cambios relevantes durante el ciclo de vida de cada oferta |
+| PMD-009 | Auditabilidad | Información necesaria para auditoría y diagnóstico es preservable sin afectar la integridad del modelo |
+| PMD-010 | Persistencia controlada | Toda información persistente se almacena según reglas claramente definidas; evitar datos huérfanos, inconsistentes o innecesarios |
+| PMD-011 | Independencia tecnológica | Modelo definido independientemente del motor de base de datos o tecnología de almacenamiento específica |
+| PMD-012 | Validación | Modelo facilita la validación de datos antes de su incorporación, modificación o uso |
+| PMD-013 | Mantenibilidad | Estructura facilita actualización, corrección y comprensión durante toda la vida útil del proyecto |
+| PMD-014 | Extensibilidad | Incorporación de nuevos requisitos funcionales mediante extensiones controladas, preservando compatibilidad con información existente |
+| PMD-015 | Seguridad | Facilita protección de integridad, disponibilidad y confidencialidad según requisitos del proyecto |
+| PMD-016 | Separación lógico/físico | Definición conceptual y lógica independiente de la implementación física en la base de datos |
+| PMD-017 | Compatibilidad arquitectónica | Plena compatibilidad con la arquitectura general del sistema aprobada |
+| PMD-018 | Compatibilidad con flujo de datos | Estructura soporta correctamente todas las transformaciones y movimientos definidos en el Flujo de Datos oficial |
+| PMD-019 | Compatibilidad con modelo de decisión | Almacena toda la información necesaria para soportar el Modelo de Decisión aprobado, preservando trazabilidad de cada decisión |
+| PMD-020 | Evolución controlada | Toda modificación se documenta, justifica y aprueba formalmente antes de incorporarse (ver REC-001) |
 
-Validations must be applied throughout the entire information lifecycle, regardless of the technological mechanism used for their implementation.
-
 ---
 
-### 17.1. General validation principles
+## 4. Objetivos del Modelo de Datos (OMD)
 
-Every data validation must comply with the following principles:
+Resultados que la estructura de información debe alcanzar para soportar eficientemente todos los procesos del proyecto. Cada objetivo representa una capacidad a preservar durante diseño, implementación, mantenimiento y evolución.
 
-- Verify information consistency before its incorporation into the data model.
-- Maintain coherence with the integrity rules defined for the project.
-- Be objective, reproducible, and verifiable.
-- Maintain independence from the technology used for its implementation.
-- Promote information quality.
-- Reduce the incorporation of inconsistent data.
-- Maintain compatibility with the Decision Model and the official processing flow.
+| ID | Objetivo | Definición |
+|---|---|---|
+| OMD-001 | Centralizar información oficial | Modelo como fuente oficial de información para todos los módulos, procesos y componentes |
+| OMD-002 | Representar el dominio del proyecto | Modelar estructuradamente todas las entidades, relaciones y atributos necesarios para representar el proceso completo de búsqueda y procesamiento de oportunidades |
+| OMD-003 | Garantizar integridad | Toda información almacenada mantiene consistencia, validez y coherencia durante todo su ciclo de vida |
+| OMD-004 | Soportar ciclo de vida de ofertas | Almacenamiento y seguimiento de toda información generada desde el descubrimiento hasta la finalización del procesamiento |
+| OMD-005 | Garantizar trazabilidad | Preservar información necesaria para reconstruir historia de estados, decisiones, transformaciones y operaciones sobre cada oferta |
+| OMD-006 | Facilitar intercambio de información | Estructura uniforme para intercambio consistente entre todos los módulos |
+| OMD-007 | Minimizar redundancia | Evitar almacenamiento innecesario de datos duplicados; favorecer reutilización mediante relaciones apropiadas |
+| OMD-008 | Facilitar auditoría | Permitir registro y consulta de información para auditoría, diagnóstico y monitoreo operacional |
+| OMD-009 | Promover escalabilidad | Incorporar nuevas entidades, relaciones y atributos sin afectar significativamente la estructura existente |
+| OMD-010 | Promover mantenibilidad | Organización clara, modular y consistente que facilite evolución y comprensión |
+| OMD-011 | Optimizar acceso a información | Estructura que facilite consultas, búsquedas y operaciones requeridas por los módulos |
+| OMD-012 | Preservar independencia tecnológica | Modelo independiente del motor de base de datos y tecnología de almacenamiento |
+| OMD-013 | Soportar evolución del proyecto | Incorporación controlada de nuevos requisitos funcionales sin comprometer compatibilidad con información previamente almacenada |
 
 ---
-
-### 17.2. Structural validations
 
-Structural validations will verify that the information meets the basic requirements defined for each element of the data model.
+## 5. Arquitectura General del Modelo de Datos
 
-They may include, among others:
+Organización conceptual de la información, estructurada de forma modular y coherente con la arquitectura general del sistema, el flujo de datos y los procesos funcionales.
 
-- Mandatory status.
-- Data type.
-- Length.
-- Format.
-- Value domain.
-- Uniqueness constraints.
+### 5.1 Modelo Arquitectónico
+Arquitectura organizada por **dominios funcionales**: cada conjunto de entidades representa una responsabilidad específica dentro de la automatización. Facilita comprensión del dominio, reduce acoplamiento entre entidades y promueve evolución independiente de cada área funcional.
 
-Specific rules will be documented in the Official Data Dictionary.
+### 5.2 Dominios Funcionales
 
----
+| Dominio | Responsabilidad | Contenido |
+|---|---|---|
+| **Descubrimiento de oportunidades** | Información obtenida durante identificación y recolección de ofertas | Solo información correspondiente a esta etapa del flujo operacional |
+| **Preparación inicial** | Normalización, validación inicial y preparación de información antes de evaluación | Datos generados durante la etapa de preparación de ofertas |
+| **Evaluación inicial** | Resultados de la evaluación automática de ofertas | Información necesaria para soportar el modelo de decisión y clasificación inicial de oportunidades |
+| **Procesamiento de ofertas** | Información generada durante el procesamiento profundo de ofertas seleccionadas | Diagnósticos, análisis, generación de documentos, resultados y otros procesos especializados |
+| **Servicios compartidos** | Entidades reutilizadas por varios módulos | Evitar duplicación de datos y centralizar información común usada por diferentes procesos |
+| **Configuración** | Parámetros, configuraciones, preferencias e información de control | Información usada para controlar el comportamiento de la automatización |
+| **Auditoría y operación** | Monitoreo operacional del sistema | Información para auditoría, trazabilidad, manejo de errores, logs de ejecución, eventos relevantes y monitoreo |
 
-### 17.3. Functional validations
+### 5.3 Relaciones entre Dominios
+- Cada dominio mantiene relaciones solo cuando existe necesidad funcional claramente identificada.
+- Relaciones minimizan acoplamiento entre dominios y preservan independencia funcional de cada uno.
+- Toda interacción entre dominios respeta el flujo de datos oficial definido.
 
-Functional validations will verify that the information complies with the business rules established for the automation.
+### 5.4 Principios de Arquitectura
+Preservar permanentemente: organización por dominios funcionales; bajo acoplamiento entre dominios; alta cohesión dentro de cada dominio; modularidad; escalabilidad; reutilización de información; integridad y consistencia de datos; trazabilidad completa; compatibilidad con la arquitectura general del sistema; evolución controlada (REC-001).
 
-Their purpose will be to guarantee that the information correctly represents the expected behavior of the project's functional domain.
+### 5.5 Evolución de Arquitectura
+Aplica REC-001. Toda incorporación, modificación o eliminación de entidades respeta la arquitectura general definida. Cambios estructurales garantizan compatibilidad con el resto del modelo y documentación oficial.
 
 ---
 
-### 17.4. Relational validations
+## 6. Entidades del Sistema
 
-Relational validations will verify the existing coherence between related entities.
+Elementos fundamentales del modelo. Cada entidad modela un concepto único del dominio, tiene responsabilidad claramente definida y mantiene coherencia con principios, arquitectura, flujo de datos y modelo de decisión.
 
-These validations must preserve referential integrity and guarantee the consistency of the relationships defined by the data model.
+### 6.1 Clasificación de Entidades
 
----
+| Tipo | Definición | Requisitos |
+|---|---|---|
+| **Principales** | Elementos centrales del dominio de negocio; información principal sobre la que se ejecutan procesos funcionales | Representar concepto específico del dominio; tener ciclo de vida claramente definido; relacionarse con otras entidades mediante reglas explícitas; mantener independencia de implementación física |
+| **De soporte** | Complementan, parametrizan o enriquecen información de entidades principales | Evitar redundancia, promover reutilización, facilitar evolución del modelo; pueden ser compartidas por múltiples módulos |
+| **Operacionales** | Representan funcionamiento interno de la automatización (no conceptos de negocio) | Gestión de estados, procesamiento interno, auditoría, manejo de errores, logs operacionales, ejecuciones, eventos, configuración, trazabilidad |
 
-### 17.5. Temporal validations
+### 6.2 Inventario Oficial de Entidades
+Derivado exclusivamente de documentación oficial previamente aprobada. Cada entidad incorporada debe cumplir mínimo:
+- Necesidad funcional claramente identificada.
+- Respaldo por uno o más requisitos funcionales.
+- Compatibilidad con el flujo de datos oficial.
+- Coherencia con el modelo de decisión.
+- Respeto a la arquitectura general del sistema.
+- No duplicar responsabilidades de otra entidad existente.
+- Integrable con el resto del modelo sin generar inconsistencias.
 
-Temporal validations will verify the chronological coherence of information throughout the entire lifecycle of entities.
+**Entidades sin justificación funcional o arquitectónica adecuada no pueden incorporarse.**
 
-Temporal sequences incompatible with the official processing flow may not be recorded.
+### 6.3 Evolución de Entidades
+Aplica REC-001. Toda incorporación, modificación, unificación o eliminación preserva compatibilidad con información existente, trazabilidad histórica y coherencia documental.
 
 ---
 
-### 17.6. Semantic validations
+## 7. Relaciones entre Entidades
 
-Semantic validations will verify, where applicable, that information generated automatically or through artificial intelligence is coherent with the functional context of the project before being incorporated into the data model.
+Definen cómo interactúan los elementos del modelo para representar coherentemente el dominio funcional. Toda relación responde a necesidad funcional claramente identificada, respeta la arquitectura y mantiene integridad del modelo. Constituyen marco normativo para construcción del modelo lógico e implementación física.
 
-These validations must guarantee that the information:
+### 7.1 Principios Generales
+Toda relación debe:
+- Responder a requisito funcional del proyecto.
+- Mantener integridad referencial.
+- Evitar redundancias innecesarias.
+- Minimizar acoplamiento entre dominios.
+- Facilitar trazabilidad de información.
+- Mantener coherencia con el flujo de datos oficial.
+- Respetar la arquitectura modular del sistema.
+- Permitir evolución controlada del modelo (REC-001).
 
-- Is consistent with the represented domain.
-- Respects the functional rules of the project.
-- Maintains coherence with previously stored information.
-- Does not compromise the semantic integrity of the data model.
+### 7.2 Tipos de Relación por Alcance
 
-Semantic validations complement the semantic integrity rules defined for the project and must be applied when the nature of the information so requires.
-
----
+| Tipo | Definición | Regla |
+|---|---|---|
+| **Intra-dominio** | Entre entidades del mismo dominio funcional | Mantener alta cohesión; evitar dependencias innecesarias con otros dominios |
+| **Inter-dominio** | Entre entidades de dominios diferentes | Solo con necesidad funcional claramente documentada; diseñar con mínimo acoplamiento posible entre dominios |
 
-### 17.7. Validation error management
+### 7.3 Cardinalidad
+Toda relación define explícitamente su cardinalidad durante la construcción del modelo lógico. Tipos mínimos a identificar donde aplique:
+- Uno a uno (1:1)
+- Uno a muchos (1:N)
+- Muchos a muchos (N:M)
 
-Every failed validation must be managed according to the Error Handling Model approved for the project.
+La selección de cardinalidad se justifica según necesidades funcionales del proyecto.
 
-The incorporation of information into the data model must not continue when the non-compliance of a validation rule compromises the integrity, consistency, or reliability of the information.
+### 7.4 Integridad Referencial
+Relaciones preservan permanentemente la integridad referencial. **No se permiten** relaciones que generen registros huérfanos, inconsistencias o dependencias inválidas entre entidades. Reglas específicas de actualización y eliminación se definen durante diseño del modelo lógico e implementación física.
 
----
+### 7.5 Dependencias entre Entidades
+Mantener al mínimo necesario para representar correctamente el dominio. Toda dependencia se justifica y documenta adecuadamente.
 
-### 17.8. Evolution of validation rules
+### 7.6 Relaciones No Permitidas
+Relaciones que:
+- Dupliquen información ya representada por otras relaciones.
+- Introduzcan dependencias circulares injustificadas.
+- Aumenten innecesariamente la complejidad del modelo.
+- Contradigan la arquitectura general del sistema o el flujo de datos oficial.
 
-Any incorporation, modification, or deletion of validation rules must be documented, justified, and formally approved before becoming part of the official data model.
+### 7.7 Compatibilidad con Flujo de Datos
+Relaciones facilitan intercambio de información entre módulos según el flujo oficial de procesamiento. La estructura relacional no obstaculiza la ejecución de ninguna etapa del proceso.
 
-Modifications must preserve compatibility with existing information, coherence with the rest of the architecture, and compliance with all official project documentation.
+### 7.8 Evolución de Relaciones
+Aplica REC-001.
 
 ---
-
-## 18. Migration strategy
 
-The migration strategy establishes the official principles for managing the structural evolution of the data model throughout the entire lifecycle of the automation.
+## 8. Atributos de Entidades
 
-Its purpose is to guarantee that any modification made to the persistent structure of the system preserves the integrity of the information, maintains compatibility with the approved architecture, and allows a controlled evolution of the project.
+Propiedades que describen la información almacenada por cada elemento del modelo. Todo atributo aporta significado funcional claro, mantiene coherencia con su dominio y cumple los principios del modelo. La definición detallada de atributos individuales se realiza en el **Diccionario Oficial de Datos**; este capítulo establece solo reglas generales.
 
-Decisions related to specific migration tools must be governed by the official Technology Stack and are not part of this document.
-
----
+### 8.1 Principios Generales
+Todo atributo debe:
+- Representar una única propiedad del dominio.
+- Tener significado claro y no ambiguo.
+- Estar respaldado por necesidad funcional.
+- Mantener coherencia con la entidad a la que pertenece.
+- Cumplir estándares oficiales de nomenclatura del proyecto.
+- Ser validable según reglas objetivas.
+- Evitar redundancias innecesarias.
+- Mantener independencia de implementación física.
 
-### 18.1. General principles of migrations
+### 8.2 Clasificación de Atributos
 
-Every data model migration must comply with the following principles:
+| Categoría | Definición | Ejemplos/Notas |
+|---|---|---|
+| **Identificación** | Identifican unívocamente una instancia de entidad | Base para identificación lógica de registros dentro del modelo |
+| **De negocio** | Información específica del dominio funcional de la entidad | Describen características principales del concepto modelado; constituyen la mayor parte de la información usada por la automatización |
+| **De relación** | Establecen vínculos entre entidades y representan asociaciones definidas por el modelo | Preservar integridad referencial; minimizar acoplamiento entre entidades |
+| **De control** | Gestionan ciclo de vida de registros | Estados, indicadores de versión, fechas operacionales y otros elementos necesarios para controlar comportamiento de la información |
+| **De auditoría** | Registran información necesaria para garantizar trazabilidad y seguimiento histórico | Facilitan diagnóstico, auditoría y análisis de evolución de información |
 
-- Maintain information integrity.
-- Preserve data model consistency.
-- Guarantee traceability of modifications.
-- Maintain compatibility with the general system architecture.
-- Be reproducible and verifiable.
-- Promote controlled evolution of the project.
-- Minimize the risk of information loss or corruption.
+### 8.3 Tipado de Atributos
+Todo atributo define un tipo de dato compatible con la naturaleza de la información que representa. La selección prioriza: precisión, consistencia, eficiencia, facilidad de validación, compatibilidad con el modelo lógico. Tipos específicos se definen durante diseño del modelo lógico y se documentan en el Diccionario Oficial de Datos.
 
----
+### 8.4 Obligatoriedad
+Cada atributo se clasifica como **obligatorio** u **opcional** según requisitos funcionales. La obligatoriedad se justifica funcionalmente y permanece consistente durante la evolución del modelo.
 
-### 18.2. Scope of migrations
+### 8.5 Validación
+Todo atributo tiene reglas de validación que garantizan calidad e integridad. Reglas pueden incluir donde aplique: longitud, formato, dominio de valores, rangos permitidos, unicidad, obligatoriedad, consistencia con otros atributos. Reglas específicas se documentan en el Diccionario Oficial de Datos.
 
-Migrations must be used to manage any structural modification that affects the persistent data model, including, where applicable:
+### 8.6 Atributos Derivados
+Información obtenible determinísticamente de otros atributos **no se almacena**, salvo justificación técnica o funcional debidamente documentada. Cuando se persiste un atributo derivado, se establecen mecanismos que garanticen permanentemente su consistencia con la información fuente.
 
-- Incorporation of new entities.
-- Modification of existing entities.
-- Changes in relationships.
-- Updating of constraints.
-- Incorporation or modification of catalogs.
-- Adjustments derived from the evolution of the data model.
+### 8.7 Evolución de Atributos
+Aplica REC-001.
 
 ---
-
-### 18.3. Migration classification
 
-Official migrations may be classified as:
+## 9. Reglas de Integridad de Datos
 
-#### Evolutionary migrations
+Criterios oficiales que garantizan consistencia, validez, confiabilidad y coherencia de toda la información gestionada. Obligatorias durante diseño del modelo, implementación de base de datos, procesos de validación, intercambio de información entre módulos, y cualquier operación de creación, modificación, eliminación o consulta de datos.
 
-Incorporate new capabilities to the data model while preserving compatibility with the existing structure.
-
----
+| ID | Tipo de Integridad | Definición |
+|---|---|---|
+| INT-001 | **Entidad** | Toda entidad tiene mecanismo para identificación única de cada registro. No se permiten registros ambiguos o no identificables inequívocamente |
+| INT-002 | **Referencial** | Toda relación preserva coherencia entre registros relacionados. No se permiten referencias a entidades inexistentes ni relaciones que generen registros huérfanos o inconsistentes. Reglas específicas de actualización/eliminación se definen en diseño del modelo lógico |
+| INT-003 | **Dominio** | Cada atributo solo admite valores compatibles con su naturaleza, significado y propósito funcional. Dominios válidos se definen mediante reglas de validación claramente documentadas |
+| INT-004 | **Funcional** | Toda información almacenada cumple reglas funcionales establecidas en requisitos del proyecto, modelo de decisión y flujo oficial. No se almacena información que contradiga el comportamiento esperado de la automatización |
+| INT-005 | **Temporal** | Evolución de información respeta orden lógico y cronológico definido para ciclo de vida de cada oferta y procesos asociados. No pueden ocurrir transiciones, estados o secuencias temporales incompatibles con el flujo oficial |
+| INT-006 | **Auditoría** | Toda operación relevante que modifica información es reconstruible mediante mecanismos oficiales de auditoría y trazabilidad. Eliminación o modificación de información no compromete reconstrucción de historia cuando deba preservarse |
+| INT-007 | **Operacional** | Errores de ejecución, interrupciones de procesamiento o fallas recuperables no generan estados inconsistentes en el modelo. Mecanismos de recuperación preservan coherencia durante todo el ciclo de procesamiento |
+| INT-008 | **Semántica** | Información generada por procesos automáticos o IA se valida antes de incorporarse al modelo donde aplique. Validación garantiza coherencia con contexto funcional, reglas del proyecto e información previamente almacenada. Incorporación de información generada automáticamente no compromete consistencia ni confiabilidad del modelo |
 
-#### Corrective migrations
+### 9.1 Validación de Integridad
+Mecanismos de validación se ejecutan antes, durante o después de operaciones de datos, según naturaleza de cada regla. Toda violación de regla de integridad se gestiona según el Modelo de Manejo de Errores aprobado.
 
-Correct errors, inconsistencies, or deficiencies identified during the evolution of the project.
+### 9.2 Evolución de Reglas de Integridad
+Aplica REC-001.
 
 ---
 
-#### Structural migrations
+## 10. Catálogos y Tablas de Referencia
 
-Introduce significant modifications to the organization of the data model and require an impact analysis prior to execution.
+Mecanismo oficial para centralizar información reutilizable usada por la automatización. Garantizan consistencia de datos, reducen duplicación y facilitan administración de valores compartidos por diferentes módulos. La incorporación de un catálogo responde siempre a necesidad funcional claramente identificada y respeta los principios del modelo.
 
----
-
-### 18.4. Migration versioning
+### 10.1 Propósito
+Proveer fuente única de información para conjuntos de valores usados recurrentemente. Su uso promueve: normalización de información, reutilización de datos, consistencia entre módulos, mantenimiento simplificado, evolución controlada del modelo.
 
-Every migration must be associated with an official version of the data model.
+### 10.2 Criterios para Creación de Catálogos
+Un conjunto de valores puede modelarse como catálogo solo cuando cumple **uno o más** de:
+- Es reutilizado por múltiples entidades.
+- Es usado por diferentes módulos de la automatización.
+- Requiere administración centralizada.
+- Puede modificarse sin alterar lógica del sistema.
+- Representa concepto estable del dominio del proyecto.
+- Es necesario para procesos de validación o normalización.
+- Contribuye a reducir redundancia de información.
 
-Each migration must record, at a minimum:
+**Evitar creación de catálogos que no aporten beneficio funcional o arquitectónico.**
 
-- Migration identifier.
-- Data model version.
-- Description of the modification.
-- Functional or architectural justification.
-- Date of incorporation.
-- Execution result.
-
----
+### 10.3 Clasificación de Catálogos
 
-### 18.5. Pre-migration validation
+| Tipo | Definición |
+|---|---|
+| **Funcionales** | Conceptos específicos del dominio de negocio usados durante procesamiento de ofertas |
+| **Geográficos** | Información relacionada con ubicaciones geográficas usadas por la automatización |
+| **Técnicos** | Información para funcionamiento interno del sistema: estados, tipos, clasificaciones y otros elementos técnicos |
+| **De configuración** | Valores para parametrizar comportamiento de la automatización sin requerir modificaciones a lógica del sistema |
 
-Before executing a migration, it must be verified, at a minimum:
+### 10.4 Reglas de Uso
+- **Reutilización:** Toda entidad que requiera información representada por un catálogo oficial debe reutilizarlo en lugar de almacenar la misma información nuevamente. **No se permiten catálogos duplicados** que representen el mismo concepto funcional.
+- **Integridad:** Valores contenidos en catálogos permanecen consistentes, completos y compatibles con el resto del modelo. Toda modificación a un catálogo preserva integridad referencial de entidades que dependen de él.
+- **Administración:** Incorporación, modificación, desactivación o eliminación de valores se realiza mediante procedimientos controlados que garanticen consistencia del modelo. Reglas específicas se definen durante diseño del modelo lógico y se documentan en el Diccionario Oficial de Datos.
 
-- The consistency of the data model.
-- The compatibility with the previous version.
-- The impact on existing information.
-- The compliance with integrity rules.
-- The compatibility with the general system architecture.
+### 10.5 Alternativas a Catálogos
+Cuando un conjunto de valores no cumple criterios para catálogo oficial, puede representarse mediante otros mecanismos de implementación, siempre que la decisión esté técnicamente justificada y no comprometa mantenibilidad, consistencia ni evolución del modelo. Selección del mecanismo más apropiado se realiza durante diseño del modelo lógico y se documenta según arquitectura del proyecto.
 
-Every migration must have a documented impact analysis before its approval.
+### 10.6 Evolución de Catálogos
+Aplica REC-001.
 
 ---
 
-### 18.6. Migration reversibility
+## 11. Estados del Sistema
 
-Whenever technically feasible, every migration must be designed in a way that allows reverting the changes made and restoring the previous state of the data model.
+Representan la situación funcional u operacional de las entidades durante su ciclo de vida dentro de la automatización. Controlan evolución de información, garantizan consistencia de procesamiento y permiten seguimiento completo de cada entidad desde su creación hasta el fin de su participación en el sistema. Toda entidad cuyo comportamiento evoluciona a través de diferentes etapas gestiona su ciclo de vida mediante estados claramente definidos.
 
-When a migration cannot be reversed due to technical limitations or the nature of the transformation performed, this condition must be documented in advance along with its justification.
+### 11.1 Principios Generales
+Estados deben:
+- Representar situaciones reales del dominio o del funcionamiento interno del sistema.
+- Mantener coherencia con el flujo de datos oficial.
+- Respetar el Modelo de Decisión del proyecto.
+- Facilitar trazabilidad de procesamiento.
+- Permitir auditoría de transiciones.
+- Promover recuperación controlada desde errores.
+- Mantener independencia de implementación tecnológica.
 
-In such cases, measures must be established that minimize the risk to the integrity and availability of the information.
+### 11.2 Clasificación de Estados
 
----
+| Tipo | Definición |
+|---|---|
+| **De negocio** | Progreso funcional de entidades dentro del proceso de búsqueda y procesamiento de oportunidades |
+| **Operacionales** | Estado de ejecución de procesos internos de la automatización |
+| **De control** | Condiciones administrativas, técnicas o temporales necesarias para controlar comportamiento del sistema |
 
-### 18.7. Migration traceability
+### 11.3 Modelo Basado en Máquinas de Estado
+Toda entidad con ciclo de vida se modela conceptualmente como **máquina de estados**. Cada máquina de estados define mínimo:
+- Estado inicial.
+- Estados permitidos.
+- Transiciones válidas.
+- Condiciones necesarias para cada transición.
+- Estados finales, donde aplique.
 
-Every migration must be part of the official evolution history of the data model.
+**No se permiten transiciones que no hayan sido definidas como válidas** para la entidad correspondiente.
 
-The corresponding documentation must allow reconstructing:
+### 11.4 Transiciones de Estado
+Toda transición responde a evento funcional u operacional claramente identificado. Transiciones deben:
+- Mantener coherencia con el flujo oficial de procesamiento.
+- Respetar reglas del Modelo de Decisión.
+- Preservar integridad de la información.
+- Prevenir secuencias incompatibles con el ciclo de vida de la entidad.
 
-- The source version.
-- The target version.
-- The changes made.
-- The justification for the modification.
-- The identified impact.
-- The evidence of approval.
+### 11.5 Registro de Transiciones
+Toda transición relevante entre estados se registra mediante mecanismos oficiales de trazabilidad y auditoría. El registro permite reconstruir historia completa de evolución de la entidad cuando sea necesario.
 
----
+### 11.6 Validación de Estados
+Antes de realizar una transición, el sistema verifica:
+- La entidad está en estado válido.
+- La transición solicitada está permitida.
+- Se cumplen las condiciones funcionales necesarias.
+- No se compromete la integridad del modelo de datos.
 
-### 18.8. Evolution of the migration strategy
+Validaciones específicas se definen durante diseño del modelo lógico e implementación del sistema.
 
-Any modification related to the official migration strategy must be documented, justified, and formally approved before being incorporated into the official data model.
+### 11.7 Recuperación desde Estados Inconsistentes
+Cuando un proceso detecta transición inválida o estado inconsistente, aplica estrategias definidas en el Modelo de Manejo de Errores. La recuperación no compromete integridad, trazabilidad ni consistencia de la información almacenada.
 
-Modifications must preserve compatibility with the general architecture, the project evolution history, and the rest of the official documentation.
+### 11.8 Evolución de Estados
+Aplica REC-001.
 
 ---
 
-## 19. Acceptance criteria
+## 12. Identificadores y Claves
 
-The acceptance criteria establish the official conditions that the data model must meet to be considered complete, consistent, and conformant with the approved project architecture.
+Mecanismos oficiales para garantizar identificación única de entidades y correcta representación de relaciones dentro del modelo. Preservan integridad referencial, facilitan trazabilidad y mantienen estabilidad del modelo durante la evolución. Toda entidad tiene mecanismos de identificación definidos según estos principios.
 
-Their purpose is to provide a set of objective criteria that allow verifying the quality of the data model before its official approval or the incorporation of new versions.
+### 12.1 Principios Generales
+Identificadores y claves deben:
+- Garantizar identificación única de cada registro.
+- Mantener estabilidad durante todo el ciclo de vida de la entidad.
+- Preservar integridad referencial del modelo.
+- Mantener independencia de cambios en información de negocio.
+- Facilitar evolución y mantenibilidad del sistema.
+- Evitar ambigüedades en relaciones entre entidades.
 
-Compliance with these criteria shall be mandatory for every official version of the data model.
+### 12.2 Tipos de Identificadores y Claves
 
----
+| Tipo | Definición | Reglas |
+|---|---|---|
+| **Identificador técnico** | Identidad estable del registro dentro del sistema | Único; inmutable durante toda la existencia del registro; no depende de información sujeta a modificación; no se reutiliza una vez asignado; mecanismo principal de identificación dentro del modelo. Estrategia específica de generación se define durante diseño del modelo lógico |
+| **Clave primaria** | Identificación inequívoca de cada registro | Construida usando el identificador técnico oficial de la entidad, salvo justificación arquitectónica documentada para estrategia diferente |
+| **Claves alternas** | Identificadores específicos del dominio funcional | Mantener unicidad donde aplique; no reemplazan la clave primaria; pueden ser modificables cuando la naturaleza del negocio lo requiera; consistencia con reglas funcionales del proyecto |
+| **Claves foráneas** | Implementan relaciones entre entidades | Referencian entidad existente; coherencia con relaciones definidas en modelo lógico; cumplimiento de reglas de actualización y eliminación establecidas para cada relación |
 
-### 19.1. Structural integrity
+### 12.3 Restricciones de Unicidad
+Cuando la naturaleza funcional de la información lo requiera, el modelo establece restricciones de unicidad adicionales sobre uno o más atributos. Complementan la identificación técnica y garantizan consistencia de información de negocio.
 
-The data model must comply, at a minimum, with the following conditions:
+### 12.4 Reutilización de Identificadores
+Identificadores técnicos pertenecientes a registros previamente existentes **no se reutilizan**, incluso cuando dichos registros hayan sido eliminados, archivados o desactivados. Garantiza preservación de trazabilidad histórica y evita ambigüedades durante evolución del sistema.
 
-- All official entities must be represented.
-- All relationships must be properly defined and justified.
-- The official identification mechanisms must be documented.
-- The integrity rules must be correctly applicable.
-- There must be no structural inconsistencies within the model.
+### 12.5 Evolución de Identificadores y Claves
+Aplica REC-001. Modificaciones preservan integridad referencial, compatibilidad con información existente y coherencia documental.
 
 ---
-
-### 19.2. Functional coherence
 
-The data model must correctly represent the functional domain of the automation.
+## 13. Modelo Lógico de Datos
 
-At a minimum, it must be verified that:
+Representación oficial de la estructura lógica de la información gestionada. Consolida organización de entidades, relaciones, mecanismos de identificación y reglas estructurales, proporcionando representación independiente de cualquier tecnología de almacenamiento específica. Sirve como referencia directa para implementación del modelo físico y mantiene coherencia con toda la documentación oficial.
 
-- The model fully supports the official processing flow.
-- The entities correctly represent the domain concepts.
-- The relationships reflect the functional needs of the project.
-- The state machines are compatible with the lifecycle of the corresponding entities.
+### 13.1 Propósito
+Representar completa, consistente y estructuralmente todos los componentes del modelo de datos. Diseño garantiza: coherencia estructural, integridad de información, independencia tecnológica, escalabilidad, trazabilidad, compatibilidad con la arquitectura general del sistema.
 
----
-
-### 19.3. Data model quality
+### 13.2 Alcance
+El modelo lógico integra mínimo:
+- Entidades oficiales del sistema.
+- Relaciones entre entidades.
+- Cardinalidades.
+- Mecanismos de identificación.
+- Claves primarias.
+- Claves alternas.
+- Claves foráneas.
+- Catálogos relacionados.
+- Máquinas de estado aplicables.
+- Restricciones lógicas necesarias para preservar integridad del modelo.
 
-The model must demonstrate that:
+**El detalle completo de atributos individuales permanece documentado exclusivamente en el Diccionario Oficial de Datos.**
 
-- Information can be maintained consistently.
-- Unnecessary redundancy is minimized.
-- The organization of entities promotes maintainability.
-- The architecture allows controlled evolution of the system.
-- The model is scalable and extensible.
+### 13.3 Estructura Uniforme de Entidades
+Toda entidad incorporada al modelo lógico se documenta usando estructura uniforme que facilite comprensión, mantenimiento y evolución. Mínimo incluye:
+- Nombre oficial.
+- Dominio funcional.
+- Tipo de entidad.
+- Descripción funcional.
+- Responsabilidad principal.
+- Relaciones relevantes.
+- Cardinalidades.
+- Identificador técnico.
+- Claves alternas, donde existan.
+- Claves foráneas, donde aplique.
+- Catálogos asociados.
+- Máquina de estado, donde aplique.
+- Observaciones arquitectónicas relevantes.
 
----
+### 13.4 Coherencia Estructural
+Toda entidad y relación incorporada al modelo lógico mantiene coherencia con: requisitos funcionales y no funcionales, flujo de datos oficial, Modelo de Decisión, Arquitectura General del Sistema, principios del modelo de datos, reglas de integridad, mecanismos oficiales de identificación. **No pueden incorporarse elementos que contradigan la arquitectura aprobada del proyecto.**
 
-### 19.4. Compliance with model rules
+### 13.5 Independencia del Modelo Físico
+El modelo lógico permanece independiente de cualquier motor de base de datos, tecnología de persistencia o decisión específica de implementación. Decisiones sobre tipos de datos físicos, índices, optimizaciones de almacenamiento o configuraciones específicas del sistema de gestión de bases de datos forman parte del modelo físico, no del modelo lógico.
 
-Before approval, it must be verified that the model complies with:
+### 13.6 Validación del Modelo Lógico
+Antes de aprobar el modelo lógico, verificar:
+- Todas las entidades oficiales están representadas.
+- Todas las relaciones son consistentes.
+- Cardinalidades correctamente definidas.
+- Mecanismos de identificación coherentes.
+- Reglas de integridad aplicables correctamente.
+- Modelo soporta completamente el flujo funcional de la automatización.
 
-- The data model principles.
-- The model objectives.
-- The integrity rules.
-- The validation rules.
-- The persistence policies.
-- The security principles.
-- The traceability and audit mechanisms.
+### 13.7 Evolución del Modelo Lógico
+Aplica REC-001.
 
 ---
-
-### 19.5. Documentary coherence
 
-The data model must remain fully aligned with the official project documentation.
+## 14. Persistencia y Almacenamiento
 
-At a minimum, compatibility must be verified with:
+Principios oficiales para conservación, administración y disponibilidad de información. Garantizan que toda información gestionada mantenga integridad, consistencia, trazabilidad y disponibilidad durante el tiempo necesario, independientemente de la tecnología de almacenamiento. Decisiones de implementación física respetan estos principios y se alinean con el Stack Tecnológico aprobado.
 
-- The functional and non-functional requirements.
-- The project strategic documentation.
-- The official data flow.
-- The Decision Model.
-- The General System Architecture.
-- The approved Technology Stack.
-- The Error Handling Model.
-- The rest of the official documents related to the project architecture.
+### 14.1 Principios Generales
+Toda información persistida debe:
+- Mantener integridad y consistencia durante todo su ciclo de vida.
+- Preservar trazabilidad donde aplique.
+- Evitar redundancias innecesarias.
+- Promover recuperación desde errores.
+- Mantener independencia del mecanismo físico de almacenamiento.
+- Garantizar compatibilidad con el modelo oficial de datos.
+- Facilitar evolución futura del sistema.
 
-There must be no contradictions between the data model and the current official documentation.
+### 14.2 Clasificación de Información según Ciclo de Vida
 
----
-
-### 19.6. Documentation completeness
-
-Before approving an official version of the data model, it must be verified that all associated documentation is complete.
-
-At a minimum, the following must be available:
+| Tipo | Definición | Reglas |
+|---|---|---|
+| **Permanente** | Conocimiento principal del sistema; preservación necesaria durante toda la vida útil del proyecto | Eliminación solo mediante procedimientos formalmente autorizados |
+| **Histórica** | Preserva trazabilidad, auditoría y reconstrucción de historia de procesos | Preservación debe garantizar posibilidad de análisis histórico cuando sea necesario |
+| **Temporal** | Usada solo durante ciertas etapas de procesamiento; permanencia innecesaria una vez completada su función | Ciclo de vida gestionado mediante políticas controladas de limpieza y eliminación |
+| **De configuración** | Controla comportamiento de la automatización | Persistencia garantiza reproducibilidad de ejecuciones y estabilidad operacional del sistema |
 
-- The Logical Data Model.
-- The Official Data Dictionary.
-- The Official Data Model Diagram.
-- The corresponding version history.
-- The documentation of approved changes.
+### 14.3 Retención de Información
+Políticas de retención consideran: naturaleza funcional de la información, requisitos de auditoría y trazabilidad, necesidades operacionales del sistema, criterios de mantenimiento del proyecto. **No debe eliminarse información cuya preservación sea necesaria para garantizar integridad o trazabilidad del sistema.**
 
----
-
-### 19.7. Model approval
+### 14.4 Eliminación de Información
+Solo mediante procedimientos controlados que preserven consistencia del modelo. Toda eliminación respeta: reglas de integridad referencial, dependencias existentes entre entidades, necesidades de auditoría, políticas oficiales de retención.
 
-The data model may only be considered officially approved when all the criteria defined in this chapter have been satisfactorily verified.
+### 14.5 Disponibilidad
+Persistencia garantiza que información permanezca disponible para procesos autorizados cuando sea necesario. Mecanismos específicos de acceso se definen durante implementación física del sistema.
 
-Any exception must be documented, justified, and formally approved before the release of a new official version.
+### 14.6 Independencia Tecnológica
+Reglas de persistencia permanecen independientes del motor de base de datos, mecanismo de almacenamiento o tecnología específica. Decisiones tecnológicas correspondientes se rigen por el Stack Tecnológico oficial del proyecto.
 
----
+### 14.7 Evolución de Estrategia de Persistencia
+Aplica REC-001.
 
-### 19.8. Model revalidation
+### 14.8 Módulo de Descubrimiento (módulo 1) — Decisiones Específicas
 
-Any modification made to the data model must lead to a new evaluation of the acceptance criteria defined in this chapter.
+Decisiones de persistencia del módulo de Descubrimiento de Oportunidades, incorporadas oficialmente:
 
-A new version of the model may not be approved while any acceptance criterion remains unfulfilled.
+| ID | Fecha | Decisión | Detalle |
+|---|---|---|---|
+| **D1** | 2026-08-07 | `active` de entidad Source | Atributo de catálogo para administración externa (manual); el runtime del módulo **no** filtra fuentes por este atributo |
+| **D2** | 2026-08-07 | Tienda única | Todas las tiendas lógicas del módulo —ofertas (`ofertas`), eventos (`eventos`), sesiones (`sesiones`), corridas (`corridas`), bloqueo (`bloqueo`)— persisten como tablas de la misma base de datos SQLite única (`job_search.db`), conforme a sección 14.6 (independencia tecnológica) y decisión del Stack Tecnológico que estableció SQLite como tienda única del MVP |
+| **D3** | 2026-08-07 | Auditoría de sesiones (mínima viable) | Tabla de auditoría de sesiones registra **solo sesiones exitosas** y contiene campos esenciales: `session_id`, `run_id`, `source_id`, `set_indice`, `timestamp`, `total_declarado`, `conteo`, `estado`. Intentos fallidos se reportan como eventos, nunca como sesiones. **Credenciales, tokens y cookies nunca se almacenan** (según hoja técnica) |
+| **D4** | 2026-08-09 | Registro de capturas sin FKs de catálogo (Sub-fase 4.4) | `ofertas` **no** declara restricciones FK; `empresa_id` y `ubicacion_id` son nullable y se almacenan como `NULL` en captura del MVP, mientras las cadenas crudas del adaptador se conservan en `empresa_nombre` y `ubicacion_nombre` (y `source_id` de la fuente en `fuente_id`). Registro es un upsert deduplicando por `id_externo_url` y refrescando `timestamp_ultima_verificacion`. **Justificación:** los catálogos no se resuelven en Módulo 1, por lo que restricciones FK rechazaban capturas válidas (FOREIGN KEY constraint failed) |
 
 ---
-
-## 20. Official Data Dictionary
 
-The Official Data Dictionary constitutes the official technical specification of the data model of the job search automation.
+## 15. Versionado y Evolución del Modelo de Datos
 
-Its purpose is to document in a complete, uniform, and traceable manner all the elements that make up the data model, providing a single official source of information for the design, implementation, maintenance, and evolution of the system.
+El modelo de datos es componente estratégico de la arquitectura y evoluciona de manera controlada durante todo el ciclo de vida del proyecto. Toda modificación preserva integridad del modelo, garantiza compatibilidad con información existente y mantiene coherencia con documentación oficial. El proceso de evolución es completamente documentado, justificado y trazable.
 
-Every entity, attribute, relationship, catalog, and component of the data model must be documented according to the structure established in this chapter.
+### 15.1 Principios Generales de Evolución
+Toda evolución debe:
+- Mantener integridad estructural del modelo.
+- Preservar consistencia de información existente.
+- Minimizar impacto en módulos del sistema.
+- Mantener compatibilidad con arquitectura general.
+- Promover escalabilidad del proyecto.
+- Garantizar trazabilidad de todas las modificaciones.
+- Permitir recuperación de versiones anteriores cuando sea necesario.
 
----
+### 15.2 Esquema de Versionado
+Esquema formal que permita identificar claramente cada revisión oficial. Cada versión se asocia mínimo con:
+- Identificador de versión.
+- Fecha de aprobación.
+- Descripción de cambios realizados.
+- Justificación funcional o arquitectónica correspondiente.
+- Análisis de impacto realizado.
+- Aprobación formal del cambio.
 
-### 20.1. Objectives of the Official Data Dictionary
+### 15.3 Clasificación de Cambios
 
-The dictionary must:
+| Por naturaleza | Definición |
+|---|---|
+| **Evolutivos** | Incorporan nuevas capacidades o expanden el modelo existente sin alterar su propósito general |
+| **Correctivos** | Corrigen errores, inconsistencias o mejoras identificadas durante evolución del proyecto |
+| **Estructurales** | Modifican organización general del modelo y requieren análisis exhaustivo de impacto antes de incorporación |
 
-- Centralize the technical documentation of the data model.
-- Guarantee uniformity in the definition of model elements.
-- Facilitate the implementation of the database.
-- Promote system maintainability.
-- Serve as an official reference for the development and evolution of the project.
-- Maintain traceability with the rest of the official documentation.
+| Por compatibilidad | Definición | Ejemplos |
+|---|---|---|
+| **Compatibles** | Preservan compatibilidad con información existente y no requieren modificaciones significativas en componentes que usan el modelo | Incorporación de nuevas entidades independientes; adición de atributos opcionales; incorporación de nuevos catálogos; extensiones compatibles con arquitectura existente |
+| **Incompatibles** | Pueden afectar estructura del modelo, información almacenada u operación de módulos de la automatización | Eliminación de entidades; modificación de mecanismos de identificación; cambios en cardinalidades; eliminación de atributos usados por otros componentes; alteraciones que comprometan compatibilidad con versiones anteriores |
 
----
+**Todo cambio incompatible debe estar respaldado por análisis de impacto específico antes de su aprobación.**
 
-### 20.2. Scope of the dictionary
+### 15.4 Gestión de Historial de Cambios
+Historia de evolución permanece disponible durante toda la vida útil del proyecto. Cada modificación registra: versión afectada, elementos modificados, naturaleza del cambio, justificación correspondiente, decisiones arquitectónicas relacionadas.
 
-The Official Data Dictionary must document, at a minimum:
+### 15.5 Evaluación de Impacto
+Antes de aprobar cualquier modificación, evaluación de impacto considera mínimo:
+- Compatibilidad con información existente.
+- Integridad del modelo.
+- Arquitectura general del sistema.
+- Flujo de datos oficial.
+- Modelo de Decisión.
+- Mecanismos de persistencia.
+- Procesos de auditoría y trazabilidad.
 
-- Entities.
-- Attributes.
-- Relationships.
-- Primary keys.
-- Alternate keys.
-- Foreign keys.
-- Catalogs.
-- Constraints.
-- Validation rules.
-- State machines where applicable.
-- Relevant architectural observations.
+### 15.6 Aprobación de Cambios
+Toda modificación se documenta, justifica y aprueba formalmente antes de incorporarse a nueva versión oficial. **No pueden incorporarse cambios cuya necesidad funcional o arquitectónica no haya sido debidamente demostrada.**
 
-There must be no persistent element of the data model that is not documented in this dictionary.
+### 15.7 Evolución Controlada
+Evolución planificada garantizando estabilidad del sistema, mantenibilidad del proyecto y coherencia con documentación oficial. Toda nueva versión preserva principios arquitectónicos establecidos en este documento.
 
 ---
-
-### 20.3. Official template for entities
-
-Every entity must be documented using a uniform structure.
 
-At a minimum, it must include:
+## 16. Trazabilidad y Auditoría
 
-#### General information
+Mecanismos oficiales para garantizar seguimiento completo de información gestionada y operaciones realizadas durante todo su ciclo de vida. Permiten reconstrucción de procesos, facilitan diagnóstico de incidentes, soportan el modelo de decisión y preservan confiabilidad de información almacenada. Toda la arquitectura del modelo de datos se diseña para que información relevante pueda ser trazada, auditada y analizada cuando sea necesario.
 
-- Official name.
-- Functional domain.
-- Entity type.
-- Functional description.
-- Main responsibility.
+### 16.1 Principios Generales
+Trazabilidad y auditoría deben:
+- Preservar integridad histórica de información.
+- Permitir reconstrucción de procesos relevantes.
+- Mantener coherencia con el flujo de datos oficial.
+- Promover diagnóstico de incidentes.
+- Soportar el Modelo de Decisión.
+- Facilitar evolución y mantenimiento del sistema.
+- Mantener independencia de implementación tecnológica.
 
----
-
-#### Identification
+### 16.2 Alcance de Trazabilidad
+Cubre mínimo:
+- Ciclo de vida de entidades principales.
+- Transiciones entre estados.
+- Operaciones relevantes realizadas sobre información.
+- Decisiones funcionales que afectan procesamiento.
+- Eventos operacionales necesarios para entender evolución del sistema.
 
-- Technical identifier.
-- Primary key.
-- Alternate keys.
-
----
+Información registrada debe ser suficiente para reconstruir procesos cuando sea necesario.
 
-#### Relationships
+### 16.3 Clasificación de Auditoría
 
-- Related entities.
-- Cardinalities.
-- Foreign keys.
-- Relevant dependencies.
+| Tipo | Definición |
+|---|---|
+| **Funcional** | Eventos relacionados con comportamiento funcional de la automatización y procesamiento de ofertas |
+| **Técnica** | Eventos relacionados con operación interna del sistema, ejecución de procesos y funcionamiento de componentes técnicos |
+| **De cambios** | Modificaciones realizadas a información persistente y a elementos relevantes del modelo de datos |
 
----
+### 16.4 Trazabilidad de Contexto de Decisión
+Toda decisión relevante generada durante la automatización debe ser contextualizable cuando sea necesario. Información de trazabilidad permite identificar mínimo:
+- Proceso que originó la decisión.
+- Momento en que fue tomada.
+- Información usada como entrada.
+- Resultado obtenido.
+- Componente responsable de la ejecución.
+- Versión de reglas, configuraciones o modelos aplicables donde corresponda.
 
-#### Lifecycle
+Nivel de detalle registrado debe ser suficiente para explicar contexto funcional de la decisión sin comprometer eficiencia ni mantenibilidad del sistema.
 
-- State machine, where applicable.
-- Main states.
-- Observations related to the lifecycle.
+### 16.5 Integridad de Auditoría
+Registros de auditoría permanecen protegidos contra modificaciones no autorizadas que comprometan confiabilidad de información histórica. Toda alteración a información de auditoría se documenta y autoriza debidamente.
 
----
+### 16.6 Retención de Información de Auditoría
+Preservada según políticas oficiales de persistencia definidas. Eliminación solo mediante procedimientos controlados que no comprometan trazabilidad de procesos relevantes.
 
-#### Associated catalogs
+### 16.7 Acceso a Información de Auditoría
+Acceso solo para propósitos funcionales, operacionales, de diagnóstico, mantenimiento o análisis autorizados por la arquitectura del sistema. Organización de información facilita consulta sin afectar integridad del modelo.
 
-List of catalogs used by the entity.
+### 16.8 Evolución de Mecanismos de Trazabilidad
+Aplica REC-001.
 
 ---
 
-#### Architectural observations
+## 17. Seguridad y Protección de Datos
 
-Information relevant to understanding the role of the entity within the data model.
+Principios oficiales para preservar confidencialidad, integridad, disponibilidad y uso adecuado de información gestionada. Garantizan manejo seguro durante todo el ciclo de vida, manteniendo coherencia con arquitectura general, modelo de datos y principios del proyecto. Decisiones sobre mecanismos tecnológicos específicos de protección se rigen por el Stack Tecnológico y la implementación del sistema, sin alterar estos principios.
 
----
+### 17.1 Principios Generales
+Gestión de información cumple mínimo:
+- Preservar confidencialidad de información.
+- Garantizar integridad de datos.
+- Mantener disponibilidad cuando sea necesario.
+- Promover trazabilidad de operaciones relevantes.
+- Proteger información contra modificaciones no autorizadas.
+- Mantener coherencia con el Modelo de Manejo de Errores.
+- Preservar estabilidad del modelo de datos.
 
-### 20.4. Official template for attributes
-
-Every attribute must be documented using a uniform structure.
-
-At a minimum, it must include:
-
-- Official name.
-- Functional description.
-- Logical type.
-- Physical type, where applicable during implementation.
-- Attribute category.
-- Mandatory status.
-- Default value, where applicable.
-- Value domain.
-- Constraints.
-- Validation rules.
-- Uniqueness constraints, where they exist.
-- Sensitivity level.
-- Classification according to persistence.
-- Relevant observations.
+### 17.2 Clasificación por Sensibilidad
 
----
+| Nivel | Definición |
+|---|---|
+| **Pública** | Divulgación no representa impacto significativo para proyecto o usuario. Uso no requiere medidas especiales de protección más allá de las definidas por arquitectura general |
+| **Uso interno** | Usada exclusivamente por la automatización para operación de procesos internos. Acceso limitado a componentes autorizados de la arquitectura |
+| **Sensible** | Divulgación, modificación, pérdida o uso inadecuado podría afectar al usuario, operación de la automatización o integridad del proyecto. Recibe nivel de protección proporcional a su criticidad durante implementación |
 
-### 20.5. Documentary traceability
+### 17.3 Protección de Integridad
+Toda operación sobre información preserva consistencia del modelo y respeta reglas oficiales de integridad. **No pueden incorporarse mecanismos que comprometan confiabilidad de información almacenada.**
 
-The Official Data Dictionary must maintain traceability with the rest of the official project documentation.
+### 17.4 Protección durante Ciclo de Vida
+Medidas de protección cubren todas las etapas: creación, procesamiento, almacenamiento, consulta, modificación, archivado, eliminación. Estrategia de protección permanece consistente durante todas estas etapas.
 
-Where applicable, each entity must indicate its relationship with:
+### 17.5 Acceso a Información
+Limitado exclusivamente a procesos, componentes y mecanismos autorizados por la arquitectura. Organización del modelo facilita aplicación de controles de acceso durante implementación, sin depender de mecanismo tecnológico específico.
 
-- The associated functional requirements.
-- The architectural domain to which it belongs.
-- The official data flow.
-- The Decision Model.
-- The corresponding state machines.
-- The catalogs used.
-- The applicable integrity rules.
-- The related validation rules.
+### 17.6 Protección de Información Histórica
+Información usada para auditoría, trazabilidad e historia se protege de manera que preserve permanentemente su integridad y confiabilidad. Toda modificación a información histórica se justifica, documenta y autoriza debidamente.
 
-Likewise, where pertinent, each attribute may document:
+### 17.7 Compatibilidad con Arquitectura de Seguridad
+Reglas de este capítulo permanecen compatibles con: Arquitectura General del Sistema, Stack Tecnológico oficial, Modelo de Manejo de Errores, políticas oficiales de persistencia, mecanismos de auditoría y trazabilidad.
 
-- The corresponding validation rule.
-- The associated integrity rule.
-- Its classification according to sensitivity.
-- Its classification according to persistence.
-- Relevant architectural observations.
+### 17.8 Evolución de Políticas de Protección
+Aplica REC-001.
 
 ---
 
-### 20.6. Dictionary consistency
+## 18. Reglas de Validación de Datos
 
-All information documented in the Official Data Dictionary must remain consistent with:
+Principios oficiales que garantizan que toda información incorporada al modelo sea consistente, completa, válida y compatible con la arquitectura. Previenen incorporación de información incorrecta, preservan integridad del modelo y aseguran cumplimiento de reglas funcionales y arquitectónicas. Validaciones aplican durante todo el ciclo de vida de la información, independientemente del mecanismo tecnológico usado para su implementación.
 
-- The Logical Data Model.
-- The Official Data Model Diagram.
-- The data model principles.
-- The general system architecture.
-- The rest of the official project documentation.
+### 18.1 Principios Generales
+Toda validación debe:
+- Verificar consistencia de información antes de su incorporación al modelo.
+- Mantener coherencia con reglas de integridad definidas.
+- Ser objetiva, reproducible y verificable.
+- Mantener independencia de tecnología usada para implementación.
+- Promover calidad de información.
+- Reducir incorporación de datos inconsistentes.
+- Mantener compatibilidad con Modelo de Decisión y flujo oficial de procesamiento.
 
-Contradictions between the dictionary and other official artifacts are not permitted.
+### 18.2 Tipos de Validación
 
----
-
-### 20.7. Dictionary maintenance
+| Tipo | Definición | Contenido |
+|---|---|---|
+| **Estructurales** | Verifican requisitos básicos definidos para cada elemento del modelo | Obligatoriedad, tipo de dato, longitud, formato, dominio de valores, restricciones de unicidad. Reglas específicas se documentan en el Diccionario Oficial de Datos |
+| **Funcionales** | Verifican cumplimiento de reglas de negocio establecidas para la automatización | Garantizan que información represente correctamente comportamiento esperado del dominio funcional |
+| **Relacionales** | Verifican coherencia existente entre entidades relacionadas | Preservan integridad referencial y garantizan consistencia de relaciones definidas por el modelo |
+| **Temporales** | Verifican coherencia cronológica de información durante ciclo de vida de entidades | No pueden registrarse secuencias temporales incompatibles con el flujo oficial |
+| **Semánticas** | Verifican, donde aplique, que información generada automáticamente o mediante IA sea coherente con contexto funcional antes de incorporarse | Complementan reglas de integridad semántica; aplican cuando naturaleza de la información lo requiera. Garantizan: consistencia con dominio representado, respeto a reglas funcionales, coherencia con información previamente almacenada, no compromiso de integridad semántica |
 
-Any incorporation, modification, or deletion of information documented in the Official Data Dictionary must be carried out in a controlled manner.
+### 18.3 Gestión de Errores de Validación
+Toda validación fallida se gestiona según el Modelo de Manejo de Errores aprobado. **La incorporación de información al modelo no continúa cuando el incumplimiento de una regla de validación comprometa integridad, consistencia o confiabilidad de la información.**
 
-Modifications must:
+### 18.4 Evolución de Reglas de Validación
+Aplica REC-001.
 
-- Maintain documentary traceability.
-- Preserve model consistency.
-- Update related documentation where applicable.
-- Keep the Logical Data Model and the Official Data Model Diagram synchronized.
-
 ---
-
-### 20.8. Dictionary evolution
 
-The Official Data Dictionary must evolve together with the data model.
+## 19. Estrategia de Migración
 
-Any modification must be documented, justified, and formally approved before being incorporated into a new official version of the project.
+Principios oficiales para gestionar evolución estructural del modelo de datos durante todo el ciclo de vida. Garantizan que cualquier modificación a la estructura persistente preserve integridad de información, mantenga compatibilidad con arquitectura aprobada y permita evolución controlada. Decisiones sobre herramientas específicas de migración se rigen por el Stack Tecnológico oficial y no forman parte de este documento.
 
-The dictionary constitutes the official source of reference for the detailed definition of data model elements and must remain permanently updated.
+### 19.1 Principios Generales
+Toda migración debe:
+- Mantener integridad de información.
+- Preservar consistencia del modelo de datos.
+- Garantizar trazabilidad de modificaciones.
+- Mantener compatibilidad con arquitectura general.
+- Ser reproducible y verificable.
+- Promover evolución controlada del proyecto.
+- Minimizar riesgo de pérdida o corrupción de información.
 
+### 19.2 Alcance
+Migraciones gestionan cualquier modificación estructural que afecte el modelo persistente, incluyendo donde aplique: incorporación de nuevas entidades, modificación de entidades existentes, cambios en relaciones, actualización de restricciones, incorporación o modificación de catálogos, ajustes derivados de evolución del modelo.
 
----
-
-## 21. Official Data Model Diagram
+### 19.3 Clasificación de Migraciones
 
-The Official Data Model Diagram constitutes the official graphical representation of the logical structure of the information used by the job search automation.
+| Tipo | Definición |
+|---|---|
+| **Evolutivas** | Incorporan nuevas capacidades preservando compatibilidad con estructura existente |
+| **Correctivas** | Corrigen errores, inconsistencias o deficiencias identificadas durante evolución |
+| **Estructurales** | Introducen modificaciones significativas a organización del modelo y requieren análisis de impacto previo a ejecución |
 
-Its purpose is to facilitate understanding of the general organization of the data model, visually showing entities, their relationships, and the general structure of the system, maintaining coherence with the Logical Data Model and the Official Data Dictionary.
+### 19.4 Versionado de Migraciones
+Toda migración se asocia con versión oficial del modelo de datos. Cada migración registra mínimo: identificador de migración, versión del modelo, descripción de la modificación, justificación funcional o arquitectónica, fecha de incorporación, resultado de ejecución.
 
-The diagram must remain permanently synchronized with these artifacts and will not constitute the official source for the definition of the data model.
+### 19.5 Validación Previa a Migración
+Antes de ejecutar, verificar mínimo:
+- Consistencia del modelo de datos.
+- Compatibilidad con versión anterior.
+- Impacto sobre información existente.
+- Cumplimiento de reglas de integridad.
+- Compatibilidad con arquitectura general.
 
----
+**Toda migración debe tener análisis de impacto documentado antes de su aprobación.**
 
-### 21.1. Purpose of the diagram
+### 19.6 Reversibilidad
+Siempre que sea técnicamente factible, toda migración se diseña permitiendo revertir cambios y restaurar estado anterior. Cuando no pueda revertirse por limitaciones técnicas o naturaleza de la transformación, esta condición se documenta anticipadamente con justificación. En tales casos, se establecen medidas que minimicen riesgo a integridad y disponibilidad de información.
 
-The Official Data Model Diagram must:
+### 19.7 Trazabilidad de Migraciones
+Toda migración forma parte de historia oficial de evolución del modelo. Documentación correspondiente permite reconstruir: versión origen, versión destino, cambios realizados, justificación de la modificación, impacto identificado, evidencia de aprobación.
 
-- Graphically represent the logical structure of the data model.
-- Facilitate understanding of the relationships between entities.
-- Promote architectural analysis of the system.
-- Serve as support for the development and maintenance of the project.
-- Maintain coherence with all official documentation.
+### 19.8 Evolución de Estrategia de Migración
+Aplica REC-001.
 
 ---
 
-### 21.2. Scope of the diagram
+## 20. Criterios de Aceptación
 
-The diagram must represent, at a minimum:
+Condiciones oficiales que el modelo de datos debe cumplir para considerarse completo, consistente y conforme con la arquitectura aprobada. Proveen conjunto de criterios objetivos para verificar calidad antes de aprobación oficial o incorporación de nuevas versiones. Cumplimiento obligatorio para toda versión oficial.
 
-- The official entities of the data model.
-- The existing relationships between entities.
-- The corresponding cardinalities.
-- The functional domains when convenient for understanding the model.
-- The classification of entities according to the project architecture.
-- The official catalogs when they form part of the logical model.
-- The relevant structural dependencies.
+### 20.1 Integridad Estructural
+Mínimo:
+- Todas las entidades oficiales representadas.
+- Todas las relaciones apropiadamente definidas y justificadas.
+- Mecanismos oficiales de identificación documentados.
+- Reglas de integridad correctamente aplicables.
+- Sin inconsistencias estructurales dentro del modelo.
 
-The inclusion of additional information must be justified by its usefulness for understanding the model architecture.
+### 20.2 Coherencia Funcional
+Modelo representa correctamente el dominio funcional. Mínimo verificar:
+- Modelo soporta completamente el flujo oficial de procesamiento.
+- Entidades representan correctamente conceptos del dominio.
+- Relaciones reflejan necesidades funcionales del proyecto.
+- Máquinas de estado compatibles con ciclo de vida de entidades correspondientes.
 
----
+### 20.3 Calidad del Modelo
+Demostrar que:
+- Información puede mantenerse consistentemente.
+- Redundancia innecesaria minimizada.
+- Organización de entidades promueve mantenibilidad.
+- Arquitectura permite evolución controlada del sistema.
+- Modelo es escalable y extensible.
 
-### 21.3. Graphical representation
+### 20.4 Cumplimiento de Reglas del Modelo
+Antes de aprobación, verificar cumplimiento con: principios del modelo de datos, objetivos del modelo, reglas de integridad, reglas de validación, políticas de persistencia, principios de seguridad, mecanismos de trazabilidad y auditoría.
 
-The graphical representation must facilitate understanding of the data model avoiding unnecessary complexity.
+### 20.5 Coherencia Documental
+Modelo completamente alineado con documentación oficial. Mínimo verificar compatibilidad con: requisitos funcionales y no funcionales, documentación estratégica del proyecto, flujo de datos oficial, Modelo de Decisión, Arquitectura General del Sistema, Stack Tecnológico aprobado, Modelo de Manejo de Errores, resto de documentos oficiales relacionados con arquitectura. **No deben existir contradicciones entre el modelo de datos y documentación oficial vigente.**
 
-The diagram must:
+### 20.6 Completitud de Documentación
+Antes de aprobar versión oficial, verificar disponibilidad mínima de:
+- Modelo Lógico de Datos.
+- Diccionario Oficial de Datos.
+- Diagrama Oficial del Modelo de Datos.
+- Historial de versiones correspondiente.
+- Documentación de cambios aprobados.
 
-- Maintain a clear and uniform organization.
-- Minimize unnecessary crosses between relationships.
-- Promote readability.
-- Maintain consistency in the symbology used.
-- Facilitate its evolution as the data model grows.
+### 20.7 Aprobación del Modelo
+Modelo solo se considera oficialmente aprobado cuando todos los criterios de este capítulo han sido satisfactoriamente verificados. Toda excepción se documenta, justifica y aprueba formalmente antes de liberar nueva versión oficial.
 
-The specific graphical notation will be defined during the implementation phase and must remain uniform across all versions of the diagram.
+### 20.8 Revalidación del Modelo
+Toda modificación al modelo conduce a nueva evaluación de criterios de aceptación de este capítulo. **No puede aprobarse nueva versión mientras algún criterio de aceptación permanezca incumplido.**
 
 ---
 
-### 21.4. Relationship with the Logical Data Model
+## 21. Diccionario Oficial de Datos
 
-The Official Data Model Diagram must be derived directly from the Logical Data Model.
+Especificación técnica oficial del modelo de datos. Documenta completa, uniforme y trazablemente todos los elementos que componen el modelo, proporcionando fuente oficial única de información para diseño, implementación, mantenimiento y evolución. Toda entidad, atributo, relación, catálogo y componente del modelo se documenta según estructura establecida en este capítulo.
 
-Any structural modification made to the logical model must subsequently be reflected in the official diagram.
+### 21.1 Objetivos
+Centralizar documentación técnica del modelo; garantizar uniformidad en definición de elementos; facilitar implementación de base de datos; promover mantenibilidad; servir como referencia oficial para desarrollo y evolución; mantener trazabilidad con resto de documentación oficial.
 
-The diagram may not contain elements that do not exist in the Logical Data Model.
+### 21.2 Alcance
+Documenta mínimo: entidades, atributos, relaciones, claves primarias, claves alternas, claves foráneas, catálogos, restricciones, reglas de validación, máquinas de estado donde aplique, observaciones arquitectónicas relevantes. **No debe existir elemento persistente del modelo de datos que no esté documentado en este diccionario.**
 
----
-
-### 21.5. Relationship with the Official Data Dictionary
+### 21.3 Plantilla Oficial para Entidades
+Toda entidad documentada con estructura uniforme. Mínimo incluye:
 
-Every entity represented in the diagram must be documented in the Official Data Dictionary.
+| Sección | Contenido |
+|---|---|
+| **Información general** | Nombre oficial, dominio funcional, tipo de entidad, descripción funcional, responsabilidad principal |
+| **Identificación** | Identificador técnico, clave primaria, claves alternas |
+| **Relaciones** | Entidades relacionadas, cardinalidades, claves foráneas, dependencias relevantes |
+| **Ciclo de vida** | Máquina de estado donde aplique, estados principales, observaciones relacionadas con ciclo de vida |
+| **Catálogos asociados** | Lista de catálogos usados por la entidad |
+| **Observaciones arquitectónicas** | Información relevante para entender rol de la entidad dentro del modelo |
 
-Relationships, identification mechanisms, and other graphically represented elements must maintain coherence with the corresponding technical documentation.
+### 21.4 Plantilla Oficial para Atributos
+Todo atributo documentado con estructura uniforme. Mínimo incluye:
+- Nombre oficial.
+- Descripción funcional.
+- Tipo lógico.
+- Tipo físico, donde aplique durante implementación.
+- Categoría de atributo.
+- Obligatoriedad.
+- Valor por defecto, donde aplique.
+- Dominio de valores.
+- Restricciones.
+- Reglas de validación.
+- Restricciones de unicidad, donde existan.
+- Nivel de sensibilidad.
+- Clasificación según persistencia.
+- Observaciones relevantes.
 
-The diagram constitutes a visual representation of the model and does not replace the detailed specification contained in the dictionary.
+### 21.5 Trazabilidad Documental
+Mantener trazabilidad con resto de documentación oficial. Donde aplique, cada entidad indica relación con: requisitos funcionales asociados, dominio arquitectónico al que pertenece, flujo de datos oficial, Modelo de Decisión, máquinas de estado correspondientes, catálogos usados, reglas de integridad aplicables, reglas de validación relacionadas.
 
----
+Donde pertinente, cada atributo puede documentar: regla de validación correspondiente, regla de integridad asociada, clasificación según sensibilidad, clasificación según persistencia, observaciones arquitectónicas relevantes.
 
-### 21.6. Diagram versioning
+### 21.6 Consistencia del Diccionario
+Toda información documentada permanece consistente con: Modelo Lógico de Datos, Diagrama Oficial del Modelo de Datos, principios del modelo de datos, arquitectura general del sistema, resto de documentación oficial. **No se permiten contradicciones entre el diccionario y otros artefactos oficiales.**
 
-The Official Data Model Diagram must be versioned consistently with the official versions of the data model.
+### 21.7 Mantenimiento del Diccionario
+Toda incorporación, modificación o eliminación se realiza de manera controlada. Modificaciones deben: mantener trazabilidad documental, preservar consistencia del modelo, actualizar documentación relacionada donde aplique, mantener sincronizados Modelo Lógico de Datos y Diagrama Oficial del Modelo de Datos.
 
-Each version must be associated with the corresponding Logical Data Model and the Official Data Dictionary.
+### 21.8 Evolución del Diccionario
+Evoluciona junto con el modelo de datos. Toda modificación se documenta, justifica y aprueba formalmente antes de incorporarse a nueva versión oficial. El diccionario constituye fuente oficial de referencia para definición detallada de elementos del modelo y debe permanecer permanentemente actualizado.
 
-Any modification must be documented within the official model evolution history.
-
 ---
 
-### 21.7. Diagram maintenance
+## 22. Diagrama Oficial del Modelo de Datos
 
-Any modification incorporated into the data model must be reflected promptly in the Official Data Model Diagram.
+Representación gráfica oficial de la estructura lógica de la información. Facilita comprensión de organización general del modelo mostrando visualmente entidades, relaciones y estructura general, manteniendo coherencia con Modelo Lógico de Datos y Diccionario Oficial. Debe permanecer permanentemente sincronizado con estos artefactos y **no constituye la fuente oficial para definición del modelo de datos**.
 
-Synchronization between the diagram, the logical model, and the dictionary must be permanently preserved.
+### 22.1 Propósito
+Representar gráficamente estructura lógica del modelo; facilitar comprensión de relaciones entre entidades; promover análisis arquitectónico del sistema; servir como soporte para desarrollo y mantenimiento; mantener coherencia con toda la documentación oficial.
 
-Inconsistent versions between these artifacts are not permitted.
+### 22.2 Alcance
+Representa mínimo: entidades oficiales del modelo, relaciones existentes entre entidades, cardinalidades correspondientes, dominios funcionales cuando sea conveniente para comprensión, clasificación de entidades según arquitectura del proyecto, catálogos oficiales cuando formen parte del modelo lógico, dependencias estructurales relevantes. Inclusión de información adicional debe justificarse por su utilidad para comprensión de arquitectura del modelo.
 
----
+### 22.3 Representación Gráfica
+Facilitar comprensión evitando complejidad innecesaria. Debe:
+- Mantener organización clara y uniforme.
+- Minimizar cruces innecesarios entre relaciones.
+- Promover legibilidad.
+- Mantener consistencia en simbología usada.
+- Facilitar evolución conforme crece el modelo.
 
-### 21.8. Nature of the diagram
+Notación gráfica específica se define durante fase de implementación y debe permanecer uniforme en todas las versiones del diagrama.
 
-The Official Data Model Diagram constitutes a graphical support artifact for understanding the system architecture.
+### 22.4 Relación con Modelo Lógico
+Derivado directamente del Modelo Lógico de Datos. Toda modificación estructural hecha al modelo lógico se refleja posteriormente en el diagrama oficial. **El diagrama no puede contener elementos que no existan en el Modelo Lógico de Datos.**
 
-The official source for the definition of the data model shall be comprised of:
+### 22.5 Relación con Diccionario Oficial
+Toda entidad representada en el diagrama está documentada en el Diccionario Oficial. Relaciones, mecanismos de identificación y otros elementos representados gráficamente mantienen coherencia con documentación técnica correspondiente. El diagrama constituye representación visual del modelo y **no reemplaza** la especificación detallada contenida en el diccionario.
 
-- The Logical Data Model.
-- The Official Data Dictionary.
+### 22.6 Versionado del Diagrama
+Versionado consistentemente con versiones oficiales del modelo de datos. Cada versión se asocia con Modelo Lógico de Datos y Diccionario Oficial correspondientes. Toda modificación se documenta dentro de historia oficial de evolución del modelo.
 
-In case of discrepancy between the diagram and these artifacts, the information documented in the Logical Data Model and the Official Data Dictionary shall always prevail.
+### 22.7 Mantenimiento del Diagrama
+Toda modificación incorporada al modelo se refleja prontamente en el diagrama. Sincronización entre diagrama, modelo lógico y diccionario se preserva permanentemente. **No se permiten versiones inconsistentes entre estos artefactos.**
 
-The diagram must be considered a visual representation derived from these documents and remain permanently updated with respect to them.
+### 22.8 Naturaleza del Diagrama
+Constituye artefacto de soporte gráfico para comprensión de arquitectura del sistema. La fuente oficial para definición del modelo de datos está compuesta por: **Modelo Lógico de Datos** y **Diccionario Oficial de Datos**. En caso de discrepancia entre el diagrama y estos artefactos, **la información documentada en el Modelo Lógico de Datos y el Diccionario Oficial de Datos prevalece siempre**. El diagrama se considera representación visual derivada de estos documentos y debe permanecer permanentemente actualizado respecto a ellos.

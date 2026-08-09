@@ -1,3338 +1,385 @@
-# Document 6 - Error Handling
+# DOC-06 — Manejo de errores (versión optimizada)
 
-## 1. Purpose of the Document
+## 1. Propósito y alcance
+Este documento define el modelo oficial para detectar, clasificar, registrar, tratar, recuperar y rastrear errores en la automatización de búsqueda de empleo.
 
-This document defines the official model for the detection, classification, logging, treatment, recovery, and tracking of errors that may arise during the operation of the job search automation.
+Establece principios, reglas y procedimientos uniformes para controlar fallas y minimizar su impacto sobre continuidad, integridad de información y experiencia de usuario.
 
-Its purpose is to establish a uniform set of principles, rules, and procedures that allow failures to be managed in a controlled manner, minimizing their impact on process continuity, information integrity, and user experience.
+Es la referencia oficial obligatoria para todos los módulos, procesos, componentes, servicios, integraciones, flujos de datos y recursos de la automatización, independiente de la tecnología usada.
 
-This document constitutes the official reference for error handling in all modules, processes, components, services, integrations, data flows, and resources that make up the automation, regardless of the technology used for its implementation.
+Aplica también a cualquier desarrollo, modificación o extensión que introduzca nuevas condiciones de error o mecanismos de recuperación.
 
-It also defines the necessary guidelines to ensure that all errors are detected in a timely manner, logged consistently, classified according to their severity, treated through previously established recovery strategies, and preserved for auditing, traceability, and continuous improvement of the system.
-
-The provisions contained in this document shall be mandatory for all components of the automation and for any future development, modification, or extension that may introduce new error conditions or recovery mechanisms.
-
----
-
-# 2. Principles of Error Handling
-
-The following principles establish the general rules that shall govern the detection, classification, treatment, recovery, and tracking of all errors that may occur during the operation of the job search automation.
-
-These principles complement the Project Glossary, the Functional Requirements, the Non-Functional Requirements, the Decision Model, the Data Flow, and the Project Standards, constituting the normative basis for ensuring uniform and controlled handling of any error condition.
+Objetivos operativos:
+- Detectar errores oportunamente.
+- Registrarlos consistentemente.
+- Clasificarlos por severidad.
+- Tratarlos con estrategias de recuperación predefinidas.
+- Preservarlos para auditoría, trazabilidad y mejora continua.
 
 ---
 
-### PME-001. Timely Detection
+## 2. Principios de manejo de errores (PME)
+Estos principios complementan el Project Glossary, Functional Requirements, Non-Functional Requirements, Decision Model, Data Flow y Project Standards.
 
-Every error shall be detected as soon as possible, preventing it from continuing to propagate to other processes or system components.
-
----
-
-### PME-002. Mandatory Logging
-
-Every detected error shall be logged in accordance with the official auditing and traceability conventions defined by the project.
-
-The existence of silent errors whose occurrence cannot be verified later shall not be permitted.
-
----
-
-### PME-003. Uniform Classification
-
-Every error shall be classified using the official criteria of severity, origin, and impact defined in this document.
-
-Alternative classifications for the same type of error shall not be used.
-
----
-
-### PME-004. Controlled Recovery
-
-Whenever technically possible, the system shall attempt to automatically recover execution through the authorized recovery mechanisms.
-
-When automatic recovery is not feasible, the process shall terminate in a controlled manner.
+| ID | Principio |
+|---|---|
+| PME-001 | Detectar cada error tan pronto como sea posible y evitar su propagación. |
+| PME-002 | Registrar todo error según convenciones oficiales de auditoría y trazabilidad. Prohibido errores silenciosos no verificables. |
+| PME-003 | Clasificar cada error con criterios oficiales de severidad, origen e impacto. No usar clasificaciones alternativas. |
+| PME-004 | Intentar recuperación automática autorizada; si no es viable, terminar controladamente. |
+| PME-005 | Nunca comprometer integridad, consistencia ni trazabilidad de la información. |
+| PME-006 | Aislar errores para no interrumpir innecesariamente procesos independientes. |
+| PME-007 | Incluir información suficiente para análisis, reproducción e investigación. |
+| PME-008 | Relacionar cada error con proceso, módulo, componente, oferta, operación o recurso afectado. |
+| PME-009 | Mantener independencia de lenguaje, herramienta, proveedor o plataforma. |
+| PME-010 | Ninguna recuperación puede causar pérdida de información, duplicación de registros ni alteración del flujo lógico. |
+| PME-011 | Permitir incorporar nuevos errores, mecanismos y fuentes sin modificar la estructura general. |
+| PME-012 | Mantener alineación con documentación oficial; ningún procedimiento puede contradecir documentos aprobados. |
+| PME-013 | Minimizar intervención del usuario; si es necesaria, suministrar información suficiente para decidir. |
+| PME-014 | Todo el ciclo de vida del error debe ser auditable mediante logs. |
+| PME-015 | Toda modificación al modelo debe documentarse, justificarse y preservar compatibilidad cuando sea posible. |
 
 ---
 
-### PME-005. Integrity Protection
+## 3. Arquitectura de manejo de errores (AME)
+Modelo obligatorio para todos los procesos: descubrimiento de oportunidades, preparación inicial, evaluación inicial, procesamiento de ofertas, almacenamiento y cualquier componente futuro.
 
-Error handling shall never compromise the integrity, consistency, or traceability of the information stored by the automation.
+| Etapa | Definición |
+|---|---|
+| AME-01 Detección | Identificar condición anómala o comportamiento inesperado. |
+| AME-02 Clasificación | Determinar tipo, origen, severidad e impacto según reglas oficiales. |
+| AME-03 Registro | Registrar información necesaria para trazabilidad y auditoría antes de ejecutar recuperación. |
+| AME-04 Evaluación | Determinar si procede recuperación automática o intervención de otro proceso/usuario, usando políticas oficiales. |
+| AME-05 Recuperación | Ejecutar estrategia autorizada: reintento, reinicio controlado, re-ejecución, omisión controlada, continuación segura o terminación controlada. |
+| AME-06 Validación | Verificar que la recuperación resolvió el error; si no, escalar. |
+| AME-07 Escalamiento | Si la recuperación no es posible o es insuficiente, escalar según severidad: nuevos intentos, otro componente, usuario o terminación controlada. |
+| AME-08 Cierre | Finalizar formalmente la gestión preservando el histórico. |
+| AME-09 Auditoría | Conservar información disponible para auditoría, análisis estadístico, investigación y mejora. |
 
----
+Flujo obligatorio:
+1. Detectar.
+2. Clasificar.
+3. Registrar.
+4. Evaluar estrategia.
+5. Recuperar si aplica.
+6. Validar recuperación.
+7. Escalar si falla.
+8. Cerrar incidente.
+9. Preservar información para auditoría y trazabilidad.
 
-### PME-006. Operational Continuity
-
-Errors shall be isolated to prevent a localized failure from unnecessarily interrupting other independent processes of the system.
-
----
-
-### PME-007. Reproducibility
-
-Every error condition shall contain sufficient information to allow its analysis, reproduction, and subsequent investigation.
-
----
-
-### PME-008. Traceability
-
-Every error shall be relatable to the process, module, component, offer, operation, or resource where it was detected.
-
----
-
-### PME-009. Technological Independence
-
-Error handling rules shall remain independent of any programming language, tool, vendor, or technological platform.
-
----
-
-### PME-010. Safe Recovery
-
-No recovery mechanism may cause information loss, record duplication, or alteration of the logical flow defined for the automation.
+Ningún componente puede implementar un flujo alternativo que contradiga estas etapas, salvo excepción expresamente documentada y aprobada.
 
 ---
 
-### PME-011. Scalability
-
-The error handling model shall allow incorporating new types of errors, recovery mechanisms, and failure sources without modifying the general structure of the system.
-
----
-
-### PME-012. Document Consistency
-
-The rules established in this document shall remain aligned with all official project documentation.
-
-No error handling procedure may contradict previously approved documents.
-
----
-
-### PME-013. Minimal User Intervention
-
-Whenever possible, error recovery shall be performed automatically, minimizing the need for user intervention.
-
-When such intervention is necessary, the system shall provide sufficient information to facilitate decision-making.
-
----
-
-### PME-014. Auditability
-
-The entire lifecycle of an error, from its detection to its resolution, shall be auditable through the logs generated by the automation.
-
----
-
-### PME-015. Controlled Evolution
-
-Every modification to the error handling model shall be previously documented, justified, and shall preserve compatibility with existing mechanisms whenever possible.
-
----
-
-## General Principles of Error Handling
-
-Error handling shall comply with the following principles:
-
-- Detect errors in a timely manner.
-- Log all errors without exceptions.
-- Classify errors uniformly.
-- Favor automatic recovery when possible.
-- Protect the integrity and consistency of information.
-- Guarantee operational continuity.
-- Maintain complete traceability of each error's lifecycle.
-- Facilitate auditing and subsequent analysis.
-- Maintain technological independence.
-- Allow the evolution and scalability of the system.
-
----
-
-# 3. Error Handling Architecture
-
-The error handling architecture defines the conceptual model through which the automation detects, classifies, logs, treats, recovers from, and terminates any error condition that may arise during the execution of its processes.
-
-Its purpose is to ensure that all system modules respond uniformly to failures, regardless of their origin or nature, preserving operational continuity, data integrity, and complete traceability of the incident.
-
-The error handling architecture shall be applicable to all processes of the automation, including the opportunity discovery modules, initial offer preparation, initial evaluation, offer processing, information storage, and any component incorporated in the future.
-
----
-
-## Components of the Error Handling Model
-
-The architecture shall be composed of the following sequential stages:
-
-### AME-01. Detection
-
-Identify the occurrence of an anomalous condition or behavior different from expected during the execution of a process.
-
----
-
-### AME-02. Classification
-
-Determine the type, origin, severity, and impact of the error according to the rules defined in this document.
-
----
-
-### AME-03. Logging
-
-Log all information necessary to ensure traceability, auditing, and subsequent analysis of the error.
-
-Logging shall be performed before executing any recovery action.
-
----
-
-### AME-04. Evaluation
-
-Determine whether the error can be resolved automatically or if it requires the intervention of another process or the user.
-
-This evaluation shall be performed using the official recovery policies.
-
----
-
-### AME-05. Recovery
-
-Execute the corresponding recovery strategy when an authorized mechanism exists for it.
-
-Recovery may include, among other actions:
-
-- Retries.
-- Controlled process restart.
-- Re-execution of an operation.
-- Controlled skipping of a stage.
-- Safe continuation of the flow.
-- Controlled termination of the process.
-
----
-
-### AME-06. Validation
-
-Verify that the executed recovery has correctly resolved the error condition.
-
-Otherwise, the error shall continue with the escalation process defined by the system.
-
----
-
-### AME-07. Escalation
-
-When automatic recovery is not possible or proves insufficient, the error shall be escalated according to the rules established for its severity level.
-
-Escalation may involve:
-
-- New recovery attempts.
-- Intervention of another component.
-- User intervention.
-- Controlled termination of the process.
-
----
-
-### AME-08. Closure
-
-Formally finalize the error management once the condition has been resolved or the process has concluded in a controlled manner.
-
-Closure shall preserve all historical information generated during the error treatment.
-
----
-
-### AME-09. Audit
-
-All information related to the error shall remain available for audits, statistical analysis, technical investigations, and future system improvements.
-
----
-
-## General Error Handling Flow
-
-Every error identified within the automation shall follow the following logical flow:
-
-1. Detect the error.
-2. Classify the error.
-3. Log the incident.
-4. Evaluate the recovery strategy.
-5. Execute recovery when applicable.
-6. Validate the recovery result.
-7. Escalate the error if recovery fails.
-8. Close the incident.
-9. Preserve all information for audit and traceability.
-
----
-
-## Scope of the Architecture
-
-The architecture defined in this document shall be mandatory for all modules and components of the automation.
-
-No component may implement an alternative error handling flow that contradicts the stages established herein, unless there is an exception expressly documented and approved as part of the official project documentation.
-
----
-
-# 4. Error Classification
-
-Error classification establishes the official model for identifying, categorizing, and managing all error conditions that may arise during the execution of the job search automation.
-
-Its purpose is to ensure that all errors are treated uniformly, facilitating their identification, prioritization, recovery, auditing, and statistical analysis.
-
-Each error shall belong to a single main category and shall retain that classification throughout its entire lifecycle.
-
----
-
-## Classification Criteria
-
-Every error shall be classified using the following criteria:
-
-### CE-001. Origin
-
-Identifies the component or resource where the error occurred.
-
----
-
-### CE-002. Nature
-
-Describes the type of failure that occurred.
-
----
-
-### CE-003. Severity
-
-Determines the operational impact the error produces on the automation.
-
----
-
-### CE-004. Recoverability
-
-Indicates whether the error can be resolved automatically or requires additional intervention.
-
----
-
-### CE-005. Persistence
-
-Determines whether the error is temporary or permanent.
-
----
-
-### CE-006. Scope
-
-Indicates whether the error affects only a specific operation or compromises additional system processes.
-
----
-
-## Official Error Categories
-
-The following categories constitute the official error classification of the project.
-
-### CER-001. Network Errors (ER-RED)
-
-Errors related to connectivity problems, service availability, timeouts, or communication failures between components.
-
-Examples:
-
-- Connection loss.
-- Timeout.
-- DNS unavailable.
-- Remote service inaccessible.
-
----
-
-### CER-002. Browser Errors (ER-NAV)
-
-Errors produced during browser automation.
-
-Examples:
-
-- Page not loaded.
-- Non-existent element.
-- Captcha.
-- Unexpected DOM change.
-- Session expired.
-
----
-
-### CER-003. Extraction Errors (ER-EXT)
-
-Errors during the retrieval of information from a job source.
-
-Examples:
-
-- Incomplete information.
-- Invalid selectors.
-- Data not found.
-- Inaccessible content.
-
----
-
-### CER-004. Validation Errors (ER-VAL)
-
-Errors detected during the validation of processed information.
-
-Examples:
-
-- Missing required fields.
-- Invalid formats.
-- Inconsistent data.
-- Out-of-range values.
-
----
-
-### CER-005. Language Model Errors (ER-LLM)
-
-Errors related to processing performed by the language model.
-
-Examples:
-
-- Empty response.
-- Invalid response.
-- Incorrectly formatted output.
-- Response time exceeded.
-- Inability to interpret the content.
-
----
-
-### CER-006. Data Errors (ER-DAT)
-
-Errors related to the integrity, consistency, or structure of the information used by the automation.
-
-Examples:
-
-- Corrupt data.
-- Duplicate data.
-- Incompatible data.
-- Inconsistent relationships.
-
----
-
-### CER-007. Persistence Errors (ER-DB)
-
-Errors occurring during the storage or retrieval of information.
-
-Examples:
-
-- Failed write.
-- Failed read.
-- Inaccessible file.
-- Locked resource.
-
----
-
-### CER-008. Configuration Errors (ER-CFG)
-
-Errors caused by incorrect or incomplete system configurations.
-
-Examples:
-
-- Non-existent parameters.
-- Missing required variables.
-- Incompatible configuration.
-
----
-
-### CER-009. Internal Errors (ER-INT)
-
-Errors produced by the internal functioning of the automation.
-
-Examples:
-
-- Unhandled exceptions.
-- Invalid states.
-- Inconsistent flow.
-- Unsatisfied dependencies.
-
----
-
-### CER-010. External Errors (ER-EXTS)
-
-Errors caused by services, platforms, or external resources over which the automation has no direct control.
-
-Examples:
-
-- API out of service.
-- Changes in job platforms.
-- Temporary provider restrictions.
-- Service maintenance.
-
----
-
-## Official Identifier Convention
-
-All logged errors shall use the following format:
-
+## 4. Clasificación de errores
+
+### 4.1 Criterios de clasificación (CE)
+| ID | Criterio |
+|---|---|
+| CE-001 | Origen: componente o recurso donde ocurrió. |
+| CE-002 | Naturaleza: tipo de falla. |
+| CE-003 | Severidad: impacto operativo. |
+| CE-004 | Recuperabilidad: si puede resolverse automáticamente o requiere intervención adicional. |
+| CE-005 | Persistencia: temporal o permanente. |
+| CE-006 | Alcance: afecta solo una operación o procesos adicionales. |
+
+Cada error pertenece a una única categoría principal y la conserva durante todo su ciclo de vida.
+
+### 4.2 Categorías oficiales (CER)
+| ID | Prefijo | Categoría | Ejemplos |
+|---|---|---|---|
+| CER-001 | ER-RED | Red | Pérdida de conexión; timeout; DNS no disponible; servicio remoto inaccesible. |
+| CER-002 | ER-NAV | Navegador | Página no cargada; elemento inexistente; captcha; cambio inesperado de DOM; sesión expirada. |
+| CER-003 | ER-EXT | Extracción | Información incompleta; selectores inválidos; dato no encontrado; contenido inaccesible. |
+| CER-004 | ER-VAL | Validación | Campos requeridos ausentes; formatos inválidos; datos inconsistentes; valores fuera de rango. |
+| CER-005 | ER-LLM | Modelo de lenguaje | Respuesta vacía; inválida; formato incorrecto; tiempo excedido; incapacidad de interpretar contenido. |
+| CER-006 | ER-DAT | Datos | Datos corruptos; duplicados; incompatibles; relaciones inconsistentes. |
+| CER-007 | ER-DB | Persistencia | Falla de escritura; falla de lectura; archivo inaccesible; recurso bloqueado. |
+| CER-008 | ER-CFG | Configuración | Parámetros inexistentes; variables requeridas ausentes; configuración incompatible. |
+| CER-009 | ER-INT | Interno | Excepciones no manejadas; estados inválidos; flujo inconsistente; dependencias insatisfechas. |
+| CER-010 | ER-EXTS | Externo | API fuera de servicio; cambios en plataformas; restricciones temporales de proveedor; mantenimiento. |
+
+### 4.3 Identificador oficial
+Formato obligatorio:
+```text
+ER-<CATEGORIA>-<SECUENCIAL>
 ```
-ER-<CATEGORY>-<SEQUENTIAL_NUMBER>
-```
-
-Examples:
-
-- ER-RED-001
-- ER-NAV-003
-- ER-EXT-015
-- ER-VAL-002
-- ER-LLM-004
-- ER-DAT-007
-- ER-DB-001
-- ER-CFG-002
-- ER-INT-009
-- ER-EXTS-003
-
-Each identifier shall be unique, immutable, and reusable only as a historical reference for the corresponding error.
-
----
-
-## General Rules
-
-- Every error shall belong to a single main category.
-- Every error shall have an official identifier.
-- The category of an error shall not be modified once logged.
-- New categories may only be incorporated through an official update of this document.
-- No component may use classifications different from those defined herein.
-
----
-
-# 5. Error Sources
-
-Error sources represent all origins from which a failure condition may be generated during the execution of the job search automation.
-
-Their identification allows designing preventive mechanisms, recovery strategies, and specific controls to minimize the operational impact of each type of incident.
-
-The error sources defined in this document constitute the official catalog of potential failure origins and shall be used as a reference for the design, implementation, monitoring, and maintenance of the automation.
-
----
-
-## Classification of Error Sources
-
-### FDE-001. Internal Sources
-
-Correspond to errors originating from the automation's own components.
-
-Include, among others:
-
-- Business logic.
-- Processing flows.
-- Decision rules.
-- Internal processes.
-- Inconsistent states.
-- Programming errors.
-- Unhandled exceptions.
-
----
-
-### FDE-002. Infrastructure Sources
-
-Correspond to errors related to the environment where the automation runs.
-
-Include, among others:
-
-- Operating system.
-- Equipment resources.
-- Permissions.
-- Storage space.
-- System processes.
-- Runtime environment failures.
-
----
-
-### FDE-003. Network Sources
-
-Correspond to communication problems between the automation and external resources.
-
-Include, among others:
-
-- Connectivity loss.
-- High latency.
-- Timeout.
-- DNS.
-- Service interruptions.
-- Temporary access restrictions.
-
----
-
-### FDE-004. Browser Sources
-
-Correspond to errors produced during browser automation.
-
-Include, among others:
-
-- Interface changes.
-- Non-existent elements.
-- Captchas.
-- Unexpected windows.
-- Expired sessions.
-- Blocked resources.
-
----
-
-### FDE-005. Extraction Sources
-
-Correspond to errors during the retrieval of information from job platforms.
-
-Include, among others:
-
-- Incomplete information.
-- Modified structures.
-- Dynamic content.
-- Inaccessible data.
-- Selector changes.
-- Inconsistent information.
-
----
-
-### FDE-006. Language Model Sources
-
-Correspond to errors produced during processing performed by the language model.
-
-Include, among others:
-
-- Invalid responses.
-- Insufficient information.
-- Unexpected formats.
-- Interpretation errors.
-- Response time exceeded.
-- Communication failures with the service.
-
----
-
-### FDE-007. Data Sources
-
-Correspond to errors related to the information used by the automation.
-
-Include, among others:
-
-- Incomplete data.
-- Duplicate records.
-- Inconsistencies.
-- Incompatible formats.
-- Invalid relationships.
-- Corrupt information.
-
----
-
-### FDE-008. Persistence Sources
-
-Correspond to errors during the storage or retrieval of information.
-
-Include, among others:
-
-- Failed writes.
-- Failed reads.
-- Non-existent files.
-- Locked resources.
-- Synchronization failures.
-- Access problems.
-
----
-
-### FDE-009. Configuration Sources
-
-Correspond to errors originating from incorrect system configurations.
-
-Include, among others:
-
-- Non-existent parameters.
-- Incomplete configuration.
-- Missing required variables.
-- Incompatible configurations.
-- Invalid values.
-
----
-
-### FDE-010. User Sources
-
-Correspond to errors caused by actions, decisions, or configurations made by the user.
-
-Include, among others:
-
-- Incorrect configuration.
-- Incomplete information.
-- Inconsistent parameters.
-- Manual process interruption.
-- Decisions incompatible with the current state.
-
----
-
-### FDE-011. External Sources
-
-Correspond to errors originating from services, platforms, or resources that are not part of the automation.
-
-Include, among others:
-
-- Job platforms.
-- External APIs.
-- Authentication services.
-- Artificial intelligence services.
-- Vendor changes.
-- Scheduled maintenance.
-- Restrictions imposed by third parties.
-
----
-
-### FDE-012. Unknown Sources
-
-Correspond to errors whose origin cannot be immediately determined during execution.
-
-These errors shall be logged with all available information and remain under observation until their root cause is identified.
-
----
-
-## General Rules
-
-- Every error shall be associable with at least one error source.
-- A single source may originate multiple error categories.
-- An error condition may be associated with multiple sources when sufficient evidence exists.
-- Error sources shall remain independent of the technology used.
-- The incorporation of new sources shall require an official update of this document.
-- No component may define error sources incompatible with those established herein.
-
----
-
-# 6. Error Detection
-
-Error detection establishes the official model through which the automation identifies any anomalous condition that may affect the correct execution of its processes.
-
-Its purpose is to ensure that all errors are identified early, consistently, and verifiably, allowing timely activation of the classification, recovery, logging, and auditing mechanisms defined in this document.
-
-Error detection shall be applied uniformly across all modules, processes, components, integrations, and resources of the automation.
-
----
-
-## Detection Principles
-
-### PDE-001. Early Detection
-
-Every error shall be detected at the closest possible stage to its origin to prevent the propagation of side effects to other components.
-
----
-
-### PDE-002. Automatic Detection
-
-Whenever technically possible, error detection shall be performed automatically, without relying on user intervention.
-
----
-
-### PDE-003. Verifiable Detection
-
-Every detected error shall be demonstrable through objective evidence obtained during process execution.
-
----
-
-### PDE-004. Continuous Detection
-
-Error detection shall remain active throughout the entire lifecycle of each automation process.
-
----
-
-### PDE-005. No Unnecessary Interruption
-
-The detection of an error shall not automatically imply the termination of the process.
-
-Continuity shall depend on the recovery policies defined for each type of error.
-
----
-
-## Official Detection Mechanisms
-
-### MDE-001. Preventive Validations
-
-These shall be executed before starting an operation to verify that the necessary conditions for its execution exist.
-
-Examples:
-
-- Existence of mandatory configurations.
-- Resource availability.
-- Valid parameters.
-- Available dependencies.
-
----
-
-### MDE-002. Runtime Validations
-
-These shall be executed while the process is running.
-
-Examples:
-
-- Response verification.
-- Operation confirmation.
-- Availability of expected elements.
-- Valid process states.
-
----
-
-### MDE-003. Post-Execution Validations
-
-These shall be executed once an operation is completed to confirm that the obtained result is consistent with the expected one.
-
-Examples:
-
-- Write confirmation.
-- Storage verification.
-- Validation of generated results.
-- Confirmation of state changes.
-
----
-
-### MDE-004. Continuous Monitoring
-
-The automation shall permanently supervise the state of critical processes during their execution.
-
-Monitoring may detect, among others:
-
-- Unexpected interruptions.
-- Stopped processes.
-- Abnormal resource consumption.
-- Inconsistent behaviors.
-
----
-
-### MDE-005. Timeout Detection
-
-When an operation exceeds the maximum allowed time defined by the automation, an error condition shall be generated.
-
-This validation shall be applicable to both internal processes and external resources.
-
----
-
-### MDE-006. Data Integrity Validation
-
-All information received, transformed, stored, or retrieved shall be verified to guarantee its integrity and consistency.
-
----
-
-### MDE-007. Language Model Response Validation
-
-Every response generated by the language model shall be verified before continuing with the processing flow.
-
-At a minimum, the following shall be validated:
-
-- Existence of a response.
-- Expected structure.
-- Required format.
-- Sufficient information to continue the process.
-
----
-
-### MDE-008. External Resource Validation
-
-Every interaction with platforms, APIs, or external services shall confirm that the operation was executed correctly before continuing to the next step of the flow.
-
----
-
-### MDE-009. Business Rule Detection
-
-The automation shall permanently verify compliance with the functional rules and the approved decision model.
-
-Any non-compliance shall be treated as an error condition.
-
----
-
-### MDE-010. Flow Consistency Detection
-
-During the execution of each process, it shall be verified that state transitions, decisions, and operations respect the official flow defined for the automation.
-
----
-
-## General Rules
-
-- Every error shall be detected before propagating to other components, whenever technically possible.
-- Every detection shall generate sufficient evidence for subsequent analysis.
-- The absence of detection shall not imply the non-existence of the error.
-- Detection mechanisms shall be reusable by all system modules.
-- The incorporation of new detection mechanisms shall be officially documented before their use.
-- No module may implement detection mechanisms incompatible with the rules established in this document.
-
----
-
-# 7. Error Logging
-
-Error logging establishes the official model for documenting all error conditions detected during the execution of the job search automation.
-
-Its purpose is to ensure that each incident is logged uniformly, completely, and traceably, allowing its analysis, recovery, auditing, monitoring, and continuous improvement.
-
-Every error detected by any component of the automation shall be logged following the rules defined in this document, regardless of its severity or whether it was automatically recovered.
-
----
-
-## Objectives of Error Logging
-
-Error logging shall allow:
-
-- Preserving the complete history of each incident.
-- Facilitating recovery and fault diagnosis.
-- Providing evidence for audits.
-- Supporting operational monitoring.
-- Identifying trends and recurring errors.
-- Generating reliability indicators.
-- Facilitating continuous improvement of the system.
-
----
-
-## Mandatory Log Information
-
-Every logged error shall contain, at a minimum, the following information.
-
-### RER-001. Error Identifier
-
-Unique identifier assigned according to the official error convention.
-
-Example:
-
-```
-ER-LLM-003
-```
-
----
-
-### RER-002. Incident Identifier
-
-Unique identifier of the specific event that occurred.
-
-It shall allow distinguishing multiple occurrences of the same type of error.
-
----
-
-### RER-003. Date and Time
-
-Exact date and time when the error was detected.
-
-They shall use the official format defined by the project standards.
-
----
-
-### RER-004. Module
-
-Official name of the module where the error occurred.
-
----
-
-### RER-005. Process
-
-Specific process that was running at the time of the incident.
-
----
-
-### RER-006. Component
-
-Component responsible for detecting or generating the error.
-
----
-
-### RER-007. Category
-
-Official error category according to the classification defined in this document.
-
----
-
-### RER-008. Severity Level
-
-Impact level assigned to the error.
-
-Severity shall be determined using the official project rules.
-
----
-
-### RER-009. Error Source
-
-Identified origin of the incident.
-
-It shall correspond to one of the officially defined sources.
-
----
-
-### RER-010. Description
-
-Clear and objective description of the detected error.
-
-It shall not contain subjective interpretations.
-
----
-
-### RER-011. Evidence
-
-Objective information that allows demonstrating the occurrence of the error.
-
-Examples:
-
-- System messages.
-- Received responses.
-- Processed values.
-- Affected resources.
-- Screenshots or references when they exist.
-
----
-
-### RER-012. Action Executed
-
-Description of the action performed by the automation after detecting the error.
-
-Examples:
-
-- Retry.
-- Recovery.
-- Escalation.
-- Controlled termination.
-- Notification.
-
----
-
-### RER-013. Action Result
-
-Result obtained after executing the corresponding strategy.
-
-Examples:
-
-- Recovered.
-- Partially recovered.
-- Not recovered.
-- Escalated.
-- Terminated.
-
----
-
-### RER-014. Incident Status
-
-Current status of the error treatment.
-
-Examples:
-
-- Detected.
-- In recovery.
-- Escalated.
-- Resolved.
-- Closed.
-
----
-
-### RER-015. Offer Identifier
-
-When the error is associated with a specific offer, its official identifier shall be logged.
-
----
-
-### RER-016. Execution Identifier
-
-Unique identifier of the automation execution where the incident occurred.
-
-It shall allow relating multiple errors occurring during the same execution.
-
----
-
-### RER-017. Audit References
-
-Identifiers or internal links that allow relating the incident to associated records, decisions, processes, or documents.
-
----
-
-## General Rules
-
-- Every detected error shall be logged before executing any recovery strategy.
-- No error may be deleted from the history once logged.
-- Every modification made to an incident shall preserve its traceability.
-- Logs shall maintain a uniform format throughout the automation.
-- The logged information shall be sufficient to reproduce and analyze the incident.
-- Logs shall remain available throughout the lifecycle defined by the project's retention policies.
-- No module may log errors using structures different from those defined in this document.
-
----
-
-# 8. Severity Levels
-
-Severity levels establish the official classification of the impact an error produces on the job search automation.
-
-Their purpose is to provide a uniform criterion for determining the priority of attention, recovery strategies, retry policies, escalation mechanisms, and corrective actions applicable to each incident.
-
-Every logged error shall be classified using one and only one of the severity levels defined in this document.
-
----
-
-## Evaluation Criteria
-
-The severity of an error shall be determined considering, at a minimum, the following aspects:
-
-### NSE-001. Operational Impact
-
-Degree to which the error affects the continuity of the automation.
-
----
-
-### NSE-002. Data Impact
-
-Level of impact on the integrity, consistency, or availability of information.
-
----
-
-### NSE-003. Scope
-
-Number of modules, processes, or components affected by the incident.
-
----
-
-### NSE-004. Recoverability
-
-System's ability to automatically resolve the error condition.
-
----
-
-### NSE-005. Required Intervention
-
-Level of user or other component participation necessary to resolve the incident.
-
----
-
-## Official Severity Levels
-
-### SV-1. Critical
-
-Corresponds to errors that prevent the continuity of the automation or compromise the integrity of the system.
-
-#### Characteristics
-
-- Execution cannot continue.
-- No viable automatic recovery exists.
-- May compromise critical information.
-- Requires immediate attention.
-
-#### Examples
-
-- Information corruption.
-- General persistence failure.
-- Critical flow inconsistency.
-- Unrecoverable internal error.
-
----
-
-### SV-2. High
-
-Corresponds to errors that prevent correctly completing an important process, although the rest of the automation may continue functioning.
-
-#### Characteristics
-
-- Affects main processes.
-- May require intervention.
-- Automatic recovery may not be sufficient.
-
-#### Examples
-
-- Inability to process an offer.
-- Persistent language model error.
-- Permanent error on an external platform.
-- Repetitive failure during extraction.
-
----
-
-### SV-3. Medium
-
-Corresponds to errors that partially affect a process, but whose automatic recovery is possible in most cases.
-
-#### Characteristics
-
-- Limited impact.
-- Official recovery mechanism exists.
-- Does not compromise the general integrity of the system.
-
-#### Examples
-
-- Temporary timeout.
-- Transient network error.
-- Temporarily unavailable resource.
-- Recoverable incomplete response.
-
----
-
-### SV-4. Low
-
-Corresponds to errors with reduced impact that do not prevent the general functioning of the automation.
-
-#### Characteristics
-
-- The process can continue.
-- The operational impact is minimal.
-- Does not require immediate intervention.
-
-#### Examples
-
-- Validation warnings.
-- Missing optional information.
-- Minor delays.
-- Successful retry on the first attempt.
-
----
-
-### SV-5. Informational
-
-Corresponds to events logged solely for auditing, monitoring, or statistical analysis purposes.
-
-They do not represent an operational failure condition.
-
-#### Examples
-
-- Successful automatic recovery.
-- Successful retries.
-- Relevant state changes.
-- Tracking events.
-
----
-
-## Rules for Severity Assignment
-
-### RSE-001
-
-Every error shall receive a single official severity level.
-
----
-
-### RSE-002
-
-Severity shall be assigned immediately after classifying the error.
-
----
-
-### RSE-003
-
-Severity may be updated only when there is objective evidence that the actual impact of the incident changed during its treatment.
-
-Every modification shall be logged for auditing purposes.
-
----
-
-### RSE-004
-
-Severity shall never be assigned considering only the cause of the error.
-
-The actual impact produced on the automation shall also be evaluated.
-
----
-
-### RSE-005
-
-Two errors of the same category may have different severity levels when their operational impact is different.
-
----
-
-### RSE-006
-
-Recovery, retry, notification, and escalation strategies shall be based on the assigned severity level.
-
----
-
-## General Severity Matrix
-
-| Level | Impact | Automatic Recovery | User Intervention |
-|--------|----------|-------------------------|--------------------------|
-| SV-1 | Critical | No | Mandatory |
-| SV-2 | High | Partial or limited | Probable |
-| SV-3 | Medium | Yes, normally | Infrequent |
-| SV-4 | Low | Yes | Not required |
-| SV-5 | Informational | Not applicable | Not required |
-
----
-
-## General Rules
-
-- Every logged error shall have an official severity level.
-- Severity shall determine the subsequent actions of error handling.
-- Classification shall remain consistent throughout the automation.
-- Severity modifications shall preserve their history.
-- No component may use severity levels different from those defined in this document.
-
----
-
-# 9. Recovery Strategies
-
-Recovery strategies establish the official set of actions that the automation may execute to restore normal operation of a process after detecting an error condition.
-
-Their purpose is to minimize the operational impact of incidents, preserve information integrity, maintain process continuity, and minimize the need for user intervention.
-
-Every recovery strategy shall be executed according to the rules established in this document and only after having detected, classified, and logged the corresponding error.
-
----
-
-## Recovery Principles
-
-### PRE-001. Safe Recovery
-
-Every recovery strategy shall preserve the integrity, consistency, and traceability of information.
-
----
-
-### PRE-002. Controlled Recovery
-
-No recovery may be executed arbitrarily.
-
-Every action shall correspond to an approved official strategy.
-
----
-
-### PRE-003. Proportional Recovery
-
-The applied strategy shall be consistent with the severity and nature of the error.
-
-Excessive mechanisms shall not be used to resolve minor errors.
-
----
-
-### PRE-004. Verifiable Recovery
-
-Every recovery shall be validated before allowing the continuation of the process.
-
----
-
-### PRE-005. Auditable Recovery
-
-Every executed strategy shall be logged for auditing and subsequent analysis purposes.
-
----
-
-## Official Recovery Strategy Catalog
-
-### REC-001. Automatic Retry
-
-Consists of executing the same operation again without modifying its execution context.
-
-Applicable mainly to temporary errors.
-
-Examples:
-
-- Timeout.
-- Transient network error.
-- Temporarily unavailable service.
-
----
-
-### REC-002. Wait and Resume
-
-Consists of temporarily suspending execution until the condition that caused the error disappears.
-
-Applicable when there is a high probability of spontaneous recovery.
-
----
-
-### REC-003. Controlled Operation Restart
-
-Consists of restarting only the affected operation, keeping the rest of the process intact.
-
-Its objective is to avoid unnecessary repetition of tasks already completed correctly.
-
----
-
-### REC-004. Reprocessing
-
-Consists of executing again a previously completed stage using the available information.
-
-Applicable when there is evidence that the obtained result may have been affected by a recoverable error.
-
----
-
-### REC-005. Safe Flow Continuation
-
-Allows continuing the process by omitting only those operations whose absence does not compromise the integrity of the final result.
-
-It may only be used when explicit authorization exists within the decision model.
-
----
-
-### REC-006. Controlled Omission
-
-Consists of excluding an operation considered optional within the functional flow.
-
-The omission shall be logged and preserved for auditing.
-
----
-
-### REC-007. Escalation
-
-Consists of transferring the error treatment to another recovery mechanism, component, or user when the current strategy proves insufficient.
-
----
-
-### REC-008. Controlled Termination
-
-Consists of stopping the execution of the process in an orderly manner when no safe strategy exists to continue.
-
-Termination shall preserve all information generated up to that point.
-
----
-
-### REC-009. User Intervention Request
-
-Consists of requesting a decision from the user when the system does not have sufficient information to automatically resolve the incident.
-
-The automation shall provide all necessary information to facilitate such decision.
-
----
-
-## Strategy Selection
-
-The recovery strategy shall be selected considering, at a minimum, the following criteria:
-
-### SRE-001. Severity
-
-Impact level of the error.
-
----
-
-### SRE-002. Recoverability
-
-Probability of automatically resolving the incident.
-
----
-
-### SRE-003. Risk
-
-Possibility of affecting the integrity of information or the process.
-
----
-
-### SRE-004. Operational Continuity
-
-Ability to continue the flow without compromising expected results.
-
----
-
-### SRE-005. Dependencies
-
-Existence of components, services, or resources whose availability is necessary to execute the recovery.
-
----
-
-## General Rules
-
-- Every recovery shall use an official strategy.
-- No strategy may compromise the integrity of information.
-- Recovery shall always be validated before continuing the flow.
-- Every executed strategy shall be logged in the incident history.
-- A single error condition may require several strategies executed sequentially.
-- When no strategy proves effective, the incident shall be escalated according to official rules.
-- The incorporation of new strategies shall require a formal update of this document.
-
----
-
-# 10. Retry Policies
-
-Retry policies establish the official rules that regulate the controlled repetition of operations that have failed during the execution of the automation.
-
-Their purpose is to maximize the automatic recovery of temporary errors, avoiding unnecessary retries that may degrade system performance, generate blocks on external platforms, or compromise processing integrity.
-
-Every recovery strategy that contemplates the repetition of an operation shall comply with the policies defined in this document.
-
----
-
-## Principles of Retries
-
-### PRT-001. Controlled Retries
-
-Every operation may be retried only when an official policy authorizes it.
-
-Unlimited retries shall not be permitted.
-
----
-
-### PRT-002. Safe Retries
-
-A retry shall not cause information duplication, inconsistencies, or alterations of the official system flow.
-
----
-
-### PRT-003. Justified Retries
-
-Only operations whose probability of success increases through a new execution may be retried.
-
----
-
-### PRT-004. Auditable Retries
-
-Each attempt shall be logged as part of the incident history.
-
----
-
-### PRT-005. Independent Retries
-
-Each attempt shall be evaluated independently, verifying the success or failure conditions again.
-
----
-
-## Official Retry Policies
-
-### POL-RET-001. Maximum Number of Retries
-
-Every operation subject to retry shall define a maximum number of allowed attempts.
-
-Once this limit is reached, the system shall apply another recovery strategy or escalate the incident.
-
----
-
-### POL-RET-002. Waiting Time
-
-Between two consecutive retries, there shall be a waiting interval.
-
-The waiting time shall minimize the probability of immediately repeating the condition that caused the error.
-
----
-
-### POL-RET-003. Progressive Increase
-
-When an operation fails repeatedly, the waiting time between retries may be progressively increased according to the policy defined for the corresponding process.
-
-The objective shall be to reduce the load on internal resources and external services.
-
----
-
-### POL-RET-004. Prior Verification
-
-Before executing a new attempt, the automation shall verify that the condition that caused the error has changed or that there are reasonable chances of success.
-
----
-
-### POL-RET-005. Cancellation of Retries
-
-Retries shall be cancelled immediately when:
-
-- The maximum allowed number is reached.
-- The error is classified as non-recoverable.
-- Risk to information integrity is detected.
-- The retry continues without objective possibility of success.
-- A rule of the decision model so determines.
-
----
-
-### POL-RET-006. Non-Retriable Errors
-
-Automatic retries shall not be executed on errors whose nature reasonably prevents recovery through repetition.
-
-Examples:
-
-- Invalid configuration.
-- Missing required parameters.
-- Inconsistent data.
-- Logic errors.
-- Permanent restrictions of an external service.
-
----
-
-### POL-RET-007. Mandatory Logging
-
-Each attempt shall be logged indicating, at a minimum:
-
-- Attempt number.
-- Date and time.
-- Result obtained.
-- Waiting time applied.
-- Strategy used.
-- Subsequent incident status.
-
----
-
-### POL-RET-008. Strategy Change
-
-When authorized retries do not resolve the incident, the automation shall abandon the retry policy and apply the next corresponding recovery strategy.
-
-Restarting the retry cycle indefinitely shall not be permitted.
-
----
-
-### POL-RET-009. Process Independence
-
-The failure of a retry policy shall not affect independent processes that continue to execute correctly.
-
----
-
-### POL-RET-010. Protection of External Services
-
-Retry policies shall avoid behaviors that may be interpreted as abuse on platforms, APIs, or external services.
-
-The automation shall respect the operational limits established by such services.
-
----
-
-## General Rules
-
-- Every retry policy shall be associated with an official recovery strategy.
-- No retry may compromise the integrity of information.
-- Every attempt shall be logged for auditing.
-- The maximum number of retries shall be defined before starting the execution of the corresponding process.
-- An operation shall not remain indefinitely in a retry state.
-- Once the retry policy is finished, the incident shall continue with the corresponding official strategy.
-- No module may implement retry policies incompatible with those defined in this document.
-
----
-
-# 11. Error Handling by Module
-
-Error handling by module establishes the specific rules for the detection, recovery, and treatment of errors within each of the functional modules of the job search automation.
-
-Its purpose is to adapt the general error handling policies to the particular characteristics of each stage of the process, ensuring uniform behavior without losing the specific needs of each module.
-
-All modules shall comply with the general rules defined in this document and may only apply additional strategies when they do not contradict official policies.
-
----
-
-# Module 1. Opportunity Discovery
-
-## Objective
-
-Manage errors produced during the location and initial retrieval of job offers.
-
-### Frequent Errors
-
-- Connectivity problems.
-- Timeout.
-- Changes in the platform structure.
-- Captchas.
-- Temporary restrictions.
-- Authentication errors.
-- Inaccessible information.
-
-### Applicable Categories
-
-- ER-RED
-- ER-NAV
-- ER-EXT
-- ER-EXTS
-
-### Permitted Strategies
-
-- REC-001 Automatic retry.
-- REC-002 Wait and resume.
-- REC-003 Controlled restart.
-- REC-007 Escalation.
-- REC-008 Controlled termination.
-
-### Retry Policies
-
-The official policies defined for retries on external services shall apply.
-
-### Termination Criteria
-
-The module shall terminate only when:
-
-- The extraction completes successfully.
-- Authorized strategies are exhausted.
-- The decision model determines termination.
-
----
-
-# Module 2. Initial Offer Preparation
-
-## Objective
-
-Manage errors produced during the cleaning, normalization, and initial validation of information.
-
-### Frequent Errors
-
-- Missing required fields.
-- Invalid formats.
-- Inconsistent information.
-- Duplicates.
-- Transformation errors.
-
-### Applicable Categories
-
-- ER-VAL
-- ER-DAT
-- ER-INT
-
-### Permitted Strategies
-
-- REC-003 Controlled restart.
-- REC-004 Reprocessing.
-- REC-006 Controlled omission.
-- REC-008 Controlled termination.
-
-### Retry Policies
-
-Only when the origin of the error is recoverable.
-
-Permanent data errors shall not be retried.
-
-### Termination Criteria
-
-Processing shall terminate when the offer reaches a consistent state or it is determined that it cannot be recovered.
-
----
-
-# Module 3. Initial Evaluation
-
-## Objective
-
-Manage errors produced during the automatic compatibility evaluation of the offer.
-
-### Frequent Errors
-
-- Inconsistent rules.
-- Insufficient information.
-- Scoring errors.
-- Invalid states.
-
-### Applicable Categories
-
-- ER-DAT
-- ER-VAL
-- ER-INT
-
-### Permitted Strategies
-
-- REC-004 Reprocessing.
-- REC-005 Safe continuation.
-- REC-007 Escalation.
-- REC-009 User intervention.
-
-### Retry Policies
-
-Only when new information exists that allows repeating the evaluation with a reasonable expectation of success.
-
-### Termination Criteria
-
-The evaluation shall conclude when:
-
-- A valid result is obtained.
-- The offer is definitively discarded.
-- The user intervenes when required.
-
----
-
-# Module 4. Offer Processing
-
-## Objective
-
-Manage errors occurring during the deep analysis of selected offers.
-
-### Frequent Errors
-
-- Invalid language model responses.
-- Insufficient information.
-- Failures during analysis.
-- Result generation errors.
-
-### Applicable Categories
-
-- ER-LLM
-- ER-DAT
-- ER-INT
-- ER-EXTS
-
-### Permitted Strategies
-
-- REC-001 Automatic retry.
-- REC-004 Reprocessing.
-- REC-007 Escalation.
-- REC-009 User intervention.
-
-### Retry Policies
-
-Retries shall respect the official policies for artificial intelligence services and external resources.
-
-### Termination Criteria
-
-The module shall terminate when:
-
-- The analysis completes successfully.
-- Authorized strategies are exhausted.
-- The user determines the continuation or termination of the process.
-
----
-
-# Module 5. Management and Tracking
-
-## Objective
-
-Manage errors produced during the storage, updating, and tracking of information.
-
-### Frequent Errors
-
-- Failed writes.
-- Failed reads.
-- Inconsistent history.
-- Incomplete update.
-- Persistence errors.
-
-### Applicable Categories
-
-- ER-DB
-- ER-DAT
-- ER-INT
-
-### Permitted Strategies
-
-- REC-003 Controlled restart.
-- REC-004 Reprocessing.
-- REC-007 Escalation.
-- REC-008 Controlled termination.
-
-### Retry Policies
-
-Retries shall guarantee that duplicates or inconsistencies never occur in the stored information.
-
-### Termination Criteria
-
-The module shall terminate only when:
-
-- The information has been stored correctly.
-- The history remains consistent.
-- The incident has been treated according to official rules.
-
----
-
-## General Rules
-
-- All modules shall exclusively use the official error categories.
-- Recovery strategies shall correspond to those authorized for each module.
-- Every incident shall be logged before executing any recovery.
-- No module may implement recovery mechanisms incompatible with this document.
-- Future modifications of a module shall not affect the general error handling rules.
-- The incorporation of new modules shall require an official update of this section.
-
----
-
-# 12. External Error Handling
-
-External error handling establishes the official rules for identifying, treating, and recovering errors originating from resources, platforms, or services that are not part of the automation and over which the system has no direct control.
-
-Its purpose is to minimize the impact of external failures, preserve operational continuity when possible, and ensure a uniform response to incidents caused by third-party dependencies.
-
-The rules defined in this chapter shall be applicable to all interactions with job platforms, artificial intelligence services, APIs, authentication services, network infrastructure, and any other external resource used by the automation.
-
----
-
-## Principles
-
-### MEE-001. Operational Independence
-
-The automation shall assume that any external service can fail at any time.
-
-No critical flow shall depend on the permanent availability of an external resource.
-
----
-
-### MEE-002. Mandatory Validation
-
-Every response received from an external resource shall be validated before continuing processing.
-
----
-
-### MEE-003. Controlled Recovery
-
-The recovery of external errors shall respect the official strategies and policies defined in this document.
-
----
-
-### MEE-004. Third-Party Protection
-
-The automation shall avoid behaviors that may generate overload, blocks, or non-compliance with the usage policies of external services.
-
----
-
-### MEE-005. Mandatory Logging
-
-Every failure produced by an external resource shall be logged for auditing and subsequent analysis purposes.
-
----
-
-## Types of External Errors
-
-### EEX-001. Job Platforms
-
-Errors caused by websites used to discover job offers.
-
-Examples:
-
-- Platform unavailable.
-- Changes in site structure.
-- Captchas.
-- Access restrictions.
-- Failed authentication.
-- Inaccessible information.
-
-### Permitted Strategies
-
-- REC-001 Automatic retry.
-- REC-002 Wait and resume.
-- REC-003 Controlled restart.
-- REC-007 Escalation.
-- REC-008 Controlled termination.
-
----
-
-### EEX-002. External APIs
-
-Errors originating from programming interfaces used by the automation.
-
-Examples:
-
-- Timeout.
-- Invalid response.
-- Error code.
-- Service unavailable.
-- Request limit exceeded.
-
-### Permitted Strategies
-
-- REC-001
-- REC-002
-- REC-007
-
----
-
-### EEX-003. Language Model Services
-
-Errors caused by external services used for processing through artificial intelligence.
-
-Examples:
-
-- Service unavailable.
-- Response time exceeded.
-- Invalid response.
-- Authentication error.
-- Temporary restriction.
-
-### Permitted Strategies
-
-- REC-001
-- REC-002
-- REC-004
-- REC-007
-- REC-009
-
----
-
-### EEX-004. Authentication Services
-
-Errors related to authentication or authorization processes on external resources.
-
-Examples:
-
-- Invalid credentials.
-- Expired token.
-- Access denied.
-- Invalid session.
-
-### Permitted Strategies
-
-- REC-003
-- REC-007
-- REC-009
-
----
-
-### EEX-005. Network Services
-
-Errors related to communication infrastructure.
-
-Examples:
-
-- DNS unavailable.
-- Connectivity interrupted.
-- High latency.
-- Timeout.
-- Inaccessible routes.
-
-### Permitted Strategies
-
-- REC-001
-- REC-002
-- REC-007
-
----
-
-### EEX-006. Structural Changes
-
-Errors caused by modifications made by third parties on platforms or services used by the automation.
-
-Examples:
-
-- HTML structure change.
-- Selector change.
-- New navigation flows.
-- Removal of functionalities.
-
-### Permitted Strategies
-
-- REC-007
-- REC-008
-- REC-009
-
----
-
-### EEX-007. Operational Restrictions
-
-Errors caused by limits imposed by external services.
-
-Examples:
-
-- Rate limiting.
-- Geographic restriction.
-- Temporary restriction.
-- Usage limit reached.
-
-### Permitted Strategies
-
-- REC-002
-- REC-007
-- REC-009
-
----
-
-### EEX-008. Third-Party Maintenance
-
-Errors caused by scheduled or unscheduled interruptions made by external providers.
-
-Examples:
-
-- Maintenance windows.
-- Service updates.
-- Temporary interruptions.
-
-### Permitted Strategies
-
-- REC-002
-- REC-007
-- REC-008
-
----
-
-## General Rules
-
-- Every external resource shall be considered potentially unavailable.
-- No response from an external service shall be assumed as valid without prior verification.
-- Recovery strategies shall respect the official retry policies.
-- The automation shall minimize the impact of external errors on other modules.
-- External errors shall never compromise the integrity of already processed information.
-- Every interaction with external services shall preserve its complete traceability.
-- The incorporation of new external resources shall require an official update of this document.
-
----
-
-# 13. Language Model (LLM) Error Handling
-
-Language model error handling establishes the official rules for detecting, validating, logging, recovering, and treating errors produced during the interaction between the automation and the artificial intelligence service used for the analysis and processing of job offers.
-
-Because the language model constitutes a critical component of the system, its responses shall never be used directly without having been previously verified through the official mechanisms defined in this document.
-
-The objective of this chapter is to ensure that the use of the language model does not compromise information consistency, the decision model, the data flow, or the general reliability of the automation.
-
----
-
-## Principles
-
-### MLLM-001. Distrust by Default
-
-Every response generated by the language model shall be considered potentially incorrect until successfully completing all corresponding validations.
-
----
-
-### MLLM-002. Mandatory Validation
-
-No response from the model may be used to make decisions or modify system information without having been previously validated.
-
----
-
-### MLLM-003. Processing Independence
-
-The automation shall never depend exclusively on the language model to guarantee the integrity of the system.
-
-All critical information shall be verifiable through additional rules when applicable.
-
----
-
-### MLLM-004. Controlled Recovery
-
-Errors related to the model shall be recovered only through the authorized official strategies.
-
----
-
-### MLLM-005. Auditability
-
-Every interaction with the language model shall preserve sufficient information to allow its auditing and subsequent analysis.
-
----
-
-## Official Types of LLM Errors
-
-### ELLM-001. Empty Response
-
-The model returns no usable content.
-
----
-
-### ELLM-002. Incomplete Response
-
-The response contains only part of the expected information.
-
----
-
-### ELLM-003. Truncated Response
-
-Generation finishes before completing the required content.
-
----
-
-### ELLM-004. Invalid Format
-
-The response does not meet the format required by the automation.
-
-Examples:
-
-- Invalid JSON.
-- Incorrect Markdown.
-- Missing required fields.
-- Unexpected structure.
-
----
-
-### ELLM-005. Inconsistent Information
-
-The response contains internal contradictions or results incompatible with the information provided.
-
----
-
-### ELLM-006. Incorrect Interpretation
-
-The model misinterprets the information provided.
-
----
-
-### ELLM-007. Prompt Non-Compliance
-
-The response does not follow the instructions established by the corresponding prompt.
-
----
-
-### ELLM-008. Hallucination
-
-The model generates information that cannot be justified by the input data or by the official automation rules.
-
----
-
-### ELLM-009. Response Time Exceeded
-
-The model does not respond within the maximum allowed time.
-
----
-
-### ELLM-010. Service Error
-
-The language model service returns an error condition that prevents completing the operation.
-
----
-
-## Mandatory Validations
-
-Every response generated by the model shall pass, at a minimum, the following validations.
-
-### VLLM-001. Existence
-
-Verify that a response exists.
-
----
-
-### VLLM-002. Integrity
-
-Verify that the response is complete.
-
----
-
-### VLLM-003. Format
-
-Verify that the structure corresponds to the expected format.
-
----
-
-### VLLM-004. Consistency
-
-Verify that there are no internal contradictions.
-
----
-
-### VLLM-005. Coherence
-
-Verify that the response is coherent with the information provided to the model.
-
----
-
-### VLLM-006. Prompt Compliance
-
-Verify that the model has followed the instructions defined for the operation.
-
----
-
-### VLLM-007. Project Rules
-
-Verify that the response does not contradict the functional rules, the decision model, the data flow, or the official project standards.
-
----
-
-## Permitted Recovery Strategies
-
-Language model errors may use only the following official strategies:
-
-- REC-001 Automatic retry.
-- REC-002 Wait and resume.
-- REC-004 Reprocessing.
-- REC-007 Escalation.
-- REC-009 User intervention request.
-
-The selected strategy shall depend on the type of error, its severity, and the probability of recovery.
-
----
-
-## General Rules
-
-- No response from the model may be used without prior validation.
-- Every interaction with the model shall be logged for auditing.
-- Invalid responses shall never be stored as official system information.
-- Partially valid responses may only be used when there is an official rule that authorizes it.
-- Repetitive model errors shall be escalated according to official recovery policies.
-- The incorporation of new types of model errors shall require an official update of this document.
-- No component may implement validation mechanisms incompatible with those defined in this section.
-
----
-
-# 14. Data Error Handling
-
-Data error handling establishes the official rules for detecting, validating, logging, recovering, and correcting any condition that may compromise the quality, integrity, consistency, or availability of the information used by the automation.
-
-Its purpose is to ensure that all decisions, evaluations, and processes of the automation are executed using reliable, complete, and consistent information throughout the entire data lifecycle.
-
-The rules defined in this chapter shall be applicable to all information captured, generated, transformed, stored, updated, or retrieved by any component of the system.
-
----
-
-## Principles
-
-### MED-001. Data Integrity
-
-Every operation shall preserve the logical and structural integrity of the information.
-
----
-
-### MED-002. Consistency
-
-Data shall remain consistent across all components of the automation.
-
----
-
-### MED-003. Mandatory Validation
-
-All information shall be validated before being used or stored.
-
----
-
-### MED-004. Traceability
-
-Every modification made to the data shall be traceable afterwards.
-
----
-
-### MED-005. Recoverability
-
-Whenever technically possible, the automation shall attempt to recover the affected information before discarding it.
-
----
-
-## Official Types of Data Errors
-
-### EDATA-001. Incomplete Data
-
-Missing or insufficient mandatory information to correctly continue processing.
-
----
-
-### EDATA-002. Invalid Data
-
-Information whose content violates the validation rules defined by the project.
-
-Examples:
-
-- Incorrect formats.
-- Out-of-range values.
-- Incompatible types.
-
----
-
-### EDATA-003. Duplicate Data
-
-Existence of multiple records representing the same entity.
-
----
-
-### EDATA-004. Inconsistent Data
-
-Information that presents internal contradictions or incompatibilities with other records.
-
----
-
-### EDATA-005. Outdated Data
-
-Information that no longer represents the current state of the corresponding element.
-
----
-
-### EDATA-006. Invalid Relationships
-
-References between entities that cannot be resolved correctly.
-
----
-
-### EDATA-007. Update Conflicts
-
-Situations where multiple operations attempt to simultaneously modify the same information.
-
----
-
-### EDATA-008. Data Corruption
-
-Alteration of information that prevents its reliable use.
-
----
-
-### EDATA-009. Partial Loss of Information
-
-Disappearance of part of the content necessary to complete processing.
-
----
-
-### EDATA-010. Transformation Error
-
-Incorrect alteration of data during cleaning, normalization, or conversion processes.
-
----
-
-## Mandatory Validations
-
-All information shall pass, at a minimum, the following validations.
-
-### VDAT-001. Existence
-
-Verify that all mandatory information is present.
-
----
-
-### VDAT-002. Integrity
-
-Verify that the data remains complete throughout the entire processing.
-
----
-
-### VDAT-003. Consistency
-
-Verify coherence among all related fields.
-
----
-
-### VDAT-004. Format
-
-Verify that the data respects the official formats defined by the project.
-
----
-
-### VDAT-005. Uniqueness
-
-Verify the absence of duplicate records when applicable.
-
----
-
-### VDAT-006. Relationships
-
-Verify the validity of relationships between entities.
-
----
-
-### VDAT-007. States
-
-Verify that state transitions respect the official automation flow.
-
----
-
-### VDAT-008. Persistence
-
-Verify that the stored information corresponds exactly to the validated information.
-
----
-
-## Permitted Recovery Strategies
-
-Errors related to data may use the following official strategies:
-
-- REC-003 Controlled restart.
-- REC-004 Reprocessing.
-- REC-005 Safe continuation (when authorized).
-- REC-006 Controlled omission (only on non-mandatory information).
-- REC-007 Escalation.
-- REC-008 Controlled termination.
-- REC-009 User intervention request.
-
-The selected strategy shall depend on the nature of the error, the impact on the information, and the possibility of recovery without compromising data integrity.
-
----
-
-## General Rules
-
-- No data may be stored without having been validated.
-- No invalid data may be used to feed the decision model.
-- Every modification to the information shall preserve its traceability.
-- Corrupt data shall never overwrite previously validated information.
-- Recovery operations shall preserve the integrity of all related information.
-- Every loss of information shall be logged as an official incident.
-- No component may implement validation rules incompatible with those defined in this document.
-
----
-
-# 15. Notifications and Alerts
-
-Notifications and alerts establish the official model through which the automation communicates relevant events related to the occurrence, treatment, recovery, and resolution of errors.
-
-Their purpose is to ensure that all important information reaches the appropriate recipient in a timely manner, avoiding both the absence of information and the excessive generation of messages that hinder operational tracking.
-
-The rules defined in this chapter shall be applicable to all modules and components of the automation.
-
----
-
-## Principles
-
-### NAL-001. Relevance
-
-Every notification or alert shall communicate only useful information for system tracking.
-
----
-
-### NAL-002. Timeliness
-
-The communication shall be issued as soon as the originating event occurs.
-
----
-
-### NAL-003. Clarity
-
-Every communication shall be objective, precise, and sufficient to understand the incident.
-
----
-
-### NAL-004. No Duplication
-
-The automation shall avoid the repetitive emission of messages corresponding to the same incident, unless there is a relevant change in its status.
-
----
-
-### NAL-005. Traceability
-
-Every notification or alert issued shall be preserved as part of the corresponding incident history.
-
----
-
-## Classification
-
-### Notification
-
-A notification informs an operational event that does not require immediate user attention.
-
-Its purpose is to maintain the operational history and facilitate tracking of system behavior.
-
-Examples:
-
-- Start of an automatic recovery.
-- Recovery completed successfully.
-- Retry executed.
-- Normal completion of error treatment.
-- Logging of a low severity incident.
-
----
-
-### Alert
-
-An alert communicates a condition that requires attention, tracking, or intervention due to the potential impact on the automation.
-
-Alerts shall be prioritized according to the severity of the incident.
-
-Examples:
-
-- Critical error.
-- Failed recovery.
-- Retries exhausted.
-- Mandatory user intervention.
-- Repetitive failure.
-- Data corruption.
-- Prolonged unavailability of an external service.
-
----
-
-## Official Alert Levels
-
-### ALT-001. Informational
-
-Communicates relevant events without operational impact.
-
-Does not require additional actions.
-
----
-
-### ALT-002. Preventive
-
-Communicates situations that could evolve into a higher-impact incident.
-
-Allows preventive tracking.
-
----
-
-### ALT-003. Operational
-
-Communicates incidents that partially affect the functioning of the automation.
-
-May require supervision.
-
----
-
-### ALT-004. Critical
-
-Communicates incidents that compromise important processes or require immediate intervention.
-
----
-
-## Events That Generate Notifications
-
-At a minimum, the automation shall issue notifications when any of the following events occur:
-
-- Start of a recovery strategy.
-- Successful completion of a recovery.
-- Execution of a retry.
-- Status change of an incident.
-- Closure of an incident.
-- Successful automatic recovery.
-
----
-
-## Events That Generate Alerts
-
-At a minimum, the automation shall generate alerts when any of the following events occur:
-
-- Error classified as SV-1.
-- Error classified as SV-2.
-- Maximum number of retries exhausted.
-- Non-recoverable error.
-- Escalation of the incident.
-- User intervention request.
-- Data corruption.
-- Repetitive failure on the same component.
-- Prolonged unavailability of an external resource.
-
----
-
-## Recipients
-
-Communications may be directed to one or more of the following recipients:
-
-- Audit system.
-- Log system.
-- Internal automation components.
-- User.
-- Recovery processes.
-- Monitoring processes.
-
-The selection of the recipient shall depend on the type of event and its severity.
-
----
-
-## Minimum Content
-
-Every notification or alert shall include, at a minimum:
-
-- Incident identifier.
-- Date and time.
-- Affected module.
-- Error category.
-- Severity level.
-- Summary description.
-- Executed action.
-- Current incident status.
-
-When applicable, it may also include:
-
-- Applied recovery strategy.
-- Number of retries executed.
-- Recommendations for the user.
-- Additional information for auditing.
-
----
-
-## Alert Closure
-
-An alert may be closed only when:
-
-- The incident has been resolved.
-- The recovery has finished correctly.
-- The process has concluded in a controlled manner.
-- The user has made the corresponding decision when required.
-
-The closure shall be logged as part of the incident history.
-
----
-
-## General Rules
-
-- Every alert shall be associated with a logged incident.
-- Every notification shall correspond to a verifiable event.
-- Alerts shall not be issued without an objective condition that justifies them.
-- The automation shall avoid the massive generation of repetitive alerts about the same incident.
-- Every communication shall be preserved for auditing and traceability purposes.
-- The incorporation of new types of notifications or alerts shall require an official update of this document.
-
----
-
-# 16. Error Escalation
-
-Error escalation establishes the official model through which an incident is transferred to a higher level of treatment when the available recovery strategies are insufficient to resolve the error condition.
-
-Its purpose is to ensure that no incident remains indefinitely unresolved and that every error condition continues to be treated through progressive, controlled, and fully traceable mechanisms.
-
-Escalation shall be executed only after having applied the authorized recovery strategies for the corresponding type of error, unless the severity of the incident justifies immediate escalation.
-
----
-
-## Principles
-
-### ESC-001. Progressive Escalation
-
-Every incident shall escalate only to the next available treatment level.
-
-Unjustified jumps between escalation levels shall not be permitted.
-
----
-
-### ESC-002. Justified Escalation
-
-Every escalation shall be based on objective evidence obtained during the treatment of the incident.
-
----
-
-### ESC-003. Logged Escalation
-
-Each escalation event shall be logged as part of the official incident history.
-
----
-
-### ESC-004. Proportional Escalation
-
-The escalation level shall correspond to the severity, impact, and recoverability of the error.
-
----
-
-### ESC-005. Operational Continuity
-
-Whenever possible, escalation shall preserve the continuity of the rest of the independent processes of the automation.
-
----
-
-## Official Escalation Levels
-
-### Level 1. Automatic Recovery
-
-The incident continues to be treated by the automatic recovery mechanisms defined for the corresponding process.
-
-This level constitutes the initial treatment mechanism.
-
----
-
-### Level 2. Specialized Recovery
-
-When the initial recovery is not sufficient, the incident shall be transferred to specialized mechanisms of the system itself.
-
-Examples:
-
-- Change of recovery strategy.
-- Reprocessing.
-- Controlled restart.
-- Alternative recovery.
-
----
-
-### Level 3. Functional Escalation
-
-When the incident continues unresolved, the treatment shall be transferred to another functional component of the automation.
-
-Examples:
-
-- Recovery processes.
-- Supervision components.
-- Additional validation processes.
-
----
-
-### Level 4. User Intervention
-
-When the system does not have sufficient information to automatically resolve the incident or the decision corresponds exclusively to the user, the treatment shall be escalated to request their intervention.
-
-The automation shall provide all necessary information to facilitate the decision.
-
----
-
-### Level 5. Controlled Termination
-
-When no strategy is viable, the process shall terminate in a controlled manner, preserving all information generated during the treatment of the incident.
-
----
-
-## Escalation Conditions
-
-The incident shall be escalated when any of the following conditions occur:
-
-### CES-001
-
-All authorized recovery strategies are exhausted.
-
----
-
-### CES-002
-
-The maximum allowed number of retries is reached.
-
----
-
-### CES-003
-
-The error is classified as non-recoverable.
-
----
-
-### CES-004
-
-The severity of the incident increases during its treatment.
-
----
-
-### CES-005
-
-Risk to information integrity is detected.
-
----
-
-### CES-006
-
-The decision model determines that the system cannot continue automatically.
-
----
-
-### CES-007
-
-A decision reserved exclusively for the user is necessary.
-
----
-
-## Mandatory Escalation Information
-
-Every escalation event shall record, at a minimum:
-
-- Incident identifier.
-- Date and time.
-- Escalation level.
-- Reason for escalation.
-- Previously executed strategies.
-- Result of those strategies.
-- Current incident status.
-- Recipient of the escalation.
-
----
-
-## General Rules
-
-- Every escalation shall preserve its complete traceability.
-- No incident may remain indefinitely at the same escalation level.
-- Escalation shall never delete previously logged information.
-- Controlled termination shall constitute the last official treatment level.
-- The incorporation of new escalation levels shall require an official update of this document.
-- No component may implement escalation mechanisms incompatible with the rules defined herein.
-
----
-
-# 17. Error Traceability and Auditing
-
-Error traceability and auditing establishes the set of official rules for logging, preserving, and reconstructing the complete lifecycle of any incident occurring during the execution of the automation.
-
-Its purpose is to ensure that every error condition can be subsequently analyzed, identifying its origin, evolution, treatment, recovery, and final result, preserving the integrity of the evidence generated throughout the entire process.
-
-The provisions of this chapter complement the general traceability rules defined in Document 4 — Data Flow and the conventions established in Document 5 — Project Standards, specializing them for incident management.
-
----
-
-## Principles
-
-### TAE-001. Complete Traceability
-
-Every incident shall preserve a continuous history from its detection to its definitive closure.
-
----
-
-### TAE-002. Immutability of History
-
-The historical records of an incident shall not be deleted or modified in a way that alters the original evidence.
-
-Corrections shall be logged as new events.
-
----
-
-### TAE-003. Objective Evidence
-
-Every action taken on an incident shall be supported by verifiable information.
-
----
-
-### TAE-004. Permanent Audit
-
-All information related to an incident shall remain available during the retention period defined by the project.
-
----
-
-### TAE-005. History Integrity
-
-Relationships between incidents, processes, offers, and components shall remain complete throughout the entire lifecycle of the system.
-
----
-
-## Traceable Information
-
-At a minimum, the automation shall preserve the following information for each incident.
-
-### TRA-001. Identification
-
-- Incident identifier.
-- Error identifier.
-- Execution identifier.
-
----
-
-### TRA-002. Context
-
-- Date and time.
-- Module.
-- Process.
-- Component.
-- Process state.
-
----
-
-### TRA-003. Classification
-
-- Category.
-- Severity.
-- Source.
-- Recoverability.
-
----
-
-### TRA-004. Evidence
-
-- Available information.
-- Generated messages.
-- Relevant values.
-- Validation results.
-
----
-
-### TRA-005. Treatment
-
-- Executed recovery strategies.
-- Retries performed.
-- Escalations carried out.
-- User interventions.
-
----
-
-### TRA-006. Result
-
-- Final state.
-- Recovery result.
-- Reason for closure.
-- Completion date.
-
----
-
-## Auditable Events
-
-At a minimum, the following events shall be logged.
-
-### AUD-001
-
-Incident detection.
-
----
-
-### AUD-002
-
-Error classification.
-
----
-
-### AUD-003
-
-Official logging.
-
----
-
-### AUD-004
-
-Severity change.
-
----
-
-### AUD-005
-
-Start of recovery.
-
----
-
-### AUD-006
-
-Recovery result.
-
----
-
-### AUD-007
-
-Each executed retry.
-
----
-
-### AUD-008
-
-Each escalation.
-
----
-
-### AUD-009
-
-User intervention.
-
----
-
-### AUD-010
-
-Incident status change.
-
----
-
-### AUD-011
-
-Definitive closure.
-
----
-
-## Auditable Relationships
-
-Every incident shall be relatable, when applicable, to:
-
-- The affected offer.
-- The execution where it occurred.
-- The responsible module.
-- The involved component.
-- The corresponding process.
-- The decisions made.
-- The applied recovery strategies.
-- The associated logs.
-- The issued notifications.
-- The generated alerts.
-
----
-
-## History Preservation
-
-The historical information of incidents shall be preserved according to the official storage policies defined for the project.
-
-The deletion, consolidation, or archiving of records may only be carried out through officially documented procedures.
-
----
-
-## General Rules
-
-- Every incident shall be fully reconstructible from its history.
-- No action taken on an incident may go unlogged.
-- Every modification of an incident's status shall preserve evidence.
-- Auditing shall remain independent of the technology used to implement the automation.
-- Audit mechanisms shall not alter the operational behavior of the system.
-- No component may implement traceability rules incompatible with those defined in this document.
-
----
-
-# 18. Error Handling Restrictions
-
-The restrictions defined in this chapter establish the operational limits that all mechanisms for detection, classification, recovery, logging, auditing, and treatment of errors in the automation shall respect.
-
-Their purpose is to preserve the consistency of the error handling model, avoid unauthorized behaviors, and ensure that all components of the automation operate under a single set of rules.
-
-The following restrictions shall be mandatory for all present and future modules of the project.
-
----
-
-## General Restrictions
-
-### RME-001
-
-No error shall remain undetected when reasonable technical mechanisms exist to identify it.
-
----
-
-### RME-002
-
-No detected error may be omitted from the official incident log.
-
----
-
-### RME-003
-
-Deleting historical incident records shall not be permitted.
-
-Every modification shall preserve the corresponding traceability.
-
----
-
-### RME-004
-
-No component may implement its own classification mechanisms that contradict the official categories defined in this document.
-
----
-
-### RME-005
-
-Official severity levels shall not be modified dynamically by subjective criteria.
-
-Every modification shall be supported by objective evidence.
-
----
-
-### RME-006
-
-Recovery strategies not authorized by this document shall not be executed.
-
----
-
-### RME-007
-
-Infinite recovery or retry cycles shall not be permitted.
-
-Every process shall have an official termination or escalation condition.
-
----
-
-### RME-008
-
-No recovery mechanism may compromise the integrity, consistency, or traceability of information.
-
----
-
-### RME-009
-
-Errors shall not be used as a normal control mechanism of the functional flow.
-
-Exceptions shall represent only anomalous conditions.
-
----
-
-### RME-010
-
-Language model responses shall not be used without passing the official validations defined for that component.
-
----
-
-### RME-011
-
-Errors from external services shall not be assumed as permanent without having executed the authorized official recovery policies.
-
----
-
-### RME-012
-
-Data validations shall not be disabled to speed up automation processing.
-
----
-
-### RME-013
-
-No incident may remain indefinitely in an open state.
-
-Every incident shall terminate through recovery, escalation, or controlled closure.
-
----
-
-### RME-014
-
-Notifications and alerts shall not be generated without a previously logged objective condition.
-
----
-
-### RME-015
-
-Actions executed during the treatment of an incident shall be fully reconstructible through the logged information.
-
----
-
-### RME-016
-
-The incorporation of new types of errors, recovery strategies, retry policies, or audit mechanisms may only be carried out through an official update of this document.
-
----
-
-### RME-017
-
-No module may implement particular error handling rules that contradict the provisions established in this document.
-
----
-
-### RME-018
-
-The error handling model shall remain independent of the programming language, tools, platforms, or technologies used to implement the automation.
-
----
-
-## General Rules
-
-- All restrictions defined in this chapter shall be mandatory for any implementation of the project.
-- Exceptions may only be approved through an official update of the documentation.
-- Every deviation from these restrictions shall be documented, justified, and preserve its traceability.
-- No component may operate outside the restrictions established in this document.
-
----
-
-# 19. Acceptance Criteria
-
-Acceptance criteria define the minimum conditions that any implementation of the error handling model must meet to be considered compliant with the provisions established in this document.
-
-Their purpose is to provide a set of objective verifications that allow validating that the system correctly implements the mechanisms for detection, classification, recovery, logging, auditing, and treatment of incidents.
-
-All criteria defined in this chapter shall be mandatory.
-
----
-
-## General Criteria
-
-### CAE-001
-
-The automation shall implement an official mechanism for detecting errors in all modules of the system.
-
----
-
-### CAE-002
-
-Every detected error shall be classified using exclusively the official categories defined in this document.
-
----
-
-### CAE-003
-
-Every incident shall be logged before executing any recovery strategy.
-
----
-
-### CAE-004
-
-Every incident log shall contain the mandatory minimum information defined for the error logging model.
-
----
-
-### CAE-005
-
-Every error shall receive an official severity level before starting its treatment.
-
----
-
-### CAE-006
-
-Every recovery strategy shall correspond to an official strategy from the catalog defined in this document.
-
----
-
-### CAE-007
-
-Every retry policy shall comply with the restrictions established for official retries.
-
----
-
-### CAE-008
-
-The automation shall prevent the execution of infinite recovery or retry cycles.
-
----
-
-### CAE-009
-
-Every interaction with external resources shall apply the official rules for external error handling.
-
----
-
-### CAE-010
-
-Every response from the language model shall pass the official validations before being used within the system.
-
----
-
-### CAE-011
-
-All information used during processing shall comply with the official data quality validations.
-
----
-
-### CAE-012
-
-Every notification and every alert shall be associated with an officially logged incident.
-
----
-
-### CAE-013
-
-Every escalation event shall preserve its complete history.
-
----
-
-### CAE-014
-
-Traceability shall allow fully reconstructing the lifecycle of any incident.
-
----
-
-### CAE-015
-
-Every modification made to an incident shall preserve sufficient evidence for auditing.
-
----
-
-### CAE-016
-
-No implemented mechanism may contradict the restrictions established in this document.
-
----
-
-### CAE-017
-
-All modules of the automation shall use the official error handling model defined in this document.
-
----
-
-### CAE-018
-
-Implementations shall maintain independence from the programming language, platform, or technology used.
-
----
-
-### CAE-019
-
-Functional tests shall demonstrate that each official recovery strategy can be executed correctly when applicable.
-
----
-
-### CAE-020
-
-Integration tests shall verify that error handling preserves the integrity of the data flow and the consistency of information throughout the entire incident lifecycle.
-
----
-
-## Document Validation
-
-The implementation shall be considered to comply with this document only when:
-
-- All the above criteria have been satisfactorily verified.
-- There are no non-compliances with the official error handling rules.
-- The validation evidence is available for auditing.
-- The implementation documentation remains consistent with this document.
-
----
-
-# 20. Error Handling Rules Index
-
-This index consolidates all official identifiers defined in this document.
-
-Its purpose is to facilitate consultation, cross-referencing, implementation, and maintenance of the error handling model, providing a single point of access to all official rules.
-
----
-
-# 2. Principles of Error Handling
-
-| Prefix | Description |
-|----------|-------------|
-| PME | Principles of Error Handling |
-
----
-
-# 3. Error Handling Architecture
-
-| Prefix | Description |
-|----------|-------------|
-| AME | Error Handling Architecture |
-
----
-
-# 4. Error Classification
-
-| Prefix | Description |
-|----------|-------------|
-| CE | Classification Criteria |
-| CER | Official Error Categories |
-| ER | Official Error Identifier |
-
----
-
-# 5. Error Sources
-
-| Prefix | Description |
-|----------|-------------|
-| FDE | Error Sources |
-
----
-
-# 6. Error Detection
-
-| Prefix | Description |
-|----------|-------------|
-| PDE | Detection Principles |
-| MDE | Official Detection Mechanisms |
-
----
-
-# 7. Error Logging
-
-| Prefix | Description |
-|----------|-------------|
-| RER | Official Error Logging |
-
----
-
-# 8. Severity Levels
-
-| Prefix | Description |
-|----------|-------------|
-| NSE | Severity Evaluation Criteria |
-| SV | Official Severity Levels |
-| RSE | Severity Assignment Rules |
-
----
-
-# 9. Recovery Strategies
-
-| Prefix | Description |
-|----------|-------------|
-| PRE | Recovery Principles |
-| REC | Official Recovery Strategies |
-| SRE | Strategy Selection Criteria |
-
----
-
-# 10. Retry Policies
-
-| Prefix | Description |
-|----------|-------------|
-| PRT | Retry Principles |
-| POL-RET | Official Retry Policies |
-
----
-
-# 11. Error Handling by Module
-
-## Module 1: Opportunity Discovery — Error Catalog and Retry Policy
-
-The Discovery module (Module 1) defines its own business error codes per node, complementing (never replacing) the official technical categories (`ER-*`, CER-001..010). Dual naming (see C7 of the comparative analysis): `ERR-nn` / `EVT-01` are business codes per node; `ER-<CATEGORIA>-<n>` remain the technical layer.
-
-### Catalog of business codes per node
-
-Each node uses its own `ERR-xx`/`EVT-xx` codes (local scope by node, following the technical sheet). Accounts:
-
-| Node | Codes | codigo_motivo |
-|------|-------|---------------|
-| INICIO | ERR-01..ERR-12 | Local start, oracle, config, DB, lock, duplicate identifiers, discarded source |
-| ¿Existe al menos una fuente configurada? | ERR-01 | Abort on context contract violation |
-| ¿Quedan fuentes por procesar...? | ERR-01 | Abort on iterator contract violation |
-| Seleccionar la siguiente fuente pendiente | ERR-01..03 | Internal context failures |
-| Entrar a la fuente seleccionada | ERR-01..09 | `fuente_inalcanzable`, `timeout_ingreso`, `autenticacion_rechazada`, `bloqueo_plataforma`, `criterio_no_cumplido`, `error_interno_fuente`, context corruption |
-| ¿El ingreso fue exitoso? | ERR-01..02 | `entry_result` absent/corrupt |
-| Aplicar los filtros... | ERR-01..08 | `filtros_no_aplicables`, `fuente_inalcanzable`, `timeout_consulta`, `sesion_expirada`, `respuesta_invalida`, `error_interno_consulta` |
-| ¿Se encontraron ofertas? | ERR-01..02 | `search_result` absent/corrupt |
-| Capturar ofertas | ERR-01..09 + EVT-01 | `fuente_inalcanzable`, `timeout_captura`, `sesion_expirada`, `bloqueo_plataforma`, `respuesta_invalida`, `error_interno_captura`; `oferta_no_capturada` (EVT-01) |
-| Registrar ofertas capturadas | ERR-01..02 | `capture_batch` absent/corrupt; write/transaction failure |
-| ¿Quedan ofertas por capturar? | ERR-01..02 | `estado_captura` absent/invalid |
-| ¿Quedan sets de filtros...? | ERR-01..02 | Iterators inconsistent |
-| Finalizar Proceso | — | Best-effort; the obsolescence threshold protects a stuck lock (ERR-07) |
-
-### Official error catalog (business codes + motive mapping)
-
-| Code | Motive (`codigo_motivo`) | Technical category (ER-*) | Retry? |
-|------|--------------------------|---------------------------|--------|
+Ejemplos: `ER-RED-001`, `ER-NAV-003`, `ER-EXT-015`, `ER-VAL-002`, `ER-LLM-004`, `ER-DAT-007`, `ER-DB-001`, `ER-CFG-002`, `ER-INT-009`, `ER-EXTS-003`.
+
+Cada identificador es único, inmutable y reutilizable solo como referencia histórica.
+
+### 4.4 Reglas de clasificación
+- Todo error debe pertenecer a una única categoría principal.
+- Todo error debe tener identificador oficial.
+- La categoría no puede modificarse después de registrada.
+- Nuevas categorías solo por actualización oficial de este documento.
+- Ningún componente puede usar clasificaciones distintas.
+
+---
+
+## 5. Fuentes de error (FDE)
+| ID | Fuente | Orígenes incluidos |
+|---|---|---|
+| FDE-001 | Internas | Lógica de negocio; flujos; reglas de decisión; procesos internos; estados inconsistentes; errores de programación; excepciones no manejadas. |
+| FDE-002 | Infraestructura | Sistema operativo; recursos de equipo; permisos; espacio de almacenamiento; procesos del sistema; fallas del entorno de ejecución. |
+| FDE-003 | Red | Pérdida de conectividad; latencia alta; timeout; DNS; interrupciones; restricciones temporales de acceso. |
+| FDE-004 | Navegador | Cambios de interfaz; elementos inexistentes; captchas; ventanas inesperadas; sesiones expiradas; recursos bloqueados. |
+| FDE-005 | Extracción | Información incompleta; estructuras modificadas; contenido dinámico; datos inaccesibles; cambios de selectores; información inconsistente. |
+| FDE-006 | Modelo de lenguaje | Respuestas inválidas; información insuficiente; formatos inesperados; errores de interpretación; tiempo excedido; fallas de comunicación con el servicio. |
+| FDE-007 | Datos | Datos incompletos; duplicados; inconsistencias; formatos incompatibles; relaciones inválidas; información corrupta. |
+| FDE-008 | Persistencia | Fallas de escritura/lectura; archivos inexistentes; recursos bloqueados; fallas de sincronización; problemas de acceso. |
+| FDE-009 | Configuración | Parámetros inexistentes; configuración incompleta; variables requeridas ausentes; configuraciones incompatibles; valores inválidos. |
+| FDE-010 | Usuario | Configuración incorrecta; información incompleta; parámetros inconsistentes; interrupción manual; decisiones incompatibles con el estado actual. |
+| FDE-011 | Externas | Plataformas de empleo; APIs externas; servicios de autenticación; servicios de IA; cambios de proveedor; mantenimiento; restricciones de terceros. |
+| FDE-012 | Desconocidas | Origen no determinable inmediatamente. Registrar toda la información disponible y observar hasta identificar causa raíz. |
+
+Reglas:
+- Todo error debe asociarse al menos a una fuente.
+- Una fuente puede originar múltiples categorías.
+- Un error puede asociarse a múltiples fuentes si hay evidencia suficiente.
+- Las fuentes son independientes de la tecnología.
+- Incorporar nuevas fuentes requiere actualización oficial.
+- Ningún componente puede definir fuentes incompatibles.
+
+---
+
+## 6. Detección de errores
+
+### 6.1 Principios de detección (PDE)
+| ID | Principio |
+|---|---|
+| PDE-001 | Detectar lo más cerca posible del origen para evitar efectos secundarios. |
+| PDE-002 | La detección debe ser automática cuando sea técnicamente posible. |
+| PDE-003 | Todo error detectado debe ser demostrable con evidencia objetiva. |
+| PDE-004 | La detección debe permanecer activa durante todo el ciclo del proceso. |
+| PDE-005 | Detectar un error no implica automáticamente terminar el proceso; la continuidad depende de políticas de recuperación. |
+
+### 6.2 Mecanismos oficiales de detección (MDE)
+| ID | Mecanismo | Alcance / ejemplos |
+|---|---|---|
+| MDE-001 | Validaciones preventivas | Antes de operar: configuraciones obligatorias, recursos disponibles, parámetros válidos, dependencias disponibles. |
+| MDE-002 | Validaciones en ejecución | Durante la ejecución: verificación de respuesta, confirmación de operación, elementos esperados, estados válidos. |
+| MDE-003 | Validaciones post-ejecución | Tras completar: confirmación de escritura, verificación de almacenamiento, validación de resultados, cambios de estado. |
+| MDE-004 | Monitoreo continuo | Supervisar procesos críticos: interrupciones inesperadas, procesos detenidos, consumo anormal, comportamientos inconsistentes. |
+| MDE-005 | Timeout | Si una operación excede el tiempo máximo permitido, genera error. Aplica a procesos internos y externos. |
+| MDE-006 | Integridad de datos | Verificar información recibida, transformada, almacenada o recuperada. |
+| MDE-007 | Respuesta del LLM | Validar como mínimo: existencia de respuesta, estructura esperada, formato requerido e información suficiente para continuar. |
+| MDE-008 | Recursos externos | Confirmar que la interacción con plataforma/API/servicio fue correcta antes de continuar. |
+| MDE-009 | Reglas de negocio | Verificar cumplimiento de reglas funcionales y modelo de decisión; cualquier incumplimiento es error. |
+| MDE-010 | Consistencia de flujo | Verificar que transiciones de estado, decisiones y operaciones respeten el flujo oficial. |
+
+Reglas:
+- Detectar antes de propagar cuando sea técnicamente posible.
+- Toda detección debe generar evidencia suficiente.
+- La ausencia de detección no implica inexistencia del error.
+- Los mecanismos deben ser reutilizables por todos los módulos.
+- Nuevos mecanismos deben documentarse oficialmente antes de usarse.
+- Ningún módulo puede implementar mecanismos incompatibles.
+
+---
+
+## 7. Registro de errores
+
+Objetivos del registro:
+- Preservar histórico completo del incidente.
+- Facilitar recuperación y diagnóstico.
+- Proveer evidencia para auditoría.
+- Soportar monitoreo operacional.
+- Identificar tendencias y errores recurrentes.
+- Generar indicadores de confiabilidad.
+- Facilitar mejora continua.
+
+### 7.1 Información mínima obligatoria (RER)
+| ID | Campo | Requisito |
+|---|---|---|
+| RER-001 | Identificador de error | Según convención oficial. |
+| RER-002 | Identificador de incidente | Único por evento; distingue múltiples ocurrencias del mismo tipo. |
+| RER-003 | Fecha y hora | Exactas, en formato oficial. |
+| RER-004 | Módulo | Nombre oficial del módulo afectado. |
+| RER-005 | Proceso | Proceso activo al momento del incidente. |
+| RER-006 | Componente | Componente responsable de detectar o generar el error. |
+| RER-007 | Categoría | Categoría oficial del error. |
+| RER-008 | Severidad | Nivel oficial asignado. |
+| RER-009 | Fuente | Origen oficialmente identificado. |
+| RER-010 | Descripción | Clara, objetiva y sin interpretaciones subjetivas. |
+| RER-011 | Evidencia | Mensajes, respuestas, valores, recursos afectados, capturas o referencias si existen. |
+| RER-012 | Acción ejecutada | Reintento, recuperación, escalamiento, terminación controlada o notificación. |
+| RER-013 | Resultado de acción | Recuperado, parcialmente recuperado, no recuperado, escalado o terminado. |
+| RER-014 | Estado del incidente | Detectado, en recuperación, escalado, resuelto o cerrado. |
+| RER-015 | Identificador de oferta | Si el error está asociado a una oferta específica. |
+| RER-016 | Identificador de ejecución | Relaciona errores ocurridos en la misma ejecución. |
+| RER-017 | Referencias de auditoría | Enlaces/identificadores a registros, decisiones, procesos o documentos relacionados. |
+
+### 7.2 Reglas de registro
+- Registrar todo error antes de ejecutar cualquier estrategia de recuperación.
+- Ningún error puede eliminarse del histórico una vez registrado.
+- Toda modificación debe preservar trazabilidad.
+- El formato debe ser uniforme en toda la automatización.
+- La información debe ser suficiente para reproducir y analizar el incidente.
+- Los logs deben conservarse según políticas de retención.
+- Ningún módulo puede registrar errores con estructuras distintas.
+
+---
+
+## 8. Niveles de severidad
+
+### 8.1 Criterios de evaluación (NSE)
+| ID | Criterio |
+|---|---|
+| NSE-001 | Impacto operacional: efecto sobre continuidad. |
+| NSE-002 | Impacto en datos: efecto sobre integridad, consistencia o disponibilidad. |
+| NSE-003 | Alcance: número de módulos/procesos/componentes afectados. |
+| NSE-004 | Recuperabilidad: capacidad de resolución automática. |
+| NSE-005 | Intervención requerida: nivel de participación de usuario u otro componente. |
+
+### 8.2 Niveles oficiales (SV)
+| Nivel | Impacto | Características | Ejemplos | Recuperación automática | Intervención usuario |
+|---|---|---|---|---|---|
+| SV-1 | Crítico | Impide continuidad o compromete integridad; no puede continuar; sin recuperación automática viable; puede comprometer información crítica; atención inmediata. | Corrupción de información; falla general de persistencia; inconsistencia crítica de flujo; error interno irreparable. | No | Obligatoria |
+| SV-2 | Alto | Impide completar correctamente un proceso importante; el resto puede seguir funcionando. | Imposibilidad de procesar oferta; error persistente de LLM; error permanente de plataforma externa; falla repetitiva de extracción. | Parcial o limitada | Probable |
+| SV-3 | Medio | Afecta parcialmente un proceso; recuperación automática posible en la mayoría de casos. | Timeout temporal; error transitorio de red; recurso temporalmente no disponible; respuesta incompleta recuperable. | Sí, normalmente | Infrecuente |
+| SV-4 | Bajo | Impacto reducido; el proceso puede continuar; no requiere intervención inmediata. | Advertencias de validación; información opcional ausente; retrasos menores; reintento exitoso en primer intento. | Sí | No requerida |
+| SV-5 | Informativo | Eventos registrados para auditoría/monitoreo; no son falla operacional. | Recuperación automática exitosa; reintentos exitosos; cambios de estado relevantes; eventos de seguimiento. | No aplica | No requerida |
+
+### 8.3 Reglas de asignación (RSE)
+| ID | Regla |
+|---|---|
+| RSE-001 | Cada error recibe un único nivel oficial. |
+| RSE-002 | Asignar severidad inmediatamente después de clasificar. |
+| RSE-003 | Solo puede actualizarse con evidencia objetiva de cambio de impacto real; registrar cambios. |
+| RSE-004 | No asignar solo por causa; evaluar impacto real. |
+| RSE-005 | Dos errores de la misma categoría pueden tener distinta severidad si su impacto difiere. |
+| RSE-006 | Recuperación, reintentos, notificación y escalamiento se basan en la severidad asignada. |
+
+---
+
+## 9. Estrategias de recuperación
+
+### 9.1 Principios (PRE)
+| ID | Principio |
+|---|---|
+| PRE-001 | Preservar integridad, consistencia y trazabilidad. |
+| PRE-002 | Solo ejecutar estrategias oficiales aprobadas. |
+| PRE-003 | Proporcionalidad: no usar mecanismos excesivos para errores menores. |
+| PRE-004 | Validar la recuperación antes de continuar. |
+| PRE-005 | Registrar toda estrategia ejecutada. |
+
+### 9.2 Catálogo oficial (REC)
+| ID | Estrategia | Definición / aplicación |
+|---|---|---|
+| REC-001 | Reintento automático | Repetir la misma operación sin cambiar contexto. Aplica a errores temporales: timeout, red transitoria, servicio temporalmente no disponible. |
+| REC-002 | Esperar y reanudar | Suspender temporalmente hasta que desaparezca la condición. Aplica cuando hay alta probabilidad de recuperación espontánea. |
+| REC-003 | Reinicio controlado de operación | Reiniciar solo la operación afectada, conservando el resto del proceso. |
+| REC-004 | Reprocesamiento | Reejecutar una etapa completada usando información disponible cuando el resultado pudo afectarse por error recuperable. |
+| REC-005 | Continuación segura del flujo | Continuar omitiendo operaciones cuya ausencia no compromete el resultado final. Solo con autorización explícita del modelo de decisión. |
+| REC-006 | Omisión controlada | Excluir una operación opcional; registrar la omisión. |
+| REC-007 | Escalamiento | Transferir el tratamiento a otro mecanismo, componente o usuario cuando la estrategia actual es insuficiente. |
+| REC-008 | Terminación controlada | Detener ordenadamente el proceso cuando no existe estrategia segura; preservar información generada. |
+| REC-009 | Solicitud de intervención de usuario | Pedir decisión cuando falta información suficiente; suministrar toda la información necesaria. |
+
+### 9.3 Criterios de selección (SRE)
+| ID | Criterio |
+|---|---|
+| SRE-001 | Severidad. |
+| SRE-002 | Recuperabilidad. |
+| SRE-003 | Riesgo para integridad de información o proceso. |
+| SRE-004 | Continuidad operacional sin comprometer resultados. |
+| SRE-005 | Dependencias necesarias para ejecutar la recuperación. |
+
+Reglas:
+- Usar solo estrategias oficiales.
+- Ninguna estrategia puede comprometer integridad.
+- Validar siempre antes de continuar.
+- Registrar cada estrategia en el histórico.
+- Un mismo error puede requerir varias estrategias secuenciales.
+- Si ninguna es efectiva, escalar.
+- Nuevas estrategias requieren actualización formal.
+
+---
+
+## 10. Políticas de reintento
+
+### 10.1 Principios (PRT)
+| ID | Principio |
+|---|---|
+| PRT-001 | Solo reintentar si una política oficial lo autoriza; prohibido reintento ilimitado. |
+| PRT-002 | Ningún reintento puede causar duplicación, inconsistencias o alteración del flujo oficial. |
+| PRT-003 | Solo reintentar operaciones cuya probabilidad de éxito aumente con nueva ejecución. |
+| PRT-004 | Registrar cada intento en el histórico del incidente. |
+| PRT-005 | Evaluar cada intento independientemente. |
+
+### 10.2 Políticas oficiales (POL-RET)
+| ID | Política |
+|---|---|
+| POL-RET-001 | Definir número máximo de intentos; al alcanzarlo, aplicar otra estrategia o escalar. |
+| POL-RET-002 | Establecer intervalo de espera entre reintentos para minimizar repetir inmediatamente la condición. |
+| POL-RET-003 | Permitir aumento progresivo de espera si fallas repetidas, según política del proceso, para reducir carga interna/externa. |
+| POL-RET-004 | Antes de reintentar, verificar que la condición cambió o existen posibilidades razonables de éxito. |
+| POL-RET-005 | Cancelar reintentos si: máximo alcanzado; error no recuperable; riesgo de integridad; sin posibilidad objetiva de éxito; regla del modelo de decisión lo ordena. |
+| POL-RET-006 | No reintentar errores no recuperables por naturaleza: configuración inválida, parámetros requeridos ausentes, datos inconsistentes, errores lógicos, restricciones permanentes externas. |
+| POL-RET-007 | Registrar como mínimo: número de intento, fecha/hora, resultado, espera aplicada, estrategia usada y estado posterior. |
+| POL-RET-008 | Si los reintentos no resuelven, abandonar la política y aplicar la siguiente estrategia; prohibido reiniciar ciclos indefinidamente. |
+| POL-RET-009 | El fallo de una política no debe afectar procesos independientes. |
+| POL-RET-010 | Proteger servicios externos: evitar comportamiento abusivo y respetar límites operacionales. |
+
+Reglas:
+- Toda política debe asociarse a estrategia oficial.
+- Ningún reintento compromete integridad.
+- Todo intento debe registrarse.
+- El máximo de reintentos debe definirse antes de ejecutar el proceso.
+- Ninguna operación puede quedar indefinidamente en reintento.
+- Agotada la política, continuar con estrategia oficial correspondiente.
+- Ningún módulo puede implementar políticas incompatibles.
+
+---
+
+## 11. Manejo de errores por módulo
+
+### 11.1 Reglas comunes
+- Todos los módulos cumplen las reglas generales de este documento.
+- Solo pueden aplicar estrategias adicionales si no contradicen políticas oficiales.
+- Usan exclusivamente categorías oficiales.
+- Las estrategias deben corresponder a las autorizadas por módulo.
+- Todo incidente se registra antes de recuperar.
+- Ningún módulo puede implementar mecanismos incompatibles.
+- Modificaciones futuras no deben afectar reglas generales.
+- Incorporar nuevos módulos requiere actualización oficial de esta sección.
+
+### 11.2 Módulos funcionales
+| Módulo | Objetivo | Errores frecuentes | Categorías | Estrategias permitidas | Reintentos | Terminación |
+|---|---|---|---|---|---|---|
+| 1. Descubrimiento de oportunidades | Gestionar localización y recuperación inicial de ofertas. | Conectividad; timeout; cambios de estructura; captchas; restricciones temporales; autenticación; información inaccesible. | ER-RED, ER-NAV, ER-EXT, ER-EXTS | REC-001, REC-002, REC-003, REC-007, REC-008 | Políticas oficiales para servicios externos. | Solo si: extracción exitosa; estrategias agotadas; modelo de decisión determina terminar. |
+| 2. Preparación inicial de oferta | Gestionar limpieza, normalización y validación inicial. | Campos requeridos ausentes; formatos inválidos; información inconsistente; duplicados; errores de transformación. | ER-VAL, ER-DAT, ER-INT | REC-003, REC-004, REC-006, REC-008 | Solo si el origen es recuperable; errores permanentes de datos no se reintentan. | Cuando la oferta alcanza estado consistente o se determina que no puede recuperarse. |
+| 3. Evaluación inicial | Gestionar evaluación automática de compatibilidad. | Reglas inconsistentes; información insuficiente; errores de scoring; estados inválidos. | ER-DAT, ER-VAL, ER-INT | REC-004, REC-005, REC-007, REC-009 | Solo si existe nueva información que permita repetir evaluación con expectativa razonable. | Cuando: resultado válido; oferta descartada definitivamente; usuario interviene si se requiere. |
+| 4. Procesamiento de oferta | Gestionar análisis profundo de ofertas seleccionadas. | Respuestas inválidas del LLM; información insuficiente; fallas de análisis; errores de generación de resultado. | ER-LLM, ER-DAT, ER-INT, ER-EXTS | REC-001, REC-004, REC-007, REC-009 | Respetar políticas oficiales para servicios de IA y recursos externos. | Cuando: análisis completo; estrategias agotadas; usuario decide continuación/terminación. |
+| 5. Gestión y seguimiento | Gestionar almacenamiento, actualización y seguimiento. | Fallas de escritura/lectura; histórico inconsistente; actualización incompleta; errores de persistencia. | ER-DB, ER-DAT, ER-INT | REC-003, REC-004, REC-007, REC-008 | Deben garantizar que nunca ocurran duplicados o inconsistencias. | Solo si: información almacenada correctamente; histórico consistente; incidente tratado según reglas. |
+
+---
+
+### 11.3 Módulo 1: catálogo de negocio y política de reintento
+
+El Módulo 1 define códigos de negocio por nodo (`ERR-nn` / `EVT-01`) que complementan, nunca reemplazan, las categorías técnicas oficiales `ER-*` (CER-001..010). Doble denominación (ver análisis comparativo C7): los códigos de negocio son de alcance local por nodo; `ER-<CATEGORIA>-<n>` permanece como capa técnica.
+
+#### 11.3.1 Códigos por nodo
+| Nodo | Códigos | Motivos / condiciones |
+|---|---|---|
+| INICIO | ERR-01..ERR-12 | Arranque local, oracle, configuración, BD, lock, identificadores duplicados, fuente descartada. |
+| ¿Existe al menos una fuente configurada? | ERR-01 | Aborto por violación de contrato de contexto. |
+| ¿Quedan fuentes por procesar...? | ERR-01 | Aborto por violación de contrato de iterador. |
+| Seleccionar la siguiente fuente pendiente | ERR-01..03 | Fallas internas de contexto. |
+| Entrar a la fuente seleccionada | ERR-01..09 | `fuente_inalcanzable`, `timeout_ingreso`, `autenticacion_rechazada`, `bloqueo_plataforma`, `criterio_no_cumplido`, `error_interno_fuente`, corrupción de contexto. |
+| ¿El ingreso fue exitoso? | ERR-01..02 | `entry_result` ausente/corrupto. |
+| Aplicar los filtros... | ERR-01..08 | `filtros_no_aplicables`, `fuente_inalcanzable`, `timeout_consulta`, `sesion_expirada`, `respuesta_invalida`, `error_interno_consulta`. |
+| ¿Se encontraron ofertas? | ERR-01..02 | `search_result` ausente/corrupto. |
+| Capturar ofertas | ERR-01..09 + EVT-01 | `fuente_inalcanzable`, `timeout_captura`, `sesion_expirada`, `bloqueo_plataforma`, `respuesta_invalida`, `error_interno_captura`; `oferta_no_capturada` (EVT-01). |
+| Registrar ofertas capturadas | ERR-01..02 | `capture_batch` ausente/corrupto; falla de escritura/transacción. |
+| ¿Quedan ofertas por capturar? | ERR-01..02 | `estado_captura` ausente/inválido. |
+| ¿Quedan sets de filtros...? | ERR-01..02 | Iteradores inconsistentes. |
+| Finalizar Proceso | — | Best-effort; el umbral de obsolescencia protege un lock atascado (ERR-07). |
+
+#### 11.3.2 Catálogo oficial de códigos de negocio
+| Código | `codigo_motivo` | Categoría técnica | ¿Reintenta? |
+|---|---|---|---|
 | ERR-01 | `colision_run_id` | ER-INT | No |
 | ERR-02 | `config_ausente` | ER-CFG | No |
 | ERR-03 | `config_ilegible` | ER-CFG | No |
@@ -3346,167 +393,523 @@ Each node uses its own `ERR-xx`/`EVT-xx` codes (local scope by node, following t
 | ERR-11 | `identificadores_duplicados` | ER-CFG | No |
 | ERR-12 | `ficha_incompleta` | ER-CFG | No |
 
-Contract violations in the decision nodes (absent/corrupt successor contract) are registered with the local `ERR-01..02` codes of each decision node and classified as `ER-INT` (internal contract error); they abort the run with state `error`.
+Violaciones de contrato en nodos de decisión:
+- Contrato de sucesor ausente/corrupto se registra con códigos locales `ERR-01..02` del nodo de decisión.
+- Se clasifica como `ER-INT`.
+- Aborta la ejecución con estado `error`.
 
-The node-local codes (`ERR-01..09`) of "Entrar a la fuente" map to `ER-*` as follows:
-
-| Motive (`codigo_motivo`) | Technical category (ER-*) | Retry? |
-|--------------------------|---------------------------|--------|
-| `fuente_inalcanzable` | ER-RED / ER-EXT | **Yes** |
-| `timeout_ingreso` | ER-RED | **Yes** |
+#### 11.3.3 Mapeo de motivos a categoría técnica
+| Motivo (`codigo_motivo`) | Categoría técnica | ¿Reintenta? |
+|---|---|---|
+| `fuente_inalcanzable` | ER-RED / ER-EXT | Sí |
+| `timeout_ingreso` | ER-RED | Sí |
 | `autenticacion_rechazada` | ER-NAV | No |
 | `bloqueo_plataforma` | ER-NAV | No |
 | `criterio_no_cumplido` | ER-NAV | No |
 | `credenciales_no_disponibles` | ER-CFG | No |
 | `error_interno_fuente` | ER-INT | No |
 | `filtros_no_aplicables` | ER-EXT | No |
-| `timeout_consulta` / `timeout_captura` | ER-RED | **Yes** |
+| `timeout_consulta` / `timeout_captura` | ER-RED | Sí |
 | `sesion_expirada` | ER-NAV | No |
 | `respuesta_invalida` | ER-EXT | No |
 | `error_interno_consulta` / `error_interno_captura` | ER-INT | No |
 | `oferta_no_capturada` | ER-EXT | No (EVT-01) |
 
-### Conditional retry policy
+#### 11.3.4 Política de reintento condicional
+Solo se reintentan:
+- `fuente_inalcanzable`
+- `timeout_*` (`timeout_ingreso`, `timeout_consulta`, `timeout_captura`)
 
-Only the motives `fuente_inalcanzable` and `timeout_*` (timeout of entry, consultation, or capture) are retried, with backoff and from a closed channel. All other codes are immediately non-retryable: they produce an immediate failure (per-node registration, without re-entering or continuing as defined by the technical sheet RN-03/RN-06). Retry limits are per-run configuration.
+Condiciones:
+- Reintento con backoff y desde un canal cerrado.
+- Límites de reintento por configuración de corrida.
+- Todos los demás códigos son inmediatamente no reintentables.
+- Producen falla inmediata con registro por nodo, sin reingresar ni continuar según RN-03/RN-06 de la ficha técnica.
 
-| Motive | Retry? | Notes |
-|--------|--------|-------|
-| `fuente_inalcanzable` | Yes | With backoff; if exhausted → failure evidence, continue with remaining sets/sources |
-| `timeout_ingreso`, `timeout_consulta`, `timeout_captura` | Yes | Backoff; exhausted → continuation per node policy |
-| Everything else | No | Immediate failure; registration per node |
+| Motivo | ¿Reintenta? | Notas |
+|---|---|---|
+| `fuente_inalcanzable` | Sí | Con backoff; si se agota → evidencia de falla y continuar con sets/fuentes restantes. |
+| `timeout_ingreso`, `timeout_consulta`, `timeout_captura` | Sí | Backoff; si se agota → continuación según política del nodo. |
+| Todos los demás | No | Falla inmediata; registro por nodo. |
 
-### Grupo A / Grupo B classification
+#### 11.3.5 Clasificación Grupo A / Grupo B
+| Grupo | Significado | Motivos aplicables |
+|---|---|---|
+| A — Compromiso de la fuente | La fuente queda comprometida y no puede continuar en esta corrida; se cierra nodo/fuente o termina la ejecución (aborto). | `autenticacion_rechazada`, `bloqueo_plataforma`, `criterio_no_cumplido`, `sesion_expirada` cuando implica pérdida de credenciales, `error_interno_fuente`, `bloqueo_plataforma` durante captura, códigos de contrato/aborto. |
+| B — Propio del set | La falla pertenece al set de filtros actual; se cierra el set y continúa con el siguiente. | `filtros_no_aplicables`, `respuesta_invalida`, `timeout_*` agotado, `error_interno_consulta`, `error_interno_captura`, EVT-01 `oferta_no_capturada`. |
 
-| Group | Meaning | Applies to (motives) |
-|-------|---------|----------------------|
-| **A — Compromise of the source** | The source is compromised and cannot continue in this run; the node/source is closed or the run terminates (abort) | `autenticacion_rechazada`, `bloqueo_plataforma`, `criterio_no_cumplido`, `sesion_expirada` (when it implies credential loss), `error_interno_fuente`, `bloqueo_plataforma` during capture, contract/abort codes |
-| **B — Own of the set** | The failure belongs to the current filter set; the set is closed and iteration continues with the next set | `filtros_no_aplicables`, `respuesta_invalida`, `timeout_*` exhausted, `error_interno_consulta`, `error_interno_captura`, `EVT-01 oferta_no_capturada` |
+Reglas de cierre:
+- Grupo A: se cierra nodo/fuente.
+- Grupo B: la corrida continúa con el siguiente set de filtros.
+- `credenciales_no_disponibles` no pertenece a A ni B: ocurre antes de entrar a la fuente, durante resolución de credenciales; es falla determinística de configuración (`ER-CFG`) y no se reintenta (RN-03 de “Entrar” v1.1).
 
-When Group A occurs the node/source is closed; when Group B occurs the run continues with the next set (technical sheet, "¿Quedan sets de filtros por aplicar?").
-
-`credenciales_no_disponibles` belongs to neither group: it occurs before entering the source (step 2 of "Entrar la fuente", credential resolution), so it neither compromises the source nor belongs to a filter set. It is a deterministic configuration failure (ER-CFG) that is not retried (RN-03 of "Entrar" v1.1).
-
-### Termination states
-
-| State | Motives | Event type |
-|-------|---------|------------|
+#### 11.3.6 Estados de terminación
+| Estado | Motivos | Tipo de evento |
+|---|---|---|
 | `normal` | `corrida_completada`, `sin_fuentes` | suceso |
-| `concurrencia` | `concurrencia` (lock held by another run) | suceso |
-| `error` | Any abort (context corruption, contract violations, fatal non-retryable) | error |
+| `concurrencia` | `concurrencia` (lock sostenido por otra corrida) | suceso |
+| `error` | Cualquier aborto: corrupción de contexto, violaciones de contrato, falla fatal no reintentable | error |
 
-Every event is registered in "errores o sucesos" (with `run_id`, `timestamp`, `tipo`, `codigo`, `evidencia`); if the store is not available, the local critical log (Loguru) acts as the fallback (technical sheet, INICIO §1.11).
-
----
-
-# 12. External Error Handling
-
-| Prefix | Description |
-|----------|-------------|
-| MEE | Principles of External Error Handling |
-| EEX | Official Types of External Errors |
+Registro:
+- Todo evento se registra en “errores o sucesos” con `run_id`, `timestamp`, `tipo`, `codigo`, `evidencia`.
+- Si el almacén no está disponible, el log crítico local (Loguru) actúa como fallback (ficha técnica, INICIO §1.11).
 
 ---
 
-# 13. Language Model (LLM) Error Handling
+## 12. Manejo de errores externos
 
-| Prefix | Description |
-|----------|-------------|
-| MLLM | Principles of Language Model Error Handling |
-| ELLM | Official Types of Language Model Errors |
-| VLLM | Official Language Model Validations |
+### 12.1 Principios (MEE)
+| ID | Principio |
+|---|---|
+| MEE-001 | Cualquier servicio externo puede fallar en cualquier momento; ningún flujo crítico debe depender de disponibilidad permanente. |
+| MEE-002 | Validar toda respuesta externa antes de continuar. |
+| MEE-003 | La recuperación debe respetar estrategias y políticas oficiales. |
+| MEE-004 | Evitar sobrecarga, bloqueos o incumplimiento de políticas de terceros. |
+| MEE-005 | Registrar toda falla externa para auditoría y análisis. |
 
----
+### 12.2 Tipos y estrategias (EEX)
+| ID | Tipo | Ejemplos | Estrategias permitidas |
+|---|---|---|---|
+| EEX-001 | Plataformas de empleo | Plataforma no disponible; cambios de estructura; captchas; restricciones de acceso; autenticación fallida; información inaccesible. | REC-001, REC-002, REC-003, REC-007, REC-008 |
+| EEX-002 | APIs externas | Timeout; respuesta inválida; código de error; servicio no disponible; límite de solicitudes excedido. | REC-001, REC-002, REC-007 |
+| EEX-003 | Servicios de LLM | Servicio no disponible; tiempo de respuesta excedido; respuesta inválida; error de autenticación; restricción temporal. | REC-001, REC-002, REC-004, REC-007, REC-009 |
+| EEX-004 | Servicios de autenticación | Credenciales inválidas; token expirado; acceso denegado; sesión inválida. | REC-003, REC-007, REC-009 |
+| EEX-005 | Servicios de red | DNS no disponible; conectividad interrumpida; latencia alta; timeout; rutas inaccesibles. | REC-001, REC-002, REC-007 |
+| EEX-006 | Cambios estructurales | Cambio de HTML; cambio de selectores; nuevos flujos de navegación; eliminación de funcionalidades. | REC-007, REC-008, REC-009 |
+| EEX-007 | Restricciones operacionales | Rate limiting; restricción geográfica; restricción temporal; límite de uso alcanzado. | REC-002, REC-007, REC-009 |
+| EEX-008 | Mantenimiento de terceros | Ventanas de mantenimiento; actualizaciones; interrupciones temporales. | REC-002, REC-007, REC-008 |
 
-# 14. Data Error Handling
-
-| Prefix | Description |
-|----------|-------------|
-| MED | Principles of Data Error Handling |
-| EDATA | Official Types of Data Errors |
-| VDAT | Official Data Validations |
-
----
-
-# 15. Notifications and Alerts
-
-| Prefix | Description |
-|----------|-------------|
-| NAL | Principles of Notifications and Alerts |
-| ALT | Official Alert Levels |
-
----
-
-# 16. Error Escalation
-
-| Prefix | Description |
-|----------|-------------|
-| ESC | Escalation Principles |
-| CES | Official Escalation Conditions |
+Reglas:
+- Todo recurso externo se considera potencialmente no disponible.
+- Ninguna respuesta externa se asume válida sin verificación previa.
+- Las estrategias respetan políticas oficiales de reintento.
+- Minimizar impacto externo en otros módulos.
+- Los errores externos nunca comprometen integridad de información ya procesada.
+- Toda interacción externa debe ser completamente trazable.
+- Incorporar nuevos recursos externos requiere actualización oficial.
 
 ---
 
-# 17. Error Traceability and Auditing
+## 13. Manejo de errores del modelo de lenguaje (LLM)
 
-| Prefix | Description |
-|----------|-------------|
-| TAE | Principles of Traceability and Auditing |
-| TRA | Traceable Information |
-| AUD | Auditable Events |
+### 13.1 Principios (MLLM)
+| ID | Principio |
+|---|---|
+| MLLM-001 | Desconfianza por defecto: toda respuesta es potencialmente incorrecta hasta validar. |
+| MLLM-002 | Ninguna respuesta puede usarse para decidir o modificar información sin validación previa. |
+| MLLM-003 | La automatización no depende exclusivamente del LLM; la información crítica debe ser verificable por reglas adicionales cuando aplique. |
+| MLLM-004 | Recuperación solo mediante estrategias oficiales autorizadas. |
+| MLLM-005 | Toda interacción con el LLM debe conservar información suficiente para auditoría. |
+
+### 13.2 Tipos oficiales de error (ELLM)
+| ID | Tipo | Definición |
+|---|---|---|
+| ELLM-001 | Respuesta vacía | No devuelve contenido utilizable. |
+| ELLM-002 | Respuesta incompleta | Contiene solo parte de la información esperada. |
+| ELLM-003 | Respuesta truncada | Termina antes de completar el contenido requerido. |
+| ELLM-004 | Formato inválido | No cumple formato requerido: JSON inválido, Markdown incorrecto, campos requeridos ausentes, estructura inesperada. |
+| ELLM-005 | Información inconsistente | Contradicciones internas o resultados incompatibles con la información suministrada. |
+| ELLM-006 | Interpretación incorrecta | Interpreta mal la información suministrada. |
+| ELLM-007 | Incumplimiento de prompt | No sigue instrucciones del prompt. |
+| ELLM-008 | Alucinación | Genera información no justificable por datos de entrada o reglas oficiales. |
+| ELLM-009 | Tiempo excedido | No responde dentro del tiempo máximo permitido. |
+| ELLM-010 | Error de servicio | El servicio devuelve condición de error que impide completar la operación. |
+
+### 13.3 Validaciones obligatorias (VLLM)
+| ID | Validación |
+|---|---|
+| VLLM-001 | Existencia de respuesta. |
+| VLLM-002 | Integridad: respuesta completa. |
+| VLLM-003 | Formato: estructura esperada. |
+| VLLM-004 | Consistencia: sin contradicciones internas. |
+| VLLM-005 | Coherencia con la información suministrada. |
+| VLLM-006 | Cumplimiento del prompt. |
+| VLLM-007 | Cumplimiento de reglas del proyecto: no contradecir reglas funcionales, modelo de decisión, flujo de datos ni estándares oficiales. |
+
+### 13.4 Estrategias permitidas
+- REC-001, REC-002, REC-004, REC-007, REC-009.
+- La selección depende del tipo de error, severidad y probabilidad de recuperación.
+
+Reglas:
+- Ninguna respuesta se usa sin validación previa.
+- Registrar toda interacción.
+- Respuestas inválidas nunca se almacenan como información oficial.
+- Respuestas parcialmente válidas solo si una regla oficial lo autoriza.
+- Errores repetitivos se escalan según políticas oficiales.
+- Nuevos tipos requieren actualización oficial.
+- Ningún componente puede implementar validaciones incompatibles.
 
 ---
 
-# 18. Error Handling Restrictions
+## 14. Manejo de errores de datos
 
-| Prefix | Description |
-|----------|-------------|
-| RME | Error Handling Restrictions |
+### 14.1 Principios (MED)
+| ID | Principio |
+|---|---|
+| MED-001 | Preservar integridad lógica y estructural. |
+| MED-002 | Mantener consistencia entre componentes. |
+| MED-003 | Validar toda información antes de usarla o almacenarla. |
+| MED-004 | Hacer trazable toda modificación de datos. |
+| MED-005 | Intentar recuperar información afectada antes de descartarla cuando sea técnicamente posible. |
+
+### 14.2 Tipos oficiales de error (EDATA)
+| ID | Tipo | Definición / ejemplos |
+|---|---|---|
+| EDATA-001 | Datos incompletos | Falta información obligatoria para continuar. |
+| EDATA-002 | Datos inválidos | Viola reglas de validación: formatos incorrectos, valores fuera de rango, tipos incompatibles. |
+| EDATA-003 | Datos duplicados | Múltiples registros representan la misma entidad. |
+| EDATA-004 | Datos inconsistentes | Contradicciones internas o incompatibilidad con otros registros. |
+| EDATA-005 | Datos desactualizados | Ya no representan el estado actual. |
+| EDATA-006 | Relaciones inválidas | Referencias entre entidades que no pueden resolverse. |
+| EDATA-007 | Conflictos de actualización | Múltiples operaciones intentan modificar simultáneamente la misma información. |
+| EDATA-008 | Corrupción de datos | Alteración que impide uso confiable. |
+| EDATA-009 | Pérdida parcial | Desaparición de parte del contenido necesario. |
+| EDATA-010 | Error de transformación | Alteración incorrecta durante limpieza, normalización o conversión. |
+
+### 14.3 Validaciones obligatorias (VDAT)
+| ID | Validación |
+|---|---|
+| VDAT-001 | Existencia de información obligatoria. |
+| VDAT-002 | Integridad durante todo el procesamiento. |
+| VDAT-003 | Consistencia entre campos relacionados. |
+| VDAT-004 | Formato oficial. |
+| VDAT-005 | Unicidad, cuando aplique. |
+| VDAT-006 | Validez de relaciones entre entidades. |
+| VDAT-007 | Transiciones de estado conformes al flujo oficial. |
+| VDAT-008 | La información almacenada corresponde exactamente a la validada. |
+
+### 14.4 Estrategias permitidas
+- REC-003, REC-004, REC-005 cuando esté autorizado.
+- REC-006 solo para información no obligatoria.
+- REC-007, REC-008, REC-009.
+- Selección según naturaleza, impacto y posibilidad de recuperación sin comprometer integridad.
+
+Reglas:
+- Ningún dato se almacena sin validación.
+- Ningún dato inválido puede alimentar el modelo de decisión.
+- Toda modificación conserva trazabilidad.
+- Datos corruptos nunca sobrescriben información previamente validada.
+- Las recuperaciones preservan integridad de información relacionada.
+- Toda pérdida de información se registra como incidente oficial.
+- Ningún componente puede implementar validaciones incompatibles.
 
 ---
 
-# 19. Acceptance Criteria
+## 15. Notificaciones y alertas
 
-| Prefix | Description |
-|----------|-------------|
-| CAE | Acceptance Criteria |
+### 15.1 Principios (NAL)
+| ID | Principio |
+|---|---|
+| NAL-001 | Comunicar solo información útil para seguimiento. |
+| NAL-002 | Emitir tan pronto ocurre el evento. |
+| NAL-003 | Mensaje objetivo, preciso y suficiente. |
+| NAL-004 | Evitar duplicados salvo cambio relevante de estado. |
+| NAL-005 | Conservar cada comunicación como parte del histórico del incidente. |
+
+El modelo evita tanto la ausencia de información como la emisión excesiva de mensajes.
+
+### 15.2 Clasificación
+| Tipo | Definición | Ejemplos |
+|---|---|---|
+| Notificación | Evento operacional que no requiere atención inmediata. | Inicio de recuperación automática; recuperación exitosa; reintento ejecutado; cierre normal; registro de incidente de baja severidad. |
+| Alerta | Condición que requiere atención, seguimiento o intervención por impacto potencial. | Error crítico; recuperación fallida; reintentos agotados; intervención obligatoria; falla repetitiva; corrupción de datos; indisponibilidad prolongada externa. |
+
+### 15.3 Niveles oficiales de alerta (ALT)
+| ID | Nivel | Definición |
+|---|---|---|
+| ALT-001 | Informativa | Evento relevante sin impacto operacional; no requiere acción. |
+| ALT-002 | Preventiva | Situación que puede evolucionar a incidente mayor; permite seguimiento preventivo. |
+| ALT-003 | Operacional | Afecta parcialmente el funcionamiento; puede requerir supervisión. |
+| ALT-004 | Crítica | Compromete procesos importantes o requiere intervención inmediata. |
+
+### 15.4 Eventos que generan comunicación
+Notificaciones, como mínimo:
+- Inicio de estrategia de recuperación.
+- Recuperación exitosa.
+- Ejecución de reintento.
+- Cambio de estado del incidente.
+- Cierre del incidente.
+- Recuperación automática exitosa.
+
+Alertas, como mínimo:
+- Error SV-1.
+- Error SV-2.
+- Máximo de reintentos agotado.
+- Error no recuperable.
+- Escalamiento del incidente.
+- Solicitud de intervención de usuario.
+- Corrupción de datos.
+- Falla repetitiva en el mismo componente.
+- Indisponibilidad prolongada de recurso externo.
+
+### 15.5 Destinatarios
+- Sistema de auditoría.
+- Sistema de logs.
+- Componentes internos.
+- Usuario.
+- Procesos de recuperación.
+- Procesos de monitoreo.
+
+La selección depende del tipo de evento y severidad.
+
+### 15.6 Contenido mínimo
+Obligatorio:
+- Identificador de incidente.
+- Fecha y hora.
+- Módulo afectado.
+- Categoría de error.
+- Nivel de severidad.
+- Descripción resumida.
+- Acción ejecutada.
+- Estado actual del incidente.
+
+Opcional, cuando aplique:
+- Estrategia aplicada.
+- Número de reintentos.
+- Recomendaciones para usuario.
+- Información adicional de auditoría.
+
+### 15.7 Cierre de alerta
+Una alerta solo se cierra si:
+- El incidente está resuelto.
+- La recuperación terminó correctamente.
+- El proceso concluyó controladamente.
+- El usuario tomó la decisión requerida, si aplica.
+
+El cierre se registra en el histórico.
+
+Reglas:
+- Toda alerta debe estar asociada a incidente registrado.
+- Toda notificación debe corresponder a evento verificable.
+- No emitir alertas sin condición objetiva.
+- Evitar alertas masivas repetitivas sobre el mismo incidente.
+- Conservar toda comunicación para auditoría.
+- Nuevos tipos requieren actualización oficial.
 
 ---
 
-# General Summary of Official Prefixes
+## 16. Escalamiento de errores
 
-| Prefix | Meaning |
-|----------|-------------|
-| PME | Principles of Error Handling |
-| AME | Error Handling Architecture |
-| CE | Classification Criteria |
-| CER | Official Error Categories |
-| ER | Official Error Identifier |
-| FDE | Error Sources |
-| PDE | Detection Principles |
-| MDE | Detection Mechanisms |
-| RER | Error Logging |
-| NSE | Severity Criteria |
-| SV | Severity Levels |
-| RSE | Severity Rules |
-| PRE | Recovery Principles |
-| REC | Recovery Strategies |
-| SRE | Strategy Selection |
-| PRT | Retry Principles |
-| POL-RET | Retry Policies |
-| MEE | External Error Handling |
-| EEX | External Errors |
-| MLLM | LLM Principles |
-| ELLM | LLM Errors |
-| VLLM | LLM Validations |
-| MED | Data Principles |
-| EDATA | Data Errors |
-| VDAT | Data Validations |
-| NAL | Notifications and Alerts |
-| ALT | Alert Levels |
-| ESC | Escalation Principles |
-| CES | Escalation Conditions |
-| TAE | Principles of Traceability and Auditing |
-| TRA | Traceable Information |
-| AUD | Auditable Events |
-| RME | Restrictions |
-| CAE | Acceptance Criteria |
+El escalamiento transfiere el incidente a niveles superiores cuando las estrategias disponibles son insuficientes.
+
+Se ejecuta solo después de aplicar estrategias autorizadas, salvo que la severidad justifique escalamiento inmediato.
+
+### 16.1 Principios (ESC)
+| ID | Principio |
+|---|---|
+| ESC-001 | Escalar solo al siguiente nivel disponible; prohibido saltos injustificados. |
+| ESC-002 | Basar cada escalamiento en evidencia objetiva. |
+| ESC-003 | Registrar cada evento de escalamiento en el histórico. |
+| ESC-004 | El nivel debe ser proporcional a severidad, impacto y recuperabilidad. |
+| ESC-005 | Preservar continuidad de procesos independientes cuando sea posible. |
+
+### 16.2 Niveles oficiales
+| Nivel | Tratamiento |
+|---|---|
+| 1. Recuperación automática | Mecanismos automáticos definidos para el proceso; nivel inicial. |
+| 2. Recuperación especializada | Cambio de estrategia, reprocesamiento, reinicio controlado o recuperación alternativa. |
+| 3. Escalamiento funcional | Transferencia a otro componente funcional: recuperación, supervisión o validación adicional. |
+| 4. Intervención de usuario | Cuando falta información suficiente o la decisión es exclusiva del usuario; suministrar información necesaria. |
+| 5. Terminación controlada | Sin estrategia viable; terminar preservando información del tratamiento. |
+
+### 16.3 Condiciones oficiales de escalamiento (CES)
+| ID | Condición |
+|---|---|
+| CES-001 | Estrategias autorizadas agotadas. |
+| CES-002 | Máximo de reintentos alcanzado. |
+| CES-003 | Error clasificado como no recuperable. |
+| CES-004 | La severidad aumenta durante el tratamiento. |
+| CES-005 | Riesgo para integridad de información detectado. |
+| CES-006 | El modelo de decisión determina que no puede continuar automáticamente. |
+| CES-007 | Se requiere decisión reservada exclusivamente al usuario. |
+
+### 16.4 Información mínima de escalamiento
+- Identificador de incidente.
+- Fecha y hora.
+- Nivel de escalamiento.
+- Motivo.
+- Estrategias ejecutadas previamente.
+- Resultado de esas estrategias.
+- Estado actual.
+- Destinatario del escalamiento.
+
+Reglas:
+- Trazabilidad completa.
+- Ningún incidente puede permanecer indefinidamente en el mismo nivel.
+- El escalamiento nunca elimina información previa.
+- La terminación controlada es el último nivel oficial.
+- Nuevos niveles requieren actualización oficial.
+- Ningún componente puede implementar mecanismos incompatibles.
+
+---
+
+## 17. Trazabilidad y auditoría de errores
+Este capítulo complementa DOC-04 — Data Flow y DOC-05 — Project Standards.
+
+### 17.1 Principios (TAE)
+| ID | Principio |
+|---|---|
+| TAE-001 | Histórico continuo desde detección hasta cierre definitivo. |
+| TAE-002 | Inmutabilidad del histórico; no borrar ni alterar evidencia original; correcciones como nuevos eventos. |
+| TAE-003 | Toda acción debe estar soportada por evidencia verificable. |
+| TAE-004 | Información disponible durante el período de retención definido. |
+| TAE-005 | Relaciones entre incidentes, procesos, ofertas y componentes permanecen completas. |
+
+### 17.2 Información trazable mínima (TRA)
+| ID | Información |
+|---|---|
+| TRA-001 | Identificación: incidente, error y ejecución. |
+| TRA-002 | Contexto: fecha/hora, módulo, proceso, componente y estado del proceso. |
+| TRA-003 | Clasificación: categoría, severidad, fuente y recuperabilidad. |
+| TRA-004 | Evidencia: información disponible, mensajes, valores y resultados de validación. |
+| TRA-005 | Tratamiento: estrategias, reintentos, escalamientos e intervenciones de usuario. |
+| TRA-006 | Resultado: estado final, resultado de recuperación, motivo de cierre y fecha de finalización. |
+
+### 17.3 Eventos auditables (AUD)
+| ID | Evento |
+|---|---|
+| AUD-001 | Detección del incidente. |
+| AUD-002 | Clasificación del error. |
+| AUD-003 | Registro oficial. |
+| AUD-004 | Cambio de severidad. |
+| AUD-005 | Inicio de recuperación. |
+| AUD-006 | Resultado de recuperación. |
+| AUD-007 | Cada reintento ejecutado. |
+| AUD-008 | Cada escalamiento. |
+| AUD-009 | Intervención de usuario. |
+| AUD-010 | Cambio de estado del incidente. |
+| AUD-011 | Cierre definitivo. |
+
+### 17.4 Relaciones auditables
+Cada incidente debe poder relacionarse, cuando aplique, con:
+- Oferta afectada.
+- Ejecución donde ocurrió.
+- Módulo responsable.
+- Componente involucrado.
+- Proceso correspondiente.
+- Decisiones tomadas.
+- Estrategias aplicadas.
+- Logs asociados.
+- Notificaciones emitidas.
+- Alertas generadas.
+
+### 17.5 Preservación
+- Conservar histórico según políticas oficiales de almacenamiento.
+- Borrar, consolidar o archivar solo mediante procedimientos oficialmente documentados.
+
+Reglas:
+- Todo incidente debe ser totalmente reconstructible.
+- Ninguna acción puede quedar sin registro.
+- Cada cambio de estado preserva evidencia.
+- Auditoría independiente de tecnología.
+- Los mecanismos de auditoría no alteran comportamiento operacional.
+- Ningún componente puede implementar reglas incompatibles.
+
+---
+
+## 18. Restricciones de manejo de errores (RME)
+Estas restricciones preservan consistencia del modelo, evitan comportamientos no autorizados y aseguran reglas únicas para todos los componentes.
+
+| ID | Restricción |
+|---|---|
+| RME-001 | Ningún error puede quedar sin detectar si existen mecanismos técnicos razonables para identificarlo. |
+| RME-002 | Ningún error detectado puede omitirse del registro oficial. |
+| RME-003 | Prohibido borrar registros históricos; toda modificación conserva trazabilidad. |
+| RME-004 | Ningún componente puede implementar clasificación propia que contradiga categorías oficiales. |
+| RME-005 | La severidad no puede modificarse dinámicamente por criterios subjetivos; requiere evidencia objetiva. |
+| RME-006 | Prohibido ejecutar estrategias de recuperación no autorizadas. |
+| RME-007 | Prohibido ciclos infinitos de recuperación o reintento; todo proceso debe tener terminación o escalamiento oficial. |
+| RME-008 | Ninguna recuperación puede comprometer integridad, consistencia o trazabilidad. |
+| RME-009 | Los errores no pueden usarse como mecanismo normal de control de flujo; solo representan condiciones anómalas. |
+| RME-010 | Las respuestas del LLM no pueden usarse sin pasar validaciones oficiales. |
+| RME-011 | Los errores externos no pueden asumirse permanentes sin ejecutar políticas oficiales autorizadas. |
+| RME-012 | Prohibido desactivar validaciones de datos para acelerar procesamiento. |
+| RME-013 | Ningún incidente puede permanecer indefinidamente abierto; termina por recuperación, escalamiento o cierre controlado. |
+| RME-014 | Prohibido generar notificaciones/alertas sin condición objetiva previamente registrada. |
+| RME-015 | Toda acción durante tratamiento debe ser completamente reconstructible. |
+| RME-016 | Nuevos tipos de error, estrategias, políticas o mecanismos de auditoría solo por actualización oficial. |
+| RME-017 | Ningún módulo puede tener reglas particulares que contradigan este documento. |
+| RME-018 | El modelo debe permanecer independiente de lenguaje, herramientas, plataformas o tecnologías. |
+
+Reglas generales:
+- Las restricciones son obligatorias para toda implementación.
+- Excepciones solo mediante actualización oficial.
+- Toda desviación debe documentarse, justificarse y conservar trazabilidad.
+- Ningún componente puede operar fuera de estas restricciones.
+
+---
+
+## 19. Criterios de aceptación (CAE)
+Todos los criterios son obligatorios.
+
+| ID | Criterio |
+|---|---|
+| CAE-001 | Existe mecanismo oficial de detección en todos los módulos. |
+| CAE-002 | Todo error detectado se clasifica exclusivamente con categorías oficiales. |
+| CAE-003 | Todo incidente se registra antes de ejecutar recuperación. |
+| CAE-004 | Cada registro contiene la información mínima obligatoria. |
+| CAE-005 | Todo error recibe nivel oficial de severidad antes del tratamiento. |
+| CAE-006 | Toda recuperación corresponde al catálogo oficial. |
+| CAE-007 | Toda política de reintento cumple restricciones oficiales. |
+| CAE-008 | Se impiden ciclos infinitos de recuperación o reintento. |
+| CAE-009 | Toda interacción externa aplica reglas oficiales de manejo externo. |
+| CAE-010 | Toda respuesta del LLM pasa validaciones oficiales antes de usarse. |
+| CAE-011 | Toda información usada cumple validaciones oficiales de calidad de datos. |
+| CAE-012 | Toda notificación/alerta está asociada a incidente registrado. |
+| CAE-013 | Todo escalamiento conserva histórico completo. |
+| CAE-014 | La trazabilidad permite reconstruir completamente el ciclo de vida de cualquier incidente. |
+| CAE-015 | Toda modificación de incidente preserva evidencia suficiente. |
+| CAE-016 | Ningún mecanismo implementado contradice restricciones oficiales. |
+| CAE-017 | Todos los módulos usan el modelo oficial. |
+| CAE-018 | Las implementaciones son independientes de lenguaje, plataforma o tecnología. |
+| CAE-019 | Pruebas funcionales demuestran que cada estrategia oficial puede ejecutarse correctamente cuando aplique. |
+| CAE-020 | Pruebas de integración verifican que el manejo de errores preserva integridad del flujo de datos y consistencia durante todo el ciclo del incidente. |
+
+Validación de cumplimiento:
+- Todos los criterios verificados satisfactoriamente.
+- Sin incumplimientos de reglas oficiales.
+- Evidencia disponible para auditoría.
+- Documentación de implementación consistente con este documento.
+
+---
+
+## 20. Índice de prefijos
+Punto único de consulta para implementación y mantenimiento.
+
+| Prefijo | Dominio |
+|---|---|
+| PME | Principios de manejo de errores |
+| AME | Arquitectura de manejo de errores |
+| CE | Criterios de clasificación |
+| CER | Categorías oficiales de error |
+| ER | Identificador oficial de error |
+| FDE | Fuentes de error |
+| PDE | Principios de detección |
+| MDE | Mecanismos de detección |
+| RER | Registro oficial de errores |
+| NSE | Criterios de evaluación de severidad |
+| SV | Niveles oficiales de severidad |
+| RSE | Reglas de asignación de severidad |
+| PRE | Principios de recuperación |
+| REC | Estrategias oficiales de recuperación |
+| SRE | Criterios de selección de estrategia |
+| PRT | Principios de reintentos |
+| POL-RET | Políticas oficiales de reintentos |
+| MEE | Principios de manejo externo |
+| EEX | Tipos oficiales de errores externos |
+| MLLM | Principios del modelo de lenguaje |
+| ELLM | Tipos oficiales de errores del LLM |
+| VLLM | Validaciones oficiales del LLM |
+| MED | Principios de datos |
+| EDATA | Tipos oficiales de errores de datos |
+| VDAT | Validaciones oficiales de datos |
+| NAL | Principios de notificaciones y alertas |
+| ALT | Niveles oficiales de alerta |
+| ESC | Principios de escalamiento |
+| CES | Condiciones oficiales de escalamiento |
+| TAE | Principios de trazabilidad y auditoría |
+| TRA | Información trazable |
+| AUD | Eventos auditables |
+| RME | Restricciones de manejo de errores |
+| CAE | Criterios de aceptación |
+| ERR / EVT | Códigos de negocio por nodo del Módulo 1; complementan, no reemplazan, `ER-*` |

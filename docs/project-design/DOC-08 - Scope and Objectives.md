@@ -1,1566 +1,323 @@
-# DOC-08 - Scope and Objectives
+# DOC-08 — Alcance y objetivos (versión optimizada)
 
-## 1. Purpose of the document
+## 1. Propósito
+Define oficialmente el alcance y los objetivos de la automatización de búsqueda de empleo.
 
-This document defines the official scope and objectives of the job search automation.
+Establece:
+- qué se pretende lograr;
+- límites funcionales, técnicos y operativos;
+- usuarios;
+- necesidades a satisfacer;
+- restricciones aplicables durante todo el ciclo de vida.
 
-Its purpose is to clearly and precisely establish what the project intends to achieve, what its functional, technical, and operational limits are, who its users will be, what needs it seeks to satisfy, and what restrictions must be respected throughout its entire lifecycle.
+Es la referencia oficial para delimitar el alcance y evitar interpretaciones ambiguas, funcionalidades no planificadas y desviaciones de los objetivos estratégicos.
+
+Guía todas las decisiones de análisis, diseño, implementación, pruebas, mantenimiento y evolución para mantener alineación con alcance y objetivos.
+
+Es obligatorio para todos los módulos, procesos, componentes, desarrollos, extensiones y mejoras futuras, salvo modificación de alcance previamente documentada, justificada y aprobada.
+
+---
 
-This document constitutes the official reference for delimiting the scope of the automation, avoiding ambiguous interpretations, incorporation of unplanned functionalities, and deviations from the strategic objectives defined for the project.
+## 2. Principios del alcance del proyecto (PAP)
+Complementan Project Glossary, Functional Requirements, Non-Functional Requirements, Decision Model, Data Flow, Project Standards, Error Handling Model y Folder Architecture. Constituyen la base normativa para una evolución controlada, coherente y alineada.
 
-Likewise, it establishes the necessary guidelines to ensure that all decisions regarding analysis, design, implementation, testing, maintenance, and evolution of the automation remain aligned with the objectives and scope defined herein.
+| ID | Regla |
+|---|---|
+| PAP-001 | Toda funcionalidad, proceso, componente o decisión debe contribuir directa o indirectamente al objetivo principal. |
+| PAP-002 | El alcance solo puede ampliarse mediante modificación documentada, justificada y aprobada. No se permiten funcionalidades fuera de alcance. |
+| PAP-003 | Alcance y objetivos deben mantener consistencia con toda la documentación oficial. Ningún documento posterior puede contradecir este documento. |
+| PAP-004 | Las decisiones de alcance deben priorizar utilidad, eficiencia y necesidades del usuario objetivo. |
+| PAP-005 | Objetivos y alcance deben definirse independientemente de lenguaje, plataforma, proveedor o herramienta. |
+| PAP-006 | El alcance debe permitir incorporar futuras funcionalidades sin comprometer estabilidad o coherencia arquitectónica. |
+| PAP-007 | Las funcionalidades deben diseñarse modularmente para facilitar desarrollo, mantenimiento, pruebas y evolución independientes. |
+| PAP-008 | Todo lo que no sea parte del alcance debe identificarse expresamente como exclusión o restricción. |
+| PAP-009 | Los objetivos deben ser técnicamente factibles y compatibles con los criterios principales: herramientas gratuitas, solución práctica, mantenible y escalable. |
+| PAP-010 | Toda modificación debe preservar compatibilidad con decisiones y documentación aprobadas, salvo actualización oficial. |
+| PAP-011 | Cada objetivo debe poder relacionarse con procesos, módulos o componentes responsables. |
+| PAP-012 | Ante conflicto entre funcionalidades, tienen prioridad las de mayor valor para el objetivo principal. |
+| PAP-013 | Objetivos y alcance deben ser precisos, verificables y sin ambigüedad, evitando interpretaciones distintas entre documentos. |
+| PAP-014 | Cada objetivo debe ser evaluable mediante criterios objetivos. |
+| PAP-015 | Todo módulo, proceso, componente o expansión futura debe respetar estos principios antes de considerarse parte oficial. |
 
-The provisions contained in this document shall be mandatory for all modules, processes, components, developments, extensions, and future improvements of the project, unless a scope modification is previously documented, justified, and approved as part of the official documentation.
+Criterios transversales del alcance: alineación permanente con el objetivo principal; delimitación clara de inclusión/exclusión; evolución controlada; independencia tecnológica; coherencia documental; escalabilidad y modularidad; utilidad para el usuario; trazabilidad de objetivos; verificación objetiva; referencia oficial para decisiones de evolución.
 
 ---
 
-## 2. Project scope principles
+## 3. Objetivo principal
+Diseñar, desarrollar e implementar una solución automatizada que permita descubrir, recopilar, preparar, evaluar, procesar y gestionar oportunidades de empleo de manera eficiente, consistente y trazable, apoyando al usuario en la toma de decisiones y reduciendo significativamente tiempo y esfuerzo en la búsqueda de empleo.
 
-The following principles establish the general rules that shall govern the definition, interpretation, maintenance, and evolution of the scope and objectives of the job search automation.
+Debe ejecutar integradamente todas las etapas definidas en la arquitectura funcional, desde la identificación de ofertas hasta la generación de insumos necesarios para una postulación de alta calidad, manteniendo integridad de información, trazabilidad de decisiones y cumplimiento de la documentación oficial.
 
-These principles complement the Project Glossary, Functional Requirements, Non-Functional Requirements, Decision Model, Data Flow, Project Standards, Error Handling Model, and Folder Architecture, constituting the regulatory basis to ensure that the project evolves in a controlled, coherent manner aligned with its strategic objectives.
+Directrices obligatorias:
+- Priorizar herramientas gratuitas.
+- Mantener arquitectura modular, práctica, mantenible y escalable.
+- Minimizar intervención manual del usuario cuando sea técnicamente factible.
+- Asegurar calidad, consistencia y trazabilidad de toda la información procesada.
+- Facilitar incorporación de nuevas fuentes de empleo y funcionalidades sin rediseños significativos.
+- Entregar información suficiente para respaldar decisiones cuando se requiera intervención del usuario.
+- Mantener compatibilidad con Functional Requirements, Non-Functional Requirements, Decision Model, Data Flow, Project Standards y Error Handling Model aprobados.
+
+Este objetivo principal es la referencia oficial para evaluar nuevas funcionalidades, priorizar desarrollo de módulos y validar que la evolución sigue alineada con el propósito estratégico.
 
 ---
 
-### PAP-001. Alignment with the main objective
+## 4. Objetivos específicos (OEP)
+| ID | Objetivo |
+|---|---|
+| OEP-001 | Automatizar descubrimiento de oportunidades: identificar y recopilar ofertas desde fuentes autorizadas, aplicando criterios de búsqueda definidos por el usuario. |
+| OEP-002 | Estandarizar información recopilada: preparar y normalizar datos de distintas fuentes para asegurar formato uniforme durante todo el procesamiento. |
+| OEP-003 | Evaluar ofertas automáticamente: analizar ofertas usando el Decision Model para determinar relevancia y priorización. |
+| OEP-004 | Procesar integralmente oportunidades seleccionadas: ejecutar procesamiento profundo de ofertas que superen criterios de evaluación, generando insumos para una postulación estratégica. |
+| OEP-005 | Centralizar gestión de información: mantener registro organizado, consistente y trazable de ofertas, evaluaciones, decisiones, estados y resultados. |
+| OEP-006 | Reducir intervención manual: automatizar actividades ejecutables segura y confiablemente, reservando al usuario solo decisiones que requieran juicio humano. |
+| OEP-007 | Garantizar calidad de información: implementar validación, control y monitoreo que aseguren integridad, consistencia y confiabilidad de datos. |
+| OEP-008 | Favorecer escalabilidad: permitir incorporar nuevas plataformas, procesos, módulos y funcionalidades sin afectar arquitectura existente. |
+| OEP-009 | Facilitar mantenimiento: mantener arquitectura modular, documentada y estandarizada que simplifique evolución, mantenimiento y mejoras. |
+| OEP-010 | Asegurar trazabilidad: preservar histórico completo de operaciones, decisiones, transformaciones y cambios de estado por oferta. |
+| OEP-011 | Optimizar tiempo de búsqueda: reducir significativamente el tiempo del usuario en actividades repetitivas de búsqueda, evaluación y preparación. |
+| OEP-012 | Apoyar toma de decisiones: entregar información estructurada, análisis y resultados que faciliten decisiones informadas cuando se requiera intervención. |
+
+Criterios transversales: contribuir directamente al objetivo principal; mantener coherencia documental; ser verificables; favorecer automatización; priorizar calidad, consistencia y trazabilidad; facilitar escalabilidad y mantenibilidad; permanecer independientes de tecnologías específicas; servir como referencia para planificación y priorización.
 
-Every functionality, process, component, or decision incorporated into the project shall contribute directly or indirectly to the fulfillment of the main objective defined in this document.
-
----
-
-### PAP-002. Controlled scope
-
-The project scope may only be expanded through a previously documented, justified, and approved modification.
-
-Functionalities outside the defined scope shall not be allowed.
-
----
-
-### PAP-003. Document consistency
-
-The scope and objectives must remain consistent with all official project documentation.
-
-No subsequent document may contradict the definitions established in this document.
-
----
-
-### PAP-004. User orientation
-
-All decisions related to the scope must prioritize the usefulness, efficiency, and needs of the target user of the automation.
-
----
-
-### PAP-005. Technological independence
-
-The objectives and scope must be defined independently of any specific programming language, platform, vendor, or tool.
-
----
-
-### PAP-006. Scalability
-
-The scope must allow the future incorporation of new functionalities without compromising the stability or coherence of the project architecture.
-
----
-
-### PAP-007. Modularity
-
-Functionalities included within the scope must be designed in a modular way, facilitating their independent development, maintenance, testing, and evolution.
-
----
-
-### PAP-008. Explicit delimitation
-
-Anything that is not part of the scope must be expressly identified as an exclusion or restriction of the project.
-
----
-
-### PAP-009. Feasibility
-
-The defined objectives must be technically feasible and compatible with the main criteria of the project, prioritizing the use of free tools and a practical, maintainable, and scalable solution.
-
----
-
-### PAP-010. Controlled evolution
-
-Any modification to the scope or objectives must preserve compatibility with previously approved decisions and documentation, unless there is an official update of said decisions.
-
----
-
-### PAP-011. Traceability
-
-Every objective must be relatable to the processes, modules, or components responsible for its fulfillment.
-
----
-
-### PAP-012. Strategic prioritization
-
-When there is a conflict between potential functionalities, those that provide the greatest value to the main objective of the project shall have priority.
-
----
-
-### PAP-013. Clarity
-
-The objectives and scope must be formulated in a precise, verifiable, and unambiguous manner, avoiding differing interpretations among the different project documents.
-
----
-
-### PAP-014. Verifiability
-
-Every defined objective must be subsequently evaluable through objective criteria that allow determining whether it has been fulfilled.
-
----
-
-### PAP-015. Mandatory compliance
-
-All modules, processes, components, and future expansions of the project must respect the principles established in this document before being considered an official part of the automation.
-
----
-
-## General principles of the project scope
-
-The scope and objectives of the project must comply with the following principles:
-
-- Maintain permanent alignment with the main objective.
-- Clearly delimit what is part of the project and what is excluded.
-- Favor controlled evolution of the scope.
-- Maintain technological independence.
-- Ensure coherence with all official documentation.
-- Facilitate scalability and modularity of the solution.
-- Prioritize usefulness for the user.
-- Ensure traceability of objectives.
-- Allow objective verification of scope compliance.
-- Serve as the official reference for all decisions related to the evolution of the project.
-
----
-
-## 3. Main objective
-
-The main objective of the job search automation is to design, develop, and implement an automated solution that enables discovering, collecting, preparing, evaluating, processing, and managing job opportunities efficiently, consistently, and traceably, supporting the user in decision-making and significantly reducing the time and effort required during the job search process.
-
-The automation must execute in an integrated manner all the stages defined in the functional architecture of the project, from the identification of job offers to the generation of the necessary inputs for a high-quality application, maintaining information integrity, traceability of decisions, and compliance with the criteria established in the official documentation.
-
-The main objective must be achieved respecting the following guidelines:
-
-- Prioritize the use of free tools throughout the automation.
-- Maintain a modular, practical, maintainable, and scalable architecture.
-- Minimize manual user intervention whenever technically feasible.
-- Ensure the quality, consistency, and traceability of all processed information.
-- Facilitate the incorporation of new job sources and functionalities without requiring significant redesigns.
-- Provide the user with sufficient information to support decision-making when their intervention is necessary.
-- Maintain compatibility with the previously approved functional requirements, non-functional requirements, decision model, data flow, project standards, and error handling model.
-
-The main objective defined in this document shall constitute the official reference for evaluating the incorporation of new functionalities, prioritizing module development, and validating that the evolution of the project remains aligned with its strategic purpose.
-
----
-
-## 4. Specific objectives
-
-The specific objectives define the concrete results that must be achieved to fulfill the main objective of the job search automation.
-
-Each specific objective represents a functional or strategic capability that must be developed, maintained, and evolved during the project lifecycle.
-
----
-
-### OEP-001. Automate opportunity discovery
-
-Automate the identification and collection of job offers from authorized sources, applying the search criteria defined by the user.
-
----
-
-### OEP-002. Standardize collected information
-
-Prepare and normalize the information obtained from different job sources to ensure a uniform format throughout processing.
-
----
-
-### OEP-003. Automatically evaluate offers
-
-Analyze job offers using the project's decision model to determine their level of relevance and prioritization.
-
----
-
-### OEP-004. Comprehensively process selected opportunities
-
-Execute deep processing of offers that pass the evaluation criteria, generating the necessary inputs to support a strategic application.
-
----
-
-### OEP-005. Centralize information management
-
-Maintain an organized, consistent, and traceable record of all offers, evaluations, decisions, statuses, and results generated by the automation.
-
----
-
-### OEP-006. Reduce manual intervention
-
-Automate all activities that can be executed safely and reliably, reserving user participation only for those decisions that require human judgment.
-
----
-
-### OEP-007. Guarantee information quality
-
-Implement validation, control, and monitoring mechanisms that ensure the integrity, consistency, and reliability of processed data.
-
----
-
-### OEP-008. Favor system scalability
-
-Design the automation to allow the incorporation of new job platforms, processes, modules, and functionalities without affecting the existing architecture.
-
----
-
-### OEP-009. Facilitate project maintenance
-
-Maintain a modular, documented, and standardized architecture that simplifies evolution, maintenance, and incorporation of future improvements.
-
----
-
-### OEP-010. Ensure process traceability
-
-Preserve the complete history of operations, decisions, transformations, and state changes made during the processing of each job offer.
-
----
-
-## 4. Specific objectives
-
-The specific objectives define the concrete results that must be achieved to fulfill the main objective of the job search automation.
-
-Each specific objective represents a functional or strategic capability that must be developed, maintained, and evolved during the project lifecycle.
-
----
-
-### OEP-001. Automate opportunity discovery
-
-Automate the identification and collection of job offers from authorized sources, applying the search criteria defined by the user.
-
----
-
-### OEP-002. Standardize collected information
-
-Prepare and normalize the information obtained from different job sources to ensure a uniform format throughout processing.
-
----
-
-### OEP-003. Automatically evaluate offers
-
-Analyze job offers using the project's decision model to determine their level of relevance and prioritization.
-
----
-
-### OEP-004. Comprehensively process selected opportunities
-
-Execute deep processing of offers that pass the evaluation criteria, generating the necessary inputs to support a strategic application.
-
----
-
-### OEP-005. Centralize information management
-
-Maintain an organized, consistent, and traceable record of all offers, evaluations, decisions, statuses, and results generated by the automation.
-
----
-
-### OEP-006. Reduce manual intervention
-
-Automate all activities that can be executed safely and reliably, reserving user participation only for those decisions that require human judgment.
-
----
-
-### OEP-007. Guarantee information quality
-
-Implement validation, control, and monitoring mechanisms that ensure the integrity, consistency, and reliability of processed data.
-
----
-
-### OEP-008. Favor system scalability
-
-Design the automation to allow the incorporation of new job platforms, processes, modules, and functionalities without affecting the existing architecture.
-
----
-
-### OEP-009. Facilitate project maintenance
-
-Maintain a modular, documented, and standardized architecture that simplifies evolution, maintenance, and incorporation of future improvements.
-
----
-
-### OEP-010. Ensure process traceability
-
-Preserve the complete history of operations, decisions, transformations, and state changes made during the processing of each job offer.
-
----
-
-### OEP-011. Optimize job search time
-
-Significantly reduce the time spent by the user on repetitive activities of the job search, evaluation, and preparation process.
-
----
-
-### OEP-012. Support user decision-making
-
-Provide structured information, analysis, and results that facilitate informed decision-making when user intervention is necessary.
-
----
-
-## General principles of specific objectives
-
-The specific objectives must:
-
-- Contribute directly to the fulfillment of the main objective.
-- Maintain coherence with all official project documentation.
-- Be verifiable through objective criteria.
-- Favor the automation of processes.
-- Prioritize the quality, consistency, and traceability of information.
-- Facilitate the scalability and maintainability of the solution.
-- Remain independent of specific technologies.
-- Serve as a reference for planning and prioritizing project development.
-
-### OEP-011. Optimize job search time
-
-Significantly reduce the time spent by the user on repetitive activities of the job search, evaluation, and preparation process.
-
----
-
-### OEP-012. Support user decision-making
-
-Provide structured information, analysis, and results that facilitate informed decision-making when user intervention is necessary.
-
----
-
-## General principles of specific objectives
-
-The specific objectives must:
-
-- Contribute directly to the fulfillment of the main objective.
-- Maintain coherence with all official project documentation.
-- Be verifiable through objective criteria.
-- Favor the automation of processes.
-- Prioritize the quality, consistency, and traceability of information.
-- Facilitate the scalability and maintainability of the solution.
-- Remain independent of specific technologies.
-- Serve as a reference for planning and prioritizing project development.
-
----
-
-## 5. Functional scope
-
-The functional scope defines the capabilities that the automation must provide to fulfill the objectives established in this document.
-
-Every process, module, or functionality developed must be included within one of the functional scopes defined herein.
-
-The incorporation of new functionalities that do not belong to this scope will require a formal update of the project documentation.
-
----
-
-### AF-001. Opportunity discovery
-
-The automation must allow identifying and collecting job offers from authorized information sources, applying the search criteria defined by the user.
-
-This scope includes:
-
-- Querying job sources.
-- Applying search filters.
-- Capturing offers.
-- Initial registration of obtained information.
-
----
-
-### AF-002. Offer preparation
-
-The automation must prepare the collected information for subsequent evaluation.
-
-This scope includes:
-
-- Data normalization.
-- Initial information validation.
-- Duplicate removal.
-- Assignment of the corresponding status.
-
----
-
-### AF-003. Initial evaluation
-
-The automation must perform a preliminary evaluation of each offer using the approved decision model.
-
-This scope includes:
-
-- Automatic evaluation.
-- Score calculation.
-- Offer classification.
-- Determination of continuity or discard.
-
----
-
-### AF-004. Deep processing
-
-The automation must execute the complete processing of selected offers.
-
-This scope includes:
-
-- Vacancy diagnosis.
-- Strategic application design.
-- Generation of the inputs defined for the process.
-- Verification of consistency of the obtained results.
-
----
-
-### AF-005. Information management
-
-The automation must manage all information generated during the lifecycle of each offer.
-
-This scope includes:
-
-- Status management.
-- Processing history.
-- Audit.
-- Traceability.
-- Information query.
-
----
-
-### AF-006. Configuration administration
-
-The automation must allow the use of previously defined configurations to control its behavior.
-
-This scope includes:
-
-- Search parameters.
-- Operational configurations.
-- Shared resources.
-- General preferences.
-
----
-
-### AF-007. Log management
-
-The automation must record all operational information necessary to facilitate monitoring, diagnosis, audit, and maintenance of the system.
-
-This scope includes:
-
-- Operational logs.
-- Error logs.
-- Relevant events.
-- Execution history.
-
----
-
-### AF-008. Module integration
-
-All modules defined for the automation must exchange information according to the approved data flow model.
-
-Communication between modules must preserve the integrity, consistency, and traceability of information.
-
----
-
-## Limits of the functional scope
-
-The functional scope defined in this document comprises only the capabilities necessary to automate the job opportunity search and processing process according to the project objectives.
-
-Any functionality that does not directly contribute to fulfilling said objectives must be considered out of scope and evaluated through a formal project expansion process.
-
----
-
-## General principles of the functional scope
-
-The functional scope must ensure:
-
-- Complete coverage of the processes defined for the automation.
-- Coherence with functional requirements and data flow.
-- Integration among all system modules.
-- Modularity of functionalities.
-- Scalability for future expansions.
-- Traceability of operations performed.
-- Technological independence.
-- Controlled evolution of the project.
-
----
-
-## 6. Technical scope
-
-The technical scope defines the limits that must be respected in the design and implementation of the technological solution that will support the job search automation.
-
-Its purpose is to establish which technical aspects are part of the project without conditioning the implementation to specific tools, vendors, or technologies.
-
-Every technical component developed must directly contribute to fulfilling the objectives defined for the automation and respect the architecture, standards, and principles established in the official documentation.
-
----
-
-### AT-001. Modular architecture
-
-The solution must be implemented through a modular architecture that allows developing, maintaining, testing, and evolving each component independently.
-
----
-
-### AT-002. Comprehensive automation
-
-The solution must automate all stages of the processing flow defined for the project, from opportunity discovery to management of the generated information.
-
----
-
-### AT-003. Information processing
-
-The solution must allow structured processing of information during all stages of the data flow, ensuring the integrity and consistency of results.
-
----
-
-### AT-004. Information persistence
-
-The solution must incorporate mechanisms to store in an organized manner the information necessary for the operation of the automation, preserving its traceability and history.
-
----
-
-### AT-005. Centralized configuration
-
-The solution must allow centralized management of configuration parameters used by the different modules of the automation.
-
----
-
-### AT-006. Log management
-
-The solution must generate and preserve the operational, audit, and error logs necessary for monitoring and maintenance of the system.
-
----
-
-### AT-007. Component integration
-
-All automation components must exchange information through clearly defined interfaces, respecting the official data flow model.
-
----
-
-### AT-008. Technical scalability
-
-The architecture must allow incorporating new job sources, modules, processes, and functionalities without requiring a significant reorganization of the existing solution.
-
----
-
-### AT-009. Maintainability
-
-The solution must facilitate the update, correction, and evolution of its components without unnecessarily affecting the operation of the rest of the system.
-
----
-
-### AT-010. Technological independence
-
-Architectural decisions must minimize dependence on specific technologies, vendors, or tools, facilitating their replacement when convenient.
-
----
-
-### AT-011. Failure recovery
-
-The solution must incorporate mechanisms that allow detecting, logging, and managing error conditions according to the Error Handling Model approved for the project.
-
----
-
-### AT-012. Information security
-
-The solution must protect the integrity, consistency, and availability of the information used during the operation of the automation, according to the defined non-functional requirements.
-
----
-
-## Limits of the technical scope
-
-The technical scope exclusively comprises the design and implementation of the logical infrastructure necessary to support the job search automation.
-
-The specific selection of technologies, languages, tools, libraries, and other implementation elements will be defined in the corresponding architecture documents and is not part of this document.
-
----
-
-## General principles of the technical scope
-
-The technical scope must ensure:
-
-- Modularity of the solution.
-- Scalability of the architecture.
-- Technological independence.
-- Controlled integration between components.
-- Maintainability of the automation.
-- Persistence and traceability of information.
-- Controlled failure recovery.
-- Compatibility with all official project documentation.
-
----
-
-## 7. Operational scope
-
-The operational scope defines the activities that the automation will perform during its normal operation, as well as the operational limits under which the system must execute.
-
-Its purpose is to establish the operational framework of the automation, delimiting the responsibilities it will assume during process execution and those that will remain under user control.
-
----
-
-### AO-001. Automated operation
-
-The automation must autonomously execute all processes that have been defined as automatable within the official project documentation.
-
----
-
-### AO-002. Operational flow execution
-
-The automation must execute the process stages according to the approved official flow, respecting the statuses, validations, decision rules, and control mechanisms defined for each module.
-
----
-
-### AO-003. Offer lifecycle management
-
-The automation must manage the complete lifecycle of each job offer from its discovery to the completion of its processing, preserving the corresponding history.
-
----
-
-### AO-004. Operational monitoring
-
-The automation must generate the necessary information to supervise the execution status of processes, detect incidents, and facilitate problem diagnosis.
-
----
-
-### AO-005. Operational continuity
-
-The automation must pursue the continuity of processes under recoverable error conditions, applying the strategies defined in the Error Handling Model.
-
----
-
-### AO-006. User intervention
-
-User participation must be limited to activities that require human judgment or a decision expressly reserved by the official project documentation.
-
----
-
-### AO-007. Operational configuration administration
-
-The automation must use the current configurations to control its operational behavior, without requiring modifications to the system logic for parameter changes.
-
----
-
-### AO-008. Resource management
-
-The automation must manage in a controlled manner the resources necessary for its operation, pursuing efficient use compatible with the project's non-functional requirements.
-
----
-
-### AO-009. Permanent operation logging
-
-Every relevant operation executed by the automation must be recorded according to the audit, traceability, and log management rules defined for the project.
-
----
-
-### AO-010. Operational evolution
-
-The incorporation of new operational processes must be carried out respecting the architecture, standards, and scope defined in the official documentation.
-
----
-
-## Limits of the operational scope
-
-The operational scope comprises only the activities necessary to execute the automated job opportunity search and processing process.
-
-Any activity that requires exclusively human judgment, negotiations with third parties, strategic decision-making reserved for the user, or actions that exceed the capabilities defined for the automation is not part of the operational scope.
-
----
-
-## General principles of the operational scope
-
-The operational scope must ensure:
-
-- Consistent execution of all processes.
-- Operational continuity.
-- Minimal user intervention.
-- Controlled resource management.
-- Complete traceability of operations.
-- Compatibility with the approved data flow.
-- Compliance with the decision model.
-- Controlled evolution of operations.
-
----
-
-## 8. Project exclusions
-
-Project exclusions explicitly define the functionalities, processes, responsibilities, and scopes that are not part of the job search automation.
-
-Their purpose is to establish clear limits that avoid incorrect interpretations of the scope, reduce the risk of uncontrolled project growth, and facilitate the evaluation of future expansions.
-
-Any functionality not contemplated in the scope defined in this document must be considered excluded until an official modification of the documentation exists.
-
----
-
-### EP-001. Automatic application submission
-
-The automation will not perform automatic submission of applications to job offers.
-
-The final decision and execution of each application will remain under user control.
-
----
-
-### EP-002. User impersonation
-
-The automation will not perform actions that involve impersonating the user's identity, consent, or judgment.
-
----
-
-### EP-003. Modification of information on external platforms
-
-The automation will not modify information of the user's profile or third parties on external platforms, unless such functionality is officially incorporated through a scope expansion.
-
----
-
-### EP-004. Decision-making reserved for the user
-
-The automation will not make decisions that have been classified in the Decision Model as exclusive to the user.
-
----
-
-### EP-005. Management of selection processes
-
-The automation will not manage interviews, technical tests, salary negotiations, communications with recruiters, or other activities subsequent to the application decision.
-
----
-
-### EP-006. Guarantee of employment outcomes
-
-The automation does not guarantee obtaining interviews, job offers, hirings, or any result derived from the job search process.
-
-Its function consists exclusively of supporting and optimizing the process defined within the scope of the project.
-
----
-
-### EP-007. Functionalities unrelated to the project objective
-
-Functionalities that do not directly contribute to the main objective of the automation will not be part of the project, even if technically feasible.
-
----
-
-### EP-008. Unauthorized integrations
-
-The automation will not incorporate integrations with platforms, services, or information sources that have not been previously evaluated and approved according to the official documentation.
-
----
-
-### EP-009. Processing of unrelated information
-
-The automation will not process information that is not directly linked to the search, evaluation, processing, or management of job opportunities.
-
----
-
-### EP-010. Automatic scope changes
-
-The automation will not incorporate new functionalities, modules, or processes as a consequence of automatic system decisions.
-
-Any scope expansion will require prior documentation, justification, and approval.
-
----
-
-## General principles of exclusions
-
-Project exclusions must ensure:
-
-- Clear delimitation of the scope.
-- Prevention of uncontrolled project growth.
-- Protection of decisions reserved for the user.
-- Coherence with the defined objectives.
-- Compatibility with all official documentation.
-- Controlled evolution through documented changes.
-- Reduction of ambiguities during development.
-- Official reference for evaluating future project expansions.
-
----
-
-## 9. Project limitations
-
-Project limitations establish the conditions, restrictions, and factors that may influence the design, implementation, operation, and evolution of the job search automation.
-
-Their purpose is to identify those aspects that condition the development of the project and that must be considered throughout its execution, without constituting a failure or non-compliance of the automation.
-
-The limitations defined herein are part of the official project scope and must be respected in all analysis, architecture, implementation, and maintenance decisions.
-
----
-
-### LP-001. Availability of external sources
-
-The operation of the automation will depend on the availability and accessibility of the job platforms used as information sources.
-
-Interruptions, changes, or restrictions imposed by said platforms may affect the operation of some processes.
-
----
-
-### LP-002. Changes in external platforms
-
-Modifications made by third parties to the structure, operation, policies, or access mechanisms of job platforms may require adjustments in the automation.
-
----
-
-### LP-003. Legal and usage restrictions
-
-The automation must respect the legal and technical restrictions and terms of use applicable to the platforms used during information retrieval.
-
----
-
-### LP-004. Quality of source information
-
-The quality of the results obtained will depend on the integrity, consistency, and accuracy of the information published by job sources.
-
-The automation cannot correct non-existent or incorrect information provided by third parties.
-
----
-
-### LP-005. Dependence on external services
-
-When the automation uses authorized external services, its operation will be conditioned by the availability and behavior of said services.
-
----
-
-### LP-006. Available resources
-
-The performance of the automation will be conditioned by the hardware and software resources available in the environment where it is executed.
-
----
-
-### LP-007. Limitations of artificial intelligence models
-
-Results generated through artificial intelligence models may contain inaccuracies, incorrect interpretations, or unexpected responses, and must therefore be managed according to the Decision Model and the Error Handling Model of the project.
-
----
-
-### LP-008. Technological evolution
-
-The technologies used during implementation may evolve over time, making it necessary to update components or replace tools to maintain system compatibility.
-
----
-
-### LP-009. Configuration dependency
-
-The correct operation of the automation will depend on the official project configurations remaining consistent, complete, and updated.
-
----
-
-### LP-010. Scope of automation
-
-The automation will only perform the functions expressly defined within the official project scope.
-
-Any additional functional need must be managed as a scope expansion and not as a system correction.
-
----
-
-## General principles of limitations
-
-Project limitations must:
-
-- Be considered during all design and implementation decisions.
-- Allow a realistic evaluation of the automation's capabilities.
-- Clearly differentiate project limitations from system errors.
-- Maintain coherence with the scope, objectives, and exclusions of the project.
-- Favor realistic technical planning.
-- Serve as a reference for risk management and future project expansions.
-- Remain documented and updated during the evolution of the automation.
-- Avoid expectations that exceed the capabilities defined for the project.
-
----
-
-## 10. Project assumptions
-
-Project assumptions establish the conditions that are considered true for the purposes of design, development, implementation, and operation of the job search automation.
-
-Their purpose is to document the premises upon which the project is built, allowing identification of those conditions whose modification could require adjustments to the architecture, processes, or scope of the automation.
-
-The assumptions defined herein must be reviewed when there is a significant change in the project context.
-
----
-
-### SP-001. User availability
-
-It is assumed that the user will keep available the information necessary for the operation of the automation, including their professional profile, preferences, and configurations.
-
----
-
-### SP-002. Authorized access to job sources
-
-It is assumed that the job platforms used can be consulted through the mechanisms previously defined and authorized during the design of the solution.
-
----
-
-### SP-003. Availability of technological resources
-
-It is assumed that the environment where the automation will be executed will have the minimum necessary resources to support its operation according to the approved non-functional requirements.
-
----
-
-### SP-004. Consistency of official documentation
-
-It is assumed that all official project documentation will remain aligned and updated, constituting the only authorized source for decision-making during the development and maintenance of the automation.
-
----
-
-### SP-005. Reasonable process stability
-
-It is assumed that the general job search process defined for the project will remain stable during the development of the automation, allowing the construction of a coherent and maintainable solution.
-
----
-
-### SP-006. Availability of artificial intelligence models
-
-It is assumed that the artificial intelligence models defined for the project will be available when required by the corresponding processes.
-
----
-
-### SP-007. Controlled project evolution
-
-It is assumed that any functional, technical, or operational modification will follow the official documentation, review, and approval process established for the project.
-
----
-
-### SP-008. Information integrity
-
-It is assumed that the information stored by the automation will preserve its integrity through the mechanisms defined in the Data Model, Data Flow, and Error Handling Model.
-
----
-
-### SP-009. Compliance with standards
-
-It is assumed that all modules, components, and resources developed will respect the standards, conventions, and architecture defined in the official documentation.
-
----
-
-### SP-010. Use according to project purpose
-
-It is assumed that the automation will be used exclusively to support the job search process defined within the scope of the project.
-
----
-
-## General principles of assumptions
-
-Project assumptions must:
-
-- Serve as a basis for design and implementation decisions.
-- Remain documented and reviewable.
-- Maintain coherence with the scope and objectives of the project.
-- Facilitate identification of changes that may affect the automation.
-- Favor consistent technical planning.
-- Reduce ambiguities during development.
-- Allow traceability of the premises used in the project.
-- Constitute an official reference for future scope revisions.
-
----
-
-## 11. System users
-
-System users define the persons or entities authorized to interact with the job search automation.
-
-Their purpose is to identify the different types of users contemplated within the scope of the project, as well as the general level of interaction expected for each one.
-
-The definition of users will allow delimiting responsibilities, functional needs, and future decisions related to permissions, configurations, and evolution of the automation.
-
----
-
-### US-001. Main user
-
-The main user will be the person who owns the automation and the direct beneficiary of its operation.
-
-They will be responsible for:
-
-- Defining search preferences.
-- Keeping their professional profile updated.
-- Reviewing the results generated by the automation.
-- Making decisions expressly reserved for the user.
-- Managing general system configurations.
-
----
-
-### US-002. System operator
-
-The main user will also act as the operator of the automation, being responsible for:
-
-- Starting or scheduling executions when appropriate.
-- Supervising the general operation of the system.
-- Reviewing logs, audits, and errors when necessary.
-- Performing maintenance activities defined by the project.
-
----
-
-### US-003. Documentation administrator
-
-The main user will also be responsible for maintaining the official project documentation, ensuring that it remains aligned with the evolution of the automation.
-
-This responsibility includes:
-
-- Updating official documents.
-- Managing document versions.
-- Approving scope modifications.
-- Maintaining traceability of project decisions.
-
----
-
-### US-004. Authorized external systems
-
-Job platforms, artificial intelligence services, and other external components used by the automation will not be considered system users.
-
-Their participation will be limited to the exchange of information through the mechanisms defined by the project architecture.
-
----
-
-### US-005. Future users
-
-The project architecture must allow incorporating new types of users in future versions of the automation without affecting the general structure of the system.
-
-The incorporation of new user profiles will require a formal update of this document.
-
----
-
-## General principles of system users
-
-The definition of users must ensure:
-
-- Clear identification of responsibilities.
-- Separation between users and external systems.
-- Compatibility with the project scope.
-- Scalability for future expansions.
-- Coherence with the decision model.
-- Protection of decisions reserved for the user.
-- Traceability of responsibilities.
-- Controlled evolution of user profiles.
-
----
-
-## 12. General use cases
-
-General use cases describe the main interactions between the user and the job search automation.
-
-Their purpose is to identify, from a functional perspective, the highest-level processes that the system must support, serving as a reference for the design of modules, architecture, and implementation of the solution.
-
-The use cases defined in this document represent general capabilities of the automation and do not replace the detailed functional specifications that will be developed during later stages of the project.
-
----
-
-### CUG-001. Configure the automation
-
-**Objective**
-
-Allow the user to define and update the parameters necessary for the operation of the automation.
-
-**Primary actor**
-
-- Main user.
-
-**Expected result**
-
-The automation has a valid configuration to execute its processes.
-
----
-
-### CUG-002. Execute opportunity search
-
-**Objective**
-
-Obtain job offers from authorized sources according to the criteria established by the user.
-
-**Primary actor**
-
-- Main user.
-
-**Expected result**
-
-The offers found are recorded to begin their processing.
-
----
-
-### CUG-003. Automatically process offers
-
-**Objective**
-
-Execute the complete flow of preparation, evaluation, and processing of job opportunities according to the approved decision model.
-
-**Primary actor**
-
-- Automation.
-
-**Expected result**
-
-Each offer finishes the process with the corresponding status and with all the information generated during its processing.
-
----
-
-### CUG-004. Consult offer status
-
-**Objective**
-
-Allow the user to review the status, history, and results associated with each job opportunity.
-
-**Primary actor**
-
-- Main user.
-
-**Expected result**
-
-The user can consult the consolidated information of any offer processed by the automation.
-
----
-
-### CUG-005. Review logs and audit
-
-**Objective**
-
-Allow consultation of operational logs, relevant events, and errors generated during system execution.
-
-**Primary actor**
-
-- Main user.
-
-**Expected result**
-
-The user has the necessary information to supervise the operation of the automation and facilitate diagnostic activities.
-
----
-
-### CUG-006. Manage system configuration
-
-**Objective**
-
-Allow the update of parameters, preferences, and configurations used by the automation.
-
-**Primary actor**
-
-- Main user.
-
-**Expected result**
-
-The modifications made are available for subsequent system executions.
-
----
-
-### CUG-007. Maintain project documentation
-
-**Objective**
-
-Update the official documentation when there is an approved modification to the scope, architecture, processes, or operation of the automation.
-
-**Primary actor**
-
-- Main user.
-
-**Expected result**
-
-The documentation remains aligned with the actual state of the project.
-
----
-
-## General principles of use cases
-
-General use cases must:
-
-- Represent the main capabilities of the automation.
-- Maintain coherence with the functional scope of the project.
-- Serve as a reference for the design of system modules.
-- Facilitate traceability between objectives, requirements, and functionalities.
-- Remain independent of implementation details.
-- Evolve in a controlled manner according to project growth.
-- Maintain compatibility with official documentation.
-- Serve as a basis for the development of specific use cases in future stages.
-
-
----
-
-## 13. Expected benefits
-
-Expected benefits describe the positive results intended to be obtained through the implementation and use of the job search automation.
-
-Their purpose is to establish the value that the project will bring to the user, serving as a reference for evaluating the fulfillment of the defined objectives and guiding future improvements to the automation.
-
-The benefits defined in this document represent the expected results of the project and do not constitute a guarantee of external outcomes, such as obtaining interviews or hirings.
-
----
-
-### BE-001. Reduction of search time
-
-The automation must significantly reduce the time spent by the user on searching, collecting, and organizing job opportunities.
-
----
-
-### BE-002. Increased productivity
-
-The automation must decrease the manual execution of repetitive tasks, allowing the user to concentrate their effort on activities that require human judgment.
-
----
-
-### BE-003. Greater consistency in processing
-
-The automation must execute the defined processes following uniform criteria, reducing variations derived from manual execution.
-
----
-
-### BE-004. Better information quality
-
-The automation must generate organized, structured, and validated information that facilitates the analysis of job opportunities.
-
----
-
-### BE-005. Better support for decision-making
-
-The automation must provide sufficient information so that the user can make more informed decisions regarding the processed job opportunities.
-
----
-
-### BE-006. Complete process traceability
-
-The automation must preserve the processing history, decisions, statuses, and events associated with each job offer.
-
----
-
-### BE-007. Ease of maintenance
-
-The modular architecture, documentation, and defined standards must facilitate the evolution and maintenance of the project.
-
----
-
-### BE-008. Solution scalability
-
-The automation must allow incorporating new job sources, modules, and functionalities without requiring significant changes to the existing architecture.
-
----
-
-### BE-009. Reduction of operational errors
-
-The automation must reduce the occurrence of errors associated with repetitive manual tasks through standardized processes and validation mechanisms.
-
----
-
-### BE-010. Basis for future improvements
-
-The documentation generated during the project must serve as a foundation for incorporating new capabilities, optimizing processes, and expanding the scope of the automation in a controlled manner.
-
----
-
-## General principles of expected benefits
-
-Expected benefits must:
-
-- Maintain alignment with the main objective of the project.
-- Be coherent with the defined scope.
-- Represent achievable and verifiable results.
-- Favor operational efficiency.
-- Facilitate the continuous evolution of the project.
-- Serve as a reference for evaluating the value generated by the automation.
-- Maintain consistency with all official documentation.
-- Contribute to fulfilling the project acceptance criteria.
-
----
-
-## 14. Scope restrictions
-
-Scope restrictions establish the mandatory rules that must be respected during the design, development, implementation, operation, and evolution of the job search automation.
-
-Their purpose is to ensure that the project remains aligned with its objectives, principles, scope, and official documentation, avoiding deviations that compromise its coherence, maintainability, or feasibility.
-
-Any decision that contradicts the restrictions defined herein must be considered outside the project scope and will require a formal review of the documentation.
-
----
-
-### RA-001. Compliance with the official scope
-
-Every functionality incorporated into the project must be included within the scope defined in this document or have been approved through an official modification.
-
----
-
-### RA-002. Compliance with official documentation
-
-All modules, components, processes, and resources must respect the definitions established in the official project documentation.
-
-Implementations that contradict previously approved documents will not be allowed.
-
----
-
-### RA-003. Priority of project objectives
-
-Design, architecture, and implementation decisions must prioritize the fulfillment of the main objective and the specific objectives defined in this document.
-
----
-
-### RA-004. Respect for exclusions
-
-Functionalities expressly identified as project exclusions may not be developed, unless there is a formally approved scope expansion.
-
----
-
-### RA-005. Compliance with decisions reserved for the user
-
-The automation may not assume responsibilities or decisions that have been classified as exclusive to the user in the Decision Model.
-
----
-
-### RA-006. Controlled evolution
-
-Any scope expansion must be documented, justified, evaluated, and approved before starting its development.
-
----
-
-### RA-007. Architectural coherence
-
-Modifications to the project must preserve coherence with the previously approved architecture, data flow, standards, decision model, and error handling model.
-
----
-
-### RA-008. Technological independence
-
-The project scope may not be conditioned to a specific technology, vendor, or tool.
-
-Technological decisions must be developed in the corresponding documents.
-
----
-
-### RA-009. Project feasibility
-
-Every incorporation into the scope must be compatible with the fundamental principles of the project:
-
-- Use of free tools.
-- Practical solution.
-- Maintainable architecture.
-- Scalability of the automation.
-
----
-
-### RA-010. Traceability of changes
-
-Every modification to the scope must leave documentary evidence of:
-
-- Reason for the change.
-- Justification.
-- Expected impact.
-- Affected documents.
-- Approval date.
-
----
-
-## General principles of scope restrictions
-
-Scope restrictions must ensure:
-
-- Protection of the main objective of the project.
-- Control of scope growth.
-- Coherence among all official documentation.
-- Controlled evolution of the project.
-- Technological independence.
-- Traceability of all modifications.
-- Compatibility with the defined strategic principles.
-- Maintainability and scalability of the automation.
-
-
----
-
-## 15. Acceptance criteria
-
-Acceptance criteria define the conditions that must be met to consider that the scope and objectives of the project have been correctly established and documented.
-
-Their purpose is to provide an objective basis for validating that this document constitutes a complete, coherent, and sufficient reference to guide the development and evolution of the job search automation.
-
-Compliance with these criteria will be mandatory before considering Document 8 approved.
-
----
-
-### CAA-001. Main objective defined
-
-The document must establish a single main objective, clearly formulated, verifiable, and aligned with the general purpose of the project.
-
----
-
-### CAA-002. Specific objectives documented
-
-All specific objectives must directly contribute to the fulfillment of the main objective and remain consistent with the rest of the official documentation.
-
----
-
-### CAA-003. Scope fully delimited
-
-The document must explicitly define the functional, technical, and operational scope of the automation.
-
----
-
-### CAA-004. Exclusions documented
-
-All functionalities, responsibilities, and activities that are not part of the project must be clearly identified as exclusions.
-
----
-
-### CAA-005. Limitations identified
-
-Project limitations must be documented and differentiated from exclusions and system errors.
-
----
-
-### CAA-006. Assumptions established
-
-The document must record the premises used to define the scope and objectives of the project.
-
----
-
-### CAA-007. Users identified
-
-Users contemplated by the project must be clearly defined together with their general responsibilities.
-
----
-
-### CAA-008. General use cases documented
-
-The document must include the main use cases that represent the general capabilities of the automation.
-
----
-
-### CAA-009. Expected benefits defined
-
-Project benefits must be clearly documented and aligned with the established objectives.
-
----
-
-### CAA-010. Restrictions documented
-
-All restrictions that condition the scope of the project must be clearly identified and justified.
-
----
-
-### CAA-011. Document coherence
-
-The content of the document must remain consistent with the Glossary, Functional Requirements, Non-Functional Requirements, Decision Model, Data Flow, Project Standards, Error Handling Model, and Folder Architecture.
-
----
-
-### CAA-012. Technological independence
-
-The document must not depend on specific tools, languages, vendors, or technologies.
-
----
-
-### CAA-013. Traceability
-
-The objectives, scopes, and restrictions defined must be relatable to the official project documents and serve as a reference for subsequent design and implementation stages.
-
----
-
-### CAA-014. Clarity and absence of ambiguity
-
-All defined concepts must be written in a clear, consistent, and verifiable manner, avoiding ambiguous interpretations.
-
----
-
-### CAA-015. Formal approval
-
-The document may only be considered approved when all the above criteria are met and there is express conformity of the project manager.
-
----
-
-## General validation of the document
-
-Document 8 — Scope and Objectives will be considered officially approved when:
-
-- All planned chapters are defined.
-- There is coherence with all official project documentation.
-- The project scope is fully delimited.
-- The objectives are verifiable and traceable.
-- Exclusions, limitations, and restrictions are clearly differentiated.
-- The document can be used as a reference for subsequent documents of Stage 2 and the System Architecture.
-
----
-
-## 16. Document index
-
-This index constitutes the official structure of **Document 8 – Scope and Objectives**.
-
-Its purpose is to facilitate consultation, navigation, maintenance, and traceability of all sections that make up the document, serving as the official reference for the definition of the strategic scope of the job search automation.
-
----
-
-# Index
-
-## 1. Purpose of the document
-
-Defines the objective, scope, and mandatory nature of this document.
-
 ---
 
-## 2. Project scope principles
+## 5. Alcance funcional (AF)
+| ID | Alcance | Incluye |
+|---|---|---|
+| AF-001 | Descubrimiento de oportunidades | Consultar fuentes; aplicar filtros; capturar ofertas; registro inicial de información obtenida. |
+| AF-002 | Preparación de ofertas | Normalización; validación inicial; eliminación de duplicados; asignación de estado. |
+| AF-003 | Evaluación inicial | Evaluación automática; cálculo de puntaje; clasificación; determinación de continuidad o descarte. |
+| AF-004 | Procesamiento profundo | Diagnóstico de vacante; diseño estratégico de postulación; generación de insumos definidos; verificación de consistencia de resultados. |
+| AF-005 | Gestión de información | Gestión de estados; historial de procesamiento; auditoría; trazabilidad; consulta de información. |
+| AF-006 | Administración de configuración | Parámetros de búsqueda; configuraciones operativas; recursos compartidos; preferencias generales. |
+| AF-007 | Gestión de logs | Logs operacionales; logs de errores; eventos relevantes; historial de ejecución. |
+| AF-008 | Integración de módulos | Intercambio de información según Data Flow aprobado, preservando integridad, consistencia y trazabilidad. |
 
-Establishes the general principles that shall govern the definition, interpretation, and evolution of the scope and objectives of the project.
+Límite: comprende solo capacidades necesarias para automatizar búsqueda y procesamiento de oportunidades según objetivos. Toda funcionalidad que no contribuya directamente queda fuera de alcance y debe evaluarse por expansión formal.
 
+Criterios transversales: cobertura completa de procesos; coherencia con requisitos funcionales y Data Flow; integración entre módulos; modularidad; escalabilidad; trazabilidad de operaciones; independencia tecnológica; evolución controlada.
+
 ---
 
-## 3. Main objective
+## 6. Alcance técnico (AT)
+| ID | Alcance | Requisito |
+|---|---|---|
+| AT-001 | Arquitectura modular | Desarrollar, mantener, probar y evolucionar componentes independientemente. |
+| AT-002 | Automatización integral | Automatizar todas las etapas del flujo, desde descubrimiento hasta gestión de información generada. |
+| AT-003 | Procesamiento de información | Procesamiento estructurado en todas las etapas del flujo de datos, asegurando integridad y consistencia. |
+| AT-004 | Persistencia de información | Almacenar organizadamente la información necesaria para operar, preservando trazabilidad e historial. |
+| AT-005 | Configuración centralizada | Gestionar centralmente parámetros usados por los módulos. |
+| AT-006 | Gestión de logs | Generar y preservar logs operacionales, de auditoría y de errores. |
+| AT-007 | Integración de componentes | Intercambiar información mediante interfaces definidas, respetando el Data Flow oficial. |
+| AT-008 | Escalabilidad técnica | Incorporar fuentes, módulos, procesos y funcionalidades sin reorganización significativa. |
+| AT-009 | Mantenibilidad | Actualizar, corregir y evolucionar componentes sin afectar innecesariamente el resto del sistema. |
+| AT-010 | Independencia tecnológica | Minimizar dependencia de tecnologías, proveedores o herramientas, facilitando reemplazo. |
+| AT-011 | Recuperación ante fallas | Detectar, registrar y gestionar errores según el Error Handling Model aprobado. |
+| AT-012 | Seguridad de información | Proteger integridad, consistencia y disponibilidad según Non-Functional Requirements. |
 
-Defines the strategic purpose pursued by the job search automation.
+Límite: comprende únicamente diseño e implementación de la infraestructura lógica necesaria. La selección específica de tecnologías, lenguajes, herramientas o librerías corresponde a documentos de arquitectura y no forma parte de este documento.
 
----
-
-## 4. Specific objectives
-
-Establishes the particular objectives that must be fulfilled to achieve the main objective of the project.
-
----
-
-## 5. Functional scope
-
-Defines the general functionalities that are part of the official scope of the automation.
-
----
-
-## 6. Technical scope
-
-Delimits the technical capabilities that the solution must support without conditioning its implementation.
-
----
-
-## 7. Operational scope
-
-Defines the expected operational behavior of the automation during its execution.
-
----
-
-## 8. Project exclusions
-
-Expressly identifies the functionalities, processes, and responsibilities that are not part of the project scope.
-
----
-
-## 9. Project limitations
+Criterios transversales: modularidad; escalabilidad; independencia tecnológica; integración controlada; mantenibilidad; persistencia y trazabilidad; recuperación controlada de fallas; compatibilidad con toda la documentación oficial.
 
-Documents the restrictions and conditions that may affect the development and operation of the automation.
-
 ---
-
-## 10. Project assumptions
 
-Establishes the premises upon which the design and evolution of the project are based.
+## 7. Alcance operativo (AO)
+| ID | Alcance | Requisito |
+|---|---|---|
+| AO-001 | Operación automatizada | Ejecutar autónomamente procesos definidos como automatizables en documentación oficial. |
+| AO-002 | Ejecución del flujo operacional | Respetar estados, validaciones, reglas de decisión y mecanismos de control por módulo. |
+| AO-003 | Ciclo de vida de ofertas | Gestionar cada oferta desde descubrimiento hasta completar procesamiento, preservando historial. |
+| AO-004 | Monitoreo operacional | Generar información para supervisar ejecución, detectar incidentes y facilitar diagnóstico. |
+| AO-005 | Continuidad operacional | Buscar continuidad bajo errores recuperables, aplicando Error Handling Model. |
+| AO-006 | Intervención de usuario | Limitar participación a actividades que requieran juicio humano o decisión expresamente reservada. |
+| AO-007 | Configuración operacional vigente | Usar configuraciones vigentes para controlar comportamiento sin modificar lógica por cambios de parámetros. |
+| AO-008 | Gestión de recursos | Administrar controladamente recursos necesarios, con uso eficiente compatible con Non-Functional Requirements. |
+| AO-009 | Registro operacional permanente | Registrar toda operación relevante según auditoría, trazabilidad y gestión de logs. |
+| AO-010 | Evolución operacional | Nuevos procesos operacionales deben respetar arquitectura, estándares y alcance oficial. |
 
----
-
-## 11. System users
+Límite: comprende solo actividades necesarias para ejecutar la búsqueda y procesamiento automatizado. No incluye actividades que requieran exclusivamente juicio humano, negociaciones con terceros, decisiones estratégicas reservadas al usuario o acciones fuera de capacidades definidas.
 
-Defines the types of users contemplated by the project and their general responsibilities.
+Criterios transversales: ejecución consistente; continuidad operacional; intervención mínima; gestión controlada de recursos; trazabilidad completa; compatibilidad con Data Flow; cumplimiento del Decision Model; evolución controlada.
 
 ---
-
-## 12. General use cases
-
-Describes the main interactions between the user and the automation from a functional perspective.
 
----
+## 8. Exclusiones del proyecto (EP)
+Cualquier funcionalidad no contemplada en el alcance se considera excluida hasta modificación oficial.
 
-## 13. Expected benefits
+| ID | Exclusión |
+|---|---|
+| EP-001 | Envío automático de postulaciones. La decisión final y ejecución de cada postulación permanece bajo control del usuario. |
+| EP-002 | Suplantación de usuario. No ejecutar acciones que impliquen suplantar identidad, consentimiento o juicio del usuario. |
+| EP-003 | Modificación de información en plataformas externas. No modificar perfil del usuario ni de terceros, salvo expansión oficial de alcance. |
+| EP-004 | Decisiones reservadas al usuario. No tomar decisiones clasificadas como exclusivas del usuario en el Decision Model. |
+| EP-005 | Gestión de procesos de selección. No gestionar entrevistas, pruebas técnicas, negociaciones salariales, comunicaciones con reclutadores ni actividades posteriores a la decisión de postulación. |
+| EP-006 | Garantía de resultados laborales. No garantiza entrevistas, ofertas, contrataciones ni resultados. Su función es apoyar y optimizar el proceso definido. |
+| EP-007 | Funcionalidades ajenas al objetivo. No forman parte aunque sean técnicamente factibles si no contribuyen directamente. |
+| EP-008 | Integraciones no autorizadas. No integrar plataformas, servicios o fuentes no evaluados y aprobados oficialmente. |
+| EP-009 | Procesamiento de información no relacionada. No procesar información no vinculada a búsqueda, evaluación, procesamiento o gestión de oportunidades. |
+| EP-010 | Cambios automáticos de alcance. No incorporar nuevas funcionalidades, módulos o procesos por decisiones automáticas; toda expansión requiere documentación, justificación y aprobación previas. |
 
-Defines the value expected to be obtained through the implementation of the automation.
+Criterios transversales: delimitación clara; prevención de crecimiento incontrolado; protección de decisiones reservadas; coherencia con objetivos; compatibilidad documental; evolución mediante cambios documentados; reducción de ambigüedad; referencia oficial para expansiones futuras.
 
 ---
-
-## 14. Scope restrictions
 
-Establishes the mandatory rules that must be respected during the evolution of the project to preserve the coherence of the scope.
+## 9. Limitaciones del proyecto (LP)
+Condicionan diseño, implementación, operación o evolución sin constituir falla ni incumplimiento de la automatización.
 
----
+| ID | Limitación |
+|---|---|
+| LP-001 | Disponibilidad de fuentes externas: depende de disponibilidad/accesibilidad de plataformas; interrupciones, cambios o restricciones pueden afectar procesos. |
+| LP-002 | Cambios en plataformas externas: modificaciones de estructura, operación, políticas o acceso pueden requerir ajustes. |
+| LP-003 | Restricciones legales y de uso: respetar términos y restricciones legales/técnicas de plataformas usadas. |
+| LP-004 | Calidad de información fuente: resultados dependen de integridad, consistencia y precisión de información publicada; no puede corregir información inexistente o incorrecta de terceros. |
+| LP-005 | Dependencia de servicios externos: si usa servicios autorizados, su operación queda condicionada por disponibilidad/comportamiento de esos servicios. |
+| LP-006 | Recursos disponibles: rendimiento condicionado por hardware/software del entorno. |
+| LP-007 | Limitaciones de modelos de IA: pueden generar imprecisiones, interpretaciones incorrectas o respuestas inesperadas; gestionarse según Decision Model y Error Handling Model. |
+| LP-008 | Evolución tecnológica: tecnologías pueden requerir actualización o reemplazo para mantener compatibilidad. |
+| LP-009 | Dependencia de configuración: operación correcta requiere configuraciones oficiales consistentes, completas y actualizadas. |
+| LP-010 | Alcance de automatización: solo ejecuta funciones definidas oficialmente; necesidades adicionales se gestionan como expansión, no como corrección. |
 
-## 15. Acceptance criteria
+Criterios transversales: considerarse en diseño/implementación; permitir evaluación realista; diferenciarse de errores; coherencia con alcance/objetivos/exclusiones; planificación técnica realista; referencia para gestión de riesgos y expansiones; permanecer documentadas/actualizadas; evitar expectativas fuera de capacidades.
 
-Defines the objective conditions that must be met for this document to be considered approved.
-
 ---
 
-## 16. Document index
+## 10. Supuestos del proyecto (SP)
+Premisas consideradas verdaderas para diseño, desarrollo, implementación y operación. Deben revisarse ante cambios significativos del contexto.
 
-Presents the official structure of Document 8 and facilitates its navigation and consultation.
+| ID | Supuesto |
+|---|---|
+| SP-001 | El usuario mantiene disponible información necesaria: perfil profesional, preferencias y configuraciones. |
+| SP-002 | Las plataformas de empleo pueden consultarse mediante mecanismos previamente definidos y autorizados. |
+| SP-003 | El entorno posee recursos mínimos necesarios según Non-Functional Requirements. |
+| SP-004 | La documentación oficial permanece alineada/actualizada y constituye única fuente autorizada para decisiones. |
+| SP-005 | El proceso general de búsqueda permanece razonablemente estable durante el desarrollo. |
+| SP-006 | Los modelos de IA definidos estarán disponibles cuando los procesos los requieran. |
+| SP-007 | Toda modificación funcional/técnica/operativa seguirá proceso oficial de documentación, revisión y aprobación. |
+| SP-008 | La información almacenada preservará integridad mediante Data Model, Data Flow y Error Handling Model. |
+| SP-009 | Módulos, componentes y recursos respetarán estándares, convenciones y arquitectura oficiales. |
+| SP-010 | La automatización se usará exclusivamente para apoyar la búsqueda definida dentro del alcance. |
+
+Criterios transversales: base para decisiones; documentados y revisables; coherentes con alcance/objetivos; identificar cambios con impacto; planificación consistente; reducir ambigüedad; trazabilidad de premisas; referencia oficial para revisiones futuras.
 
 ---
-
-## Function of the document within the project
 
-**Document 8 – Scope and Objectives** constitutes the official reference for defining the purpose, limits, and strategic direction of the job search automation.
+## 11. Usuarios del sistema (US)
+Define personas o entidades autorizadas a interactuar con la automatización, delimitando responsabilidades, necesidades funcionales y decisiones futuras sobre permisos/configuraciones/evolución.
 
-All subsequent documents must maintain coherence with the scope and objectives established herein, using it as a basis for design, architecture, implementation, and project evolution decisions.
+| ID | Usuario | Responsabilidades / condición |
+|---|---|---|
+| US-001 | Usuario principal | Dueño y beneficiario directo: define preferencias; mantiene perfil profesional actualizado; revisa resultados; toma decisiones reservadas; gestiona configuraciones generales. |
+| US-002 | Operador del sistema | El usuario principal también opera: inicia/programa ejecuciones; supervisa operación; revisa logs/auditoría/errores; ejecuta mantenimiento definido. |
+| US-003 | Administrador de documentación | El usuario principal también administra documentación oficial: actualiza documentos; gestiona versiones; aprueba modificaciones de alcance; mantiene trazabilidad de decisiones. |
+| US-004 | Sistemas externos autorizados | Plataformas de empleo, servicios de IA y componentes externos no son usuarios; participan solo mediante intercambio definido por arquitectura. |
+| US-005 | Usuarios futuros | La arquitectura debe permitir nuevos tipos de usuario sin afectar estructura general; incorporarlos requiere actualización formal de este documento. |
+
+Criterios transversales: responsabilidades claras; separación usuario/sistema externo; compatibilidad con alcance; escalabilidad; coherencia con Decision Model; protección de decisiones reservadas; trazabilidad de responsabilidades; evolución controlada de perfiles.
+
+---
+
+## 12. Casos de uso generales (CUG)
+Describen interacciones principales desde perspectiva funcional. Sirven como referencia para diseño de módulos, arquitectura e implementación. Representan capacidades generales y no reemplazan especificaciones funcionales detalladas posteriores.
+
+| ID | Objetivo | Actor principal | Resultado esperado |
+|---|---|---|---|
+| CUG-001 | Configurar la automatización | Usuario principal | La automatización queda con configuración válida para ejecutar procesos. |
+| CUG-002 | Ejecutar búsqueda de oportunidades | Usuario principal | Ofertas encontradas registradas para iniciar procesamiento. |
+| CUG-003 | Procesar ofertas automáticamente | Automatización | Cada oferta termina con estado correspondiente y toda la información generada. |
+| CUG-004 | Consultar estado de ofertas | Usuario principal | El usuario puede consultar información consolidada de cualquier oferta procesada. |
+| CUG-005 | Revisar logs y auditoría | Usuario principal | Información disponible para supervisar operación y diagnosticar. |
+| CUG-006 | Gestionar configuración del sistema | Usuario principal | Modificaciones disponibles para ejecuciones posteriores. |
+| CUG-007 | Mantener documentación del proyecto | Usuario principal | Documentación alineada con estado real tras modificación aprobada. |
+
+Criterios transversales: representar capacidades principales; coherencia con alcance funcional; referencia para diseño; trazabilidad entre objetivos/requisitos/funcionalidades; independencia de implementación; evolución controlada; compatibilidad documental; base para casos específicos futuros.
+
+---
+
+## 13. Beneficios esperados (BE)
+Resultados esperados del proyecto; no garantizan resultados externos como entrevistas o contrataciones.
+
+| ID | Beneficio |
+|---|---|
+| BE-001 | Reducción del tiempo de búsqueda, recopilación y organización de oportunidades. |
+| BE-002 | Mayor productividad al disminuir tareas manuales repetitivas y concentrar esfuerzo en juicio humano. |
+| BE-003 | Mayor consistencia de procesamiento mediante criterios uniformes. |
+| BE-004 | Mejor calidad de información: organizada, estructurada y validada. |
+| BE-005 | Mejor soporte para decisiones informadas sobre oportunidades procesadas. |
+| BE-006 | Trazabilidad completa de historial, decisiones, estados y eventos por oferta. |
+| BE-007 | Facilidad de mantenimiento por arquitectura modular, documentación y estándares. |
+| BE-008 | Escalabilidad para incorporar fuentes, módulos y funcionalidades sin cambios arquitectónicos significativos. |
+| BE-009 | Reducción de errores operacionales mediante procesos estandarizados y validaciones. |
+| BE-010 | Base documental para futuras mejoras, optimizaciones y expansiones controladas. |
+
+Criterios transversales: alineados con objetivo principal; coherentes con alcance; alcanzables y verificables; favorecen eficiencia operacional; facilitan evolución continua; referencia para evaluar valor; consistentes con documentación oficial; contribuyen a criterios de aceptación.
+
+---
+
+## 14. Restricciones de alcance (RA)
+Reglas obligatorias para diseño, desarrollo, implementación, operación y evolución. Cualquier decisión que las contradiga queda fuera del alcance y requiere revisión formal.
+
+| ID | Restricción |
+|---|---|
+| RA-001 | Toda funcionalidad debe estar dentro del alcance oficial o aprobada por modificación oficial. |
+| RA-002 | Todo módulo/componente/proceso/recurso debe respetar documentación oficial; no se permiten implementaciones contradictorias. |
+| RA-003 | Decisiones de diseño/arquitectura/implementación deben priorizar objetivo principal y objetivos específicos. |
+| RA-004 | No desarrollar exclusiones salvo expansión formalmente aprobada. |
+| RA-005 | No asumir responsabilidades/decisiones exclusivas del usuario según Decision Model. |
+| RA-006 | Toda expansión debe documentarse, justificarse, evaluarse y aprobarse antes de desarrollarse. |
+| RA-007 | Las modificaciones deben preservar coherencia con arquitectura, Data Flow, estándares, Decision Model y Error Handling Model aprobados. |
+| RA-008 | El alcance no puede condicionarse a tecnología/proveedor/herramienta específica; decisiones tecnológicas van en documentos correspondientes. |
+| RA-009 | Toda incorporación debe ser compatible con: herramientas gratuitas, solución práctica, arquitectura mantenible y escalabilidad. |
+| RA-010 | Toda modificación debe dejar evidencia documental de: motivo, justificación, impacto esperado, documentos afectados y fecha de aprobación. |
+
+Criterios transversales: proteger objetivo principal; controlar crecimiento; coherencia documental; evolución controlada; independencia tecnológica; trazabilidad de cambios; compatibilidad con principios estratégicos; mantenibilidad y escalabilidad.
+
+---
+
+## 15. Criterios de aceptación (CAA)
+Condiciones obligatorias para considerar que alcance y objetivos están correctamente establecidos y documentados. Su cumplimiento es obligatorio antes de aprobar DOC-08.
+
+| ID | Criterio |
+|---|---|
+| CAA-001 | Existe un único objetivo principal claro, verificable y alineado con el propósito general. |
+| CAA-002 | Todos los objetivos específicos contribuyen al objetivo principal y son consistentes con documentación oficial. |
+| CAA-003 | Alcance funcional, técnico y operativo explícitamente delimitado. |
+| CAA-004 | Todo lo no incluido está claramente identificado como exclusión. |
+| CAA-005 | Limitaciones documentadas y diferenciadas de exclusiones y errores. |
+| CAA-006 | Supuestos registrados. |
+| CAA-007 | Usuarios definidos con responsabilidades generales. |
+| CAA-008 | Casos de uso generales documentados como capacidades generales. |
+| CAA-009 | Beneficios esperados documentados y alineados con objetivos. |
+| CAA-010 | Restricciones claramente identificadas y justificadas. |
+| CAA-011 | Coherencia con Project Glossary, Functional Requirements, Non-Functional Requirements, Decision Model, Data Flow, Project Standards, Error Handling Model y Folder Architecture. |
+| CAA-012 | Sin dependencia de herramientas, lenguajes, proveedores o tecnologías específicas. |
+| CAA-013 | Objetivos, alcances y restricciones trazables hacia documentos oficiales y útiles para diseño/implementación posteriores. |
+| CAA-014 | Conceptos claros, consistentes, verificables y sin ambigüedad. |
+| CAA-015 | Aprobación formal solo si todos los criterios se cumplen y existe conformidad expresa del project manager. |
+
+Validación general: DOC-08 se considera aprobado cuando todos los capítulos están definidos; hay coherencia con toda la documentación oficial; el alcance está completamente delimitado; los objetivos son verificables y trazables; exclusiones, limitaciones y restricciones están claramente diferenciadas; y el documento puede usarse como referencia para documentos posteriores de Stage 2 y System Architecture.
+
+---
+
+## 16. Índice oficial y función del documento
+Estructura oficial para consulta, navegación, mantenimiento y trazabilidad.
+
+| Sección | Contenido |
+|---|---|
+| 1 | Propósito: objetivo, alcance y obligatoriedad del documento. |
+| 2 | Principios del alcance: reglas para definición, interpretación y evolución. |
+| 3 | Objetivo principal: propósito estratégico de la automatización. |
+| 4 | Objetivos específicos: resultados necesarios para lograr el objetivo principal. |
+| 5 | Alcance funcional: funcionalidades oficiales. |
+| 6 | Alcance técnico: capacidades técnicas sin condicionar implementación específica. |
+| 7 | Alcance operativo: comportamiento operacional esperado. |
+| 8 | Exclusiones: funcionalidades, procesos y responsabilidades fuera del alcance. |
+| 9 | Limitaciones: condiciones/restricciones que pueden afectar desarrollo u operación. |
+| 10 | Supuestos: premisas de diseño y evolución. |
+| 11 | Usuarios: tipos y responsabilidades generales. |
+| 12 | Casos de uso generales: interacciones funcionales principales. |
+| 13 | Beneficios esperados: valor esperado de la implementación. |
+| 14 | Restricciones de alcance: reglas obligatorias para preservar coherencia. |
+| 15 | Criterios de aceptación: condiciones objetivas para aprobar el documento. |
+| 16 | Índice: estructura oficial y navegación. |
+
+Función dentro del proyecto: DOC-08 es la referencia oficial para definir propósito, límites y dirección estratégica. Todos los documentos posteriores deben mantener coherencia con este alcance y objetivos, usándolo como base para decisiones de diseño, arquitectura, implementación y evolución.

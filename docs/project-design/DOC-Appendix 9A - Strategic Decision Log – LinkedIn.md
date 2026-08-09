@@ -1,337 +1,128 @@
 # Appendix A
-# Strategic Decision Log – LinkedIn
+## Strategic Decision Log – LinkedIn
 
-## A.1 Objective
+### A.1 Objective
 
-This appendix records the strategic decisions made during the research, analysis, and evaluation process of LinkedIn as the official job opportunity search platform for the first version (MVP) of the automation.
+This appendix records the strategic decisions from the research, analysis, and evaluation of LinkedIn as the official job opportunity search platform for the first automation version (MVP). Each decision documents an approved conclusion from Document 9 preparation and constitutes the project's official position on LinkedIn use. The log maintains traceability among research evidence, conclusions, and decisions conditioning automation design and operation. These decisions are LinkedIn-specific; each future job platform requires an independent strategic decision log.
 
-Each decision documents an approved conclusion reached during the preparation of Document 9 and constitutes the project's official position regarding the use of LinkedIn.
+### DE-LI-001. LinkedIn as official MVP platform
 
-The purpose of this log is to maintain traceability between the evidence obtained during research, the conclusions reached, and the decisions that will condition the design and operation of the automation.
+**Related chapter:** Target platforms.
 
-The decisions included in this appendix are specific to LinkedIn. If a new job platform is incorporated in the future, an independent strategic decision log must be prepared for that platform.
+**Decision:** LinkedIn is the only official platform for job opportunity searching during the automation MVP. Other platforms are outside MVP scope and will be evaluated in future stages using the same research and analysis process defined in Document 9.
 
----
+**Justification:** LinkedIn offers the best balance of job opportunity coverage, information quality, technical automation possibilities, and compatibility with project objectives. Its benefits outweigh the identified technical and operational platform restrictions.
 
-# DE-LI-001. LinkedIn as official MVP platform
+**Implications for the project:** All MVP development is carried out exclusively on LinkedIn. Document 9 is limited to LinkedIn analysis. Project architecture must allow incorporating new platforms without affecting LinkedIn decisions.
 
-## Related chapter
+### DE-LI-002. Approval of LinkedIn as official opportunity source
 
-4. Target platforms.
+**Related chapter:** Analysis of each platform.
 
-## Decision
+**Decision:** LinkedIn is approved as the official source of job opportunities for the automation. Published job offers are the primary information source feeding opportunity discovery. LinkedIn is used solely to retrieve offers; relevance evaluation is exclusively the automation's responsibility.
 
-LinkedIn is established as the only official platform for job opportunity searching during the first version (MVP) of the automation.
+**Justification:** LinkedIn provides broad opportunity coverage, a sufficiently consistent offer structure, and filters enabling search strategies aligned with the user's professional profile. It also provides the information needed for an initial evaluation of most offers.
 
-The incorporation of other platforms is outside the scope of the MVP and will be evaluated in future stages of the project using the same research and analysis process defined in Document 9.
+**Implications for the project:** LinkedIn is the official opportunity-discovery source. Retrieved information feeds subsequent process stages. LinkedIn recommendation algorithms will not determine which offers continue in the project's evaluation flow.
 
-## Justification
+### DE-LI-003. Official LinkedIn access mechanism
 
-The research conducted concluded that LinkedIn offers the best balance between job opportunity coverage, quality of available information, technical automation possibilities, and compatibility with the objectives defined for the project.
+**Related chapter:** APIs and access mechanisms.
 
-Although it presents technical and operational restrictions inherent to the platform, the benefits obtained outweigh the identified limitations.
+**Decision:** The automation will access LinkedIn through an authenticated session using the interaction mechanism selected during research. Official LinkedIn APIs will not be used to obtain job opportunities because they do not provide the functionality required by the project. Authentication is part of normal automation operation and is not optional.
 
-## Implications for the project
+**Justification:** Research analyzed the available mechanisms for accessing LinkedIn Jobs information. Unauthenticated operation initially appeared viable, but practical validation showed that the job search engine requires login to properly access the functionalities needed by the project. Visitor-only operation was discarded; authenticated access was adopted.
 
-- All MVP development will be carried out exclusively on LinkedIn.
-- Document 9 is limited to the analysis of this platform.
-- The project architecture must allow incorporating new platforms without affecting the decisions made for LinkedIn.
+**Implications for the project:** Authenticated session management is part of the automation's operational flow. Solution design must securely start, maintain, and end the user session. Protecting the account used by the automation is a priority project requirement.
 
----
+### DE-LI-004. Official information extraction method
 
-# DE-LI-002. Approval of LinkedIn as official opportunity source
+**Related chapter:** Information extraction methods.
 
-## Related chapter
+**Decision:** Job opportunities will be obtained through controlled extraction retrieving only the information necessary for subsequent automation stages. Extraction is limited to the data required to evaluate each offer and build the internal opportunity record; data that does not add value to the process is excluded. The automation obtains information directly from published LinkedIn job offers using the approved access mechanism.
 
-5. Analysis of each platform.
+**Justification:** Published LinkedIn offers usually contain the information needed for an initial relevance evaluation. Additional data provides little benefit and unnecessarily increases complexity, execution time, and operational risk. Extraction therefore focuses only on evaluation-relevant information.
 
-## Decision
+**Implications for the project:** Extraction targets only project-required information. Discovery avoids irrelevant data. Resource consumption during execution is reduced. Maintenance is simpler by limiting the amount of information dependent on LinkedIn's structure.
 
-LinkedIn is approved as the official source of job opportunities for the automation.
+### DE-LI-005. Technical and legal restrictions
 
-The job offers published on the platform constitute the primary source of information that will feed the project's opportunity discovery process.
+**Related chapter:** Technical and legal restrictions.
 
-The platform will be used solely to retrieve job offers, and the evaluation of their relevance will be the exclusive responsibility of the automation.
+**Decision:** Automation design incorporates the technical and operational limitations identified during LinkedIn research as project restrictions. LinkedIn implements platform-protection mechanisms against automated behavior, and these mechanisms condition interaction with the platform. The project adopts a conservative interaction strategy, prioritizing solution stability and user account protection over execution speed or volume of information obtained.
 
-## Justification
+**Justification:** Research identified restrictions related to platform access, action automation, non-human behavior detection, and LinkedIn Jobs operation. These restrictions do not prevent automation but condition its implementation. Incorporating them from the analysis stage reduces later redesign risk and supports a stable, sustainable solution.
 
-The functional analysis showed that LinkedIn provides broad coverage of job opportunities, a sufficiently consistent offer structure, and a set of filters that allows building search strategies aligned with the user's professional profile.
+**Implications for the project:** Identified restrictions are project requirements. Architecture must consider them from the start. Future technical decisions must respect them. Stability and sustainability take priority over implementation speed.
 
-The research also confirmed that the platform provides the necessary information to perform an initial evaluation of most offers.
+### DE-LI-006. Terms of use and compliance criteria
 
-## Implications for the project
+**Related chapter:** Terms of use and compliance considerations.
 
-- LinkedIn becomes the official source of opportunity discovery.
-- The automation will use the retrieved information as input for subsequent stages of the process.
-- LinkedIn's recommendation algorithms will not determine which offers continue within the project's evaluation flow.
+**Decision:** The project acknowledges LinkedIn's terms of use and restrictions related to platform automation. The automation will minimize operational risk through limited, controlled interaction aligned with behavior similar to that of a legitimate user. Protecting the account used by the automation is an operational project principle.
 
----
+**Justification:** The main continuity risk is not information access but potential LinkedIn account restrictions caused by behavior incompatible with normal platform use. Technical decisions must reduce this risk without compromising the automation's functional objectives.
 
-# DE-LI-003. Official LinkedIn access mechanism
+**Implications for the project:** Account protection is prioritized during solution design. Aggressive or unnecessary interaction strategies are avoided. Automation decisions must assess their operational-risk impact. Operational continuity prevails over query-volume maximization.
 
-## Related chapter
+### DE-LI-007. Risks associated with LinkedIn use
 
-6. APIs and access mechanisms.
+**Related chapter:** Risks by platform.
 
-## Decision
+**Decision:** The main LinkedIn risk is platform detection of automated behavior and restriction of the account used by the automation, not information availability. Operational risk mitigation is therefore a design criterion over maximizing performance or execution speed. Identified risks:
 
-The automation will access LinkedIn through an authenticated session using the interaction mechanism selected during research.
+- Temporary or permanent account restriction.
+- Changes to LinkedIn's interface or operation.
+- Modifications to platform usage policies.
+- Failures caused by technical changes in the job search process.
+- Loss of automation stability due to LinkedIn changes.
 
-Official LinkedIn APIs will not be used to obtain job opportunities because they do not provide the functionalities required by the project.
+**Justification:** Most relevant risks affect operational continuity, not the technical ability to develop the automation. Early design decisions can significantly reduce them. Risk management is therefore a fundamental automation-design principle, not a post-development activity.
 
-Authentication becomes part of the normal operation of the automation and is no longer considered an optional mechanism.
+**Implications for the project:** All technical decisions must consider their impact on operational risk. Architecture must facilitate adaptation to future platform changes. Automation behavior should approximate that of a legitimate user. Account protection takes priority over execution speed and query volume.
 
-## Justification
+### DE-LI-008. Official query frequency
 
-During the research, the different mechanisms available to access LinkedIn Jobs information were analyzed.
+**Related chapter:** Recommended query frequency.
 
-Initially, working without authentication was considered viable; however, the practical validation subsequently performed demonstrated that the job search engine requires logging in to properly access the functionalities needed for the project.
+**Decision:** The automation will query LinkedIn at a moderate frequency sufficient to identify new job opportunities without generating an activity pattern that unnecessarily increases account risk. Frequency seeks the best balance among opportunity coverage, information freshness, and operational safety, not the maximum number of queries. The MVP will not perform continuous queries or executions with excessively short intervals.
 
-Based on this evidence, the exclusively visitor-based operation strategy was discarded and an authenticated access model was adopted.
+**Justification:** Higher query frequency does not proportionally improve the quality of obtained opportunities; it raises operational risk without significant benefit. Controlled execution balances efficiency and sustainability.
 
-## Implications for the project
+**Implications for the project:** Execution frequency is a configurable automation parameter. The system avoids repetitive query patterns. Stability takes priority over constant result updates. Execution planning is part of operational-risk mitigation.
 
-- Authenticated session management becomes part of the automation's operational flow.
-- The solution design must include secure mechanisms to start, maintain, and end the user session.
-- Protecting the account used by the automation becomes a priority project requirement.
+### DE-LI-009. Official opportunity prioritization strategy
 
-# DE-LI-004. Official information extraction method
+**Related chapter:** Source prioritization strategy.
 
-## Related chapter
+**Decision:** The automation will use a query strategy maximizing retrieval of opportunities compatible with the user's professional profile while reducing the volume of irrelevant offers. Prioritization will not depend on LinkedIn's recommendation algorithm. LinkedIn is used exclusively to retrieve job offers; the project's evaluation system decides which offers continue in the process. The query strategy uses LinkedIn filters, including:
 
-7. Information extraction methods.
+- Keywords related to the professional profile.
+- Geographic location.
+- Work modality.
+- Publication date.
+- Experience level.
+- Other filters that add value to discovery.
 
-## Decision
+**Justification:** LinkedIn partially personalizes results using profile and history information. A properly designed query strategy provides more consistent control over the quality of the initial opportunities evaluated. Delegating prioritization to LinkedIn's algorithm would reduce transparency and limit project control over selection criteria.
 
-Job opportunities will be obtained through a controlled extraction process, designed to retrieve only the information necessary for subsequent stages of the automation.
+**Implications for the project:** The query strategy is the first opportunity filtering mechanism. The evaluation system alone determines offer relevance. Discovery quality depends mainly on query design, not LinkedIn recommendations. The query strategy can evolve without modifying the overall automation architecture.
 
-Extraction will be limited to the data required to evaluate each offer and build the internal opportunity record, avoiding collecting information that does not add value to the process.
+### DE-LI-010. Implementation criteria for Module 1
 
-The automation will obtain information directly from job offers published on LinkedIn, using the access mechanism approved for the project.
+**Related chapter:** LinkedIn implementation specification (DOC-09, Section 6).
 
-## Justification
+**Decision:** The "Enter the source", "Apply filters", and "Capture offers" nodes of the Opportunity Discovery module (Module 1) shall follow DOC-09, Section 6. Official implementation criteria:
 
-The research showed that job offers published on LinkedIn contain, in most cases, the information needed to perform an initial evaluation of their relevance.
+- Entry succeeds only when a verifiable authenticated-session DOM criterion is met within `timeout_ingreso`, using LinkedIn `global-nav` as official authenticated-session evidence.
+- Queries are composed from official filter sets defined in system configuration, mapping each field to the corresponding LinkedIn search parameter.
+- Capture respects configured default policies: `max_paginas`, `max_ofertas_por_corrida`, `pausa_entre_lotes`, `estrategia_anti_bloqueo`.
+- Captcha or platform-blocking evidence terminates the run with `bloqueo_plataforma` (Group A, no retry); session expiration uses `sesion_expirada` with controlled re-entry.
 
-It also showed that collecting additional information does not provide significant benefits and unnecessarily increases complexity, execution time, and operational risk.
+**Justification:** Account protection takes priority over execution volume or speed (DE-LI-006, DE-LI-007); therefore entry verification, controlled interaction, and explicit prohibition of captcha retry are mandatory. Converting platform behavior into verifiable criteria and official codes allows implementing the module nodes using only documented information.
 
-For this reason, an extraction method focused exclusively on information relevant to the evaluation process was adopted.
+**Implications for the project:** Module 1 requires a verifiable entry criterion per source. Filter mapping is configuration-defined, not hardcoded. Capture limits and pauses follow global configuration default policies. Captcha/blocking handling is governed by the DOC-06, Section 11 error catalog.
 
-## Implications for the project
+### A.2 Final observations
 
-- Extraction will focus only on the information needed for the project.
-- The discovery process will avoid collecting irrelevant information.
-- Resource consumption during automation execution will be reduced.
-- Maintenance will be simpler by limiting the amount of information dependent on LinkedIn's structure.
-
----
-
-# DE-LI-005. Technical and legal restrictions
-
-## Related chapter
-
-8. Technical and legal restrictions.
-
-## Decision
-
-The automation design will incorporate the technical and operational limitations identified during the LinkedIn research as project restrictions.
-
-It is acknowledged that LinkedIn implements mechanisms aimed at protecting the platform against automated behaviors, and that these mechanisms condition how the automation must interact with the site.
-
-Consequently, the project adopts a conservative interaction strategy, prioritizing solution stability and user account protection over execution speed or volume of information obtained.
-
-## Justification
-
-The research identified restrictions related to platform access, action automation, non-human behavior detection mechanisms, and limitations inherent to LinkedIn Jobs' operation.
-
-These restrictions do not prevent developing the automation, but they do condition how it must be implemented.
-
-Incorporating them from the analysis stage reduces the risk of later redesigns and allows building a more stable and sustainable solution.
-
-## Implications for the project
-
-- The identified restrictions become part of the project requirements.
-- The architecture must be designed considering these limitations from the start.
-- Future technical decisions must respect these restrictions.
-- Stability and sustainability will take priority over implementation speed.
-
----
-
-# DE-LI-006. Terms of use and compliance criteria
-
-## Related chapter
-
-9. Terms of use and compliance considerations.
-
-## Decision
-
-The project acknowledges that LinkedIn establishes terms of use and restrictions related to the automation of its platform.
-
-As a consequence, the automation will be designed to minimize the operational risk associated with its use through limited, controlled interaction aligned with behavior similar to that of a legitimate user.
-
-Protecting the account used by the automation is adopted as one of the project's operational principles.
-
-## Justification
-
-The research identified that the main risk to project continuity is not obtaining information, but rather the potential restrictions LinkedIn could apply to an account when it detects behaviors incompatible with normal platform use.
-
-For this reason, subsequent technical decisions must be aimed at reducing this risk without compromising the automation's functional objectives.
-
-## Implications for the project
-
-- Account protection will take priority during solution design.
-- Aggressive or unnecessary interaction strategies will be avoided.
-- Decisions related to automation must always assess their impact on operational risk.
-- Continuity of automation operation will prevail over maximizing query volume.
-
-# DE-LI-007. Risks associated with LinkedIn use
-
-## Related chapter
-
-10. Risks by platform.
-
-## Decision
-
-The main risk identified for using LinkedIn does not relate to information availability, but rather to the possibility that the platform may detect automated behavior and apply restrictions to the account used by the automation.
-
-As a consequence, the project adopts operational risk mitigation as a design criterion over maximizing performance or execution speed.
-
-The identified risks are classified as follows:
-
-- Risk of temporary or permanent account restriction.
-- Risk of changes to LinkedIn's interface or operation.
-- Risk of modifications to platform usage policies.
-- Risk of failures caused by technical changes in the job search process.
-- Risk of loss of automation stability as a result of changes introduced by LinkedIn.
-
-## Justification
-
-The research showed that most relevant risks do not affect the technical ability to develop the automation, but rather its operational continuity.
-
-It also concluded that these risks can be significantly reduced through design decisions adopted from the early stages of the project.
-
-For this reason, risk management is no longer an activity that comes after development and becomes part of the fundamental principles of automation design.
-
-## Implications for the project
-
-- All technical decisions must consider their impact on operational risk.
-- The architecture must facilitate adaptation to future platform changes.
-- Automation behavior should approximate that of a legitimate user.
-- Account protection will take priority over execution speed and query volume.
-
----
-
-# DE-LI-008. Official query frequency
-
-## Related chapter
-
-11. Recommended query frequency.
-
-## Decision
-
-The automation will execute queries to LinkedIn at a moderate frequency, sufficient to identify new job opportunities without generating an activity pattern that unnecessarily increases risk to the user account.
-
-The execution frequency will not be set seeking the highest possible number of queries, but rather the best balance between opportunity coverage, information freshness, and operational safety.
-
-During the MVP, continuous queries or executions with excessively short intervals will not be performed.
-
-## Justification
-
-The research concluded that a higher query frequency does not guarantee a proportional improvement in the quality of opportunities obtained.
-
-On the contrary, unnecessarily increasing the number of queries raises operational risk without providing significant benefits for the project's objectives.
-
-A controlled execution strategy was determined to offer a more suitable balance between efficiency and sustainability.
-
-## Implications for the project
-
-- The execution frequency will be defined as a configurable parameter of the automation.
-- The system will avoid repetitive query patterns.
-- The execution strategy will prioritize project stability over constant result updates.
-- Execution planning will be part of the operational risk mitigation strategy.
-
----
-
-# DE-LI-009. Official opportunity prioritization strategy
-
-## Related chapter
-
-12. Source prioritization strategy.
-
-## Decision
-
-The automation will use a query strategy designed to maximize the retrieval of opportunities compatible with the user's professional profile, while simultaneously reducing the volume of irrelevant offers.
-
-Opportunity prioritization will not depend on LinkedIn's recommendation algorithm.
-
-The platform will be used exclusively to retrieve job offers; the decision on which ones continue within the process will be made by the evaluation system defined by the project.
-
-The query strategy will leverage the filters available on LinkedIn to reduce the number of offers that enter the evaluation process, including, among others:
-
-- keywords related to the professional profile;
-- geographic location;
-- work modality;
-- publication date;
-- experience level;
-- other filters that add value to the discovery process.
-
-## Justification
-
-The research showed that LinkedIn partially personalizes results using profile and history information.
-
-However, it also showed that a properly designed query strategy allows more consistent control over the quality of the initial set of opportunities that will be evaluated by the automation.
-
-Delegating prioritization to LinkedIn's algorithm would reduce process transparency and limit the project's control over selection criteria.
-
-## Implications for the project
-
-- The query strategy becomes the first opportunity filtering mechanism.
-- The evaluation system will be the sole responsible for determining the relevance of each offer.
-- The quality of the discovery process will mainly depend on query design and not on LinkedIn's recommendations.
-- The query strategy may evolve over time without modifying the overall automation architecture.
-
----
-
-# DE-LI-010. Implementation criteria for Module 1
-
-## Related chapter
-
-6. LinkedIn implementation specification (DOC-09, Section 6).
-
-## Decision
-
-The implementation of the "Enter the source", "Apply filters", and "Capture offers" nodes of the Opportunity Discovery module (Module 1) shall follow the specifications defined in DOC-09 (Section 6).
-
-Consequently, the following are adopted as official implementation criteria:
-
-- The entry shall be considered successful only when a verifiable DOM criterion of the authenticated session is met within a configured timeout (`timeout_ingreso`), using the `global-nav` element of LinkedIn as official evidence of authenticated session.
-- The queries shall be composed from the official filter sets defined in the system configuration, mapping each field to its corresponding LinkedIn search parameter.
-- Capture shall respect the configured default policies (`max_paginas`, `max_ofertas_por_corrida`, `pausa_entre_lotes`, `estrategia_anti_bloqueo`).
-- Evidence of a captcha or platform blocking shall terminate the run with the `bloqueo_plataforma` code (Group A, no retry), while the expiration of the session shall use the `sesion_expirada` code with controlled re-entry.
-
-## Justification
-
-The research determined that account protection takes priority over execution volume or speed (DE-LI-006, DE-LI-007), and hence entry verification, controlled interaction, and the express prohibition of retrying after a captcha are mandatory for the integration.
-
-Transforming platform behavior into verifiable criteria and official codes allows implementing the module nodes using exclusively the documented information.
-
-## Implications for the project
-
-- The implementation of Module 1 requires a verifiable entry criterion per source.
-- The filter mapping is part of the platform, defined in the configuration, not hardcoded.
-- Capture limits and pauses follow the default policies of the global configuration.
-- The captcha/blocking handling is governed by the error catalog (DOC-06, Section 11).
-
----
-
-# A.2 Final observations
-
-This log brings together the strategic decisions made during the LinkedIn analysis carried out in Document 9.
-
-Each decision is supported by the research conducted during this stage of the project and represents the official position adopted for the first version (MVP) of the automation.
-
-These decisions constitute the reference framework for architecture design, implementation of LinkedIn-related components, and future stages of the project.
-
-Should LinkedIn significantly modify its operation, access mechanisms, or usage policies, the affected decisions must be reviewed using the same research methodology applied during the preparation of Document 9.
-
-The incorporation of new job platforms will require the preparation of an independent strategic decision log for each platform, maintaining independence between analyses and preserving the traceability of the decisions made.
+This log gathers the strategic decisions from Document 9's LinkedIn analysis. Each decision is supported by the research conducted during this stage and represents the official position adopted for the first automation version (MVP). These decisions are the reference framework for architecture design, LinkedIn component implementation, and future project stages. If LinkedIn significantly modifies its operation, access mechanisms, or usage policies, affected decisions must be reviewed using the same research methodology applied in Document 9. New job platforms require independent strategic decision logs, preserving independent analysis and decision traceability.

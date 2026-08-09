@@ -1,1800 +1,281 @@
-# Document 4 - Data Flow
+# Document 4 – Data Flow (Optimized)
 
-# 1. Purpose of the Document
+## 1. Purpose
 
-This document defines the official data flow model for the job search automation.
+Defines the official data flow model for the job search automation: how information is ingested, transformed, validated, stored, queried, and preserved across the entire job-posting lifecycle. Ensures consistency, integrity, traceability, and availability at every stage.
 
-Its purpose is to establish how all information used by the automation during the processing of job postings shall be ingested, transformed, validated, stored, queried, and preserved, ensuring data consistency, integrity, traceability, and availability at every stage of the functional workflow.
+Serves as the mandatory reference for design, implementation, validation, and evolution of the project's data architecture. All components that generate, consume, transform, store, query, or update information shall comply with this document.
 
-This document defines the complete journey of information from the moment a job posting is discovered from a job source until it fully completes its lifecycle within the system, including all transformations, validations, states, persistence mechanisms, and relationships between the different components of the automation.
+Cross-references: Functional Requirements, Non-Functional Requirements, Decision Model, Project Glossary.
 
-It also serves as the official reference for the design, implementation, validation, and evolution of the project's data architecture, ensuring that all modules exchange information in a consistent, controlled, and compatible manner with the Functional Requirements, Non-Functional Requirements, the Decision Model, and the Project Glossary.
-
-The provisions contained in this document shall be mandatory for all components that generate, consume, transform, store, query, or update information within the automation.
-
----
-
-# 2. Data Flow Principles
-
-The following principles establish the conditions that shall be satisfied by every information flow used by the automation during the discovery, preparation, evaluation, processing, management, and monitoring of job postings.
-
-These principles complement the Functional Requirements, Non-Functional Requirements, and the Decision Model, constituting the mandatory guidelines for the design, implementation, validation, and evolution of the system's data flow.
-
----
-
-### DFP-001. Data Integrity
-
-All information shall preserve its integrity throughout processing.
-
-No transformation may alter, remove, or corrupt the original information obtained from job sources unless a previously documented business rule explicitly authorizes it.
-
----
-
-### DFP-002. Complete Traceability
-
-Every piece of data shall be traceable from its origin to its final state within the automation.
-
-Traceability shall make it possible to reconstruct the complete journey of the information, including transformations, validations, decisions, state changes, and persistence.
-
----
-
-### DFP-003. Controlled Flow
-
-All information shall pass only through the processes defined by the project's functional workflow.
-
-Undocumented data movements, transformations, or access shall not be permitted.
-
----
-
-### DFP-004. Consistency
-
-Data shall remain consistent across all automation modules.
-
-There shall be no incompatible versions, contradictory records, or unjustified differences between the information used by the different system components.
-
----
-
-### DFP-005. Prior Validation
-
-Every piece of data received from an external source or generated during processing shall successfully pass the corresponding validations before being used by subsequent processes.
-
-No component may assume that an input is valid without first verifying it.
-
----
-
-### DFP-006. Separation of Responsibilities
-
-Each stage of the data flow shall perform only the transformations and operations corresponding to its functional responsibility.
-
-Data acquisition, transformation, validation, evaluation, storage, and querying activities shall remain conceptually independent.
-
----
-
-### DFP-007. Controlled Persistence
-
-All information that must be preserved to guarantee operation, traceability, auditing, or reprocessing shall be stored using the mechanisms defined by the project's architecture.
-
-Persistence shall preserve both the original information and the derived information whenever applicable.
-
----
-
-### DFP-008. Reproducibility
-
-The same inputs, processed under the same rules and configurations, shall produce the same output data.
-
-The data flow shall be deterministic and avoid inconsistent behavior.
-
----
-
-### DFP-009. Technology Independence
-
-The definition of the data flow shall remain independent of the technology used for its implementation.
-
-Its operation shall not depend on a specific programming language, database, provider, or tool.
-
----
-
-### DFP-010. Controlled Evolution
-
-Every modification to the data flow shall be documented in advance and preserve compatibility with the remainder of the project's official documentation.
-
-The incorporation of new data, transformations, or processes shall not alter the expected behavior of existing components without documented justification.
-
----
-
-### DFP-011. Information Availability
-
-Information shall remain available to the processes that require it throughout its lifecycle while respecting the access, persistence, and retention rules defined by the project.
-
----
-
-### DFP-012. Information Uniqueness
-
-Each piece of data shall have a single source of truth within the automation.
-
-Inconsistent copies of the same information shall not be maintained when an official mechanism exists to query or reconstruct it.
-
----
-
-### DFP-013. Duplicate Minimization
-
-The data flow shall avoid generating duplicate information whenever possible.
-
-Whenever redundant data exists for functional reasons, synchronization and traceability shall be maintained between the corresponding records.
-
----
-
-### DFP-014. Original Data Protection
-
-Information obtained directly from job sources shall be preserved without modification.
-
-Normalization, enrichment, and transformation processes shall be performed on derived structures while always preserving the original data for future audits or reprocessing.
-
----
-
-### DFP-015. Consistency with the Functional Workflow
-
-Every movement of information shall comply with the functional workflow, the job posting lifecycle, the Decision Model, and the states defined for the automation.
-
-No data may be used in processes incompatible with its current state or processing level.
-
----
-
-# 3. Data Flow Architecture
-
-The data flow architecture defines the conceptual structure through which information circulates, is transformed, validated, stored, and queried within the job search automation.
-
-Its purpose is to establish a uniform, controlled, and traceable path for all information managed by the system, ensuring that every component interacts with data consistently while respecting the responsibilities defined for each stage of processing.
-
-The data flow architecture constitutes a cross-cutting component of the automation and shall be used by every system module without depending on a specific technological implementation.
-
-Its operation is based on a sequential workflow consisting of data ingestion, validation, transformation, persistence, consumption, updating, and information preservation.
-
----
-
-## 3.1 Data Flow Components
-
-The data flow shall consist of the following conceptual components:
-
-### DFA-001. Data Sources
-
-Represents all authorized sources from which the automation obtains information.
-
-These may include, among others:
-
-- Job platforms.
-- User configuration.
-- Professional profile.
-- Business rules.
-- System configurations.
-- Historical information.
-- User decisions.
-
-Every piece of data shall clearly identify its origin before being incorporated into the processing flow.
-
----
-
-### DFA-002. Data Ingestion
-
-Component responsible for incorporating information received from authorized sources.
-
-Its responsibilities include:
-
-- Receiving information.
-- Identifying its origin.
-- Associating basic metadata.
-- Preparing the data for validation.
-
-The ingestion process does not modify the content of the received information.
-
----
-
-### DFA-003. Data Validation
-
-Component responsible for verifying that the received information satisfies the conditions required to continue processing.
-
-Its responsibilities include:
-
-- Verifying integrity.
-- Validating structure.
-- Detecting inconsistencies.
-- Identifying incomplete information.
-- Confirming compatibility with the corresponding process.
-
-Validation does not transform the information; it only determines whether it is suitable to continue through the workflow.
-
----
-
-### DFA-004. Data Transformation
-
-Component responsible for converting validated information into the internal structures used by the automation.
-
-Its responsibilities include:
-
-- Normalizing formats.
-- Completing derived information when appropriate.
-- Structuring data.
-- Generating intermediate information.
-- Preparing information for functional processes.
-
-Transformations shall always preserve the original data.
-
----
-
-### DFA-005. Data Persistence
-
-Component responsible for storing the information required to guarantee system operation, traceability, history, and reprocessing.
-
-Its responsibilities include:
-
-- Storing original data.
-- Storing transformed data.
-- Recording states.
-- Recording decisions.
-- Recording events.
-- Preserving history.
-
----
-
-### DFA-006. Data Consumption
-
-Component responsible for supplying the information required by the different automation modules.
-
-Its responsibilities include:
-
-- Retrieving information.
-- Verifying availability.
-- Providing only the data required for each process.
-- Guaranteeing the consistency of the queried information.
-
----
-
-### DFA-007. Data Updates
-
-Component responsible for recording the changes generated during the processing of a job posting.
-
-Its responsibilities include:
-
-- Updating states.
-- Incorporating new results.
-- Recording new evaluations.
-- Associating generated documents.
-- Keeping information structures synchronized.
-
-Every update shall preserve the corresponding history.
-
----
-
-### DFA-008. Logging and Traceability
-
-Component responsible for preserving all information required to reconstruct the complete journey of the data.
-
-At a minimum, it shall record:
-
-- Information origin.
-- Performed transformations.
-- Executed validations.
-- Processes that consumed the data.
-- State changes.
-- Related decisions.
-- Date and time of every event.
-- Responsible party for the change, when applicable.
-
----
-
-## 3.2 Conceptual Data Flow
-
-All information managed by the automation shall follow the following conceptual workflow:
-
-1. Receive information from an authorized source.
-2. Identify the origin of the data.
-3. Validate the received information.
-4. Transform and normalize it when appropriate.
-5. Store the information.
-6. Make it available to authorized functional modules.
-7. Update the information during processing.
-8. Fully record every operation to guarantee traceability and auditing.
-
----
-
-## 3.3 Data Flow Responsibilities
-
-The data flow shall be responsible for:
-
-- Incorporating information from authorized sources.
-- Validating data quality.
-- Transforming information according to the defined rules.
-- Guaranteeing data availability for every process.
-- Maintaining consistency between modules.
-- Recording the complete history of the information.
-- Preserving traceability throughout the entire lifecycle of job postings.
-- Facilitating reprocessing whenever authorized.
-
----
-
-## 3.4 Responsibilities Outside the Scope
-
-The data flow shall not be responsible for:
-
-- Making functional or strategic decisions.
-- Applying business rules belonging to the Decision Model.
-- Modifying the user's professional profile.
-- Determining priorities or classifications.
-- Executing functional processes unrelated to information management.
-
----
-
-# 4. Data Flow Inputs
-
-Data flow inputs correspond to the set of information that may be incorporated into the automation to initiate or support the processing of job postings.
-
-Every input shall originate from an authorized source, be properly identified, and successfully pass the corresponding validations before being incorporated into the information flow.
-
-The data flow shall not use information whose origin cannot be determined, that has not been validated, or that is incompatible with the current processing state.
-
----
-
-## DFI-001. Job Posting Information
-
-Represents the information obtained from job sources during the discovery process.
-
-It may include, among other items:
-
-- Job title.
-- Company.
-- Description.
-- Responsibilities.
-- Requirements.
-- Benefits.
-- Salary.
-- Work arrangement.
-- Location.
-- Employment type.
-- Publication date.
-- Source platform.
-- URL.
-- Associated identifiers.
-
-This information constitutes the primary input to the data flow.
-
----
-
-## DFI-002. User Professional Profile
-
-Represents the professional information used during compatibility evaluation and the generation of supporting data.
-
-It may include:
-
-- Work experience.
-- Technical skills.
-- Professional skills.
-- Academic background.
-- Certifications.
-- Languages.
-- Employment preferences.
-- Salary expectations.
-- Preferred work arrangement.
-- Location.
-- Target companies.
-- Restricted companies.
-
----
-
-## DFI-003. System Configuration
-
-Represents the operational parameters that determine the behavior of the automation.
-
-It may include:
-
-- General settings.
-- Execution parameters.
-- Module configurations.
-- Processing frequencies.
-- Workflow configurations.
-- Operational variables.
-
----
-
-## DFI-004. Business Rules
-
-Represents the set of rules used by the automation to control information processing.
-
-It may include:
-
-- Evaluation rules.
-- Acceptance rules.
-- Rejection rules.
-- Prioritization rules.
-- Thresholds.
-- Constraints.
-- Special cases.
-- Exceptions.
-
----
-
-## DFI-005. Historical Information
-
-Represents information generated during previous executions that is required to continue processing.
-
-It may include:
-
-- Job posting history.
-- Evaluation history.
-- Decision history.
-- State history.
-- Generated documents.
-- Execution logs.
-- Relevant metrics.
-
----
-
-## DFI-006. User Decisions
-
-Represents strategic decisions recorded by the user that may affect the data flow.
-
-It may include:
-
-- Approvals.
-- Manual rejections.
-- Authorized reprocessing.
-- Priority changes.
-- Professional profile updates.
-- Authorized modifications to configurations or rules.
-
----
-
-## DFI-007. Automation-Generated Data
-
-Represents all information internally generated during the processing of a job posting.
-
-It may include:
-
-- Intermediate results.
-- Normalized data.
-- Classifications.
-- Scores.
-- Analyses.
-- Generated documents.
-- Processing states.
-- Operational states.
-
-This information may become input for subsequent processes within the same information flow.
-
----
-
-## General Principles of Data Flow Inputs
-
-Every input incorporated into the data flow shall satisfy the following conditions:
-
-- Originate from an authorized source.
-- Be uniquely identifiable.
-- Preserve information about its origin.
-- Successfully pass the corresponding validations before being used.
-- Preserve its integrity throughout processing.
-- Remain compatible with the current state of the functional workflow.
-- Remain available for audits and reprocessing whenever necessary.
-- Comply with the security, traceability, and persistence rules defined for the project.
-
----
-
-# 5. Data Transformations
-
-Data transformations correspond to the set of operations through which the automation converts information received from authorized sources into consistent, normalized structures suitable for use throughout the different functional processes.
-
-Their purpose is to ensure that every module operates on uniform information while always preserving the integrity of the original data and maintaining complete traceability of every performed transformation.
-
-Every transformation shall be executed only after the information has successfully passed the corresponding validations.
-
----
-
-## DTF-001. Preservation of Original Data
-
-Every transformation shall fully preserve the original information obtained from the job source.
-
-Modifications, normalizations, and enrichments shall be performed on derived structures without altering the original content.
-
----
-
-## DTF-002. Format Normalization
-
-The automation shall convert received information into standardized internal formats.
-
-The following, among others, may be normalized:
-
-- Dates.
-- Times.
-- Locations.
-- Work arrangements.
-- Employment types.
-- Salaries.
-- Currencies.
-- Identifiers.
-- Text structures.
-
----
-
-## DTF-003. Structure Standardization
-
-Information shall be organized using uniform structures that facilitate its use by all automation modules.
-
-The internal structure shall remain consistent regardless of the source from which the information originated.
-
----
-
-## DTF-004. Information Enrichment
-
-Whenever permitted by the project's rules, the automation may generate derived information from the available data.
-
-Examples include:
-
-- Calculation of derived fields.
-- Preliminary classifications.
-- Internal identifiers.
-- Processing metadata.
-- Relationships between entities.
-
-Enrichment shall never replace the original information.
-
----
-
-## DTF-005. Removal of Functional Redundancies
-
-During transformations, duplicates that do not provide value to internal processing may be removed, provided that this operation does not result in the loss of relevant information or affect traceability.
-
----
-
-## DTF-006. Metadata Association
-
-During the transformation process, metadata required to control information processing may be incorporated.
-
-Examples include:
-
-- Date and time of incorporation.
-- Source of origin.
-- Internal identifier.
-- Processing version.
-- Initial state.
-- Traceability information.
-
----
-
-## DTF-007. Generation of Derived Structures
-
-The automation may generate new data structures intended exclusively for the internal operation of the system.
-
-These structures may be used for:
-
-- Evaluations.
-- Analyses.
-- Reports.
-- History.
-- Auditing.
-- Processing management.
-
-Every derived structure shall maintain its relationship with the information from which it originated.
-
----
-
-## DTF-008. Transformation Compatibility
-
-Transformations shall produce results compatible with the modules that will subsequently consume the information.
-
-No transformation may generate structures incompatible with the official interfaces defined by the automation.
-
----
-
-## DTF-009. Transformation Reproducibility
-
-The same inputs, processed under the same rules and configurations, shall generate exactly the same transformations.
-
-The operations shall be deterministic and fully reproducible.
-
----
-
-## DTF-010. Transformation Logging
-
-Every transformation performed on the information shall be recorded as part of the data flow history.
-
-At a minimum, the following information shall be preserved:
-
-- Data identifier.
-- Applied transformation.
-- Date and time.
-- Responsible party for the transformation (system).
-- Obtained result.
-- Relationship with the original information.
-
----
-
-## General Principles of Data Transformations
-
-Every data transformation shall comply with the following principles:
-
-- Preserve the original information.
-- Maintain consistency between modules.
-- Be fully traceable.
-- Be reproducible.
-- Be based on documented rules.
-- Maintain technology independence.
-- Avoid information loss.
-- Facilitate future extensions of the data flow.
-- Remain independent of any specific technology, database, or tool used for its operation.
-
----
-
-# 6. Data Validations
-
-Data validations correspond to the set of verifications that the automation shall perform on all information incorporated into the data flow before allowing it to be used by the system's functional processes.
-
-Their purpose is to ensure that the information used during processing is complete, consistent, sufficient, and compatible with the current state of the job posting, thereby reducing the risk of errors, inconsistencies, and incorrect decisions.
-
-No data may advance to the next stage of the workflow unless it has successfully passed the corresponding validations or unless a documented rule authorizes its handling as a special case or exception.
-
----
-
-## DV-001. Source Validation
-
-All information shall originate from a source previously authorized by the automation.
-
-Data whose origin cannot be identified or verified shall not be incorporated.
-
----
-
-## DV-002. Integrity Validation
-
-The automation shall verify that the received information preserves its integrity throughout the entire incorporation process into the data flow.
-
-No loss, alteration, or corruption of information shall be detected.
-
----
-
-## DV-003. Structure Validation
-
-Data shall satisfy the expected structure for each information type before processing continues.
-
-Incompatible structures shall be handled according to the exception handling rules.
-
----
-
-## DV-004. Required Information Validation
-
-The automation shall verify that all fields classified as mandatory are available whenever required by the corresponding process.
-
-Missing mandatory information shall be handled according to the business rules defined for these situations.
-
----
-
-## DV-005. Consistency Validation
-
-Information shall remain internally consistent across its different elements.
-
-There shall be no contradictory data that prevents a reliable interpretation of the job posting or the process being executed.
-
----
-
-## DV-006. Compatibility Validation
-
-Information shall be compatible with the current state of the job posting lifecycle and with the functional process intending to use it.
-
-Data belonging to incompatible stages of the functional workflow shall not be used.
-
----
-
-## DV-007. Duplicate Validation
-
-The automation shall identify duplicate information whenever duplication may affect processing.
-
-Duplicate detection shall follow the rules defined for the management of equivalent job postings.
-
----
-
-## DV-008. Relationship Validation
-
-The automation shall verify that relationships between the different system data remain valid and consistent.
-
-These include, among others:
-
-- Job Posting ↔ History.
-- Job Posting ↔ Evaluations.
-- Job Posting ↔ States.
-- Job Posting ↔ Documents.
-- Job Posting ↔ Decisions.
-
----
-
-## DV-009. Pre-Consumption Validation
-
-Before a module uses stored information, it shall verify that the information remains valid for the corresponding process.
-
-Whenever obsolete, incomplete, or incompatible information exists, the defined rules shall be applied before processing continues.
-
----
-
-## DV-010. Validation Logging
-
-Every validation performed shall be recorded as part of the data flow history.
-
-At a minimum, the following information shall be preserved:
-
-- Data identifier.
-- Executed validation.
-- Obtained result.
-- Date and time.
-- Responsible party for the validation (system).
-- Action performed when the validation is unsuccessful.
-
----
-
-## General Principles of Data Validation
-
-All data validations shall comply with the following principles:
-
-- Be executed before information is consumed.
-- Be based on previously documented rules.
-- Be objective and reproducible.
-- Maintain complete traceability.
-- Preserve data integrity.
-- Detect inconsistencies promptly.
-- Maintain technology independence.
-- Allow the incorporation of new validations without affecting existing ones.
-
----
-
-# 7. Data Flow Outputs
-
-Data flow outputs correspond to the set of information generated by the automation as a result of the validation, transformation, evaluation, processing, management, and monitoring of job postings.
-
-Their purpose is to provide structured, consistent, and traceable information to support the operation of the different automation modules, facilitate user decision-making, and preserve the knowledge generated during processing.
-
-Every output shall maintain its relationship with the information from which it originated and comply with the project's integrity, traceability, and persistence rules.
-
----
-
-## DFO-001. Structured Job Posting Information
-
-Represents the normalized and prepared version of the job posting, ready to be used by the different automation processes.
-
-It may include, among other elements:
-
-- Validated information.
-- Normalized fields.
-- Internal identifiers.
-- Processing metadata.
-- Internal relationships.
-
-This structure shall constitute the primary information source for subsequent processes.
-
----
-
-## DFO-002. Evaluation Results
-
-Represents the information generated during the initial evaluation and the deep processing of the job posting.
-
-It may include:
-
-- Scores.
-- Compatibility levels.
-- Priorities.
-- Classifications.
-- Partial results.
-- Final results.
-- Justifications.
-
----
-
-## DFO-003. Derived Information
-
-Represents all information generated by the automation from the original data.
-
-Examples include:
-
-- Enriched data.
-- Calculated fields.
-- Generated relationships.
-- Internal indicators.
-- Additional metadata.
-
-Derived information shall always maintain its relationship with the original data.
-
----
-
-## DFO-004. Processing States
-
-Represents the information used to control the progress of each job posting within the functional workflow.
-
-It may include:
-
-- Lifecycle state.
-- Operational state.
-- Update date.
-- Responsible party for the change.
-- Transition history.
-
----
-
-## DFO-005. Job Application Resources
-
-Represents the documents, analyses, and resources generated by the automation to support the preparation of a job application.
-
-These may include:
-
-- Strategic analyses.
-- Organized information.
-- Associated documents.
-- Resources defined during project development.
-
-Every resource shall maintain its relationship with the corresponding job posting.
-
----
-
-## DFO-006. Information for Querying
-
-Represents information organized to facilitate consultation by the user and management modules.
-
-It may include:
-
-- Complete history.
-- Current state.
-- Evaluation results.
-- Generated documents.
-- Recorded decisions.
-- Relevant metrics.
-
----
-
-## DFO-007. Operational Records
-
-Represents the information used to guarantee observability, auditing, and monitoring of the automation.
-
-It may include:
-
-- Events.
-- Execution logs.
-- Performed validations.
-- Executed transformations.
-- Errors.
-- Warnings.
-- Metrics.
-- Automated decisions.
-- User decisions.
-
----
-
-## General Principles of Data Flow Outputs
-
-Every output generated by the data flow shall satisfy the following conditions:
-
-- Maintain its relationship with the information from which it originated.
-- Preserve complete traceability.
-- Remain consistent with the current processing state.
-- Be available to authorized processes.
-- Preserve information integrity.
-- Comply with the persistence rules defined for the project.
-- Remain compatible with the other automation modules.
-- Be usable for audits, queries, and reprocessing whenever necessary.
-
----
-
-# 8. Data Persistence
-
-Data persistence defines the rules through which the automation shall preserve the information generated and used during the processing of job postings.
-
-Its purpose is to guarantee the availability, integrity, consistency, and traceability of information throughout the lifecycle of every job posting, allowing it to be queried, audited, reprocessed, and used by the different system components.
-
-Every piece of information whose preservation is necessary for the operation of the automation shall be stored according to the rules established in this document.
-
----
-
-## DP-001. Persistence of Original Information
-
-All information obtained from a job source shall be preserved in its entirety as the original record.
-
-The original information shall not be deleted or overwritten as a consequence of the transformations performed by the automation.
-
----
-
-## DP-002. Persistence of Derived Information
-
-All information generated during the different processing stages may be stored whenever necessary for system operation, traceability, auditing, or future reprocessing.
-
-Derived information shall always maintain its relationship with the data from which it originated.
-
----
-
-## DP-003. Persistence of History
-
-The automation shall preserve the complete history of every job posting throughout its lifecycle.
-
-At a minimum, the history shall include:
-
-- State changes.
-- Validations.
-- Transformations.
-- Evaluations.
-- Decisions.
-- Reprocessing events.
-- Relevant events.
-
----
-
-## DP-004. Persistence of Configurations
-
-The configurations used by the automation shall be stored in a manner that allows the system's behavior to be reproduced under the same conditions.
-
-Modifications made to critical configurations shall preserve their corresponding history.
-
----
-
-## DP-005. Persistence of Documents
-
-Every document, analysis, or resource generated during processing shall preserve its relationship with the corresponding job posting.
-
-Persistence shall make it possible to easily identify the origin, version, and generation time of every resource.
-
----
-
-## DP-006. Persistence of Operational Records
-
-The records used for auditing, observability, and diagnostics shall be stored in a manner that enables complete reconstruction of process execution.
-
-These may include, among others:
-
-- Events.
-- Errors.
-- Warnings.
-- Metrics.
-- Validations.
-- Transformations.
-- Decisions.
-
----
-
-## DP-007. Preservation of Relationships
-
-Persistence shall preserve the existing relationships between the different system elements.
-
-These include, among others:
-
-- Job Posting ↔ History.
-- Job Posting ↔ Evaluations.
-- Job Posting ↔ States.
-- Job Posting ↔ Documents.
-- Job Posting ↔ Decisions.
-- Job Posting ↔ Records.
-
-No relationship may be lost during information storage.
-
----
-
-## DP-008. Availability of Persisted Information
-
-Stored information shall remain available to authorized processes throughout the retention period defined by the project's policies.
-
-Querying stored information shall not alter its content.
-
----
-
-## DP-009. Information Reuse
-
-Whenever previously persisted information remains valid, the automation shall reuse it before generating equivalent data again.
-
-This principle seeks to reduce unnecessary processing and avoid duplicate information.
-
----
-
-## DP-010. Persistence Operation Logging
-
-Every significant storage or update operation shall be recorded as part of the system history.
-
-At a minimum, the following information shall be preserved:
-
-- Data identifier.
-- Performed operation.
-- Date and time.
-- Responsible party for the operation (system or user).
-- Obtained result.
-- Final storage state.
-
----
-
-## General Principles of Data Persistence
-
-Data persistence shall comply with the following principles:
-
-- Preserve information integrity.
-- Maintain complete traceability.
-- Preserve the history of job postings.
-- Prevent information loss.
-- Maintain consistency among stored data.
-- Facilitate auditing and reprocessing.
-- Remain independent of the technology used for storage.
-- Encourage the reuse of previously validated information.
-
----
-
-# 9. Data States During Processing
-
-Data states represent the condition of information as it progresses through the automation's data flow.
-
-Their purpose is to control the processing level, availability, and reliability of information at every stage of the functional workflow, ensuring that different modules use only data compatible with the process they are executing.
-
-The states defined in this chapter refer to the state of the information itself and do not replace the lifecycle or operational state of job postings defined in other project documents.
-
----
-
-## DS-001. Received
-
-Represents information that has been incorporated from an authorized source and is awaiting validation.
-
-Characteristics:
-
-- Origin identified.
-- Original information preserved.
-- Pending validation.
-- Not available for functional processes.
-
----
-
-## DS-002. Validated
-
-Represents information that has successfully passed the validations defined for its incorporation into the data flow.
-
-Characteristics:
-
-- Integrity verified.
-- Structure validated.
-- Consistency confirmed.
-- Available for transformation.
-
----
-
-## DS-003. Transformed
-
-Represents information that has been normalized and adapted to the internal structures used by the automation.
-
-Characteristics:
-
-- Standardized format.
-- Derived information generated when appropriate.
-- Original data preserved.
-- Available for functional processes.
-
----
-
-## DS-004. Persisted
-
-Represents information stored according to the system's persistence rules.
-
-Characteristics:
-
-- Available for querying.
-- Available for auditing.
-- Available for reprocessing.
-- History preserved.
-
----
-
-## DS-005. In Use
-
-Represents information currently being actively used by one or more authorized automation processes.
-
-Characteristics:
-
-- Associated with a functional process.
-- Available for controlled consumption.
-- Protected against incompatible modifications while in use.
-
----
-
-## DS-006. Updated
-
-Represents information that has incorporated new results or modifications resulting from authorized processing.
-
-Characteristics:
-
-- History updated.
-- Relationships preserved.
-- New version recorded when appropriate.
-- Available for subsequent functional workflow processes.
-
----
-
-## DS-007. Historical
-
-Represents information that no longer corresponds to the current version but must be preserved to guarantee traceability and auditing.
-
-Characteristics:
-
-- Not deleted.
-- Maintains its relationship with the current version.
-- Available for historical queries.
-- Available for authorized reprocessing.
-
----
-
-## DS-008. Archived
-
-Represents information whose processing has been completed and that is preserved solely according to the retention policies defined by the project.
-
-Characteristics:
-
-- Processing completed.
-- Querying permitted.
-- No operational modifications.
-- Preserved for auditing and historical purposes.
-
----
-
-## DS-009. Inconsistent
-
-Represents information that presents integrity, structure, consistency, or compatibility issues and cannot continue through the normal workflow until the appropriate strategy has been applied.
-
-Characteristics:
-
-- Processing suspended.
-- Pending resolution.
-- Not available for functional consumption.
-- Subject to validation, correction, or exception handling.
-
----
-
-## DS-010. Obsolete
-
-Represents information that has been replaced by a more recent version and shall no longer be used during normal processing.
-
-Characteristics:
-
-- Mandatory preservation for traceability.
-- Not used as the current source.
-- Available for auditing.
-- Linked to the version that replaced it.
-
----
-
-## General Principles of Data States
-
-Data states shall comply with the following principles:
-
-- A piece of data may exist in only one active state at a time.
-- Every state transition shall be recorded as part of the system history.
-- States shall remain consistent with the functional workflow and completed processing.
-- No data may be used in a process incompatible with its current state.
-- State transitions shall comply with the documented rules of the data flow.
-- Historical states shall be preserved to guarantee traceability and auditing.
-- States shall remain independent of the technology used to implement the automation.
-
----
-
-# 10. Data Flow Traceability
-
-Data flow traceability establishes the mechanisms through which the automation shall record, preserve, and reconstruct the complete journey of information throughout the lifecycle of a job posting.
-
-Its purpose is to guarantee processing transparency, facilitate auditing, enable reprocessing, and demonstrate how every piece of data was incorporated, validated, transformed, used, updated, and preserved by the automation.
-
-All information managed by the data flow shall maintain the evidence required to completely reconstruct its history.
-
 ---
 
-## DFT-001. Unique Data Identification
+## 2. Data Flow Principles
 
-Every piece of data incorporated into the workflow shall have a unique and immutable identifier that allows its journey to be tracked throughout processing.
+| ID | Principle | Rule |
+|----|-----------|------|
+| DFP-001 | Integrity | No transformation may alter, remove, or corrupt original data unless a documented business rule explicitly authorizes it. |
+| DFP-002 | Complete Traceability | Every datum must be traceable from origin to final state: transformations, validations, decisions, state changes, persistence. |
+| DFP-003 | Controlled Flow | Data moves only through processes defined in the functional workflow. Undocumented movements, transformations, or access are prohibited. |
+| DFP-004 | Consistency | No incompatible versions, contradictory records, or unjustified differences across modules. |
+| DFP-005 | Prior Validation | All data from external sources or generated during processing must pass validation before use. No component may assume validity without verification. |
+| DFP-006 | Separation of Responsibilities | Acquisition, transformation, validation, evaluation, storage, and querying remain conceptually independent. Each stage performs only its own operations. |
+| DFP-007 | Controlled Persistence | Information needed for operation, traceability, auditing, or reprocessing is stored via defined architectural mechanisms. Both original and derived data are preserved when applicable. |
+| DFP-008 | Reproducibility | Same inputs + same rules/configurations = same outputs. The flow is deterministic. |
+| DFP-009 | Technology Independence | The data flow definition is independent of language, database, provider, or tool. |
+| DFP-010 | Controlled Evolution | Every modification is documented in advance and preserves compatibility with all official documentation. New elements shall not alter existing behavior without documented justification. |
+| DFP-011 | Availability | Information remains available to requiring processes throughout its lifecycle, respecting access, persistence, and retention rules. |
+| DFP-012 | Uniqueness | Each datum has a single source of truth. Inconsistent copies are prohibited when an official query/reconstruction mechanism exists. |
+| DFP-013 | Duplicate Minimization | Avoid generating duplicates. Where functional redundancy exists, maintain synchronization and traceability between records. |
+| DFP-014 | Original Data Protection | Source data is preserved unmodified. Normalization/enrichment/transformation operates on derived structures only. |
+| DFP-015 | Workflow Compliance | All information movement complies with the functional workflow, job-posting lifecycle, Decision Model, and defined states. Data cannot be used in processes incompatible with its current state. |
 
-This identifier shall remain unchanged regardless of any transformations, updates, or reprocessing operations.
-
----
-
-## DFT-002. Origin Recording
-
-The automation shall preserve the origin of every piece of information incorporated into the data flow.
-
-At a minimum, the following shall be recorded:
-
-- Source of origin.
-- Date and time of incorporation.
-- Source identifier, when available.
-- Process responsible for the incorporation.
-
----
-
-## DFT-003. Transformation Logging
-
-Every transformation performed on the information shall be recorded as a traceable event.
-
-The record shall make it possible to identify:
-
-- Original information.
-- Applied transformation.
-- Obtained result.
-- Date and time.
-- Responsible party for the transformation.
-
----
-
-## DFT-004. Validation Logging
-
-Every validation executed on the data shall preserve its result as part of the processing history.
-
-Among other elements, the following may be recorded:
-
-- Applied validation.
-- Obtained result.
-- Rule used.
-- Executed action, when applicable.
-- Date and time.
-
----
-
-## DFT-005. Data Consumption Logging
-
-The automation shall preserve evidence of the processes that consume persisted information during the execution of the different modules.
-
-This record shall make it possible to identify which components consumed a specific piece of information and for what purpose.
-
----
-
-## DFT-006. Update Logging
-
-Every update performed on the information shall generate a new event within the history.
-
-At a minimum, the following shall be recorded:
-
-- Previous state.
-- Resulting state.
-- Modified information.
-- Date and time.
-- Responsible party for the update.
-- Justification, when applicable.
-
----
-
-## DFT-007. History Preservation
-
-The automation shall preserve the complete history of every data element throughout its journey.
-
-The history shall not be deleted or overwritten during the lifecycle of the job posting.
-
----
-
-## DFT-008. Flow Reconstruction
-
-The recorded information shall be sufficient to completely reconstruct the journey followed by any piece of data within the automation.
-
-The reconstruction shall make it possible to identify:
-
-- How the information entered the system.
-- Which validations it passed.
-- Which transformations it received.
-- Which processes used it.
-- Which updates it underwent.
-- Its final state.
-
----
-
-## DFT-009. Audit Availability
-
-The information used to guarantee traceability shall remain available throughout the retention period defined by the project.
-
-Audit queries shall neither modify the state of the data nor affect the operation of the automation.
-
----
-
-## DFT-010. Data Flow Versioning
-
-All relevant information shall be associated with the current version of the rules, configurations, and processes used during its processing.
-
-This shall allow the historical behavior of the data flow to be reproduced even after the system evolves.
-
----
-
-## General Principles of Data Flow Traceability
-
-Data flow traceability shall comply with the following principles:
-
-- Record the complete journey of the information.
-- Maintain unique and immutable identifiers.
-- Preserve the complete history.
-- Allow complete reconstruction of processing.
-- Facilitate auditing and reprocessing.
-- Guarantee the reproducibility of the data flow.
-- Remain independent of the technology used for implementation.
-- Preserve the integrity of historical information.
-
----
-
-# 11. Data Integrity and Consistency
-
-Data integrity and consistency establish the rules that all information managed by the automation shall satisfy to ensure that it remains correct, complete, consistent, and reliable throughout the lifecycle of job postings.
-
-Their purpose is to ensure that every automation module operates on valid information, preventing inconsistencies, data loss, contradictions, or alterations that could affect processing, decision-making, or system traceability.
-
-Integrity and consistency shall be preserved from the incorporation of information through its final retention.
-
----
-
-## DIC-001. Integrity Preservation
-
-All information shall preserve its integrity throughout every stage of the data flow.
-
-No process may alter, remove, or corrupt information unless a previously documented rule explicitly authorizes it.
-
----
-
-## DIC-002. Cross-Module Consistency
-
-Information used by the different automation modules shall remain consistent and synchronized.
-
-There shall be no incompatible differences between the data used by different processes to represent the same information.
-
----
-
-## DIC-003. Information Uniqueness
-
-Every piece of data shall have a single official representation within the system.
-
-Whenever derived structures or functional copies exist, they shall maintain their relationship with the official source to prevent inconsistencies.
-
----
-
-## DIC-004. Relationship Preservation
-
-Relationships between the different information elements shall be preserved throughout processing.
-
-These include, among others:
-
-- Job Posting ↔ Original Information.
-- Job Posting ↔ Transformed Information.
-- Job Posting ↔ History.
-- Job Posting ↔ Evaluations.
-- Job Posting ↔ Decisions.
-- Job Posting ↔ Documents.
-- Job Posting ↔ Operational Records.
-
----
-
-## DIC-005. Temporal Consistency
-
-Information shall remain consistent with the time at which it was generated, modified, or used.
-
-Every update shall be recorded chronologically to preserve the actual sequence of events.
-
----
-
-## DIC-006. Protection Against Inconsistencies
-
-Whenever inconsistent information is detected, the automation shall prevent processing from continuing until the corresponding validation, special-case, or exception-handling rules have been applied.
-
-No results shall be generated based on information whose consistency has not been verified.
-
----
-
-## DIC-007. Preservation During Updates
-
-Updates performed on information shall not result in the loss of history or affect the consistency of previously recorded data.
-
-Every modification shall preserve the versions required to guarantee traceability.
-
----
-
-## DIC-008. Consistency During Reprocessing
-
-Whenever a job posting is reprocessed, the automation shall ensure that the new information remains consistent with the existing history.
-
-Reprocessing shall not generate contradictions between the different recorded versions.
-
----
-
-## DIC-009. Continuous Verification
-
-The automation may execute integrity and consistency checks at any stage of the data flow whenever necessary to guarantee information quality.
-
-These verifications shall be performed without altering the content of the data.
-
----
-
-## DIC-010. Incident Logging
-
-Every incident related to data integrity or consistency shall be recorded as part of the system history.
-
-At a minimum, the following information shall be preserved:
-
-- Data identifier.
-- Incident type.
-- Description.
-- Date and time.
-- Applied action.
-- Obtained result.
-- Responsible party for the resolution, when applicable.
-
----
-
-## General Principles of Data Integrity and Consistency
-
-Data integrity and consistency shall comply with the following principles:
-
-- Preserve information throughout its lifecycle.
-- Maintain consistency across all automation modules.
-- Prevent contradictions and information loss.
-- Maintain complete traceability.
-- Facilitate auditing and reprocessing.
-- Be based on previously documented rules.
-- Remain independent of the technology used for implementation.
-- Guarantee the reliability of the information used by the system.
-
----
-
-# 12. Reprocessing Management
-
-Reprocessing management establishes the rules through which the automation may fully or partially reprocess information associated with a previously recorded job posting.
-
-Its purpose is to ensure that reprocessing is executed in a controlled manner while preserving information integrity, historical traceability, and data flow consistency, preventing duplication, information loss, or contradictory results.
-
-Every reprocessing operation shall be executed only when a previously documented condition justifies it.
-
----
-
-## RM-001. Reprocessing Authorization
-
-Every reprocessing operation shall be supported by a documented business rule or by an explicit user decision whenever required by the Decision Model.
-
-Arbitrary reprocessing operations shall not be permitted.
-
----
-
-## RM-002. Preservation of Existing Information
-
-Reprocessing shall not delete, overwrite, or alter previously recorded information.
-
-All new information shall be incorporated while preserving the existing history.
-
----
-
-## RM-003. Reuse of Valid Information
-
-Before generating information again, the automation shall determine whether previously persisted data remains valid for the new processing.
-
-Whenever possible, such information shall be reused to avoid unnecessary operations and maintain system consistency.
-
----
-
-## RM-004. Information Revalidation
-
-During reprocessing, the automation shall execute any validations necessary to ensure that the information remains valid under the system's current conditions.
-
----
-
-## RM-005. Regeneration of Derived Information
-
-Whenever reprocessing modifies information used to generate derived data, the automation shall recalculate only the affected elements while preserving those that remain valid.
-
----
-
-## RM-006. Relationship Updates
-
-Every modification produced during reprocessing shall keep the relationships between original information, derived information, generated documents, evaluations, and the corresponding history up to date.
-
----
-
-## RM-007. History Preservation
-
-Every reprocessing operation shall be recorded as a new event within the job posting history.
-
-Previous executions shall be preserved in their entirety to enable future auditing and reconstruction.
-
----
-
-## RM-008. Post-Reprocessing Consistency
-
-Once reprocessing has been completed, the automation shall verify that all resulting information remains consistent with:
-
-- The functional workflow.
-- The Decision Model.
-- The business rules.
-- The current state of the job posting.
-- Previously recorded information.
-
----
-
-## RM-009. Reprocessing Logging
-
-Every reprocessing execution shall record, at a minimum:
-
-- Job posting identifier.
-- Reason for reprocessing.
-- Reused information.
-- Recalculated information.
-- Date and time.
-- Responsible party for the reprocessing (system or user).
-- Obtained result.
-
----
-
-## RM-010. Reprocessing Completion
-
-Once reprocessing has concluded, the resulting information shall be incorporated back into the data flow while complying with the validation, persistence, traceability, and consistency rules defined in this document.
-
----
-
-## General Principles of Reprocessing Management
-
-Reprocessing management shall comply with the following principles:
-
-- Be based exclusively on documented rules or valid authorizations.
-- Preserve all historical information.
-- Avoid unnecessary information duplication.
-- Reuse valid data whenever possible.
-- Maintain the integrity and consistency of the data flow.
-- Guarantee complete traceability for every reprocessing operation.
-- Remain independent of the technology used for implementation.
-- Facilitate future reevaluations and system evolution.
-
----
-
-# 13. Data Flow Constraints
-
-Data flow constraints establish the limits that shall be respected during the design, implementation, operation, and evolution of all processes related to information management within the automation.
-
-Their purpose is to ensure that the data flow remains aligned with the project's objectives while preserving information integrity, processing consistency, traceability, and compatibility with the remainder of the official documentation.
-
-These constraints shall be mandatory for all components that generate, transform, validate, consume, store, or update information within the system.
-
----
-
-## DFC-001. Authorized Data Sources
-
-The automation shall incorporate information only from sources previously authorized by the project.
-
-Data whose origin cannot be identified or verified shall not be processed.
-
----
-
-## DFC-002. Protection of Original Data
-
-Information obtained from job sources shall not be modified, deleted, or overwritten during processing.
-
-All transformations shall be performed on derived structures that preserve their relationship with the original information.
-
 ---
 
-## DFC-003. Prohibition of Information Loss
+## 3. Architecture
 
-No data flow process may result in the loss of information required to guarantee operation, traceability, auditing, or reprocessing.
+The data flow is a cross-cutting, technology-independent component used by every module. It follows a sequential workflow: **ingestion → validation → transformation → persistence → consumption → updating → preservation**.
 
-Any authorized deletion shall be documented and preserve the corresponding history.
+### 3.1 Components
 
----
-
-## DFC-004. Exclusive Use of Validated Information
-
-Automation modules shall use only information that has successfully passed the corresponding validations or whose processing has been authorized through the rules for special cases or exception handling.
-
----
-
-## DFC-005. Compliance with the Functional Workflow
-
-All information movement shall comply with the official functional workflow of the automation.
-
-Data belonging to incompatible stages shall not be used, nor shall processes be executed outside the sequence defined by the project.
-
----
-
-## DFC-006. Preservation of Traceability
-
-Every operation performed on the information shall preserve the evidence required to reconstruct the complete journey of the data.
-
-No operation that prevents reconstruction of the history shall be performed.
-
----
-
-## DFC-007. Duplication Restriction
-
-The automation shall avoid the unnecessary generation of duplicate information.
-
-Whenever functional copies or derived structures exist, synchronization and the relationship with the official source of the information shall be maintained.
-
----
-
-## DFC-008. Centralized Configuration
-
-Rules related to the data flow shall be managed through centralized mechanisms.
-
-There shall be no incompatible or distributed configurations that alter the system's uniform behavior.
-
----
-
-## DFC-009. Technology Independence
-
-The behavior of the data flow shall not depend on a programming language, database, provider, service, or specific tool.
-
-The technological implementation shall not modify the meaning or the rules of the information flow.
-
----
-
-## DFC-010. Documentation Compatibility
-
-Every modification made to the data flow shall preserve compatibility with:
+| ID | Component | Responsibilities |
+|----|-----------|-----------------|
+| DFA-001 | Data Sources | All authorized origins: job platforms, user config, professional profile, business rules, system configs, historical info, user decisions. Every datum must identify its origin before entering the flow. |
+| DFA-002 | Ingestion | Receive info, identify origin, associate basic metadata, prepare for validation. **Does not modify content.** |
+| DFA-003 | Validation | Verify integrity, structure, consistency, completeness, and process compatibility. **Does not transform**; only determines suitability. |
+| DFA-004 | Transformation | Normalize formats, complete derived info, structure data, generate intermediates, prepare for functional processes. **Always preserves original data.** |
+| DFA-005 | Persistence | Store original data, transformed data, states, decisions, events, history. |
+| DFA-006 | Consumption | Retrieve info, verify availability, provide only data required per process, guarantee consistency of queried info. |
+| DFA-007 | Updates | Update states, incorporate results, record evaluations, associate documents, synchronize structures. **Every update preserves history.** |
+| DFA-008 | Logging & Traceability | Record at minimum: origin, transformations, validations, consuming processes, state changes, decisions, timestamps, responsible party. |
 
-- The Project Glossary.
-- The Functional Requirements.
-- The Non-Functional Requirements.
-- The Decision Model.
-- The Functional Workflow.
-- The Job Posting Lifecycle.
-- The project's current official documentation.
+### 3.2 Conceptual Flow (mandatory sequence)
 
-Whenever a modification breaks such compatibility, it shall be documented and approved before implementation.
+1. Receive from authorized source → 2. Identify origin → 3. Validate → 4. Transform/normalize → 5. Store → 6. Make available to authorized modules → 7. Update during processing → 8. Record every operation for traceability/auditing.
 
----
-
-## General Principles of Data Flow Constraints
-
-Data flow constraints shall comply with the following principles:
-
-- Preserve information integrity.
-- Maintain data flow consistency.
-- Guarantee complete traceability.
-- Prevent undocumented behavior.
-- Promote system maintainability and scalability.
-- Remain independent of the technology used for implementation.
-- Guarantee compatibility with all official project documentation.
+### 3.3 Scope
 
----
-
-# 14. Acceptance Criteria
+**In scope:** Incorporating, validating, transforming, storing, making available, maintaining consistency, recording history, preserving traceability, facilitating authorized reprocessing.
 
-The data flow shall be considered approved when objective evidence demonstrates that it complies with the principles, rules, constraints, and behaviors defined in this document.
+**Out of scope:** Functional/strategic decisions, Decision Model business rules, modifying the user's profile, determining priorities/classifications, executing non-information-management processes.
 
-The following acceptance criteria shall serve as the reference for validating the design, implementation, testing, and evolution of the automation's data flow.
-
 ---
-
-### DAC-001. Data Incorporation
 
-All information shall be incorporated only from authorized and properly identified sources.
+## 4. Inputs
 
-Data whose origin cannot be verified shall not be processed.
+Every input must: originate from an authorized source; be uniquely identifiable; preserve origin info; pass validation before use; preserve integrity; be compatible with the current workflow state; remain available for audits/reprocessing; comply with security, traceability, and persistence rules.
 
----
-
-### DAC-002. Correct Information Validation
+| ID | Input | Contents (non-exhaustive) |
+|----|-------|--------------------------|
+| DFI-001 | Job Posting Info *(primary input)* | Title, company, description, responsibilities, requirements, benefits, salary, work arrangement, location, employment type, publication date, source platform, URL, identifiers. |
+| DFI-002 | Professional Profile | Experience, technical/professional skills, education, certifications, languages, preferences, salary expectations, work arrangement, location, target/restricted companies. |
+| DFI-003 | System Configuration | General settings, execution parameters, module configs, processing frequencies, workflow configs, operational variables. |
+| DFI-004 | Business Rules | Evaluation, acceptance, rejection, prioritization rules; thresholds; constraints; special cases; exceptions. |
+| DFI-005 | Historical Info | Posting/evaluation/decision/state history, generated documents, execution logs, metrics. |
+| DFI-006 | User Decisions | Approvals, manual rejections, authorized reprocessing, priority changes, profile updates, config/rule modifications. |
+| DFI-007 | Automation-Generated Data | Intermediate results, normalized data, classifications, scores, analyses, documents, processing/operational states. May become input for subsequent processes. |
 
-All information used by the automation shall have successfully passed the validations defined for the corresponding process or shall have been handled according to the documented rules for special cases or exceptions.
-
 ---
-
-### DAC-003. Correct Data Transformation
 
-Transformations shall produce consistent, reproducible structures compatible with the modules that consume the information.
+## 5. Transformations
 
-The original data shall remain intact.
+All transformations execute only after successful validation.
 
----
-
-### DAC-004. Proper Persistence
+| ID | Rule |
+|----|------|
+| DTF-001 | Original data fully preserved. Modifications occur on derived structures only. |
+| DTF-002 | Normalize: dates, times, locations, work arrangements, employment types, salaries, currencies, identifiers, text structures. |
+| DTF-003 | Organize into uniform internal structures, consistent regardless of source. |
+| DTF-004 | Enrichment (derived fields, preliminary classifications, internal IDs, metadata, relationships) is permitted when allowed by project rules. Never replaces original info. |
+| DTF-005 | Remove functional redundancies only when no relevant info or traceability is lost. |
+| DTF-006 | Associate metadata: timestamp, source, internal ID, processing version, initial state, traceability info. |
+| DTF-007 | Generate derived structures for evaluations, analyses, reports, history, auditing, processing management. Maintain relationship with origin data. |
+| DTF-008 | Output must be compatible with consuming modules and official interfaces. |
+| DTF-009 | Deterministic and fully reproducible. |
+| DTF-010 | Log every transformation: data ID, transformation applied, timestamp, responsible party, result, relationship to original. |
 
-All information whose preservation is necessary for operation, traceability, auditing, or reprocessing shall be stored according to the rules defined in this document.
-
 ---
-
-### DAC-005. Correct State Management
 
-Data shall transition only through states compatible with the functional workflow and the project rules.
+## 6. Validations
 
-There shall be no inconsistent or incompatible states.
+No data advances to the next stage without passing validation, unless a documented rule authorizes handling as a special case/exception.
+
+| ID | Validation |
+|----|-----------|
+| DV-001 | **Source:** Origin must be authorized and verifiable. Unidentified data is rejected. |
+| DV-002 | **Integrity:** No loss, alteration, or corruption during incorporation. |
+| DV-003 | **Structure:** Must match expected structure per info type. Incompatible structures follow exception-handling rules. |
+| DV-004 | **Required Info:** All mandatory fields present when required. Missing fields follow defined business rules. |
+| DV-005 | **Consistency:** No contradictory data preventing reliable interpretation. |
+| DV-006 | **Compatibility:** Data must match current lifecycle state and the intended functional process. Incompatible-stage data is rejected. |
+| DV-007 | **Duplicates:** Detect per equivalent-posting management rules. |
+| DV-008 | **Relationships:** Verify Posting ↔ History, Evaluations, States, Documents, Decisions remain valid. |
+| DV-009 | **Pre-Consumption:** Before use, verify info remains valid. Obsolete/incomplete/incompatible data triggers defined rules. |
+| DV-010 | **Logging:** Record data ID, validation executed, result, timestamp, responsible party, action on failure. |
 
 ---
 
-### DAC-006. Preservation of Integrity
+## 7. Outputs
 
-Information shall preserve its integrity throughout the entire processing lifecycle.
+Every output maintains its relationship with origin data and complies with integrity, traceability, and persistence rules.
 
-No unauthorized loss, alteration, or corruption of data shall occur.
+| ID | Output | Contents |
+|----|--------|----------|
+| DFO-001 | Structured Job Posting | Validated info, normalized fields, internal IDs, metadata, internal relationships. Primary source for subsequent processes. |
+| DFO-002 | Evaluation Results | Scores, compatibility levels, priorities, classifications, partial/final results, justifications. |
+| DFO-003 | Derived Information | Enriched data, calculated fields, relationships, indicators, metadata. Always linked to original. |
+| DFO-004 | Processing States | Lifecycle state, operational state, update date, responsible party, transition history. |
+| DFO-005 | Application Resources | Strategic analyses, organized info, documents, resources. Each linked to its posting. |
+| DFO-006 | Query Information | Full history, current state, evaluation results, documents, decisions, metrics. |
+| DFO-007 | Operational Records | Events, logs, validations, transformations, errors, warnings, metrics, automated/user decisions. |
 
 ---
 
-### DAC-007. Cross-Module Consistency
+## 8. Persistence
 
-The different automation components shall use consistent and synchronized information.
+| ID | Rule |
+|----|------|
+| DP-001 | Original source data preserved in full. Never deleted or overwritten by transformations. |
+| DP-002 | Derived info stored when needed for operation, traceability, auditing, or reprocessing. Always linked to origin. |
+| DP-003 | Complete posting history preserved: state changes, validations, transformations, evaluations, decisions, reprocessing, relevant events. |
+| DP-004 | Configurations stored to reproduce behavior. Critical config changes preserve history. |
+| DP-005 | Documents/analyses/resources linked to posting; origin, version, and generation time identifiable. |
+| DP-006 | Operational records (events, errors, warnings, metrics, validations, transformations, decisions) stored for full execution reconstruction. |
+| DP-007 | All relationships preserved: Posting ↔ History, Evaluations, States, Documents, Decisions, Records. No relationship lost during storage. |
+| DP-008 | Stored info available to authorized processes during retention period. Queries do not alter content. |
+| DP-009 | Reuse previously persisted valid info before regenerating. Reduces unnecessary processing and duplication. |
+| DP-010 | Log every significant storage/update: data ID, operation, timestamp, responsible party, result, final state. |
 
-There shall be no incompatible differences between data shared by different modules.
-
 ---
-
-### DAC-008. Correct Reprocessing Management
 
-Reprocessing operations shall preserve history, reuse valid information whenever appropriate, and maintain data flow consistency.
+## 9. Data States
 
----
+States describe the condition of *information itself* (not the posting lifecycle/operational states defined elsewhere). A datum exists in only one active state at a time. Every transition is logged. No data may be used in a process incompatible with its state.
 
-### DAC-009. Complete Traceability
+| ID | State | Characteristics |
+|----|-------|----------------|
+| DS-001 | **Received** | Origin identified; original preserved; pending validation; unavailable for functional processes. |
+| DS-002 | **Validated** | Integrity, structure, consistency verified; available for transformation. |
+| DS-003 | **Transformed** | Standardized format; derived info generated; original preserved; available for functional processes. |
+| DS-004 | **Persisted** | Available for querying, auditing, reprocessing; history preserved. |
+| DS-005 | **In Use** | Associated with a functional process; controlled consumption; protected against incompatible modifications. |
+| DS-006 | **Updated** | History updated; relationships preserved; new version recorded; available for subsequent processes. |
+| DS-007 | **Historical** | Not current version; not deleted; linked to current version; available for historical queries and authorized reprocessing. |
+| DS-008 | **Archived** | Processing completed; queryable; no operational modifications; preserved per retention policies. |
+| DS-009 | **Inconsistent** | Integrity/structure/consistency/compatibility issues; processing suspended; pending resolution; unavailable for consumption. |
+| DS-010 | **Obsolete** | Replaced by newer version; not used as current source; preserved for traceability; linked to replacing version. |
+
+---
 
-The automation shall preserve the information required to completely reconstruct the journey of any piece of data.
+## 10. Traceability
 
-The reconstruction shall make it possible to identify:
+All info managed by the data flow must maintain evidence to completely reconstruct its history.
 
-- Its origin.
-- The validations performed.
-- The applied transformations.
-- The processes that used the information.
-- The updates performed.
-- Its final state.
+| ID | Requirement |
+|----|------------|
+| DFT-001 | Unique, immutable identifier per datum, unchanged across transformations, updates, reprocessing. |
+| DFT-002 | Record origin: source, timestamp, source ID (if available), incorporating process. |
+| DFT-003 | Log every transformation: original info, transformation applied, result, timestamp, responsible party. |
+| DFT-004 | Log every validation: validation applied, result, rule used, action taken, timestamp. |
+| DFT-005 | Log data consumption: which components consumed what and for what purpose. |
+| DFT-006 | Log every update: previous state, resulting state, modified info, timestamp, responsible party, justification. |
+| DFT-007 | Complete history preserved; never deleted or overwritten during posting lifecycle. |
+| DFT-008 | Recorded info sufficient for full reconstruction: entry, validations, transformations, consuming processes, updates, final state. |
+| DFT-009 | Audit info available throughout retention period. Audit queries do not modify data or affect operations. |
+| DFT-010 | Associate info with current version of rules, configs, and processes to enable historical reproduction after evolution. |
 
 ---
-
-### DAC-010. Auditability
 
-Every significant operation performed on the data shall be justifiable through objective evidence recorded during processing.
+## 11. Integrity & Consistency
 
-The stored information shall be sufficient to perform both technical and functional audits.
+Preserved from incorporation through final retention.
 
----
-
-### DAC-011. Reproducibility
+| ID | Rule |
+|----|------|
+| DIC-001 | No process may alter, remove, or corrupt info unless a documented rule authorizes it. |
+| DIC-002 | Cross-module consistency: no incompatible differences in data representing the same info. |
+| DIC-003 | Single official representation per datum. Derived/functional copies linked to official source. |
+| DIC-004 | Preserve all relationships: Posting ↔ Original, Transformed, History, Evaluations, Decisions, Documents, Operational Records. |
+| DIC-005 | Temporal consistency: every update recorded chronologically. |
+| DIC-006 | Inconsistent info halts processing until validation/special-case/exception rules are applied. No results from unverified info. |
+| DIC-007 | Updates preserve history; no loss of previously recorded data. |
+| DIC-008 | Reprocessing maintains consistency with existing history; no contradictions between versions. |
+| DIC-009 | Integrity/consistency checks may execute at any stage without altering data content. |
+| DIC-010 | Log every integrity/consistency incident: data ID, type, description, timestamp, action, result, responsible party. |
 
-The data flow shall produce the same results whenever it processes the same inputs using the same rules, configurations, and system version.
-
 ---
-
-### DAC-012. Documentation Compatibility
 
-The data flow shall remain fully aligned with:
+## 12. Reprocessing
 
-- The Project Glossary.
-- The Functional Requirements.
-- The Non-Functional Requirements.
-- The Decision Model.
-- The Functional Workflow.
-- The Job Posting Lifecycle.
-- The project's current official documentation.
+Every reprocessing requires a documented business rule or explicit user authorization (per Decision Model). Arbitrary reprocessing is prohibited.
 
----
-
-### DAC-013. Scalability
+| ID | Rule |
+|----|------|
+| RM-001 | Authorization mandatory (documented rule or user decision). |
+| RM-002 | Never delete, overwrite, or alter existing info. New info preserves existing history. |
+| RM-003 | Reuse valid persisted data before regenerating. |
+| RM-004 | Revalidate info under current system conditions. |
+| RM-005 | Recalculate only affected derived elements; preserve valid ones. |
+| RM-006 | Update all relationships (original, derived, documents, evaluations, history). |
+| RM-007 | Log as new event; preserve all previous executions fully. |
+| RM-008 | Post-reprocessing consistency check against: workflow, Decision Model, business rules, current posting state, previously recorded info. |
+| RM-009 | Log: posting ID, reason, reused info, recalculated info, timestamp, responsible party, result. |
+| RM-010 | Resulting info re-enters the data flow complying with all validation, persistence, traceability, and consistency rules. |
 
-The incorporation of new data sources, transformations, validations, or processes shall be possible without affecting the behavior of existing components unless the modification has been previously documented and approved.
-
 ---
-
-### DAC-014. Technology Independence
 
-The behavior of the data flow shall remain independent of the technology used for its implementation.
+## 13. Constraints
 
-Replacing tools, services, or technological components shall not modify the rules defined in this document.
+| ID | Constraint |
+|----|-----------|
+| DFC-001 | Only authorized, identifiable sources. |
+| DFC-002 | Original source data never modified, deleted, or overwritten. Transformations on derived structures only. |
+| DFC-003 | No information loss. Any authorized deletion is documented with history preserved. |
+| DFC-004 | Modules use only validated info (or info authorized via special-case/exception rules). |
+| DFC-005 | All movement follows the official functional workflow. No out-of-sequence or incompatible-stage processing. |
+| DFC-006 | Every operation preserves evidence for full data-journey reconstruction. |
+| DFC-007 | Avoid unnecessary duplication. Functional copies maintain synchronization with official source. |
+| DFC-008 | Centralized configuration management. No incompatible or distributed configs. |
+| DFC-009 | Behavior independent of language, database, provider, service, or tool. |
+| DFC-010 | Every modification preserves compatibility with: Glossary, Functional/Non-Functional Requirements, Decision Model, Functional Workflow, Posting Lifecycle, all official docs. Breaking changes require prior documentation and approval. |
 
 ---
 
-### DAC-015. Full Compliance
+## 14. Acceptance Criteria
 
-The data flow shall comply with this document when all the previous criteria can be verified through testing, documentation reviews, or evidence obtained during the operation of the automation.
+The data flow is approved when objective evidence (testing, documentation review, operational evidence) demonstrates compliance with all criteria below.
 
----
-
-## General Acceptance Principle
+| ID | Criterion |
+|----|----------|
+| DAC-001 | Info incorporated only from authorized, identified sources. |
+| DAC-002 | All info passes validations or is handled per documented special-case/exception rules. |
+| DAC-003 | Transformations produce consistent, reproducible, compatible structures. Original data intact. |
+| DAC-004 | All required info persisted per this document's rules. |
+| DAC-005 | States transition only per workflow and project rules. No inconsistent/incompatible states. |
+| DAC-006 | No unauthorized loss, alteration, or corruption of data. |
+| DAC-007 | Cross-module consistency; no incompatible shared-data differences. |
+| DAC-008 | Reprocessing preserves history, reuses valid info, maintains consistency. |
+| DAC-009 | Full traceability: origin, validations, transformations, consuming processes, updates, final state. |
+| DAC-010 | Every significant operation justifiable through recorded evidence. Sufficient for technical and functional audits. |
+| DAC-011 | Same inputs + same rules/configs/version = same results. |
+| DAC-012 | Full alignment with Glossary, Functional/Non-Functional Requirements, Decision Model, Workflow, Lifecycle, all official docs. |
+| DAC-013 | New sources/transformations/validations/processes incorporable without affecting existing components (unless documented and approved). |
+| DAC-014 | Technology replacement does not modify data flow rules. |
+| DAC-015 | Full compliance = all above criteria verifiable. |
 
-Approval of the data flow shall require demonstrating that all information managed by the automation is:
+**General acceptance:** All managed information must be complete, consistent, reproducible, traceable, auditable, sourced from authorized origins, and compatible with all official project documentation.
 
-- Complete.
-- Consistent.
-- Reproducible.
-- Traceable.
-- Auditable.
-- Based on authorized sources.
-- Compatible with the remainder of the project's official documentation.
-
 ---
-
-# 15. Module 1: Opportunity Discovery
-
-This chapter describes the data flow of the Opportunity Discovery module (Module 1): a single run orchestrating 13 nodes, the contracts exchanged between them, and the logical stores where every record produced by the module is persisted.
 
-## DFT-M1-001. Run orchestration
+## 15. Module 1: Opportunity Discovery – Data Flow
 
-Each execution of the module is a run (`corrida`) uniquely identified by `run_id`. The run moves node by node within a single execution context; the context is the only interface between nodes (technical sheet, INICIO §1.12). Every record generated by the module — events, sessions, offers — is anchored to its `run_id` (RN-01).
+### DFT-M1-001. Run Orchestration
 
-The flow is linear along 13 nodes:
+Each execution is a **run** (`corrida`) with a unique `run_id`. The run moves linearly through 13 nodes within a single execution context (the only interface between nodes; see INICIO §1.12). Every record is anchored to `run_id` (RN-01).
 
-| # | Node | Type | Delivered contract |
+| # | Node | Type | Delivered Contract |
 |---|------|------|--------------------|
-| 1 | INICIO | Process | Instantiated run + full execution context (`run_id`, raw configuration, validated global config, opened connections, acquired lock, filtered source list) |
+| 1 | INICIO | Process | Instantiated run + full execution context (`run_id`, raw config, validated global config, opened connections, acquired lock, filtered source list) |
 | 2 | ¿Existe al menos una fuente/plataforma configurada? | Decision | `lista_fuentes` non-empty, or termination motive `sin_fuentes` |
 | 3 | ¿Quedan fuentes por procesar en esta corrida? | Decision | `fuente_pendiente` exists, or termination motive `corrida_completada` |
 | 4 | Seleccionar la siguiente fuente pendiente | Process | Current `source_id` + access parameters + filter sets |
@@ -1804,200 +285,67 @@ The flow is linear along 13 nodes:
 | 8 | ¿Se encontraron ofertas? | Decision | Branch by `search_result.estado` + `conteo` |
 | 9 | Capturar ofertas | Process | `capture_batch` + `estado_captura` + session audit write |
 | 10 | Registrar ofertas capturadas en "Ofertas Totales" | Process | Transactional raw insert of the batch |
-| 11 | ¿Quedan ofertas por capturar en la búsqueda actual? | Decision | `capture_batch` and `estado_captura` of the next page |
-| 12 | ¿Quedan sets de filtros por aplicar en esta fuente? | Decision | `set_indice` of the next set, or next source |
+| 11 | ¿Quedan ofertas por capturar en la búsqueda actual? | Decision | `capture_batch` and `estado_captura` of next page |
+| 12 | ¿Quedan sets de filtros por aplicar en esta fuente? | Decision | `set_indice` of next set, or next source |
 | 13 | Finalizar Proceso | Terminal | Termination event + lock release + resources close |
 
-The six decision nodes act as contract validators of their immediate predecessor: they consume the contract, validate its structure, and route the flow without re-reading the store or probing the platform.
+The six decision nodes act as contract validators of their predecessor: consume the contract, validate structure, route the flow. They do **not** re-read the store or probe the platform.
 
-## DFT-M1-002. Contracts between nodes
+### DFT-M1-002. Contracts Between Nodes
 
-The contracts exchanged between consecutive nodes are structured objects carried by the execution context:
+| Contract | Producer | Consumer | Contents |
+|----------|----------|----------|----------|
+| `entry_result` | Node 5 | Node 6 | `{estado: exito\|fallo, codigo_motivo, evidencia_acotada, numero_de_intentos}` — no sensitive data (RN-06) |
+| `search_result` | Node 7 | Nodes 8, 12 | `{estado, codigo_motivo, evidencia_acotada, ofertas_primera_pagina, estado_paginacion, total_declarado, set_indice, numero_de_intentos}` (RN-09) |
+| `capture_batch` | Node 9 | Node 10 | `{lote_ofertas, paginas_consumidas, capturadas_acumuladas_fuente, limite_alcanzado}` |
+| `estado_captura` | Node 9 | Node 11 | `{estado, paginas, capturadas_acumuladas_fuente, limite_alcanzado}`; with `estado_paginacion` of `search_result` |
 
-| Contract | Produced by | Consumed by | Contents |
-|----------|-------------|-------------|---------|
-| `entry_result` | 5. Entrar a la fuente | 6. ¿El ingreso fue exitoso? | `{estado: exito\|fallo, codigo_motivo, evidencia_acotada, numero_de_intentos}` — no sensitive data (RN-06). |
-| `search_result` | 7. Aplicar los filtros | 8. ¿Se encontraron ofertas? and 12. Sets | `{estado, codigo_motivo, evidencia_acotada, ofertas_primera_pagina, estado_paginacion, total_declarado, set_indice, numero_de_intentos}` (RN-09). |
-| `capture_batch` | 9. Capturar ofertas | 10. Registrar en "Ofertas Totales" | `{lote_ofertas, paginas_consumidas, capturadas_acumuladas_fuente, limite_alcanzado}` |
-| `estado_captura` | 9. Capturar ofertas | 11. ¿Quedan ofertas por capturar? | `{estado, paginas, capturadas_acumuladas_fuente, limite_alcanzado}`; with `estado_paginacion` of `search_result` |
+Absent or corrupt contract → run proceeds to Finalizar Proceso with state `error` (abort).
 
-Validation of the predecessor's contract is done by the next decision node; in case of an absent or corrupt contract, the run proceeds to "Finalizar Proceso" with state `error` (abort).
+### DFT-M1-003. Logical Stores (single SQLite, D2)
 
-## DFT-M1-003. Logical stores (single SQLite, D2)
+All stores in `job_search.db`:
 
-The module uses the same single SQLite database (`job_search.db`) for all its logical stores (D2):
+| Store | Table | Written by | Purpose |
+|-------|-------|-----------|---------|
+| Corrida | `corridas` | INICIO / Finalizar | Run instance + termination record, by `run_id` |
+| Sesión | `sesiones` | Node 9 | Session audit (success only), by `(session_id, set_indice)` |
+| Evento | `eventos` | All critical/error/success events | Events with `run_id`, `tipo` (error/suceso), `codigo`, `evidencia` |
+| Bloqueo | `bloqueo` | INICIO / Finalizar | Persistable concurrency lock with obsolescence threshold |
+| Oferta | `ofertas` ("Ofertas Totales") | Node 10 | Raw offer rows, full traceability, **no deduplication** (Module 2) |
 
-| Logical store | Table | Written by | Purpose |
-|---------|---------------|-----------|---------|
-| Corrida | `corridas` | INICIO / Finalizar | Run instance and termination record, anchored by `run_id`. |
-| Sesion | `sesiones` | 9. Capturar ofertas | Session audit record (only on success), by `(session_id, set_indice)`. |
-| Evento | `eventos` ("errores o sucesos") | All critical/error/success events | Events with `run_id`, typology `tipo` (`error`/`suceso`), `codigo`, `evidencia`. |
-| Bloqueo | `bloqueo` | INICIO / Finalizar | Persistable concurrency lock with obsolescence threshold. |
-| Offer | `ofertas` ("Ofertas Totales") | 10. Registrar ofertas | Raw offer rows with full traceability; no deduplication (belongs to Module 2). |
-
-## DFT-M1-004. Traceability
-
-Every record generated by the module carries the full traceability chain of the Opportunity Discovery module (RN-01):
+### DFT-M1-004. Traceability Chain
 
 | Field | Semantics |
 |-------|-----------|
-| `run_id` | Run that produced the record; mandatory in every record. |
-| `source_id` | Source (platform) from which the data was obtained; present in source-related records. |
-| `session_id` | Platform session used; present when the source entry succeeded. |
-| `set_indice` | Filter set that produced the search/capture; present in search/capture records. |
+| `run_id` | Run that produced the record; mandatory in every record |
+| `source_id` | Platform; present in source-related records |
+| `session_id` | Platform session; present when source entry succeeded |
+| `set_indice` | Filter set; present in search/capture records |
 
-This guarantees that each offer, event, session audit, and run record can be traced back to its origin run, source, session, and filter set.
-
----
-
-# 16. Data Flow Index
-
-This document organizes its elements using unique and immutable identifiers to facilitate consultation, implementation, traceability, auditing, and maintenance.
-
-Each identifier constitutes an official reference of the data flow and may be used in documentation, architecture, development, testing, and automation operations.
-
-The identifiers defined in this document shall not be reused, modified, or reassigned once the document has been approved.
+Guarantees traceability of every offer, event, session audit, and run record back to its origin run, source, session, and filter set.
 
 ---
 
-## Data Flow Principles Index
+## 16. Identifier Index
+
+Identifiers are unique, immutable, and shall not be reused, modified, or reassigned after approval.
 
 | Range | Category |
-|--------|----------|
+|-------|----------|
 | DFP-001 – DFP-015 | Data Flow Principles |
-
----
-
-## Data Flow Architecture Index
-
-| Range | Category |
-|--------|----------|
-| DFA-001 – DFA-008 | Data Flow Components |
-
----
-
-## Data Flow Inputs Index
-
-| Range | Category |
-|--------|----------|
-| DFI-001 – DFI-007 | Data Flow Inputs |
-
----
-
-## Data Transformation Index
-
-| Range | Category |
-|--------|----------|
-| DTF-001 – DTF-010 | Data Transformations |
-
----
-
-## Data Validation Index
-
-| Range | Category |
-|--------|----------|
-| DV-001 – DV-010 | Data Validations |
-
----
-
-## Data Flow Outputs Index
-
-| Range | Category |
-|--------|----------|
-| DFO-001 – DFO-007 | Data Flow Outputs |
-
----
-
-## Data Persistence Index
-
-| Range | Category |
-|--------|----------|
-| DP-001 – DP-010 | Data Persistence |
-
----
-
-## Data States Index
-
-| Range | Category |
-|--------|----------|
-| DS-001 – DS-010 | Data States During Processing |
-
----
-
-## Data Flow Traceability Index
-
-| Range | Category |
-|--------|----------|
-| DFT-001 – DFT-010 | Data Flow Traceability |
-
-> **Note:** Although both groups originally used the **TFD** prefix, they belong to different chapters of the document. During implementation, it is recommended to use the complete identifier (chapter + code) or adopt a distinct prefix (for example, **DFT** for **Data Flow Traceability**) to avoid ambiguity.
-
----
-
-## Data Integrity and Consistency Index
-
-| Range | Category |
-|--------|----------|
-| DIC-001 – DIC-010 | Data Integrity and Consistency |
-
----
-
-## Reprocessing Management Index
-
-| Range | Category |
-|--------|----------|
+| DFA-001 – DFA-008 | Architecture Components |
+| DFI-001 – DFI-007 | Inputs |
+| DTF-001 – DTF-010 | Transformations |
+| DV-001 – DV-010 | Validations |
+| DFO-001 – DFO-007 | Outputs |
+| DP-001 – DP-010 | Persistence |
+| DS-001 – DS-010 | Data States |
+| DFT-001 – DFT-010 | Traceability |
+| DIC-001 – DIC-010 | Integrity & Consistency |
 | RM-001 – RM-010 | Reprocessing Management |
-
----
-
-## Data Flow Constraints Index
-
-| Range | Category |
-|--------|----------|
-| DFC-001 – DFC-010 | Data Flow Constraints |
-
----
-
-## Acceptance Criteria Index
-
-| Range | Category |
-|--------|----------|
+| DFC-001 – DFC-010 | Constraints |
 | DAC-001 – DAC-015 | Acceptance Criteria |
+| DFT-M1-001 – DFT-M1-004 | Module 1 Data Flow |
 
----
-
-## Document Summary
-
-| Chapter | Content |
-|----------|---------|
-| 1 | Purpose of the Document |
-| 2 | Data Flow Principles |
-| 3 | Data Flow Architecture |
-| 4 | Data Flow Inputs |
-| 5 | Data Transformations |
-| 6 | Data Validations |
-| 7 | Data Flow Outputs |
-| 8 | Data Persistence |
-| 9 | Data States During Processing |
-| 10 | Data Flow Traceability |
-| 11 | Data Integrity and Consistency |
-| 12 | Reprocessing Management |
-| 13 | Data Flow Constraints |
-| 14 | Acceptance Criteria |
-| 15 | Module 1: Opportunity Discovery |
-| 16 | Data Flow Index |
-
----
-
-## Index Principles
-
-The Data Flow Index shall comply with the following principles:
-
-- Maintain unique and immutable identifiers.
-- Facilitate navigation and consultation of the document.
-- Serve as the official reference for implementing the data flow.
-- Enable traceability between documentation, architecture, development, and testing.
-- Facilitate the incorporation of new elements without altering existing identifiers.
-- Maintain consistency with the remainder of the project's official documentation.
-
----
+> **Note:** DTF prefix is used by both Data Transformations (ch. 5) and Data Flow Traceability (ch. 10). Use full identifier (chapter + code) or adopt a distinct prefix during implementation to avoid ambiguity.

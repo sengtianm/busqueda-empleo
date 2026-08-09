@@ -1,16 +1,11 @@
 # Appendix 5C - Official project templates
 
-This appendix establishes the official templates that must be used for the preparation of documentation belonging to the job search automation.
+This appendix establishes the official templates that must be used to prepare documentation belonging to the job search automation.
 
-Its purpose is to guarantee uniformity, consistency, and ease of maintenance across all official project documents.
+Purpose: guarantee uniformity, consistency, and ease of maintenance across all official project documents.
 
-The templates defined herein constitute the reference format for creating new documentation.
+## C.1. Template for normative documents
 
----
-
-# C.1. Template for normative documents
-
-```markdown
 # Document name
 
 ## 1. Document purpose
@@ -28,23 +23,13 @@ The templates defined herein constitute the reference format for creating new do
 ## 7. References
 
 ## 8. Index
-```
 
-Applicable to documents such as:
+Applicable to documents such as: Standards; Architecture; Data Model; Security; Error Handling.
 
-* Standards.
-* Architecture.
-* Data Model.
-* Security.
-* Error Handling.
+## C.2. Template for chapters
 
----
+Each chapter must maintain this structure:
 
-# C.2. Template for chapters
-
-Each chapter must maintain the following structure:
-
-```markdown
 # Chapter name
 
 Introduction.
@@ -70,194 +55,97 @@ Description.
 - Principle 1
 - Principle 2
 - Principle 3
-```
 
----
+## C.3. Template for rules
 
-# C.3. Template for rules
-
-Official format:
-
-```markdown
 ### ABC-001. Rule name
 
 Rule description.
-```
 
----
+## C.4. Template for requirements
 
-# C.4. Template for requirements
-
-Official format:
-
-```markdown
 ### RF-001. Requirement name
 
-Description.
-
-Justification.
-
+Description.  
+Justification.  
 Compliance criteria.
-```
 
----
+## C.5. Template for decisions
 
-# C.5. Template for decisions
-
-Official format:
-
-```markdown
 ### MD-001. Decision name
 
-Context.
-
-Decision rule.
-
-Expected outcome.
-
+Context.  
+Decision rule.  
+Expected outcome.  
 Observations.
-```
 
----
+## C.6. Template for data flows
 
-# C.6. Template for data flows
-
-Official format:
-
-```markdown
 ### FD-001. Flow name
 
-Origin.
-
-Destination.
-
-Transformations.
-
+Origin.  
+Destination.  
+Transformations.  
 Result.
-```
 
----
+## C.7. Template for entities
 
-# C.7. Template for entities
-
-Official format:
-
-```markdown
 ## ENT-001 Entity name
 
-Description.
-
-Attributes.
-
-Relations.
-
+Description.  
+Attributes.  
+Relations.  
 Restrictions.
-```
 
----
+## C.8. Template for modules
 
-# C.8. Template for modules
-
-Official format:
-
-```markdown
 ## MOD-001 Module name
 
-Objective.
-
-Responsibilities.
-
-Inputs.
-
-Outputs.
-
+Objective.  
+Responsibilities.  
+Inputs.  
+Outputs.  
 Dependencies.
-```
 
----
+## C.9. Template for prompts
 
-# C.9. Template for prompts
-
-Official format:
-
-```markdown
 ## PRM-001 Prompt name
 
-Objective.
-
-Inputs.
-
-Variables.
-
-Instructions.
-
-Expected result.
-
-Observations.
-
+Objective.  
+Inputs.  
+Variables.  
+Instructions.  
+Expected result.  
+Observations.  
 Version.
-```
 
----
+## C.10. Template for configurations
 
-# C.10. Template for configurations
-
-Official format:
-
-```markdown
 ## CFG-001 Configuration name
 
-Description.
-
-Default value.
-
-Allowed values.
-
-Impact.
-
+Description.  
+Default value.  
+Allowed values.  
+Impact.  
 Observations.
-```
 
----
+## C.11. Template for logs
 
-# C.11. Template for logs
-
-Official format:
-
-```markdown
-Date and time
-
-Module
-
-Process
-
-Event
-
-Level
-
-Result
-
+Date and time  
+Module  
+Process  
+Event  
+Level  
+Result  
 Observations
-```
 
----
+## C.12. Template for change history
 
-# C.12. Template for change history
-
-Official format:
-
-```markdown
 | Version | Date | Description | Author |
-|----------|-------|-------------|-------|
-```
+|---------|------|-------------|--------|
 
----
+## C.13. Template for appendices
 
-# C.13. Template for appendices
-
-Official format:
-
-```markdown
 # Appendix
 
 ## Purpose
@@ -265,27 +153,22 @@ Official format:
 ## Content
 
 ## References
-```
 
----
+## C.14. Template principles
 
-# C.14. Template principles
+All official templates must comply with:
 
-All official templates must comply with the following principles:
+- Uniformity.
+- Clarity.
+- Reusability.
+- Consistency.
+- Scalability.
+- Maintainability.
+- Traceability.
+- Compatibility with the rest of the documentation.
 
-* Uniformity.
-* Clarity.
-* Reusability.
-* Consistency.
-* Scalability.
-* Maintainability.
-* Traceability.
-* Compatibility with the rest of the documentation.
+## C.15. Official source
 
----
-
-# C.15. Official source
-
-The templates defined in this appendix constitute the official format for the preparation of all documentation belonging to the job search automation.
+The templates defined herein constitute the official format for preparing all documentation belonging to the job search automation and the reference format for creating new documentation.
 
 Any new template must maintain compatibility with the structures established herein.

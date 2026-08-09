@@ -1,4426 +1,981 @@
-# Document 10 - User Professional Profile
+# Documento 10 – Perfil Profesional del Usuario (Optimizado)
 
-## 1. Document Purpose
-
-This document defines the official professional profile of the user that will serve as the single reference for all decisions, processes, and functionalities related to the job search automation.
-
-Its purpose is to document in a structured, consistent, and traceable manner the user's professional identity, including their value proposition, professional focuses, experience, education, competencies, knowledge, preferences, and evaluation criteria, providing a comprehensive representation of their career trajectory and professional positioning.
-
-This document constitutes the official source of professional information for the project and must be used as the basis for the configuration, evaluation, and execution of all processes that require understanding, interpreting, or representing the user's profile during the automation's operation.
-
-The information contained herein will enable, among other aspects:
-
-- Evaluating the degree of compatibility between the user's profile and identified job opportunities.
-- Determining the most appropriate professional focus for each job offer.
-- Strategically adapting the documents and resources used during the application process.
-- Providing consistent context for automated processes of analysis, content generation, and decision-making.
-- Maintaining a coherent representation of the user's professional profile across all automation modules.
-
-This document is not a resume, professional portfolio, or any other presentation artifact. Instead, it defines the professional model that gives rise to such artifacts and must be maintained as the source of truth for any representation of the user's profile.
-
-The provisions contained in this document are mandatory for all modules, processes, components, and future extensions of the automation that use information related to the user's professional profile. Any modification to the profile must be made by updating this document before being reflected in other derived resources.
-
----
-
-## 2. Professional Profile Principles
-
-The following principles establish the general rules that shall govern the definition, interpretation, maintenance, and evolution of the user's professional profile within the job search automation.
-
-These principles complement the Project Glossary, Functional Requirements, Non-Functional Requirements, Decision Model, Data Flow, Project Standards, Error Handling Model, Folder Architecture, and the Scope and Objectives document, constituting the normative basis to ensure that all professional information used by the automation is consistent, traceable, and aligned with the user's professional identity.
-
----
-
-### PPP-001. Single Source of Truth
-
-This document is the only official source of information about the user's professional profile.
-
-Any derived representation of the profile, including resumes, cover letters, professional summaries, or other resources, must be built from the information defined herein.
-
----
-
-### PPP-002. Comprehensive Representation
-
-The professional profile must comprehensively represent the user's career, experience, education, competencies, capabilities, and value proposition, avoiding limitation to a single curricular representation.
-
----
-
-### PPP-003. Professional Coherence
-
-All information contained in this document must maintain internal coherence and reflect a consistent professional positioning, regardless of the type of job opportunity to which an application is directed.
-
----
-
-### PPP-004. Multiple Professional Focuses
-
-The profile may incorporate one or more professional focuses when they are part of the same career trajectory and value proposition.
-
-Each focus must represent a different perspective of the same professional profile and not an independent profile.
-
----
-
-### PPP-005. Adaptability
-
-The automation may adapt how it presents the professional profile according to the characteristics of each job opportunity, without modifying the official information defined in this document.
-
----
-
-### PPP-006. Traceability
-
-Any modification made to the professional profile must be recorded in a way that allows knowing the evolution of the profile and maintaining consistency with the rest of the project documentation.
-
----
-
-### PPP-007. Independence of Artifacts
-
-Resumes, portfolios, cover letters, and other documents used during applications do not constitute the official source of the professional profile.
-
-These resources must be considered artifacts derived from this document.
-
----
-
-### PPP-008. Strategic Orientation
-
-The professional profile should highlight those capabilities, experiences, and knowledge that represent the user's value proposition and allow them to differentiate themselves within their target market.
-
----
-
-### PPP-009. Truthfulness
-
-All recorded information must correspond to the user's real experience, knowledge, achievements, competencies, or education.
-
-Fictitious, exaggerated, or non-verifiable information shall not be incorporated.
-
----
-
-### PPP-010. Controlled Evolution
-
-The professional profile must evolve in a controlled manner as the user's professional career progresses, maintaining the historical consistency of the document.
-
----
-
-### PPP-011. Reusability
-
-The recorded information must be structured so that it can be reused by any automation module without requiring reinterpretation or content duplication.
-
----
-
-### PPP-012. Technological Independence
-
-The definition of the professional profile must remain independent of specific tools, platforms, or technologies used by the automation.
-
----
-
-### PPP-013. Document Consistency
-
-All information contained in this document must remain aligned with the rest of the project's official documentation and derived professional artifacts.
-
----
-
-### PPP-014. Centralized Update
-
-Any modification to the professional profile must be made initially on this document before being reflected in any other derived resource.
-
----
-
-### PPP-015. Mandatory Compliance
-
-All modules, processes, and components of the automation that use professional information of the user must respect the principles established in this document.
-
----
-
-## General Principles of the Professional Profile
-
-The professional profile must guarantee:
-
-- A comprehensive and consistent representation of the user.
-- The existence of a single official source of professional information.
-- The coherent coexistence of multiple professional focuses.
-- The consistent generation of derived artifacts.
-- The traceability of professional evolution.
-- The reuse of information across the entire automation.
-- The centralized update of the profile.
-- The truthfulness and coherence of the recorded information.
-- Independence from specific technologies.
-- Permanent alignment with all official project documentation.
-
----
-
-## 3. Professional Identity
-
-The user is an industrial engineer specialized in the design of organizational systems, operating systems, and decision systems that enable organizations to operate, decide, and evolve in a consistent, governable, and scalable manner.
-
-Their professional approach is not about optimizing isolated activities or implementing technological tools as an end in itself. Their main competency lies in understanding the comprehensive functioning of an organization, identifying the structural limitations that affect its performance, and designing systems that integrate people, processes, information, decisions, business rules, and technology within a coherent architecture.
-
-Their professional experience has been developed mainly in highly complex organizations belonging to industrial, logistics, services, and public sectors, leading initiatives in operational transformation, analytics, automation, data governance, planning, and continuous improvement.
-
-Their profile combines strategic, analytical, operational, and technological capabilities, allowing them to simultaneously intervene in aspects related to:
-
-- Design of organizational systems.
-- Operational transformation.
-- Design of decision systems.
-- Design of information systems.
-- Operational governance.
-- Data governance.
-- Process automation.
-- Advanced analytics.
-- Data-driven planning.
-- Information architectures.
-- Process optimization.
-- Change management.
-- Continuous improvement.
-- Among others.
-
-Their professional objective is to transform organizations through the design of systems that improve the ability to decide, plan, execute, control, and learn in a structured manner, reducing dependence on individual effort and strengthening the system's capacity to sustain results over time.
-
-### 3.1 Professional Model
-
-The user's professional model is based on the principle that organizational performance depends mainly on the system that defines how decisions are made, how information flows, how work is executed, and how the operation is governed, and not exclusively on the individual performance of people.
-
-Under this approach, organizational problems are interpreted as consequences of structural limitations of the system and not as isolated failures of individuals or specific areas.
-
-Consequently, the user's professional interventions seek to modify the structures that govern system behavior before optimizing individual activities.
-
-This professional model guides all decisions related to organizational analysis, solution design, and prioritization of job opportunities.
-
-### 3.2 Professional Thesis
-
-The professional thesis that characterizes the user's profile can be summarized by the following principles:
-
-- Sustainable performance depends on system design, not on extraordinary individual effort.
-- Information constitutes infrastructure for decision-making, not merely a reporting mechanism.
-- Decisions must be based on explicit and verifiable criteria.
-- Technology should act as an enabler of the organizational system, not as the center of the solution.
-- Operational stability must be built through governance structures, not through reactive controls.
-- Processes must be designed as end-to-end systems, not as local optimizations.
-- Sustainable improvement requires permanent mechanisms of organizational learning.
-
-These principles represent permanent elements of the user's professional identity and should be considered during the evaluation of job opportunities.
-
-### 3.3 Type of Problems They Solve
-
-The user specializes in organizations that face structural difficulties in sustaining their operation, making timely decisions, or scaling their capabilities.
-
-Among the problems they typically address are:
-
-- Processes highly dependent on individual knowledge.
-- Absence of clear criteria for prioritizing decisions.
-- Dispersed or inconsistent information.
-- Low planning capacity.
-- Lack of integration between areas.
-- Poor operational traceability.
-- Highly manual processes.
-- Low control capacity.
-- Lack of data governance.
-- Absence of institutional learning mechanisms.
-- Reactive operations.
-- Low capacity to anticipate deviations.
-- Organizations that have grown faster than their coordination mechanisms.
-
-### 3.4 Intervention Approach
-
-The interventions developed by the user follow a systemic and structural approach.
-
-In general terms, their methodology consists of:
-
-1. Understanding the complete functioning of the organizational system.
-2. Identifying structural constraints.
-3. Analyzing how information, decisions, and execution flow.
-4. Making explicit the rules that currently remain implicit.
-5. Designing a coherent organizational architecture.
-6. Defining decision and governance mechanisms.
-7. Integrating technology only when it adds value to the designed system.
-8. Implementing monitoring and continuous learning mechanisms.
-
-This approach prioritizes building permanent capabilities over solving specific problems.
-
-### 3.5 Main Professional Capabilities
-
-The capabilities that characterize the user's professional profile include, among others:
-
-#### Organizational Systems
-
-- Organizational design.
-- Operational architecture.
-- Design of governance models.
-- Design of socio-technical systems.
-- Design of coordination mechanisms.
-
-#### Operating Systems
-
-- Operational transformation.
-- Lean Six Sigma.
-- Theory of Constraints.
-- Capacity management.
-- Process optimization.
-- Design of end-to-end flows.
-- Operational control.
-- Visual management.
-- Continuous improvement.
-
-#### Decision Systems
-
-- Design of decision criteria.
-- Data-driven prioritization.
-- Operational planning.
-- Demand planning.
-- Supply Planning.
-- Indicator governance.
-- Decision support systems.
-
-#### Information Systems
-
-- Data architectures.
-- Data modeling.
-- ETL/ELT.
-- Data governance.
-- Data quality.
-- Business Intelligence.
-- Dashboard design.
-- Semantic models.
-
-#### Analytics
-
-- Descriptive analytics.
-- Diagnostic analytics.
-- Predictive analytics.
-- Process Mining.
-- Machine Learning applied to operations.
-- Applied statistics.
-- Forecasting models.
-
-#### Automation
-
-- End-to-end automation.
-- AI-powered automation.
-- Process orchestration.
-- Cross-platform integration.
-- Automation of repetitive decisions.
-
-### 3.6 Type of Expected Impact
-
-The user seeks to generate structural impacts rather than local improvements.
-
-Professional opportunities must allow participation in initiatives aimed at:
-
-- Increasing organizational capacity.
-- Improving decision quality.
-- Strengthening operational governance.
-- Improving information quality and availability.
-- Designing sustainable organizational systems.
-- Automating high-impact processes.
-- Increasing productivity.
-- Reducing cycle times.
-- Improving service levels.
-- Strengthening planning mechanisms.
-- Reducing dependence on individual knowledge.
-- Building permanent capabilities within the organization.
-- Among others.
-
-### 3.7 Principles That Must Be Preserved
-
-Any job opportunity considered compatible with the user's profile must allow them to practice their profession while respecting the following principles:
-
-- Prioritizing structural solutions over temporary solutions.
-- Designing before automating.
-- Basing decisions on reliable information.
-- Favoring traceability.
-- Promoting standardization when it adds value.
-- Designing explicit governance mechanisms.
-- Integrating processes, information, and technology within the same system.
-- Favoring organizational learning.
-- Designing maintainable and scalable solutions.
-- Generating sustainable capabilities for the organization.
-
-These principles are part of the user's professional identity and must be used as criteria to interpret the degree of affinity between a job offer and the profile defined in this document.
-
-
----
-
-## 4. Professional Value Proposition
-
-The user's professional value proposition defines the set of capabilities, principles, and results that characterize the impact they generate when intervening in an organization.
-
-Its purpose is to explicitly establish the differential value the user brings, the organizational problems they are prepared to solve, the type of transformations they design, and the capabilities they permanently install in organizations.
-
-This value proposition is one of the main criteria that the automation must use to evaluate the compatibility between the user's professional profile and identified job opportunities.
-
-Any affinity evaluation must consider this value proposition as the official reference.
-
----
-
-### PVP-001. Central Value Proposition
-
-The user generates value through the design of organizational systems that enable organizations to operate, decide, and evolve in a coherent, stable, and scalable manner.
-
-Their intervention is not limited to optimizing indicators, implementing technological tools, or executing isolated projects.
-
-Their main contribution is to redesign the structures that govern the organization's functioning to develop sustainable capabilities that remain once the intervention is completed.
-
----
-
-### PVP-002. Nature of the Value Generated
-
-The value generated by the user is primarily structural.
-
-The solutions developed seek to modify the way the organization:
-
-- Understands its operation.
-- Makes decisions.
-- Uses information.
-- Coordinates work.
-- Governs its processes.
-- Learns from its own operation.
-- Manages growth.
-- Integrates technology within the organizational system.
-
-As a result, the outcomes achieved transcend the improvement of specific indicators and strengthen the organization's permanent capacity.
-
----
-
-### PVP-003. Organizational Problems It Solves
-
-The user's value proposition is mainly oriented toward organizations that present structural limitations such as:
-
-- Highly reactive operations.
-- Excessive dependence on individual knowledge.
-- Fragmented processes across areas.
-- Absence of explicit criteria for deciding.
-- Dispersed or unreliable information.
-- Low planning capacity.
-- Poor operational traceability.
-- Weak data governance.
-- Lack of control mechanisms.
-- Processes requiring permanent coordination to function.
-- Organizations whose growth increases complexity faster than their ability to manage it.
-- Systems unable to sustain increasing levels of operation without proportionally increasing human effort.
-
-These situations represent the context where the user's value proposition generates its greatest impact.
-
----
-
-### PVP-004. Transformations It Generates
-
-The user's interventions seek to produce structural transformations such as:
-
-#### Decision
-
-- Transforming intuition-based decisions into decisions supported by explicit criteria.
-- Converting operational information into infrastructure for decision-making.
-- Increasing institutional capacity to prioritize, plan, and control.
-
-#### Operation
-
-- Transforming reactive operations into governable operating systems.
-- Reducing dependence on key individuals.
-- Increasing stability, capacity, and productivity.
-- Designing explicit end-to-end flows.
-
-#### Information
-
-- Centralizing critical information.
-- Designing reliable data architectures.
-- Establishing data governance mechanisms.
-- Reducing information availability times.
-- Increasing data quality and consistency.
-
-#### Governance
-
-- Designing explicit monitoring mechanisms.
-- Defining indicators aligned with operations.
-- Establishing decision rules.
-- Increasing institutional control capacity.
-
-#### Learning
-
-- Designing mechanisms that enable learning from operations.
-- Reducing error recurrence.
-- Making continuous improvement a system capability and not solely a people capability.
-
----
-
-### PVP-005. Capabilities It Installs
-
-The interventions developed by the user seek to leave permanent capabilities within the organization.
-
-Among them:
-
-- Governable organizational systems.
-- Stable operating systems.
-- Institutional decision systems.
-- Information architectures.
-- Operational governance systems.
-- Data governance systems.
-- Planning systems.
-- Automation systems.
-- Organizational learning systems.
-- Continuous improvement systems.
-
-The permanence of these capabilities is one of the main success criteria of their interventions.
-
----
-
-### PVP-006. Professional Differentiators
-
-The user's value proposition is differentiated because:
-
-- They intervene in organizations from a systemic perspective.
-- They design before optimizing.
-- They design before automating.
-- They integrate operation, information, decisions, and technology within the same architecture.
-- They use data as a governance mechanism and not merely as an analytical tool.
-- They seek to eliminate the structural causes of problems and not only their symptoms.
-- They design maintainable, scalable, and sustainable solutions.
-- They prioritize building permanent organizational capabilities.
-
----
-
-### PVP-007. Expected Results
-
-Organizations that implement solutions designed by the user should progressively strengthen capabilities such as:
-
-- Greater decision-making capacity.
-- Greater operational stability.
-- Better use of information.
-- Greater productivity.
-- Greater planning capacity.
-- Better coordination between areas.
-- Greater traceability.
-- Greater operational control.
-- Greater ability to scale.
-- Less dependence on individual knowledge.
-- Greater institutional learning capacity.
-- Greater ability to sustain performance in growth and change scenarios.
-
----
-
-### PVP-008. Compatibility with Job Opportunities
-
-A job opportunity will be considered highly compatible with the user's value proposition when it allows developing activities related to:
-
-- Design of organizational systems.
-- Operational transformation.
-- Decision systems.
-- Information systems.
-- Operational governance.
-- Data governance.
-- Planning.
-- Analytics applied to decisions.
-- Process automation.
-- Operational architecture.
-- Organizational design.
-- Continuous improvement with a systemic approach.
-- Among others related or according to the professional identity.
-
-Opportunities centered exclusively on operational execution, technical support, routine maintenance, or activities without design, transformation, or decision-making capacity should be considered of low affinity with respect to the value proposition defined in this document.
-
----
-
-## General Principles of the Value Proposition
-
-The professional value proposition must:
-
-- Represent the structural impact generated by the user.
-- Remain consistent with their professional identity.
-- Serve as the official criterion for evaluating the compatibility of job opportunities.
-- Constitute the basis for generating resumes, cover letters, and other professional artifacts.
-- Maintain coherence with the experience, education, and capabilities documented in this document.
-- Favor the identification of opportunities aligned with the user's professional positioning.
-- Remain as the official reference for all automation modules that interpret, evaluate, or represent the user's professional profile.
-
----
-
-## 5. Professional Focuses
-
-The professional focuses define the main perspectives from which the user develops their professional activity.
-
-Their purpose is to document the different specializations that make up the user's professional profile, establishing their scope, relationship, complementarity, and usage criteria within the automation.
-
-The professional focuses defined herein do not represent independent profiles, career changes, or separate trajectories.
-
-All of them constitute complementary expressions of the same professional identity and a single value proposition, differing only in the emphasis they acquire according to the organizational context and the specific needs of each job opportunity.
-
-The automation must use this definition to determine which professional focus to prioritize during offer evaluation, application document generation, and any other process that requires adapting the representation of the professional profile.
-
----
-
-### FP-001. Principle of Professional Unity
-
-The user possesses a single professional profile.
-
-The focuses defined in this document represent different intervention perspectives on the same professional model and should not be interpreted as independent or mutually exclusive specializations.
-
-Any representation of the profile must preserve coherence between both focuses.
-
----
-
-### FP-002. Relationship Between Professional Focuses
-
-The professional focuses maintain a complementary relationship.
-
-The focus oriented toward operational transformation defines how to design systems capable of executing consistently.
-
-The focus oriented toward decision and information systems defines how such systems obtain information, generate decision criteria, and develop governance capabilities.
-
-Together, both focuses enable designing organizations capable of operating, deciding, controlling, and evolving in an integrated manner.
-
-The automation should never treat them as isolated profiles.
-
----
-
-### FP-003. Professional Focus: Operational Transformation and Operational Excellence
-
-This professional focus concentrates capabilities related to the design, transformation, stabilization, and governance of operating systems.
-
-Its purpose is to increase organizational capacity through structural redesign of operations.
-
-The main areas of intervention include:
-
-- Design of operating systems.
-- Operational transformation.
-- Operational excellence.
-- Lean Six Sigma.
-- Theory of Constraints.
-- Capacity management.
-- End-to-end process design.
-- Flow optimization.
-- Operational performance management.
-- Statistical process control.
-- Visual management.
-- Continuous improvement.
-- Operational standardization.
-- Change management.
-- Operational learning systems.
-
-The main expected results within this focus include:
-
-- Increased capacity.
-- Increased productivity.
-- Reduced cycle times.
-- Reduced waste.
-- Reduced variability.
-- Increased operational stability.
-- Improved service levels.
-- Greater ability to scale operations.
-- Strengthened operational governance.
-
----
-
-### FP-004. Professional Focus: Decision and Information Systems
-
-This professional focus concentrates capabilities related to the design of institutional information and decision systems.
-
-Its purpose is to transform operational information into infrastructure for decision-making, planning, and organizational governance.
-
-The main areas of intervention include:
-
-- Information architectures.
-- Data governance.
-- Data quality.
-- Business Intelligence.
-- Data modeling.
-- ETL/ELT.
-- Descriptive analytics.
-- Diagnostic analytics.
-- Predictive analytics.
-- Process Mining.
-- Machine Learning models.
-- Operational planning.
-- Demand planning.
-- Indicator design.
-- Decision support systems.
-- Metrics governance.
-
-The main expected results within this focus include:
-
-- Better information quality.
-- Greater timeliness in decision-making.
-- Data-driven planning.
-- Explicit prioritization.
-- Increased institutional capacity to decide.
-- Reduced effort dedicated to report generation.
-- Information centralization.
-- Greater traceability.
-- Strengthened data governance.
-
----
-
-### FP-005. Shared Capabilities
-
-Both professional focuses share a set of cross-cutting capabilities that are part of the user's professional identity.
-
-Among them:
-
-- Design of organizational systems.
-- Systemic thinking.
-- Organizational design.
-- Operational architecture.
-- Design of governance mechanisms.
-- Process automation.
-- Integration between operation, information, and technology.
-- Change management.
-- Design of organizational capabilities.
-- Organizational learning.
-- Strategic planning of transformation.
-- Direction of transformation initiatives.
-
-These capabilities should be considered common regardless of the professional focus prioritized.
-
----
-
-### FP-006. Prioritization Criteria
-
-The automation must determine the predominant professional focus according to the characteristics of each job opportunity.
-
-Among other aspects, it should analyze:
-
-- Main problem the organization seeks to solve.
-- Position objectives.
-- Main responsibilities.
-- Required organizational capabilities.
-- Strategic competencies requested.
-- Expected decision level.
-- Nature of the required transformation.
-
-The selection of one professional focus will never imply completely eliminating the other, but only modifying the emphasis of the professional representation.
-
----
-
-### FP-007. Integration of Focuses
-
-When a job opportunity simultaneously requires capabilities related to operational transformation and decision systems, the automation must integrate both focuses within a single representation of the professional profile.
-
-In these cases, the application strategy should highlight the user's ability to design organizational systems that integrate:
-
-- Operation.
-- Information.
-- Decisions.
-- Governance.
-- Automation.
-- Planning.
-- Continuous improvement.
-
-This integration represents the user's greatest professional differentiator and should be prioritized whenever the nature of the job opportunity allows it.
-
----
-
-### FP-008. Interpretation Restrictions
-
-The automation must not:
-
-- Interpret professional focuses as independent trajectories.
-- Generate contradictions between both approaches.
-- Omit relevant shared capabilities.
-- Build incompatible professional narratives.
-- Prioritize a focus solely by keyword matching.
-- Ignore the professional model defined in previous chapters.
-
-Any adaptation of the profile must preserve the coherence of the professional identity documented in this document.
-
----
-
-## General Principles of Professional Focuses
-
-The professional focuses must:
-
-- Represent complementary specializations of the same professional profile.
-- Maintain coherence with the user's identity and value proposition.
-- Serve as the official mechanism for adapting professional representation according to each job opportunity.
-- Favor a strategic evaluation of compatibility between the profile and job offers.
-- Avoid fragmented or contradictory interpretations of the professional profile.
-- Maintain the design of organizational systems as the central axis integrating both focuses.
-- Constitute the official reference for personalizing resumes, cover letters, and other derived artifacts.
-
----
-
-## 6. Professional Experience
-
-The professional experience documented in this chapter constitutes the set of interventions, responsibilities, achievements, and demonstrated capabilities that support the professional profile defined in previous chapters.
-
-Its purpose is not only to record the user's work history but to document the evolution of their professional model, the consolidation of their capabilities, and the objective evidence that demonstrates their value proposition.
-
-Professional experience should be interpreted as the verifiable evidence of the progressive development of competencies related to the design of organizational systems, operational transformation, decision systems, organizational governance, analytics, and automation.
-
-The automation must use the information contained in this chapter to understand the context in which the user has developed their capabilities, identify experience patterns, and support the generation of professional narratives adapted to each job opportunity.
-
----
-
-### EPU-001. General Characterization of Experience
-
-The user's professional trajectory has been developed mainly in organizations belonging to the industrial, manufacturing, supply chain, specialized services, and public sectors.
-
-Throughout their experience they have participated in initiatives oriented toward:
-
-- Design and transformation of organizational systems.
-- Operational transformation.
-- Design of decision systems.
-- Design of information systems.
-- Operational planning.
-- Operational governance.
-- Data governance.
-- Applied analytics.
-- Process automation.
-- Continuous improvement.
-- Change management.
-- Design of organizational capabilities.
-
-The evolution of the trajectory shows a progressive broadening of the scope of their responsibilities, moving from projects focused on specific processes to cross-cutting organizational transformation initiatives.
-
----
-
-### EPU-002. Professional Evolution
-
-The user's professional trajectory can be interpreted as a continuous evolution in four main stages.
-
-#### Stage 1. Foundation Building
-
-During this stage they developed competencies related to:
-
-- Continuous improvement.
-- Lean.
-- Lean Six Sigma.
-- Theory of Constraints.
-- Quality.
-- Statistical control.
-- Process management.
-- Structural problem solving.
-- Root cause analysis.
-- Operational management.
-
-The main objective was to understand the behavior of operating systems and develop capabilities to stabilize processes through structured methodologies.
-
----
-
-#### Stage 2. Design of Operating Systems
-
-They subsequently expanded their scope toward the design and transformation of complete operating systems.
-
-During this stage they strengthened capabilities related to:
-
-- Design of end-to-end flows.
-- Capacity management.
-- Operational planning.
-- Supply Planning.
-- Organizational design.
-- Operational governance.
-- Systemic optimization.
-- Integration between areas.
-
-In this phase, the intervention ceased to focus on isolated processes and began focusing on complete operating systems.
-
----
-
-#### Stage 3. Information and Decision Systems
-
-The subsequent evolution incorporated capabilities related to:
-
-- Data architectures.
-- Business Intelligence.
-- Data governance.
-- ETL/ELT.
-- Data modeling.
-- Executive dashboards.
-- Descriptive analytics.
-- Diagnostic analytics.
-- Predictive analytics.
-- Process Mining.
-- Decision support models.
-
-This stage allowed complementing operational design with capabilities to transform information into infrastructure for decision-making.
-
----
-
-#### Stage 4. Design of Organizational Systems
-
-The most recent stage integrates all previously developed capabilities within a systemic approach oriented toward organizational design.
-
-In this stage converge:
-
-- Operational transformation.
-- Decision systems.
-- Information systems.
-- Organizational governance.
-- Automation.
-- Planning.
-- Analytics.
-- Organizational learning.
-- Socio-technical architecture.
-
-This approach constitutes the current state of the user's professional model.
-
----
-
-### EPU-003. Areas of Experience
-
-The user's professional experience comprises, among others, the following areas:
-
-#### Organizational Transformation
-
-- Design of operating models.
-- Organizational transformation.
-- Change management.
-- Operational architecture.
-- Capability design.
-
-#### Operational Transformation
-
-- Lean Six Sigma.
-- Theory of Constraints.
-- Capacity management.
-- Flow optimization.
-- Process design.
-- Continuous improvement.
-- Visual management.
-- Operational control.
-
-#### Decision Systems
-
-- Design of decision criteria.
-- Planning.
-- Prioritization.
-- Indicator governance.
-- Decision support systems.
-
-#### Information Systems
-
-- ETL/ELT.
-- Data modeling.
-- Data governance.
-- Data quality.
-- Business Intelligence.
-- Executive dashboards.
-
-#### Analytics
-
-- Applied statistics.
-- Process Mining.
-- Machine Learning.
-- Time series.
-- Predictive models.
-- Data diagnostics.
-
-#### Automation
-
-- End-to-end automation.
-- Cross-platform integration.
-- AI-based automation.
-- Power Platform.
-- Business process automation.
-
----
-
-### EPU-004. Organizational Contexts
-
-The user's experience has been developed in organizations characterized by:
-
-- Highly complex operations.
-- Business-critical processes.
-- High operational variability.
-- Multiple actors involved.
-- Need for cross-cutting coordination.
-- High dependence on information for decision-making.
-- Processes susceptible to digital transformation.
-- Need to strengthen governance mechanisms.
-
-This diversity of contexts has allowed them to develop an adaptable approach to different sectors and organizational models.
-
----
-
-### EPU-005. Type of Responsibilities Undertaken
-
-The responsibilities assumed during the professional trajectory include:
-
-- Leadership of transformation initiatives.
-- Design of operating models.
-- Design of decision systems.
-- Design of information architectures.
-- Design of governance mechanisms.
-- Planning.
-- Capacity management.
-- Advanced analytics.
-- Automation.
-- Change management.
-- Interdisciplinary coordination.
-- Support for solution implementation.
-
-These responsibilities show an evolution toward functions with greater strategic scope and organizational influence capacity.
-
----
-
-### EPU-006. Recurring Results
-
-The results obtained throughout the professional trajectory show consistent patterns.
-
-Among them stand out:
-
-- Increased operational capacity.
-- Reduced cycle times.
-- Reduced waiting times.
-- Reduced variability.
-- Increased productivity.
-- Strengthened operational governance.
-- Centralization and improvement of information quality.
-- Reduced manual effort.
-- Increased traceability.
-- Improved planning.
-- Higher quality in decision-making.
-- Installation of permanent organizational capabilities.
-
-These results constitute objective evidence of the value proposition defined in this document.
-
----
-
-### EPU-007. Principles for Interpreting Experience
-
-The automation must interpret the user's professional experience according to the following principles:
-
-- Experience should be analyzed by developed capabilities and not only by positions held.
-- Executed projects should be used as evidence of competencies and not only as work history.
-- Professional evolution should be interpreted as a continuous process of capability integration.
-- Achievements obtained should be related to the value proposition and not evaluated in isolation.
-- The generation of professional narratives should prioritize the capabilities and results most relevant to each job opportunity.
-- Any representation of experience must maintain coherence with the professional identity, value proposition, and professional focuses defined in this document.
-
----
-
-## General Principles of Professional Experience
-
-The professional experience must:
-
-- Constitute the official evidence of the user's professional profile.
-- Demonstrate the progressive evolution of their capabilities.
-- Support the value proposition defined in this document.
-- Serve as a source for strategic adaptation of applications.
-- Maintain coherence with the principles of the professional model.
-- Allow interpreting the trajectory from a systemic perspective and not only chronological.
-- Favor the objective evaluation of compatibility between the user's experience and job opportunities.
-
----
-
-### EPU-008. Official Inventory of Professional Experience
-
-This inventory constitutes the official record of the user's professional experience.
-
-Any representation of the professional profile, generation of resumes, evaluation of requirements, construction of professional narratives, or analysis of compatibility between the user and a job opportunity must use this inventory as the official source of evidence.
-
-Each experience documents not only a position held, but the evolution of the professional model, the capabilities developed, and the verifiable results obtained during each intervention.
-
----
-
-## EXP-001. Instituto Distrital de Protección y Bienestar Animal (IDPYBA)
-
-### General Information
-
-**Position**
-
-Operational Transformation Leader
-
-**Period**
-
-October 2020 – December 2024
-
-**Economic Sector**
-
-Public sector.
-
-**Industry**
-
-Animal protection and welfare.
-
-**Nature of the Organization**
-
-District public entity responsible for the design, coordination, and execution of the District System for Animal Protection and Welfare of Bogotá.
-
----
-
-### Organizational Context
-
-The organization presented accelerated growth in service demand, accompanied by highly fragmented processes, multiple actors involved, absence of a comprehensive representation of operations, and significant limitations in planning, coordinating, and controlling service delivery.
-
-Operations depended largely on individual judgment, there was low case traceability, information dispersed across different sources, and scarce institutional capacity to anticipate operational needs.
-
----
-
-### Purpose of the Intervention
-
-Design and implement an organizational system that integrated operations, information, decision mechanisms, and institutional governance to increase operational capacity, strengthen decision-making, and enable sustainable scaling of the care model.
-
----
-
-### Main Responsibilities
-
-- Leading institutional operational transformation initiatives.
-- Designing end-to-end operating models.
-- Designing decision systems for institutional management.
-- Designing information architectures.
-- Integrating processes, people, and technology.
-- Implementing operational governance mechanisms.
-- Designing strategic and operational indicators.
-- Leading digital transformation projects.
-- Coordinating interdisciplinary teams.
-- Managing continuous improvement initiatives.
-- Designing capacity planning mechanisms.
-- Implementing process automation.
-- Consolidating institutional information systems.
-
----
-
-### Areas of Intervention
-
-- Design of organizational systems.
-- Operational transformation.
-- Operational architecture.
-- Decision systems.
-- Operational governance.
-- Data governance.
-- Business Intelligence.
-- Analytics.
-- Planning.
-- Capacity management.
-- Automation.
-- Change management.
-
----
-
-### Main Projects Developed
-
-- Design of the institutional operating system for clinical care.
-- Design of the institutional data-driven decision system.
-- Implementation of a digital clinical management platform.
-- Design of institutional information architecture.
-- Integration of multiple information sources through ETL processes.
-- Design of institutional indicators.
-- Implementation of operational governance mechanisms.
-- Transformation of clinical, administrative, and operational processes.
-
----
-
-### Main Results
-
-- Approximately 40% increase in operational capacity.
-- Approximately 45% reduction in cycle times.
-- Approximately 55% reduction in waiting times.
-- Reduction of information availability time from 24 hours to 1 hour.
-- 65% increase in data reliability.
-- Approximately 80% reduction in manual effort dedicated to reporting.
-- Approximately 45% elimination of documentary errors.
-- Increase of over 25 points in user satisfaction.
-- Consolidation of an institutional operational governance system.
-
----
-
-### Demonstrated Capabilities
-
-- Design of organizational systems.
-- Organizational design.
-- Operational architecture.
-- Decision systems.
-- Information architectures.
-- Operational governance.
-- Data governance.
-- Planning.
-- Capacity management.
-- Automation.
-- Analytics.
-- Transformation leadership.
-- Interdisciplinary management.
-
----
-
-### Contribution to the Professional Model
-
-This experience consolidated the integration between operational transformation, decision systems, information architecture, and organizational governance.
-
-It represents the point where the professional model evolved from process improvement toward comprehensive design of complete organizational systems, validating that operations, information, technology, and decisions must be designed as a single system.
-
----
-
-## EXP-002. Bavaria Colombia
-
-### General Information
-
-**Position**
-
-Lead Process Engineer
-
-**Period**
-
-August 2018 – December 2022
-
-**Economic Sector**
-
-Manufacturing industry.
-
-**Industry**
-
-Food and beverages.
-
-**Nature of the Organization**
-
-Multinational company dedicated to beverage production through highly complex continuous industrial processes.
-
----
-
-### Organizational Context
-
-The operation needed to increase its capacity without expanding infrastructure, improve inter-shift stability, reduce process variability, and strengthen decision-making capacity during execution.
-
-Existing control mechanisms were primarily reactive, and the integration between production, quality, and maintenance presented significant opportunities for improvement.
-
----
-
-### Purpose of the Intervention
-
-Design operational governance mechanisms and decision systems to increase installed capacity through stabilization of the production process and optimization of operational flow.
-
----
-
-### Main Responsibilities
-
-- Leading strategic operational transformation projects.
-- Designing flow optimization models.
-- Implementing Theory of Constraints.
-- Implementing Lean Manufacturing.
-- Designing statistical control mechanisms.
-- Implementing Process Mining.
-- Designing real-time decision systems.
-- Implementing analytical models for operations.
-- Designing executive dashboards.
-- Coordinating initiatives between production, quality, and maintenance.
-- Designing performance monitoring mechanisms.
-
----
-
-### Areas of Intervention
-
-- Operational transformation.
-- Lean Manufacturing.
-- Theory of Constraints.
-- Capacity management.
-- Statistical control.
-- Process Mining.
-- Predictive analytics.
-- Business Intelligence.
-- Operational governance.
-- Flow optimization.
-- Decision systems.
-
----
-
-### Main Projects Developed
-
-- Redesign of the shift execution system.
-- Implementation of real-time decision systems.
-- Implementation of Process Mining.
-- Design of predictive models for operational constraints.
-- Line balancing.
-- Production flow optimization.
-- Implementation of operational governance mechanisms.
-- Design of performance control indicators.
-
 ---
 
-### Main Results
+## 1. Propósito y Alcance
 
-- Release of approximately 280,000 hl/year of productive capacity.
-- OEE increase from approximately 72% to 83%.
-- Approximately 25% reduction in cycle times.
-- CpK increase from 1.10 to 1.33.
-- Approximately 22% reduction in rejects.
-- Approximately 18% reduction in variability.
-- Approximately 10% increase in labor productivity.
-- Increased operational stability through real-time decision mechanisms.
+Este documento es la **única fuente oficial** del perfil profesional del usuario para la automatización de búsqueda laboral. Define identidad, propuesta de valor, focos, experiencia, formación, competencias, preferencias y criterios de evaluación.
 
----
-
-### Demonstrated Capabilities
-
-- Design of operating systems.
-- Operational governance.
-- Lean Manufacturing.
-- Theory of Constraints.
-- Capacity management.
-- Process Mining.
-- Applied analytics.
-- Business Intelligence.
-- Decision systems.
-- Operational planning.
-- Transformation leadership.
-- Design of control mechanisms.
-
----
-
-### Contribution to the Professional Model
+**Funciones:**
+- Evaluar compatibilidad perfil–oferta.
+- Determinar el foco profesional apropiado por oferta.
+- Adaptar documentos de postulación.
+- Proveer contexto para análisis, generación de contenido y toma de decisiones automatizada.
 
-This experience consolidated the approach of designing governed operating systems, demonstrating that stability and capacity increase depend not only on optimizing processes but on the explicit design of decision, control, and learning mechanisms integrated into operations.
+**No es** un CV, portafolio ni artifact de presentación. Es el modelo profesional del cual se derivan esos artefactos.
 
-It also strengthened the integration between analytics, operational governance, and execution, elements that would later become pillars of the professional model defined in this document.
+**Obligatoriedad:** Todo módulo, proceso o componente que use información profesional del usuario debe regirse por este documento. Cualquier modificación se realiza aquí antes de propagarse a recursos derivados.
 
 ---
-
-## EXP-003. Bavaria Colombia
-
-### General Information
-
-**Position**
-
-Supply Chain Analyst
-
-**Period**
-
-March 2017 – August 2018
-
-**Economic Sector**
-
-Manufacturing industry.
-
-**Industry**
-
-Food and beverages.
 
-**Nature of the Organization**
+## 2. Principios Rectores
 
-Multinational company dedicated to the production and commercialization of beverages, with highly complex planning, sourcing, and manufacturing operations.
+| ID | Principio | Definición |
+|---|---|---|
+| PPP-001 | Fuente única | Este documento es la única fuente oficial. Todo artefacto derivado se construye desde aquí. |
+| PPP-002 | Representación integral | El perfil representa carrera, experiencia, formación, competencias y propuesta de valor de forma completa. |
+| PPP-003 | Coherencia profesional | La información mantiene posicionamiento consistente independientemente de la oferta. |
+| PPP-004 | Focos múltiples | Pueden coexistir varios focos como perspectivas del mismo perfil, no perfiles independientes. |
+| PPP-005 | Adaptabilidad | La automatización adapta la presentación según la oferta sin modificar este documento. |
+| PPP-006 | Trazabilidad | Toda modificación se registra para conocer la evolución. |
+| PPP-007 | Independencia de artefactos | CVs, cartas, portafolios son derivados, no fuente oficial. |
+| PPP-008 | Orientación estratégica | Se destacan capacidades que diferencian la propuesta de valor. |
+| PPP-009 | Veracidad | Solo información real, verificable. Sin ficción ni exageración. |
+| PPP-010 | Evolución controlada | El perfil evoluciona manteniendo consistencia histórica. |
+| PPP-011 | Reusabilidad | La información se estructura para reuso sin reinterpretación. |
+| PPP-012 | Independencia tecnológica | El perfil es independiente de herramientas específicas de la automatización. |
+| PPP-013 | Consistencia documental | Alineación permanente con toda la documentación oficial del proyecto. |
+| PPP-014 | Actualización centralizada | Toda modificación se hace aquí primero. |
+| PPP-015 | Cumplimiento obligatorio | Todos los módulos respetan estos principios. |
 
 ---
 
-### Organizational Context
+## 3. Identidad Profesional
 
-The operation needed to strengthen supply planning capacity to respond to demand variability, increase reliability of information used for decision-making, and improve coordination between sourcing, inventory, and production.
+### 3.1 Definición
 
-The organization had large volumes of information, but there were opportunities to transform that data into systematic planning and governance mechanisms.
+Ingeniero industrial especializado en **diseño de sistemas organizacionales**: sistemas operativos, de decisión y de información que permiten a las organizaciones operar, decidir y evolucionar de forma coherente, gobernable y escalable.
 
----
-
-### Purpose of the Intervention
-
-Design planning mechanisms, information systems, and analytical tools to strengthen supply management, increase operational response capacity, and support decision-making through reliable information.
+**No** optimiza actividades aisladas ni implementa tecnología como fin. Su competencia central: entender el funcionamiento integral de una organización, identificar limitaciones estructurales y diseñar sistemas que integren personas, procesos, información, decisiones, reglas de negocio y tecnología en una arquitectura coherente.
 
----
+**Sectores de experiencia:** industrial, logístico, servicios, público.
+**Áreas de intervención:** transformación operacional, analítica, automatización, gobernanza de datos, planeación, mejora continua, diseño de sistemas de decisión e información, arquitectura organizacional.
 
-### Main Responsibilities
-
-- Managing supply planning.
-- Developing demand models.
-- Designing sourcing mechanisms.
-- Implementing analytical models for planning.
-- Designing executive dashboards.
-- Automating information processes.
-- Analyzing logistics indicators.
-- Optimizing inventory levels.
-- Coordinating activities between planning, sourcing, and production.
-- Supporting decisions related to materials and capacity.
+**Objetivo profesional:** transformar organizaciones mediante el diseño de sistemas que mejoren la capacidad de decidir, planear, ejecutar, controlar y aprender estructuradamente, reduciendo dependencia del esfuerzo individual.
 
----
+### 3.2 Modelo Profesional
 
-### Areas of Intervention
-
-- Demand planning.
-- Supply Planning.
-- Analytics.
-- Business Intelligence.
-- Information architectures.
-- Indicator governance.
-- Inventory management.
-- Operational planning.
-- Statistical modeling.
-- Information automation.
+El desempeño organizacional depende del **sistema** que define cómo se decide, fluye la información, se ejecuta el trabajo y se gobierna la operación — no exclusivamente del desempeño individual.
 
----
+Los problemas organizacionales se interpretan como consecuencias de limitaciones estructurales del sistema. Las intervenciones modifican las estructuras que gobiernan el comportamiento antes de optimizar actividades individuales.
 
-### Main Projects Developed
+### 3.3 Tesis Profesional
 
-- Design of demand forecasting models.
-- Implementation of seasonal sourcing systems.
-- Automation of information integration processes.
-- Design of executive dashboards.
-- Implementation of performance indicators for Supply Chain.
-- Optimization of materials planning.
+1. El desempeño sostenible depende del diseño del sistema, no del esfuerzo individual extraordinario.
+2. La información es infraestructura para decidir, no mecanismo de reporte.
+3. Las decisiones se basan en criterios explícitos y verificables.
+4. La tecnología habilita el sistema organizacional; no es el centro de la solución.
+5. La estabilidad operacional se construye con estructuras de gobernanza, no controles reactivos.
+6. Los procesos se diseñan como sistemas end-to-end, no optimizaciones locales.
+7. La mejora sostenible requiere mecanismos permanentes de aprendizaje organizacional.
 
----
+### 3.4 Problemas que Resuelve
 
-### Main Results
+- Procesos dependientes de conocimiento individual.
+- Ausencia de criterios claros de priorización/decisión.
+- Información dispersa o inconsistente.
+- Baja capacidad de planeación, trazabilidad, control o anticipación.
+- Falta de integración entre áreas.
+- Procesos altamente manuales o reactivos.
+- Ausencia de gobernanza de datos o aprendizaje institucional.
+- Organizaciones que crecieron más rápido que sus mecanismos de coordinación.
 
-- Approximately 25% increase in forecast accuracy.
-- OTIF increase from 80% to 94%.
-- Approximately 20% reduction in stockouts.
-- Approximately 30% reduction in information processing times.
-- Significant reduction in analysis times for decision-making.
-- Strengthening of the supply planning system through analytical models.
+### 3.5 Enfoque de Intervención
 
----
+1. Entender el funcionamiento completo del sistema organizacional.
+2. Identificar restricciones estructurales.
+3. Analizar flujos de información, decisiones y ejecución.
+4. Hacer explícitas las reglas implícitas.
+5. Diseñar arquitectura organizacional coherente.
+6. Definir mecanismos de decisión y gobernanza.
+7. Integrar tecnología solo cuando agrega valor al sistema diseñado.
+8. Implementar mecanismos de monitoreo y aprendizaje continuo.
 
-### Demonstrated Capabilities
-
-- Demand planning.
-- Supply Planning.
-- Statistical modeling.
-- Applied analytics.
-- Business Intelligence.
-- Indicator design.
-- Information architectures.
-- Automation.
-- Operational planning.
-- Inventory management.
-- Metrics governance.
+**Prioridad:** construir capacidades permanentes > resolver problemas puntuales.
 
----
+### 3.6 Impacto Esperado
 
-### Contribution to the Professional Model
+Las oportunidades deben permitir participar en iniciativas orientadas a:
+- Aumentar capacidad organizacional, calidad de decisión, gobernanza operacional.
+- Mejorar calidad/disponibilidad de información.
+- Diseñar sistemas organizacionales sostenibles.
+- Automatizar procesos de alto impacto.
+- Aumentar productividad, reducir tiempos de ciclo, mejorar niveles de servicio.
+- Fortalecer planeación, reducir dependencia de conocimiento individual.
+- Construir capacidades permanentes.
 
-This experience strengthened the understanding of planning systems as fundamental mechanisms for anticipating operational behavior and supporting decision-making.
+### 3.7 Principios Innegociables
 
-It also consolidated the relationship between information, forecasting, and resource allocation, capabilities that would later evolve toward the design of institutional decision systems.
+Toda oportunidad compatible debe permitir:
+- Soluciones estructurales > temporales.
+- Diseñar antes de automatizar.
+- Decisiones basadas en información confiable.
+- Trazabilidad, estandarización (cuando agrega valor), gobernanza explícita.
+- Integración de procesos, información y tecnología en un mismo sistema.
+- Aprendizaje organizacional, soluciones mantenibles y escalables.
+- Generación de capacidades sostenibles.
 
 ---
 
-## EXP-004. Instru Electronic Colombia
+## 4. Propuesta de Valor Profesional
 
-### General Information
+### PVP-001. Valor Central
+Diseño de sistemas organizacionales que permiten operar, decidir y evolucionar de forma coherente, estable y escalable. La intervención no se limita a optimizar indicadores, implementar herramientas o ejecutar proyectos aislados. Rediseña las estructuras que gobiernan el funcionamiento para desarrollar capacidades sostenibles que permanecen tras la intervención.
 
-**Position**
+### PVP-002. Naturaleza del Valor
+Estructural. Modifica cómo la organización: entiende su operación, decide, usa información, coordina trabajo, gobierna procesos, aprende de su operación, gestiona crecimiento e integra tecnología. Los resultados trascienden indicadores específicos y fortalecen la capacidad permanente.
 
-Process and Continuous Improvement Analyst
+### PVP-003. Problemas que Resuelve
+Operaciones reactivas, dependencia de conocimiento individual, procesos fragmentados, ausencia de criterios explícitos de decisión, información dispersa/no confiable, baja planeación, pobre trazabilidad, gobernanza de datos débil, falta de control, procesos que requieren coordinación permanente, crecimiento que aumenta complejidad más rápido que la capacidad de gestionarla, sistemas incapaces de sostener operación creciente sin esfuerzo humano proporcional.
 
-**Period**
+### PVP-004. Transformaciones que Genera
 
-May 2015 – March 2017
+| Dimensión | Transformación |
+|---|---|
+| Decisión | De intuición → criterios explícitos. Información como infraestructura de decisión. Mayor capacidad de priorizar, planear, controlar. |
+| Operación | De reactiva → sistema operable gobernable. Menor dependencia de individuos. Mayor estabilidad, capacidad, productividad. Flujos end-to-end explícitos. |
+| Información | Centralización, arquitecturas confiables, gobernanza de datos, menor tiempo de disponibilidad, mayor calidad y consistencia. |
+| Gobernanza | Monitoreo explícito, indicadores alineados, reglas de decisión, mayor control institucional. |
+| Aprendizaje | Mecanismos de aprendizaje operacional, menor recurrencia de errores, mejora continua como capacidad del sistema. |
 
-**Economic Sector**
+### PVP-005. Capacidades que Instala
+Sistemas organizacionales gobernales, operativos estables, de decisión institucional, arquitecturas de información, gobernanza operacional y de datos, planeación, automatización, aprendizaje organizacional, mejora continua. **La permanencia es criterio principal de éxito.**
 
-Industrial services.
+### PVP-006. Diferenciadores
+- Intervención sistémica.
+- Diseña antes de optimizar y antes de automatizar.
+- Integra operación, información, decisiones y tecnología en una misma arquitectura.
+- Usa datos como mecanismo de gobernanza, no solo analítica.
+- Elimina causas estructurales, no síntomas.
+- Diseña soluciones mantenibles, escalables, sostenibles.
+- Prioriza capacidades organizacionales permanentes.
 
-**Industry**
+### PVP-007. Resultados Esperados
+Mayor capacidad de decisión, estabilidad operacional, uso de información, productividad, planeación, coordinación, trazabilidad, control, escalabilidad, menor dependencia de conocimiento individual, mayor aprendizaje institucional, capacidad de sostener desempeño en crecimiento y cambio.
 
-Industrial electronic instrumentation.
+### PVP-008. Compatibilidad con Ofertas
+**Alta compatibilidad:** diseño de sistemas organizacionales, transformación operacional, sistemas de decisión/información, gobernanza operacional/de datos, planeación, analítica aplicada, automatización, arquitectura organizacional, diseño organizacional, mejora continua sistémica.
 
-**Nature of the Organization**
+**Baja afinidad:** oportunidades centradas exclusivamente en ejecución operacional, soporte técnico, mantenimiento rutinario o actividades sin capacidad de diseño, transformación o decisión.
 
-Company specialized in technical services for industrial electronic instrumentation.
-
 ---
-
-### Organizational Context
 
-The organization had opportunities to increase process stability, reduce failure recurrence, strengthen quality mechanisms, and improve technical service response capacity.
+## 5. Focos Profesionales
 
-Processes depended largely on individual experience and there were opportunities to institutionalize learning and improvement mechanisms.
+### FP-001. Unidad Profesional
+Un solo perfil profesional. Los focos son perspectivas de intervención complementarias sobre el mismo modelo. No son perfiles independientes ni mutuamente excluyentes.
 
----
+### FP-002. Relación entre Focos
+- **Foco Operacional:** define cómo diseñar sistemas capaces de ejecutar consistentemente.
+- **Foco Decisión/Información:** define cómo esos sistemas obtienen información, generan criterios de decisión y desarrollan gobernanza.
+- Juntos: organizaciones capaces de operar, decidir, controlar y evolucionar integradamente.
+- Nunca se tratan como perfiles aislados.
 
-### Purpose of the Intervention
+### FP-003. Foco: Transformación Operacional y Excelencia Operacional
 
-Strengthen operational stability through continuous improvement methodologies, structural problem analysis, and design of control mechanisms to increase service quality.
+**Áreas:** diseño de sistemas operativos, transformación operacional, excelencia operacional, Lean Six Sigma, Teoría de Restricciones, gestión de capacidad, diseño de procesos end-to-end, optimización de flujos, gestión de desempeño, control estadístico, gestión visual, mejora continua, estandarización, gestión del cambio, sistemas de aprendizaje operacional.
 
----
+**Resultados esperados:** mayor capacidad, productividad; menores tiempos de ciclo, desperdicio, variabilidad; mayor estabilidad, niveles de servicio, escalabilidad, gobernanza operacional.
 
-### Main Responsibilities
+### FP-004. Foco: Sistemas de Decisión e Información
 
-- Leading continuous improvement initiatives.
-- Applying Lean Six Sigma methodologies.
-- Developing root cause analyses.
-- Designing operational control mechanisms.
-- Implementing performance indicators.
-- Automating information processes.
-- Developing executive dashboards.
-- Supporting service optimization projects.
+**Áreas:** arquitecturas de información, gobernanza de datos, calidad de datos, BI, modelado de datos, ETL/ELT, analítica descriptiva/diagnóstica/predictiva, Process Mining, ML, planeación operacional, planeación de demanda, diseño de indicadores, sistemas de soporte a decisión, gobernanza de métricas.
 
----
+**Resultados esperados:** mejor calidad de información, mayor oportunidad en decisiones, planeación data-driven, priorización explícita, mayor capacidad institucional de decidir, menor esfuerzo en reportes, centralización, mayor trazabilidad, gobernanza de datos fortalecida.
 
-### Areas of Intervention
-
-- Lean Six Sigma.
-- Quality.
-- Continuous improvement.
-- RCA.
-- Process management.
-- Visual management.
-- Analytics.
-- Automation.
-- Operational control.
+### FP-005. Capacidades Compartidas (ambos focos)
+Diseño de sistemas organizacionales, pensamiento sistémico, diseño organizacional, arquitectura operacional, diseño de mecanismos de gobernanza, automatización de procesos, integración operación-información-tecnología, gestión del cambio, diseño de capacidades organizacionales, aprendizaje organizacional, planeación estratégica de transformación, dirección de iniciativas de transformación.
 
----
+### FP-006. Criterios de Priorización
+La automatización determina el foco predominante según: problema principal a resolver, objetivos del cargo, responsabilidades, capacidades organizacionales requeridas, competencias estratégicas solicitadas, nivel de decisión esperado, naturaleza de la transformación. La selección de un foco nunca elimina el otro; solo modifica el énfasis.
 
-### Main Projects Developed
+### FP-007. Integración de Focos
+Cuando una oportunidad requiere capacidades de ambos focos simultáneamente, se integran en una sola representación destacando la capacidad de diseñar sistemas que integren: operación, información, decisiones, gobernanza, automatización, planeación, mejora continua. **Esta integración es el mayor diferenciador profesional.**
 
-- Implementation of DMAIC projects.
-- Optimization of technical service processes.
-- Design of operational monitoring mechanisms.
-- Implementation of executive dashboards.
-- Automation of analysis processes.
-- Design of failure prevention mechanisms.
+### FP-008. Restricciones de Interpretación
+La automatización **no debe:** interpretar focos como trayectorias independientes, generar contradicciones, omitir capacidades compartidas, construir narrativas incompatibles, priorizar solo por keywords, ignorar el modelo profesional.
 
 ---
 
-### Main Results
+## 6. Experiencia Profesional
 
-- First Pass Yield increase from 70% to 91%.
-- Approximately 30% reduction in rework.
-- Approximately 20% reduction in response times.
-- Approximately 15% reduction in recurrence.
-- Approximately 22% reduction in unplanned downtime.
-- Approximately 35% reduction in time required for analysis through automation.
+### EPU-001. Caracterización General
+Sectores: industrial, manufactura, cadena de suministro, servicios especializados, público. Áreas: diseño/transformación de sistemas organizacionales, transformación operacional, sistemas de decisión/información, planeación, gobernanza, analítica, automatización, mejora continua, gestión del cambio, diseño de capacidades. Evolución: de proyectos específicos → iniciativas transversales de transformación organizacional.
 
----
+### EPU-002. Evolución Profesional (4 etapas)
 
-### Demonstrated Capabilities
-
-- Lean Six Sigma.
-- Continuous improvement.
-- RCA.
-- Quality.
-- Operational management.
-- Automation.
-- Business Intelligence.
-- Visual management.
-- Analytics.
-- Process optimization.
+| Etapa | Enfoque | Capacidades desarrolladas |
+|---|---|---|
+| 1. Fundamentación | Entender comportamiento de sistemas operativos y estabilizar procesos | Mejora continua, Lean, LSS, TOC, calidad, control estadístico, gestión de procesos, RCA, gestión operacional |
+| 2. Diseño de Sistemas Operativos | Intervenir sistemas operativos completos | Flujos end-to-end, gestión de capacidad, planeación, Supply Planning, diseño organizacional, gobernanza operacional, optimización sistémica, integración entre áreas |
+| 3. Sistemas de Información y Decisión | Transformar información en infraestructura de decisión | Arquitecturas de datos, BI, gobernanza de datos, ETL/ELT, modelado, dashboards, analítica descriptiva/diagnóstica/predictiva, Process Mining, modelos de soporte |
+| 4. Diseño de Sistemas Organizacionales | Integración sistémica completa | Transformación operacional + decisión + información + gobernanza + automatización + planeación + analítica + aprendizaje + arquitectura socio-técnica |
 
----
+### EPU-003. Contextos Organizacionales
+Operaciones de alta complejidad, procesos críticos, alta variabilidad, múltiples actores, necesidad de coordinación transversal, alta dependencia de información, procesos susceptibles de transformación digital, necesidad de fortalecer gobernanza.
 
-### Contribution to the Professional Model
+### EPU-004. Responsabilidades Asumidas
+Liderazgo de transformación, diseño de modelos operativos/sistemas de decisión/arquitecturas de información/mecanismos de gobernanza, planeación, gestión de capacidad, analítica avanzada, automatización, gestión del cambio, coordinación interdisciplinaria, soporte a implementación. Evolución hacia mayor alcance estratégico e influencia organizacional.
 
-This experience constituted the methodological foundation of the user's professional model.
+### EPU-005. Resultados Recurrentes
+Mayor capacidad operacional, menores tiempos de ciclo/espera/variabilidad, mayor productividad, gobernanza fortalecida, información centralizada y de mejor calidad, menor esfuerzo manual, mayor trazabilidad, mejor planeación, mayor calidad de decisión, instalación de capacidades permanentes.
 
-During this period, competencies related to structural problem analysis, continuous improvement, quality, and systemic thinking were consolidated, fundamentals that would later evolve toward the design of organizational systems.
+### EPU-006. Principios de Interpretación
+- Analizar por capacidades desarrolladas, no solo cargos.
+- Proyectos como evidencia de competencias, no solo historial.
+- Evolución como proceso continuo de integración de capacidades.
+- Logros relacionados con la propuesta de valor.
+- Narrativas priorizan capacidades y resultados relevantes para cada oferta.
+- Coherencia con identidad, propuesta de valor y focos.
 
 ---
-
-## EXP-005. Alfaquímica Andina
-
-### General Information
-
-**Position**
-
-Planning and Sourcing Specialist (External Consultant)
-
-**Period**
 
-March 2023 – March 2024
+### EPU-007. Inventario Oficial de Experiencia
 
-**Modality**
-
-Part-time external consulting.
-
-**Economic Sector**
-
-Chemical industry.
-
-**Nature of the Organization**
-
-Company dedicated to the commercialization and distribution of chemical products with sourcing and inventory operations.
-
 ---
 
-### Organizational Context
+#### EXP-001. Instituto Distrital de Protección y Bienestar Animal (IDPYBA)
 
-The organization needed to strengthen its supply planning system, optimize inventory management, and improve availability of strategic products without unnecessarily increasing tied-up capital.
-
----
+| Campo | Detalle |
+|---|---|
+| Cargo | Líder de Transformación Operacional |
+| Período | Oct 2020 – Dic 2024 |
+| Sector | Público – Protección y bienestar animal |
+| Naturaleza | Entidad distrital responsable del Sistema Distrital de Protección y Bienestar Animal de Bogotá |
 
-### Purpose of the Intervention
+**Contexto:** Crecimiento acelerado de demanda, procesos fragmentados, múltiples actores, sin representación integral de la operación, limitaciones severas de planeación/coordinación/control. Dependencia de juicio individual, baja trazabilidad, información dispersa, escasa capacidad de anticipación.
 
-Design analytical mechanisms for supply planning and inventory management to increase product availability, improve turnover, and optimize working capital usage.
+**Propósito:** Diseñar e implementar un sistema organizacional que integrara operación, información, mecanismos de decisión y gobernanza institucional para aumentar capacidad, fortalecer decisiones y habilitar escalamiento sostenible.
 
----
+**Responsabilidades principales:** Liderar transformación operacional institucional; diseñar modelos operativos end-to-end, sistemas de decisión, arquitecturas de información; integrar procesos/personas/tecnología; implementar gobernanza operacional, indicadores estratégicos/operacionales; liderar transformación digital; coordinar equipos interdisciplinarios; gestionar mejora continua; diseñar planeación de capacidad; implementar automatización; consolidar sistemas de información institucional.
 
-### Main Responsibilities
+**Áreas de intervención:** Diseño de sistemas organizacionales, transformación operacional, arquitectura operacional, sistemas de decisión, gobernanza operacional/de datos, BI, analítica, planeación, gestión de capacidad, automatización, gestión del cambio.
 
-- Designing planning models.
-- Developing forecasting models.
-- Optimizing inventory policies.
-- Designing sourcing indicators.
-- Implementing executive dashboards.
-- Supporting decisions related to purchasing and replenishment.
+**Proyectos principales:** Diseño del sistema operativo institucional de atención clínica; diseño del sistema de decisión data-driven; implementación de plataforma digital de gestión clínica; diseño de arquitectura de información institucional; integración de fuentes múltiples vía ETL; diseño de indicadores institucionales; implementación de gobernanza operacional; transformación de procesos clínicos, administrativos y operativos.
 
----
+**Resultados:**
+- ~40% ↑ capacidad operacional.
+- ~45% ↓ tiempos de ciclo.
+- ~55% ↓ tiempos de espera.
+- Disponibilidad de información: de 24h → 1h.
+- 65% ↑ confiabilidad de datos.
+- ~80% ↓ esfuerzo manual en reportes.
+- ~45% ↓ errores documentales.
+- >25 puntos ↑ satisfacción de usuarios.
+- Consolidación del sistema de gobernanza operacional institucional.
 
-### Areas of Intervention
+**Capacidades demostradas:** Diseño de sistemas organizacionales, diseño organizacional, arquitectura operacional, sistemas de decisión, arquitecturas de información, gobernanza operacional/de datos, planeación, gestión de capacidad, automatización, analítica, liderazgo de transformación, gestión interdisciplinaria.
 
-- Planning.
-- Inventory management.
-- Analytics.
-- Predictive models.
-- Business Intelligence.
-- Supply Planning.
+**Contribución al modelo:** Consolidó la integración entre transformación operacional, sistemas de decisión, arquitectura de información y gobernanza organizacional. Punto de evolución de mejora de procesos → diseño integral de sistemas organizacionales completos.
 
 ---
 
-### Main Projects Developed
+#### EXP-002. Bavaria Colombia (Lead Process Engineer)
 
-- Design of demand predictive models.
-- Optimization of the inventory system.
-- Implementation of sourcing indicators.
-- Design of executive dashboards.
-- Optimization of the purchasing process.
-
----
+| Campo | Detalle |
+|---|---|
+| Cargo | Ingeniero Líder de Procesos |
+| Período | Ago 2018 – Dic 2022 |
+| Sector | Manufactura – Alimentos y bebidas |
+| Naturaleza | Multinacional, producción de bebidas mediante procesos industriales continuos de alta complejidad |
 
-### Main Results
+**Contexto:** Necesidad de aumentar capacidad sin expandir infraestructura, mejorar estabilidad entre turnos, reducir variabilidad, fortalecer capacidad de decisión durante ejecución. Controles reactivos, integración producción-calidad-mantenimiento con oportunidades de mejora.
 
-- Increase in critical product availability to approximately 98%.
-- Recovery of approximately 15% of potential sales.
-- Approximately 18% reduction in stockouts.
-- Release of approximately USD 15,000 in working capital.
-- Approximately 20% reduction in surplus.
-- Approximately 15% reduction in storage costs.
-- Approximately 15% improvement in replenishment times.
+**Propósito:** Diseñar mecanismos de gobernanza operacional y sistemas de decisión para aumentar capacidad instalada mediante estabilización del proceso productivo y optimización del flujo operacional.
 
----
+**Responsabilidades principales:** Liderar proyectos estratégicos de transformación; diseñar modelos de optimización de flujo; implementar TOC, Lean Manufacturing, control estadístico, Process Mining; diseñar sistemas de decisión en tiempo real, modelos analíticos, dashboards ejecutivos; coordinar producción-calidad-mantenimiento; diseñar mecanismos de monitoreo de desempeño.
 
-### Demonstrated Capabilities
+**Áreas:** Transformación operacional, Lean Manufacturing, TOC, gestión de capacidad, control estadístico, Process Mining, analítica predictiva, BI, gobernanza operacional, optimización de flujos, sistemas de decisión.
 
-- Planning.
-- Supply Planning.
-- Inventory management.
-- Predictive models.
-- Business Intelligence.
-- Analytics.
-- Indicator design.
-- Sourcing optimization.
+**Proyectos principales:** Rediseño del sistema de ejecución por turnos; implementación de sistemas de decisión en tiempo real; implementación de Process Mining; diseño de modelos predictivos para restricciones operacionales; balanceo de líneas; optimización de flujo de producción; implementación de gobernanza operacional; diseño de indicadores de control de desempeño.
 
----
+**Resultados:**
+- Liberación de ~280.000 hl/año de capacidad productiva.
+- OEE: de ~72% → 83%.
+- ~25% ↓ tiempos de ciclo.
+- CpK: de 1,10 → 1,33.
+- ~22% ↓ rechazos.
+- ~18% ↓ variabilidad.
+- ~10% ↑ productividad laboral.
+- Mayor estabilidad operacional mediante mecanismos de decisión en tiempo real.
 
-### Contribution to the Professional Model
+**Capacidades demostradas:** Diseño de sistemas operativos, gobernanza operacional, Lean Manufacturing, TOC, gestión de capacidad, Process Mining, analítica aplicada, BI, sistemas de decisión, planeación operacional, liderazgo de transformación, diseño de mecanismos de control.
 
-This experience validated the applicability of the professional model in consulting contexts, demonstrating that the principles of systems design, data-driven planning, and structured decision-making can be effectively implemented in organizations of different sectors and sizes.
+**Contribución al modelo:** Consolidó el enfoque de diseñar sistemas operativos gobernados. Demostró que estabilidad y capacidad dependen del diseño explícito de mecanismos de decisión, control y aprendizaje integrados a la operación. Fortaleció integración analítica–gobernanza–ejecución.
 
 ---
-
-## Principles of the Professional Experience Inventory
-
-The official inventory of professional experience must comply with the following principles:
 
-- Constitute the official and verifiable record of the user's professional trajectory.
-- Document both objective evidence and the evolution of the professional model.
-- Maintain coherence with the professional identity, value proposition, and professional focuses defined in this document.
-- Serve as the official source for generating resumes, cover letters, and other derived artifacts.
-- Allow automatic evaluation of job requirements through verifiable evidence.
-- Facilitate the construction of professional narratives adapted to each opportunity without altering the truthfulness of the information.
-- Maintain traceability between responsibilities, demonstrated capabilities, results obtained, and contribution to the professional model.
-- Consider each experience as a stage of evolution of the professional model and not only as a work history entry.
+#### EXP-003. Bavaria Colombia (Supply Chain Analyst)
 
----
-
-## 7. Academic Education
+| Campo | Detalle |
+|---|---|
+| Cargo | Analista de Cadena de Suministro |
+| Período | Mar 2017 – Ago 2018 |
+| Sector | Manufactura – Alimentos y bebidas |
+| Naturaleza | Multinacional, producción y comercialización de bebidas con operaciones complejas de planeación, abastecimiento y manufactura |
 
-The academic education documented in this chapter constitutes the set of formal studies that support the development of the user's professional model.
+**Contexto:** Necesidad de fortalecer planeación de suministro ante variabilidad de demanda, aumentar confiabilidad de información para decisiones, mejorar coordinación abastecimiento-inventario-producción. Grandes volúmenes de datos con oportunidad de transformarlos en mecanismos sistemáticos de planeación y gobernanza.
 
-Its purpose is not only to record degrees obtained but to document how each educational process has contributed to the development of the capabilities, principles, and approaches that characterize their professional identity.
+**Propósito:** Diseñar mecanismos de planeación, sistemas de información y herramientas analíticas para fortalecer gestión de suministro, aumentar capacidad de respuesta y soportar decisiones con información confiable.
 
-The automation must interpret academic education as evidence of the user's knowledge construction process and as support for understanding the conceptual depth of their professional capabilities.
+**Responsabilidades principales:** Gestionar planeación de suministro; desarrollar modelos de demanda; diseñar mecanismos de abastecimiento; implementar modelos analíticos, dashboards ejecutivos; automatizar procesos de información; analizar indicadores logísticos; optimizar inventarios; coordinar planeación-abastecimiento-producción; soportar decisiones de materiales y capacidad.
 
----
+**Áreas:** Planeación de demanda, Supply Planning, analítica, BI, arquitecturas de información, gobernanza de indicadores, gestión de inventarios, planeación operacional, modelado estadístico, automatización de información.
 
-### FA-001. General Characterization of Academic Education
+**Proyectos principales:** Diseño de modelos de pronóstico de demanda; implementación de sistemas de abastecimiento estacional; automatización de integración de información; diseño de dashboards ejecutivos; implementación de indicadores de desempeño para Supply Chain; optimización de planeación de materiales.
 
-The user's academic education is characterized by the progressive integration of knowledge related to:
+**Resultados:**
+- ~25% ↑ precisión de pronóstico.
+- OTIF: de 80% → 94%.
+- ~20% ↓ quiebres de stock.
+- ~30% ↓ tiempos de procesamiento de información.
+- Reducción significativa de tiempos de análisis para decisión.
+- Fortalecimiento del sistema de planeación de suministro mediante modelos analíticos.
 
-- Engineering.
-- Systems design and analysis.
-- Operations research.
-- Organizational management.
-- Operational transformation.
-- Analytics.
-- Data science.
-- Decision systems.
-- Optimization.
-- Operations management.
+**Capacidades demostradas:** Planeación de demanda, Supply Planning, modelado estadístico, analítica aplicada, BI, diseño de indicadores, arquitecturas de información, automatización, planeación operacional, gestión de inventarios, gobernanza de métricas.
 
-The evolution of education shows a transition from the fundamentals of industrial engineering toward an interdisciplinary approach oriented to the design of organizational systems capable of operating, deciding, and evolving coherently.
+**Contribución al modelo:** Fortaleció la comprensión de sistemas de planeación como mecanismos de anticipación y soporte a decisión. Consolidó la relación información-pronóstico-asignación de recursos.
 
 ---
-
-### FA-002. Academic Evolution
 
-The user's academic education can be interpreted as an evolutionary process composed of three stages.
+#### EXP-004. Instru Electronic Colombia
 
-#### Stage 1. Engineering Foundations
+| Campo | Detalle |
+|---|---|
+| Cargo | Analista de Procesos y Mejora Continua |
+| Período | May 2015 – Mar 2017 |
+| Sector | Servicios industriales – Instrumentación electrónica industrial |
+| Naturaleza | Empresa especializada en servicios técnicos de instrumentación electrónica industrial |
 
-During this stage, foundations related to the following were developed:
+**Contexto:** Oportunidades de aumentar estabilidad de procesos, reducir recurrencia de fallas, fortalecer mecanismos de calidad y mejorar capacidad de respuesta del servicio técnico. Procesos dependientes de experiencia individual, oportunidad de institucionalizar aprendizaje y mejora.
 
-- Industrial engineering.
-- Operations research.
-- Optimization.
-- Process management.
-- Statistics.
-- Quality.
-- Production.
-- Logistics.
-- Planning.
-- Organizational design.
+**Propósito:** Fortalecer estabilidad operacional mediante mejora continua, análisis estructural de problemas y diseño de mecanismos de control para aumentar calidad del servicio.
 
-This stage provided the technical foundations to understand the behavior of productive and organizational systems.
+**Responsabilidades principales:** Liderar iniciativas de mejora continua; aplicar LSS; desarrollar RCA; diseñar mecanismos de control operacional; implementar indicadores; automatizar procesos de información; desarrollar dashboards; soportar proyectos de optimización de servicio.
 
----
+**Áreas:** LSS, calidad, mejora continua, RCA, gestión de procesos, gestión visual, analítica, automatización, control operacional.
 
-#### Stage 2. Specialization in Operational Transformation
+**Proyectos principales:** Implementación de proyectos DMAIC; optimización de procesos de servicio técnico; diseño de mecanismos de monitoreo operacional; implementación de dashboards ejecutivos; automatización de procesos de análisis; diseño de mecanismos de prevención de fallas.
 
-Subsequently, knowledge related to the following was strengthened:
+**Resultados:**
+- First Pass Yield: de 70% → 91%.
+- ~30% ↓ retrabajos.
+- ~20% ↓ tiempos de respuesta.
+- ~15% ↓ recurrencia.
+- ~22% ↓ paradas no planificadas.
+- ~35% ↓ tiempo de análisis mediante automatización.
 
-- Lean Six Sigma.
-- Continuous improvement.
-- Process design.
-- Capacity management.
-- Theory of Constraints.
-- Quality management.
-- Statistical control.
-- Operational transformation.
+**Capacidades demostradas:** LSS, mejora continua, RCA, calidad, gestión operacional, automatización, BI, gestión visual, analítica, optimización de procesos.
 
-This stage consolidated a structured vision for intervening in complex operating systems.
+**Contribución al modelo:** Constituyó la fundamentación metodológica. Consolidó competencias de análisis estructural de problemas, mejora continua, calidad y pensamiento sistémico.
 
 ---
 
-#### Stage 3. Integration Between Engineering, Decision, and Data Science
+#### EXP-005. Alfaquímica Andina (Consultoría Externa)
 
-The most recent stage incorporates knowledge related to:
+| Campo | Detalle |
+|---|---|
+| Cargo | Especialista de Planeación y Abastecimiento |
+| Período | Mar 2023 – Mar 2024 |
+| Modalidad | Consultoría externa, tiempo parcial |
+| Sector | Industria química |
+| Naturaleza | Comercialización y distribución de productos químicos con operaciones de abastecimiento e inventario |
 
-- Management Science.
-- Decision Science.
-- Complex systems.
-- Data science.
-- Analytics.
-- Machine Learning.
-- Optimization.
-- Mathematical models.
-- Organizational systems engineering.
+**Contexto:** Necesidad de fortalecer planeación de suministro, optimizar gestión de inventarios y mejorar disponibilidad de productos estratégicos sin aumentar capital inmovilizado.
 
-This evolution strengthens the professional model by integrating analytical, organizational, and technological capabilities within the same conceptual framework.
+**Propósito:** Diseñar mecanismos analíticos de planeación de suministro y gestión de inventarios para aumentar disponibilidad, mejorar rotación y optimizar uso de capital de trabajo.
 
----
+**Responsabilidades principales:** Diseñar modelos de planeación y pronóstico; optimizar políticas de inventario; diseñar indicadores de abastecimiento; implementar dashboards; soportar decisiones de compra y reposición.
 
-### FA-003. Relationship with the Professional Model
+**Áreas:** Planeación, gestión de inventarios, analítica, modelos predictivos, BI, Supply Planning.
 
-Academic education directly supports the professional model defined in this document.
+**Proyectos principales:** Diseño de modelos predictivos de demanda; optimización del sistema de inventarios; implementación de indicadores de abastecimiento; diseño de dashboards ejecutivos; optimización del proceso de compras.
 
-Each educational process contributes to the development of a specific capability:
+**Resultados:**
+- Disponibilidad de productos críticos → ~98%.
+- Recuperación de ~15% de ventas potenciales.
+- ~18% ↓ quiebres de stock.
+- Liberación de ~USD 15.000 en capital de trabajo.
+- ~20% ↓ excedentes.
+- ~15% ↓ costos de almacenamiento.
+- ~15% ↑ tiempos de reposición.
 
-- Industrial Engineering provides comprehensive understanding of organizational systems.
-- Lean Six Sigma strengthens the design of stable and governable operating systems.
-- Ongoing studies in Management Science and Engineering expand the capacity to design organizational systems from an interdisciplinary perspective that integrates engineering, management, data science, and decision-making.
+**Capacidades demostradas:** Planeación, Supply Planning, gestión de inventarios, modelos predictivos, BI, analítica, diseño de indicadores, optimización de abastecimiento.
 
-Together, academic education supports the value proposition based on the design of organizational systems.
+**Contribución al modelo:** Validó la aplicabilidad del modelo profesional en contextos de consultoría, demostrando que los principios de diseño sistémico, planeación data-driven y decisión estructurada se implementan efectivamente en organizaciones de distintos sectores y tamaños.
 
 ---
 
-### FA-004. Principles for Interpreting Education
+## 7. Formación Académica
 
-The automation must interpret academic education considering that:
+### FA-001. Caracterización
+Integración progresiva de: ingeniería, diseño/análisis de sistemas, investigación de operaciones, gestión organizacional, transformación operacional, analítica, ciencia de datos, sistemas de decisión, optimización, gestión de operaciones. Evolución: fundamentos de ingeniería industrial → enfoque interdisciplinario de diseño de sistemas organizacionales.
 
-- The relevance of an educational process depends on the capabilities it contributes to the professional model.
-- Education should be related to professional experience and not evaluated in isolation.
-- Academic processes represent evidence of structured knowledge and not only degrees obtained.
-- Academic evolution reflects the evolution of the professional model.
-- Ongoing education should be considered an active part of the professional profile.
+### FA-002. Evolución Académica (3 etapas)
 
----
+| Etapa | Conocimientos |
+|---|---|
+| 1. Fundamentos de ingeniería | Ingeniería industrial, investigación de operaciones, optimización, gestión de procesos, estadística, calidad, producción, logística, planeación, diseño organizacional |
+| 2. Especialización en transformación operacional | LSS, mejora continua, diseño de procesos, gestión de capacidad, TOC, gestión de calidad, control estadístico, transformación operacional |
+| 3. Integración ingeniería–decisión–ciencia de datos | Management Science, Decision Science, sistemas complejos, ciencia de datos, analítica, ML, optimización, modelos matemáticos, ingeniería de sistemas organizacionales |
 
-### FA-005. Official Inventory of Academic Education
+### FA-003. Relación con el Modelo Profesional
+- Ingeniería Industrial → comprensión integral de sistemas organizacionales.
+- LSS → diseño de sistemas operativos estables y gobernales.
+- MS&E (en curso) → capacidad de diseñar sistemas organizacionales desde perspectiva interdisciplinaria (ingeniería + gestión + ciencia de datos + decisión).
 
-This inventory constitutes the official record of the user's academic education.
+### FA-004. Principios de Interpretación
+- Relevancia según capacidades aportadas al modelo profesional.
+- Relacionar con experiencia, no evaluar aisladamente.
+- Representan evidencia de conocimiento estructurado, no solo títulos.
+- La evolución académica refleja la evolución del modelo profesional.
+- Formación en curso es parte activa del perfil.
 
----
+### FA-005. Inventario Oficial
 
 #### FOR-001. Master of Science in Management Science and Engineering (MS&E)
+| Campo | Detalle |
+|---|---|
+| Institución | Stanford University |
+| Estado | En curso |
+| Finalización estimada | Diciembre 2027 |
+| Nivel | Maestría en Ciencias |
+| Área | Management Science and Engineering |
+| Propósito | Fortalecer capacidad de diseñar sistemas organizacionales complejos integrando ingeniería, ciencia de datos, analítica, optimización, economía, estrategia y sistemas de decisión |
+| Capacidades | Diseño de sistemas complejos, investigación de operaciones, optimización, ciencia de datos, sistemas de decisión, ingeniería organizacional, modelado cuantitativo, estrategia, gestión de tecnología |
+| Contribución | Consolida la evolución hacia el diseño integral de sistemas organizacionales, fortaleciendo la integración ingeniería–gestión–analítica para problemas de alta complejidad |
 
-**Institution**
-
-Stanford University.
-
-**Status**
-
-In progress.
-
-**Expected Completion**
-
-December 2027.
-
-**Academic Level**
-
-Master of Science.
-
-**Area of Study**
-
-Management Science and Engineering.
-
-**Purpose within the Professional Model**
-
-Strengthen the capacity to design complex organizational systems through the integration of engineering, data science, analytics, optimization, economics, strategy, and decision systems.
-
-**Strengthened Capabilities**
-
-- Design of complex systems.
-- Operations research.
-- Optimization.
-- Data science.
-- Decision systems.
-- Organizational engineering.
-- Quantitative modeling.
-- Strategy.
-- Technology management.
-
-**Contribution to the Professional Model**
-
-It constitutes the educational process that consolidates the user's evolution toward a comprehensive approach to organizational systems design, strengthening the integration between engineering, management, and analytics to address highly complex organizational problems.
-
----
-
-#### FOR-002. Industrial Engineering
-
-**Institution**
-
-Fundación Universitaria Konrad Lorenz.
-
-**Status**
-
-Completed.
-
-**Academic Level**
-
-Undergraduate.
-
-**Area of Study**
-
-Industrial Engineering.
-
-**Degree Thesis**
-
-Laureate thesis:
-
-*"Integration of Process Mining and predictive models for early identification of bottlenecks in production processes."*
-
-**Purpose within the Professional Model**
-
-Develop the scientific and technical foundations to understand, analyze, design, and improve organizational and productive systems.
-
-**Strengthened Capabilities**
-
-- Process engineering.
-- Operations research.
-- Optimization.
-- Statistics.
-- Logistics.
-- Production.
-- Planning.
-- Quality.
-- Organizational management.
-
-**Contribution to the Professional Model**
-
-Represents the technical foundation upon which the professional model oriented toward organizational systems design was later built.
-
----
+#### FOR-002. Ingeniería Industrial
+| Campo | Detalle |
+|---|---|
+| Institución | Fundación Universitaria Konrad Lorenz |
+| Estado | Completado |
+| Nivel | Pregrado |
+| Área | Ingeniería Industrial |
+| Tesis | Laureada: "Integración de Process Mining y modelos predictivos para identificación temprana de cuellos de botella en procesos productivos" |
+| Propósito | Desarrollar fundamentos científicos y técnicos para entender, analizar, diseñar y mejorar sistemas organizacionales y productivos |
+| Capacidades | Ingeniería de procesos, investigación de operaciones, optimización, estadística, logística, producción, planeación, calidad, gestión organizacional |
+| Contribución | Base técnica sobre la cual se construyó el modelo profesional |
 
 #### FOR-003. Lean Six Sigma Green Belt
+| Campo | Detalle |
+|---|---|
+| Institución | Universidad de los Andes |
+| Estado | Completado |
+| Nivel | Educación continua |
+| Área | Lean Six Sigma |
+| Propósito | Fortalecer capacidades de diseño de procesos estables, mejora continua y resolución estructural de problemas |
+| Capacidades | Lean, Six Sigma, DMAIC, control estadístico, mejora continua, RCA, gestión de calidad, optimización |
+| Contribución | Consolidó fundamentos metodológicos para diseñar sistemas operativos estables y gobernales |
 
-**Institution**
-
-Universidad de los Andes.
-
-**Status**
-
-Completed.
-
-**Academic Level**
-
-Continuing education.
-
-**Area of Study**
-
-Lean Six Sigma.
-
-**Purpose within the Professional Model**
-
-Strengthen capabilities related to stable process design, continuous improvement, and structural problem solving.
-
-**Strengthened Capabilities**
-
-- Lean.
-- Six Sigma.
-- DMAIC.
-- Statistical control.
-- Continuous improvement.
-- RCA.
-- Quality management.
-- Optimization.
-
-**Contribution to the Professional Model**
-
-Consolidated the methodological foundations later used to design stable and governable operating systems.
-
----
-
-## Principles of the Academic Education Inventory
-
-The official inventory of academic education must:
-
-- Constitute the official source on the user's education.
-- Record only verifiable information.
-- Maintain coherence with the professional model.
-- Serve as a source for generating derived artifacts.
-- Allow automatic evaluation of academic requirements.
-- Relate each educational process to the capabilities it brings to the professional profile.
-- Maintain traceability with the user's academic and professional evolution.
-
----
-
-## 8. Certifications and Complementary Education
-
-The certifications and complementary education documented in this chapter constitute evidence of the user's ongoing updating process and complement formal academic education through the development of specific capabilities related to their professional model.
-
-Their purpose is to document specialized knowledge acquired outside formal academic programs, as well as their contribution to strengthening the value proposition and professional capabilities defined in this document.
-
-The automation must interpret these certifications as mechanisms for deepening and updating knowledge, avoiding analyzing them in isolation or merely as curricular requirements.
-
----
-
-### CFC-001. General Characterization
-
-The user's complementary education shows an evolution consistent with their professional trajectory and the development of their professional model.
-
-The certifications obtained primarily strengthen four knowledge domains:
-
-- Analytics and Data Science.
-- Business Intelligence and Automation.
-- Project Management and Agile Methods.
-- Organizational Transformation and Decision Systems.
-
-Together, these certifications complement academic education and strengthen the capabilities required to design complex organizational systems.
-
----
-
-### CFC-002. Relationship with the Professional Model
-
-Certifications do not represent independent knowledge.
-
-Each one strengthens specific capabilities of the professional model, particularly those related to:
-
-- Organizational transformation.
-- Decision systems.
-- Applied analytics.
-- Automation.
-- Business Intelligence.
-- Project management.
-- Data science.
-- Organizational engineering.
-
-For this reason, the automation must interpret them as complementary evidence of professional competencies and not merely as individual credentials.
-
----
-
-### CFC-003. Knowledge Evolution
-
-The evolution of complementary education shows a consistent progression:
-
-1. Consolidation of management and transformation methodologies.
-2. Strengthening of analytical competencies.
-3. Specialization in Business Intelligence tools.
-4. Incorporation of process automation.
-5. Integration of applied Artificial Intelligence.
-6. Continuous development of capabilities for decision systems.
-
-This progression maintains coherence with the evolution of the professional model described in previous chapters.
-
----
-
-### CFC-004. Principles for Interpretation
-
-The automation must interpret certifications considering that:
-
-- Their importance depends on the capabilities they strengthen.
-- They should be related to professional experience.
-- They complement, but do not replace, academic education.
-- They represent evidence of ongoing updating.
-- They should be used to support specific competencies when a job opportunity requires them.
-
----
-
-### CFC-005. Official Inventory of Certifications and Complementary Education
-
-This inventory constitutes the official record of the user's certifications and complementary education processes.
-
----
-
-## Area: Analytics, Data Science, and Artificial Intelligence
-
----
-
-### CER-001
-
-**Name**
-
-Data Analytics for Decision Making
-
-**Institution**
-
-Universidad de los Andes.
-
-**Area**
-
-Analytics for decision-making.
-
-**Strengthened Capabilities**
-
-- Descriptive analytics.
-- Diagnostic analytics.
-- Applied statistics.
-- Data-driven decision-making.
-- Information interpretation.
-
-**Contribution to the Professional Model**
-
-Strengthens the capacity to convert information into organizational decision mechanisms.
-
----
-
-### CER-002
-
-**Name**
-
-Machine Learning
-
-**Institutions**
-
-Stanford University / MIT / Harvard University (edX).
-
-**Area**
-
-Machine Learning.
-
-**Strengthened Capabilities**
-
-- Predictive models.
-- Data science.
-- Machine learning.
-- Statistical modeling.
-
-**Contribution to the Professional Model**
-
-Complements the design of decision systems through predictive models applied to organizations.
-
----
-
-### CER-003
-
-**Name**
-
-The Power of Statistics
-
-**Institution**
-
-Google.
-
-**Area**
-
-Statistics.
-
-**Strengthened Capabilities**
-
-- Applied statistics.
-- Data interpretation.
-- Inference.
-- Quantitative analysis.
-
-**Contribution to the Professional Model**
-
-Strengthens the analytical rigor used during the design of organizational systems.
-
----
-
-### CER-004
-
-**Name**
-
-Foundations of Business Intelligence
-
-**Institution**
-
-Google.
-
-**Area**
-
-Business Intelligence.
-
-**Strengthened Capabilities**
-
-- Business Intelligence.
-- KPIs.
-- Visualization.
-- Metrics governance.
-
-**Contribution to the Professional Model**
-
-Reinforces the capacity to design institutional information systems.
-
----
-
-## Area: Project Management and Agile Methodologies
-
----
-
-### CER-005
-
-**Name**
-
-Professional Scrum Master
-
-**Institution**
-
-Scrum.org.
-
-**Area**
-
-Agile Management.
-
-**Strengthened Capabilities**
-
-- Scrum.
-- Facilitation.
-- Team leadership.
-- Change management.
-
-**Contribution to the Professional Model**
-
-Strengthens the capacity to lead organizational transformation processes.
-
----
-
-### CER-006
-
-**Name**
-
-Project Management with Agile
-
-**Institution**
-
-Google.
-
-**Area**
-
-Project management.
-
-**Strengthened Capabilities**
-
-- Project management.
-- Agile methods.
-- Planning.
-- Monitoring.
-
-**Contribution to the Professional Model**
-
-Complements the comprehensive management of transformation initiatives.
-
----
-
-## Area: Business Intelligence, Automation, and Platforms
-
----
-
-### CER-007
-
-**Name**
-
-Power BI Data Analyst
-
-**Institution**
-
-Microsoft.
-
-**Area**
-
-Business Intelligence.
-
-**Strengthened Capabilities**
-
-- Power BI.
-- Data modeling.
-- DAX.
-- Dashboards.
-- Visualization.
-
-**Contribution to the Professional Model**
-
-Strengthens the design of information systems for decision support.
-
----
-
-### CER-008
-
-**Name**
-
-Power Platform Functional Consultant
-
-**Institution**
-
-Microsoft.
-
-**Area**
-
-Power Platform.
-
-**Strengthened Capabilities**
-
-- Automation.
-- Power Apps.
-- Integration.
-- Functional design.
-
-**Contribution to the Professional Model**
-
-Strengthens the design of technological solutions aligned with organizational processes.
-
----
-
-### CER-009
-
-**Name**
-
-Power Automate RPA Developer Associate
-
-**Institution**
-
-Microsoft.
-
-**Area**
-
-Automation.
-
-**Strengthened Capabilities**
-
-- Process automation.
-- RPA.
-- Systems integration.
-- Orchestration.
-
-**Contribution to the Professional Model**
-
-Complements capabilities related to end-to-end automation and digital transformation.
-
----
-
-## Principles of the Certification Inventory
-
-The official inventory of certifications and complementary education must:
-
-- Constitute the official source on the user's certifications.
-- Record only verifiable certifications.
-- Maintain coherence with the professional model.
-- Relate each certification to the capabilities it strengthens.
-- Serve as the official source for automatic evaluation of job requirements.
-- Allow the generation of different versions of resumes according to the certifications required by each job opportunity.
-- Maintain traceability with the user's academic and professional evolution.
-
----
-
-## 9. Professional Competencies
-
-The professional competencies documented in this chapter constitute the integrated set of knowledge, capabilities, skills, and performance criteria that the user has developed throughout their professional and academic trajectory.
-
-Their purpose is to establish the user's real capacity to design, lead, and implement organizational solutions, providing a structured representation of what they are capable of doing, regardless of the position held or the tools used.
-
-The competencies defined herein represent capabilities consolidated through demonstrable experience, academic education, and complementary education.
-
-The automation must use this chapter as the official reference for evaluating the level of alignment between the user's competencies and the competencies required by a job opportunity.
-
----
-
-### CP-001. General Characterization
-
-The user's professional competencies are characterized by integrating capabilities from different disciplines within the same professional model.
-
-Instead of specializing exclusively in one functional domain, the user combines knowledge related to:
-
-- Engineering.
-- Organizational design.
-- Operational transformation.
-- Decision systems.
-- Information systems.
-- Data science.
-- Automation.
-- Organizational management.
-- Planning.
-- Governance.
-
-This integration constitutes one of the main differentiators of the professional profile.
-
----
-
-### CP-002. Competency Structure
-
-Professional competencies are organized into eight main domains:
-
-1. Design of organizational systems.
-2. Operational transformation.
-3. Decision systems.
-4. Information systems.
-5. Analytics and data science.
-6. Automation and digital transformation.
-7. Planning and organizational management.
-8. Transformation leadership.
-
-Each domain represents a strategic capability of the professional profile and groups specific related competencies.
-
----
-
-## CP-003. Domain: Design of Organizational Systems
-
-### Objective
-
-Design organizations capable of operating, deciding, learning, and evolving coherently through the integration of processes, people, information, technology, and governance mechanisms.
-
-### Competencies
-
-- Organizational design.
-- Organizational architecture.
-- Systemic thinking.
-- Socio-technical design.
-- Operational architecture.
-- Design of organizational capabilities.
-- Design of coordination mechanisms.
-- Design of operating models.
-- Design of end-to-end systems.
-- Design of governance models.
-
----
-
-## CP-004. Domain: Operational Transformation
-
-### Objective
-
-Increase operational capacity through structural redesign of work systems.
-
-### Competencies
-
-- Lean Six Sigma.
-- Theory of Constraints.
-- Capacity management.
-- Flow optimization.
-- Process design.
-- End-to-end process design.
-- Visual management.
-- Statistical control.
-- RCA.
-- Continuous improvement.
-- Waste elimination.
-- Design of operational indicators.
-- Performance management.
-
----
-
-## CP-005. Domain: Decision Systems
-
-### Objective
-
-Design organizational mechanisms that enable consistent, timely decisions supported by reliable information.
-
-### Competencies
-
-- Design of decision criteria.
-- Operational planning.
-- Demand planning.
-- Prioritization.
-- Design of decision support systems.
-- Indicator design.
-- Metrics governance.
-- Prioritization systems.
-- Design of control mechanisms.
-- Data-driven management.
-
----
-
-## CP-006. Domain: Information Systems
-
-### Objective
-
-Design information architectures that support organizational governance and decision-making.
-
-### Competencies
-
-- Data architectures.
-- Data modeling.
-- ETL/ELT.
-- Data quality.
-- Data governance.
-- Business Intelligence.
-- Dashboard design.
-- Semantic modeling.
-- KPI definition.
-- Visualization for decisions.
-
----
-
-## CP-007. Domain: Analytics and Data Science
-
-### Objective
-
-Transform data into useful knowledge to understand organizational behavior and support decision-making.
-
-### Competencies
-
-- Applied statistics.
-- Exploratory analysis.
-- Descriptive analytics.
-- Diagnostic analytics.
-- Predictive analytics.
-- Process Mining.
-- Machine Learning.
-- Time series models.
-- Regression models.
-- Data-driven organizational diagnostics.
-
----
-
-## CP-008. Domain: Automation and Digital Transformation
-
-### Objective
-
-Design technological solutions that strengthen the functioning of the organizational system.
-
-### Competencies
-
-- End-to-end automation.
-- AI-based automation.
-- Process automation.
-- Platform integration.
-- Process orchestration.
-- Digital transformation.
-- Functional solution design.
-- Integration between processes and technology.
-
----
-
-## CP-009. Domain: Planning and Organizational Management
-
-### Objective
-
-Design mechanisms to plan, coordinate, and manage organizational resources efficiently.
-
-### Competencies
-
-- Strategic planning.
-- Operational planning.
-- Supply Planning.
-- Inventory management.
-- Capacity management.
-- Management by indicators.
-- Performance management.
-- Design of monitoring mechanisms.
-- Interdisciplinary coordination.
-
----
-
-## CP-010. Domain: Transformation Leadership
-
-### Objective
-
-Lead organizational transformation processes through the design, implementation, and consolidation of new capabilities.
-
-### Competencies
-
-- Technical leadership.
-- Change management.
-- Direction of transformation projects.
-- Facilitation.
-- Cross-area alignment.
-- Technical communication.
-- Participatory design.
-- Implementation of strategic initiatives.
-
----
-
-### CP-011. Cross-cutting Competencies
-
-The following competencies should be considered present in all the above domains:
-
-- Systemic thinking.
-- Structural problem solving.
-- Analytical capacity.
-- Decision-making.
-- Continuous learning.
-- Interdisciplinary integration.
-- Orientation toward sustainable results.
-- Evidence-based design.
-- Quantitative reasoning.
-- Critical thinking.
-- Technical communication.
-- Organizational adaptability.
-
----
-
-### CP-012. Principles for Interpreting Competencies
-
-The automation must interpret competencies considering that:
-
-- A competency represents a demonstrated capability and not merely theoretical knowledge.
-- Competencies should be evaluated together with professional experience.
-- The absence of a keyword does not imply absence of a competency.
-- Competencies should be analyzed by domain and not only individually.
-- Cross-cutting competencies should be considered present in all professional focuses.
-
----
-
-### CP-013. Principles of the Competency Inventory
-
-The official inventory of professional competencies must:
-
-- Constitute the official source on the user's competencies.
-- Maintain coherence with the professional model.
-- Serve as a reference for automatic evaluation of job offers.
-- Facilitate strategic adaptation of resumes and other professional artifacts.
-- Maintain traceability with experience, education, and certifications.
-- Evolve as the user's professional model evolves.
-
----
-
-## 10. Technologies and Tools
-
-The technologies and tools documented in this chapter constitute the set of platforms, languages, methodologies, applications, and technological environments that the user masters and uses as enablers for the design and implementation of organizational systems.
-
-Their purpose is not only to record knowledge of specific tools but to document how these contribute to the development of the professional model defined in this document.
-
-The automation must interpret technologies as means to materialize organizational solutions and not as the main axis of the user's professional profile.
-
----
-
-### TH-001. General Characterization
-
-The user's technological mastery is characterized by the integration of tools belonging to different disciplines that, used together, enable designing complete organizational systems.
-
-The documented technologies are grouped into the following domains:
-
-- Analytics and Data Science.
-- Business Intelligence.
-- Automation.
-- Data Management.
-- Optimization and Simulation.
-- Productivity and Collaboration.
-- Project Management.
-
-The selection and use of these technologies should always be interpreted within the context of the professional model and never as an isolated set of technical knowledge.
-
----
-
-### TH-002. Relationship with the Professional Model
-
-Technologies represent enablers for implementing organizational solutions.
-
-Their use responds to previously defined principles:
-
-- Solving organizational problems.
-- Strengthening decision mechanisms.
-- Improving organizational governance.
-- Increasing operational capacity.
-- Automating repetitive processes.
-- Transforming information into useful knowledge.
-- Integrating processes, people, and technology.
-
-The automation must avoid interpreting the user's profile as an exclusively technical profile or specialized only in tools.
-
----
-
-## TH-003. Domain: Analytics and Data Science
-
-### Technologies
-
-- Python.
-- SQL.
-- Process Mining.
-- Machine Learning.
-- Predictive models.
-- Time series.
-- Regression models.
-- Applied statistics.
-- Exploratory data analysis.
-
-### Main Applications
-
-- Predictive modeling.
-- Organizational diagnostics.
-- Performance analysis.
-- Planning.
-- Constraint identification.
-- Decision support.
-
----
-
-## TH-004. Domain: Business Intelligence
-
-### Technologies
-
-- Microsoft Power BI.
-- Tableau.
-- DAX.
-- Semantic modeling.
-- Dashboard design.
-- Indicator governance.
-- Storytelling with data.
-
-### Main Applications
-
-- Institutional information systems.
-- Strategic indicators.
-- Executive dashboards.
-- Operational dashboards.
-- Monitoring systems.
-- Visualization for decision-making.
-
----
-
-## TH-005. Domain: Automation
-
-### Technologies
-
-- Microsoft Power Platform.
-- Power Automate.
-- Power Apps.
-- RPA automation.
-- End-to-end automation.
-- Process integration.
-- Artificial Intelligence-based automation.
-- Intelligent agents.
-
-### Main Applications
-
-- Process automation.
-- Document automation.
-- Platform integration.
-- Workflow automation.
-- Automation of repetitive decisions.
-- Digital transformation.
-
----
-
-## TH-006. Domain: Data Management and Architecture
-
-### Technologies
-
-- ETL.
-- ELT.
-- Data modeling.
-- Data governance.
-- Data quality.
-- Integration of information sources.
-- Information architectures.
-
-### Main Applications
-
-- Information centralization.
-- Design of data architectures.
-- Data governance.
-- Decision systems.
-- Business Intelligence.
-- Analytics.
-
----
-
-## TH-007. Domain: Optimization and Operational Management
-
-### Technologies, methodologies, and tools
-
-- Lean Six Sigma.
-- Theory of Constraints.
-- Value Stream Mapping.
-- Statistical Process Control (SPC).
-- Cp / CpK.
-- RCA.
-- DMAIC.
-- Capacity management.
-- Operational planning.
-
-### Main Applications
-
-- Design of operating systems.
-- Operational transformation.
-- Flow optimization.
-- Variability reduction.
-- Design of control mechanisms.
-- Continuous improvement.
-
----
-
-## TH-008. Domain: Productivity and Collaboration
-
-### Technologies
-
-- Microsoft 365.
-- Microsoft Excel.
-- Microsoft PowerPoint.
-- Microsoft Word.
-- Microsoft Teams.
-- Notion
-
-### Main Applications
-
-- Information analysis.
-- Technical documentation.
-- Communication.
-- Executive presentations.
-- Document management.
-- Collaborative work.
-
----
-
-## TH-009. Domain: Project Management
-
-### Tools and methodologies
-
-- Scrum.
-- Agile Methods.
-- Project management.
-- Planning.
-- Monitoring.
-- Prioritization.
-
-### Main Applications
-
-- Management of transformation initiatives.
-- Interdisciplinary coordination.
-- Change management.
-- Solution implementation.
-
----
-
-### TH-010. Usage Level
-
-The documented technologies should be interpreted according to the following criteria:
-
-**Strategic Level**
-
-Technologies used to design organizational solutions and support decision processes.
-
-**Tactical Level**
-
-Technologies used to implement, configure, or adapt solutions.
-
-**Operational Level**
-
-Technologies used to execute specific activities within transformation projects.
-
-The same technology may be used at more than one level depending on the organizational context.
-
----
-
-### TH-011. Principles for Interpretation
-
-The automation must interpret technologies considering that:
-
-- Tools do not constitute the core of the professional profile.
-- Technologies should always be analyzed within the context of the professional model.
-- Demonstrated experience carries more weight than mere knowledge of a tool.
-- The absence of a specific technology does not imply absence of a related competency.
-- Technologies represent enablers for implementing organizational solutions.
-
----
-
-### TH-012. Principles of the Technology Inventory
-
-The official inventory of technologies and tools must:
-
-- Constitute the official source on the user's technological knowledge.
-- Maintain coherence with the professional model.
-- Serve as a reference for automatic evaluation of technological requirements.
-- Facilitate the adaptation of resumes according to required technologies.
-- Maintain traceability with experience, certifications, and professional competencies.
-- Evolve as the user's professional profile evolves.
-- Prevent tools from prevailing over the user's strategic capabilities.
-
----
-
-## 11. Languages
-
-The languages documented in this chapter constitute the user's linguistic capabilities to understand, communicate, interpret, and produce information within academic, professional, and organizational contexts.
-
-Their purpose is to document in a structured manner the user's language competencies and establish how they should be considered by the automation during the evaluation of job opportunities, the generation of applications, and the construction of professional artifacts.
-
-The automation must interpret languages as enabling capabilities for professional practice and not merely as curricular requirements.
-
----
-
-### ID-001. General Characterization
-
-The user's language proficiency is part of the capabilities that allow developing professional activities in national and international contexts.
-
-The evaluation of this capability should consider both the proficiency level of each language and its application within the professional model defined in this document.
-
----
-
-### ID-002. Relationship with the Professional Model
-
-Language proficiency strengthens the user's ability to:
-
-- Access technical, scientific, and academic knowledge.
-- Understand specialized documentation.
-- Participate in international academic programs.
-- Collaborate with multicultural teams.
-- Communicate with international professionals and organizations.
-- Prepare and understand technical documentation.
-- Access global knowledge and innovation communities.
-
----
-
-### ID-003. Official Language Inventory
-
-This inventory constitutes the official record of the user's language competencies.
-
----
-
-#### LANG-001. Spanish
-
-**Language**
-
-Spanish.
-
-**Condition**
-
-Native language.
-
-**Level**
-
-Full professional proficiency.
-
-**Capabilities**
-
-- Oral communication.
-- Written communication.
-- Technical writing.
-- Executive presentations.
-- Negotiation.
-- Facilitation.
-- Organizational documentation.
-
-**Application within the Professional Model**
-
-It constitutes the main language for developing professional activities, technical communication, organizational documentation, and interaction with Spanish-speaking organizations.
-
----
-
-#### LANG-002. English
-
-**Language**
-
-English.
-
-**Level**
-
-B1 — Common European Framework of Reference for Languages (CEFR).
-
-**Condition**
-
-Intermediate functional level.
-
-**Capabilities**
-
-- Comprehension of technical and academic documentation.
-- Reading of scientific articles and specialized documentation.
-- Comprehension of technical manuals and technology tool documentation.
-- Written and oral communication in professional contexts of intermediate complexity.
-- Participation in meetings, training, and academic activities conducted in English.
-- Preparation of technical documentation of intermediate complexity.
-- Interaction with international teams in activities related to engineering, analytics, automation, and organizational transformation.
-
-**Current Limitations**
-
-The proficiency level allows adequate performance in professional and academic contexts of intermediate complexity; however, there are still opportunities for strengthening for scenarios requiring advanced negotiation, international executive leadership, or highly specialized communication.
-
-**Application within the Professional Model**
-
-The English language constitutes a strategic enabler for the user's professional development, allowing access to scientific literature, technical documentation, international academic programs, certifications, professional communities, and global job opportunities.
-
-It also represents a key competency to support the graduate education process at Stanford University and the ongoing updating of knowledge within the disciplines that make up their professional model.
-
----
-
-### ID-004. Principles for Interpretation
-
-The automation must interpret language competencies considering that:
-
-- Languages represent enabling capabilities of the professional profile.
-- The proficiency level must correspond to the officially registered level in this document.
-- Job opportunities should be evaluated considering the user's actual competency level.
-- The generation of resumes, cover letters, and other professional artifacts must respect the documented proficiency level for each language.
-- When a job opportunity requires an English level higher than B1, the automation must decrease the compatibility score associated with this criterion, without automatically discarding the opportunity, unless such a requirement is mandatory.
-
----
-
-### ID-005. Principles of the Language Inventory
-
-The official language inventory must:
-
-- Constitute the official source on the user's language competencies.
-- Record only verifiable information.
-- Maintain coherence with the rest of the professional profile.
-- Serve as a reference for automatic evaluation of language requirements.
-- Allow adaptation of resumes and other professional artifacts according to the required language.
-- Evolve as the user's language competencies are updated.
-- Maintain traceability with academic education, professional experience, and the user's development objectives.
-
----
-
-## 12. Job Preferences
-
-The job preferences documented in this chapter establish the official criteria that will guide the search, evaluation, prioritization, and selection of job opportunities within the automation.
-
-Their purpose is to define the conditions under which a job opportunity is most suitable for the user, allowing the automation to differentiate between mandatory criteria, high-preference criteria, and complementary criteria during the evaluation process.
-
-These preferences complement the professional model defined in this document and must be used together with professional identity, value proposition, professional focuses, experience, competencies, and professional objectives to determine the compatibility level of a job offer.
-
----
-
-### PL-001. General Principles
-
-Job preferences represent the official criteria by which the automation should prioritize job opportunities.
-
-All criteria defined in this chapter must be weighted within the offer evaluation model and may be updated as the user's professional interests and objectives evolve.
-
-The preferences defined herein do not modify the user's professional profile; they merely guide the selection of opportunities that allow making the best use of that profile.
-
----
-
-### PL-002. Work Modality
-
-Work modality is one of the most important criteria within the offer evaluation process.
-
-#### Accepted Modalities
-
-- Hybrid.
-- Remote.
-
-#### Non-accepted Modality
-
-- 100% on-site.
-
-The automation must significantly penalize those opportunities whose modality is completely on-site, regardless of their technical or professional affinity level.
-
----
-
-### PL-003. Geographic Location
-
-Location evaluation should depend on the work modality offered.
-
-#### For Hybrid Opportunities
-
-Only opportunities located within Colombian territory will be accepted.
-
-#### For Remote Opportunities
-
-Opportunities from any country will be accepted, provided that:
-
-- The working language is Spanish or English.
-- The required language is compatible with the language competencies defined in Chapter 11.
-- There are no incompatible restrictions with the user's current location.
-- The opportunity maintains coherence with the rest of the professional profile.
-
-Geographic location should never be evaluated independently of work modality.
-
----
-
-### PL-004. Type of Organization
-
-The type of organization is not a preference criterion for the user.
-
-The automation should neither favor nor penalize opportunities based on:
-
-- Company size.
-- Legal nature.
-- Nationality.
-- Main industry.
-- Maturity level.
-- Business type.
-
-Evaluation should focus on the nature of the position and the level of alignment with the user's professional profile.
-
----
-
-### PL-005. Sectors of Interest
-
-The user is willing to work in any economic sector as long as there is high alignment between the job opportunity and their professional profile.
-
-#### Non-desired Sector
-
-- Public sector.
-
-Opportunities belonging to the public sector should receive a significant penalty within the evaluation model.
-
-All other sectors should be evaluated on equal terms.
-
----
-
-### PL-006. Type of Position
-
-Job opportunities must maintain coherence with the evolution of the user's professional model.
-
-Positions related to the following will be prioritized:
-
-- Design of organizational systems.
-- Organizational transformation.
-- Operational transformation.
-- Decision systems.
-- Information systems.
-- Business Intelligence.
-- Analytics.
-- Applied data science.
-- Automation.
-- Organizational architecture.
-- Planning.
-- Operations management.
-- Strategic consulting.
-- Organizational optimization.
-
-Likewise, the automation should favor opportunities that represent a natural evolution of the user's professional trajectory.
-
-In addition to technical or specialized positions, opportunities involving higher levels of leadership and responsibility should be prioritized, including, among others:
-
-- Leader.
-- Coordinator.
-- Manager.
-- Deputy Director.
-- Director.
-- Head.
-- Principal.
-- Manager.
-- Senior Consultant.
-- Solutions Architect.
-- Transformation Leader.
-
-The automation should positively consider those opportunities that allow progressively increasing the strategic scope, decision-making capacity, and organizational impact of the user.
-
----
-
-### PL-007. Level of Responsibility
-
-The hierarchical level of the position is not an independent evaluation criterion.
-
-Responsibility should be analyzed based on:
-
-- The real scope of the position.
-- The level of autonomy.
-- The decision-making capacity.
-- The expected organizational impact.
-- The opportunities for professional growth.
-
-Consequently, this criterion should be evaluated together with the type of position and not in isolation.
-
----
-
-### PL-008. Type of Professional Challenges
-
-Job opportunities must allow the user to continue developing and deepening the capabilities related to their professional focuses.
-
-Challenges related to the following will be prioritized:
-
-- Design of organizational systems.
-- Organizational transformation.
-- Operational transformation.
-- Decision systems.
-- Information systems.
-- Applied analytics.
-- Data science.
-- Intelligent automation.
-- Organizational governance.
-- Planning.
-- Optimization.
-- Enterprise architecture.
-- Design of organizational capabilities.
-
-The automation should favor opportunities that allow progressively expanding the impact and complexity of the problems addressed.
-
----
-
-### PL-009. Organizational Culture
-
-Organizational culture is a relevant criterion for evaluating a job opportunity; however, such information is normally not available within the job offer.
-
-Consequently, the automation must:
-
-- Identify the company responsible for the vacancy.
-- Research public information about the organization.
-- Analyze aspects related to its organizational culture.
-- Identify signals related to innovation, transformation, professional development, leadership, reputation, and work environment.
-- Incorporate this information within the offer evaluation process.
-
-When it is not possible to obtain sufficient information about the organization, this criterion should reduce its weight within the evaluation and never become an automatic reason for discarding.
-
----
-
-### PL-010. Professional Development
-
-Job opportunities should favor, as much as possible:
-
-- Development of new capabilities.
-- Participation in strategic projects.
-- Progressive increase in responsibility level.
-- Exposure to complex organizational problems.
-- Participation in transformation processes.
-- Integration between business, technology, and analytics.
-- Continuous learning.
-- Innovation.
-- International development.
-- Leadership of strategic initiatives.
-- Sustained professional growth.
-
-The automation should especially value those opportunities that represent exponential growth relative to the user's professional trajectory and not merely a change of employer.
-
----
-
-### PL-011. Flexibility
-
-The automation may recommend opportunities that do not fully comply with all job preferences when there is high strategic affinity with the user's professional profile.
-
-However, the following criteria should be preserved as a priority:
-
-- Hybrid or remote modality.
-- High alignment with professional identity.
-- High alignment with value proposition.
-- High alignment with professional focuses.
-- High alignment with professional objectives.
-
-Work modality is the most important flexibility criterion for the user and should have a higher weight than the rest of the preferences defined in this chapter.
-
----
-
-### PL-012. Principles for Interpretation
-
-The automation must interpret job preferences considering that:
-
-- No preference should be analyzed in isolation.
-- Strategic affinity takes priority over superficial matches.
-- Work modality is one of the highest-weight criteria within the evaluation model.
-- Geographic location should be analyzed together with work modality.
-- Organizational culture should be evaluated through complementary research when the offer identifies the hiring company.
-- Opportunities should favor the progressive evolution of the user's professional model.
-- The final evaluation should integrate all elements defined in this document.
-
----
-
-### PL-013. Principles of the Job Preferences Inventory
-
-Job preferences must:
-
-- Constitute the official source of the user's preferences.
-- Maintain coherence with the professional model defined in this document.
-- Serve as a reference for automatic evaluation of job opportunities.
-- Evolve as the user's professional interests and objectives evolve.
-- Maintain traceability with the offer evaluation criteria defined in this document.
-- Prioritize opportunities that maximize both professional affinity and strategic career growth of the user.
-
----
-
-## 13. Professional Objectives
-
-The professional objectives documented in this chapter establish the strategic direction that the development of the user's professional career should follow.
-
-Their purpose is to define the professional state to which the user aspires in the short, medium, and long term horizons, allowing the automation to evaluate job opportunities not only by their compatibility with the current profile but also by their contribution to the expected professional growth.
-
-The objectives defined herein should be used as the official criterion for valuing the development potential offered by each job opportunity.
-
----
-
-### OP-001. General Principles
-
-Professional objectives represent the strategic direction of the user's professional career.
-
-The automation must consider that a job opportunity can be highly recommendable not only for its affinity with the current profile but also for its ability to bring the user closer to the professional state defined in this chapter.
-
----
-
-### OP-002. Professional Vision
-
-The user's long-term objective is to consolidate as a reference professional in the design of organizational systems, integrating organizational transformation, operational transformation, decision systems, information systems, analytics, automation, and organizational engineering to solve complex, high-impact problems.
-
-Their professional purpose is to design organizations capable of operating, deciding, learning, and evolving through sustainable organizational systems.
-
-The evolution of their career should be oriented toward positions with greater capacity to influence organizational design and strategic decision-making.
-
----
-
-### OP-003. Short-term Objectives
-
-In the short term, the automation should prioritize job opportunities that allow:
-
-- Re-entering the labor market in a position highly aligned with the professional model defined in this document.
-- Continuing to develop experience in organizational transformation and organizational systems.
-- Applying in an integrated manner the knowledge related to operations, analytics, automation, and decision systems.
-- Participating in strategic projects with cross-cutting impact on the organization.
-- Consolidating the necessary experience to progressively access positions of greater responsibility.
-
----
-
-### OP-004. Medium-term Objectives
-
-In the medium term, the user seeks to:
-
-- Assume technical or strategic leadership positions.
-- Direct organizational transformation initiatives.
-- Increase their capacity to influence organizational decisions.
-- Participate in projects of greater complexity and impact.
-- Consolidate as a reference in organizational systems design.
-- Permanently integrate engineering, analytics, and management within the same intervention model.
-- Strengthen professional practice through the application of knowledge acquired during the Master of Science in Management Science and Engineering program.
-
----
-
-### OP-005. Long-term Objectives
-
-In the long term, professional evolution should be oriented toward positions that allow:
-
-- Designing highly complex organizational systems.
-- Leading large-scale business transformation processes.
-- Participating in high-level strategic decisions.
-- Directing organizations, business units, or transformation areas.
-- Developing proprietary methodologies related to organizational systems.
-- Contributing to the development of knowledge within the disciplines that make up the professional model.
-
----
-
-### OP-006. Lifelong Learning Objectives
-
-The user considers continuous learning as an essential component of their professional development.
-
-The automation should positively value job opportunities that favor:
-
-- Development of new competencies.
-- Exposure to complex organizational problems.
-- Continuous education.
-- Participation in innovative projects.
-- Collaboration with multidisciplinary teams.
-- Access to emerging technologies.
-- International development.
-
----
-
-### OP-007. Professional Growth Criteria
-
-The automation must consider that a job opportunity favors professional growth when it contributes to one or more of the following aspects:
-
-- Increasing the level of responsibility.
-- Increasing organizational impact.
-- Broadening the scope of decisions under the position's responsibility.
-- Developing new capabilities related to the professional model.
-- Participating in strategic initiatives.
-- Strengthening technical or managerial leadership.
-- Increasing exposure to highly complex organizations.
-- Facilitating the integrated application of the professional focuses defined in this document.
-
----
-
-### OP-008. Restrictions Regarding Professional Growth
-
-Job opportunities that do the following should not be prioritized:
-
-- Represent a significant regression relative to the professional level achieved.
-- Limit the development of the professional focuses defined in this document.
-- Reduce the level of technical or strategic autonomy without clear justification.
-- Focus exclusively on repetitive operational activities without possibilities for design, transformation, or decision-making.
-- Do not provide professional growth, learning, or increase in organizational impact.
-
----
-
-### OP-009. Principles for Interpretation
-
-The automation must interpret professional objectives considering that:
-
-- Professional growth takes priority over changing employers.
-- Career evolution should be coherent with the professional model.
-- Capability development is more important than changing positions by itself.
-- The evaluation should balance current affinity and growth potential.
-- Professional development should be analyzed from a long-term perspective.
-
----
-
-### OP-010. Principles of the Professional Objectives Inventory
-
-Professional objectives must:
-
-- Constitute the official source on the strategic direction of the user's professional career.
-- Maintain coherence with the professional identity, value proposition, and professional focuses defined in this document.
-- Serve as a reference for automatic evaluation of the development potential offered by a job opportunity.
-- Evolve as the user's professional trajectory and aspirations evolve.
-- Maintain traceability with the rest of the official project documentation.
-
----
-
-## 14. Offer Evaluation Criteria
-
-This chapter defines the official criteria by which the automation must evaluate, compare, prioritize, and classify job opportunities identified during the search process.
-
-Its purpose is to establish a uniform, objective, traceable, and reproducible framework for determining the degree of compatibility between a job offer and the user's professional profile.
-
-The evaluation of a job opportunity should not depend solely on keyword matches, technical requirements, or requested experience. On the contrary, it should analyze the comprehensive compatibility between the offer's characteristics and the professional model defined in this document.
-
-All criteria defined in this chapter must be integrated within the offer evaluation model developed by the automation.
-
----
-
-### CEO-001. General Principles
-
-Offer evaluation must:
-
-- Be objective.
-- Be reproducible.
-- Be traceable.
-- Be consistent.
-- Be based on evidence.
-- Avoid subjective interpretations.
-- Consider the professional profile comprehensively.
-- Evaluate professional growth potential in addition to immediate compatibility.
-
----
-
-### CEO-002. Multidimensional Evaluation
-
-The compatibility of a job opportunity must be calculated through the integration of multiple dimensions and not through a single criterion.
-
-At a minimum, the following dimensions must be evaluated:
-
-- Professional identity.
-- Value proposition.
-- Professional focuses.
-- Professional experience.
-- Academic education.
-- Certifications.
-- Professional competencies.
-- Required technologies.
-- Languages.
-- Job preferences.
-- Professional objectives.
-- Growth potential.
-- Company research.
-- Offer quality.
-
-The absence of affinity in one dimension will not automatically imply discarding the opportunity.
-
----
-
-### CEO-003. Compatibility with Professional Identity
-
-The automation must determine whether the nature of the position is coherent with the professional identity defined in this document.
-
-It should evaluate, among other aspects:
-
-- Type of problems the position will solve.
-- Nature of responsibilities.
-- Level of expected design.
-- Level of required analysis.
-- Level of decision-making.
-- Type of expected impact.
-
-Professional identity is one of the highest-weight criteria within the evaluation model.
-
----
-
-### CEO-004. Compatibility with Value Proposition
-
-The automation must determine whether the organization requires the type of value that the user provides.
-
-It should evaluate whether the opportunity demands capabilities related to:
-
-- Organizational design.
-- Transformation.
-- Decision systems.
-- Information systems.
-- Automation.
-- Analytics.
-- Governance.
-- Planning.
-- Optimization.
-- Development of organizational capabilities.
-
----
-
-### CEO-005. Compatibility with Professional Focuses
-
-The automation must independently calculate the affinity level with:
-
-- Organizational and Operational Transformation.
-- Decision and Information Systems.
-- Integrated profile.
-
-These results must subsequently be used to define the application strategy.
-
----
-
-### CEO-006. Experience Compatibility
-
-Experience evaluation should consider:
-
-- Demonstrated capabilities.
-- Results obtained.
-- Project complexity.
-- Sectors served.
-- Scope of responsibilities.
-
-It should not be limited only to comparing years of experience.
-
----
-
-### CEO-007. Academic Compatibility
-
-The automation must evaluate:
-
-- Required education.
-- Academic level.
-- Complementary education.
-- Relevant certifications.
-- Ongoing studies.
-
----
-
-### CEO-008. Technical Compatibility
-
-Technical evaluation should consider:
-
-- Professional competencies.
-- Required technologies.
-- Tools.
-- Methodologies.
-- Expected proficiency level.
-
-The absence of a specific tool should not automatically invalidate the opportunity when equivalent competencies exist.
-
----
-
-### CEO-009. Language Compatibility
-
-Language evaluation should consider:
-
-- Required language.
-- Requested level.
-- Compatibility with the officially registered level in this document.
-- Real possibility of adequately performing the position's functions.
-
----
-
-### CEO-010. Compatibility with Job Preferences
-
-The automation must evaluate:
-
-- Modality.
-- Location.
-- Sector.
-- Type of position.
-- Growth potential.
-- Compatibility with professional objectives.
-
-Hybrid or remote modality should have a priority weight within this dimension.
-
----
-
-### CEO-011. Company Research
-
-When the offer identifies the contracting organization, the automation must conduct complementary research to gather relevant information about the company.
-
-At a minimum, it should analyze:
-
-- Economic activity.
-- Size.
-- National or international presence.
-- Products or services.
-- Organizational culture.
-- Transformation processes.
-- Reputation.
-- Employee reviews when public information is available.
-- Organizational stability.
-- Professional growth potential.
-
-The information obtained should complement the offer evaluation.
-
 ---
 
-### CEO-012. Growth Potential
+## 8. Certificaciones y Formación Complementaria
 
-The automation must estimate the contribution of the opportunity to the user's professional development.
+### CFC-001. Caracterización
+Evolución consistente con la trayectoria y el modelo profesional. Cuatro dominios principales: Analítica y Ciencia de Datos; BI y Automatización; Gestión de Proyectos y Métodos Ágiles; Transformación Organizacional y Sistemas de Decisión. Complementan la formación académica; no la reemplazan.
 
-Among other aspects, it should analyze:
+### CFC-002. Principios de Interpretación
+- Importancia según capacidades que fortalecen.
+- Relacionar con experiencia profesional.
+- Evidencia de actualización continua.
+- Soportar competencias específicas cuando la oferta las requiere.
+- No son conocimientos independientes; cada una fortalece capacidades del modelo profesional.
 
-- Expected increase in responsibilities.
-- Level of leadership.
-- Exposure to complex problems.
-- Learning possibility.
-- Participation in strategic initiatives.
-- International development.
-- Evolution relative to the current professional trajectory.
+### CFC-003. Inventario Oficial
 
----
-
-### CEO-013. Development Gap Evaluation
-
-The automation should not limit the evaluation solely to the current degree of compatibility between the user's professional profile and the offer requirements.
-
-Additionally, it should analyze the existing gap between the user's current profile and the profile expected by the organization, determining whether such a gap represents a real barrier or a reasonable opportunity for professional growth.
-
-To do so, it should identify, among other aspects:
-
-- Difference between the required years of experience and the user's actual experience.
-- Differences between the hierarchical level of the position and the user's professional trajectory.
-- Strategic competencies not yet fully developed.
-- Specific experiences requested that may be acquired through a natural career transition.
-- Highly specialized requirements whose absence does not prevent successful performance in the position.
-
-The existence of a gap should not, by itself, constitute a discarding criterion.
-
-On the contrary, the automation should evaluate whether the opportunity represents a strategic investment for the user's professional development.
-
-A job opportunity may be considered highly recommendable when:
-
-- It presents high alignment with professional identity.
-- It maintains coherence with the value proposition and professional focuses.
-- It represents significant growth relative to the current trajectory.
-- The identified gap is reasonably achievable through the user's already demonstrated experience and capabilities.
-
-In these cases, the automation should classify the opportunity as a **strategic growth opportunity**, even when the current compatibility level is not the maximum possible.
-
----
-
-### CEO-014. Automatic Discard Factors
-
-As a general rule, the automation should avoid automatically discarding a job opportunity.
-
-However, discard criteria may be established when there is evident incompatibility, including, among others:
-
-- 100% on-site modality.
-- Public sector.
-- Main language other than Spanish or English.
-- Mandatory requirements impossible to fulfill.
-
-Before discarding an opportunity due to differences related to experience, seniority, or hierarchical level, the automation must first apply the development gap evaluation defined in criterion CEO-013.
-
-Specific discard criteria must be defined within the evaluation model developed by the project.
-
----
-
-### CEO-015. Evaluation Result
-
-Every job opportunity must produce, at minimum:
-
-- Overall compatibility score.
-- Score by dimension.
-- Growth potential score.
-- Development gap score.
-- Main strengths.
-- Main weaknesses.
-- Identified risks.
-- Development opportunities.
-- Final recommendation.
-- Complete justification of the result.
-
-The evaluation must be fully explainable, traceable, and allow clearly understanding why an opportunity was recommended or discarded.
-
----
-
-### CEO-016. Principles for Interpretation
-
-The automation must interpret the results considering that:
-
-- The overall score represents an approximation and not a definitive decision.
-- The justification of the result has the same importance as the score obtained.
-- The evaluation should favor transparency.
-- Every recommendation should be based on documented evidence.
-- Comparison between offers must use exactly the same criteria.
-- An opportunity may be highly recommendable even when it does not fully meet all requirements, provided it represents a strategic growth opportunity and the identified gap is reasonably achievable.
-- The automation should avoid favoring only conservative opportunities that represent continuity, also privileging those that allow significant evolution of the user's professional career.
-
----
-
-### CEO-017. Principles of the Evaluation Model
-
-The official offer evaluation model must:
-
-- Constitute the official mechanism for evaluating job opportunities.
-- Maintain coherence with the entire Document 10.
-- Integrate all dimensions defined in this chapter.
-- Be fully reproducible.
-- Be fully traceable.
-- Allow audit of each decision.
-- Minimize subjective interpretations.
-- Balance current compatibility with professional growth potential.
-- Favor the identification of strategic opportunities that drive the evolution of the user's professional career.
-- Evolve as the user's professional profile and the automation project evolve.
-
----
-
-## 15. Target Companies
-
-This chapter defines the characteristics that organizations must meet to be considered especially attractive within the job opportunity search and evaluation process.
-
-Its purpose is to guide the automation to identify companies that, due to their nature, maturity level, impact, transformation capacity, and professional development opportunities, represent high potential for the growth of the user's career.
-
-Target companies are not a closed list of specific organizations but a set of criteria that will allow identifying those companies that offer the best context for the development of the professional model defined in this document.
-
----
-
-### EO-001. General Principles
-
-The automation should prioritize organizations that allow the user to develop, apply, and expand the capabilities described in this Document 10.
-
-A company's membership in this group will depend on its organizational characteristics and not exclusively on its name, size, or market recognition.
-
----
-
-### EO-002. Target Company Profile
-
-Organizations that present one or more of the following characteristics will be considered target companies:
-
-- Organizations with complex operations.
-- Organizations in growth processes.
-- Organizations in transformation processes.
-- Organizations with information-intensive operations.
-- Organizations that use data as support for decision-making.
-- Organizations interested in improving their operational performance.
-- Organizations with digital transformation initiatives.
-- Organizations with challenges related to organizational design.
-- Organizations that develop high-impact strategic projects.
-- Organizations that promote innovation and continuous improvement.
-
----
-
-### EO-003. Type of Priority Organizations
-
-The automation should grant a positive rating to organizations such as:
-
-- Multinational companies.
-- Large national companies.
-- Medium-sized companies with high growth potential.
-- Consulting firms.
-- Technology companies.
-- Industrial companies.
-- Service companies.
-- Logistics companies.
-- Mass consumption companies.
-- Healthcare companies.
-- Education companies.
-- Startups in scaling stage.
-- Scaleups.
-
-The above classification constitutes a preference and not an exclusionary criterion.
-
----
-
-### EO-004. Organizational Compatibility
-
-The evaluation of a company should consider, among other aspects:
-
-- Organizational complexity.
-- Level of transformation.
-- Process maturity.
-- Level of analytics.
-- Technological maturity.
-- Innovation capacity.
-- Learning culture.
-- Professional development potential.
-- Capacity to undertake strategic projects.
-
----
-
-### EO-005. Development Opportunities
-
-The automation should especially value organizations that offer:
-
-- Participation in transformation projects.
-- Exposure to complex organizational problems.
-- Interaction with multidisciplinary teams.
-- International development.
-- Professional growth.
-- Continuous education.
-- Innovation.
-- Leadership development.
-- Participation in strategic decisions.
-
----
-
-### EO-006. Organizational Research
-
-When the company responsible for the vacancy is identifiable, the automation should gather public information related to:
-
-- Organization history.
-- Business model.
-- Products and services.
-- Geographic coverage.
-- Size.
-- Transformation processes.
-- Innovation initiatives.
-- Organizational culture.
-- Reputation.
-- Employee reviews.
-- Financial information when public.
-- Recent news.
-- Corporate strategy when available.
-
-This information should be incorporated as evidence within the evaluation process.
-
----
-
-### EO-007. Strategic Companies
-
-The automation should identify organizations that represent exceptional opportunities for the user's professional development.
-
-Among them may be:
-
-- Industry-leading organizations.
-- Internationally recognized companies.
-- Highly innovative companies.
-- Companies recognized as references in digital transformation.
-- Companies recognized for their operational excellence.
-- Organizations with strong investment in analytics, automation, and artificial intelligence.
-
-These organizations may receive an additional rating within the evaluation model when there is high compatibility with the professional profile.
-
----
-
-### EO-008. Prioritization
-
-The automation should prioritize organizations that simultaneously meet the following conditions:
-
-- High compatibility with the professional profile.
-- High growth potential.
-- Opportunities to apply professional focuses.
-- Strategic projects.
-- Possibility of progressive growth.
-- Continuous learning environments.
-
----
-
-### EO-009. Principles for Interpretation
-
-The automation must interpret this chapter considering that:
-
-- No company should be prioritized solely by brand recognition.
-- Professional development potential has greater weight than the organization's prestige.
-- Evaluation should focus on the opportunities offered by the company and not only on its size.
-- Organizational research should complement the information available in the job offer.
-- The classification of a company may be modified as available information evolves.
-
----
-
-### EO-010. Principles of the Target Company Inventory
-
-The definition of target companies must:
-
-- Constitute the official reference for organizational evaluation.
-- Maintain coherence with the user's professional profile.
-- Serve as a complementary criterion for prioritizing job offers.
-- Evolve as the user's professional interests evolve.
-- Maintain traceability with the offer evaluation model defined in this document.
-
----
-
-## 16. Companies to Avoid
-
-This chapter defines the organizational characteristics that significantly decrease the suitability of a job opportunity for the user.
-
-Its purpose is to establish the criteria by which the automation can identify organizations whose nature, context, way of operating, or working conditions are incompatible with the professional model, career objectives, and job preferences defined in this document.
-
-This chapter does not seek to exclude companies by name or reputation, but to identify organizational conditions that reduce the probability that an opportunity contributes positively to the user's professional development.
-
----
-
-### EEV-001. General Principles
-
-The evaluation of companies to avoid should be carried out based on objective and verifiable evidence.
-
-The automation should not discard a company solely based on subjective perceptions, isolated comments, or informal reputation.
-
-Any recommendation to avoid an organization should be supported by public, verifiable, and consistent information.
-
----
-
-### EEV-002. Incompatibility with the Professional Model
-
-The automation should penalize organizations whose nature of the position prevents the user from developing the capabilities defined in this document.
-
-Among other cases:
-
-- Exclusively operational positions without analytical capacity.
-- Highly repetitive functions.
-- Activities oriented only to execution.
-- Positions without design capacity.
-- Positions without participation in decision processes.
-- Functions with very low professional autonomy.
-
----
-
-### EEV-003. Professional Regression
-
-The automation should identify opportunities that represent a significant regression relative to the user's professional trajectory.
-
-At a minimum, it should consider:
-
-- Significant reduction in the scope of the position.
-- Significant decrease in the level of responsibility.
-- Functions considerably inferior to demonstrated experience.
-- Scarce growth possibility.
-- Absence of strategic projects.
-
-This criterion should not be applied when there is a clearly identified strategic justification.
-
----
-
-### EEV-004. Incompatible Working Conditions
-
-The automation should penalize opportunities that present conditions incompatible with the job preferences defined in this document.
-
-Among them:
-
-- 100% on-site modality.
-- Incompatible geographic restrictions.
-- Working conditions that significantly limit professional development.
-- Work schemes incompatible with the user's official preferences.
-
----
-
-### EEV-005. Public Sector
-
-The user does not wish to continue developing their professional career within the public sector.
-
-Consequently, opportunities belonging to public entities should be classified as very low priority.
-
-However, the automation should keep a record of such opportunities for traceability and audit purposes, explicitly indicating that they were discarded due to user preference and not due to professional incompatibility.
-
----
+**Área: Analítica, Ciencia de Datos e IA**
 
-### EEV-006. Organizational Risk Signals
+| ID | Nombre | Institución | Capacidades fortalecidas |
+|---|---|---|---|
+| CER-001 | Data Analytics for Decision Making | Universidad de los Andes | Analítica descriptiva/diagnóstica, estadística aplicada, decisión data-driven, interpretación de información |
+| CER-002 | Machine Learning | Stanford / MIT / Harvard (edX) | Modelos predictivos, ciencia de datos, ML, modelado estadístico |
+| CER-003 | The Power of Statistics | Google | Estadística aplicada, interpretación de datos, inferencia, análisis cuantitativo |
+| CER-004 | Foundations of Business Intelligence | Google | BI, KPIs, visualización, gobernanza de métricas |
 
-When public information allows it, the automation should investigate the existence of signals that may represent risks for the user's professional development.
+**Área: Gestión de Proyectos y Metodologías Ágiles**
 
-Among other aspects:
+| ID | Nombre | Institución | Capacidades fortalecidas |
+|---|---|---|---|
+| CER-005 | Professional Scrum Master | Scrum.org | Scrum, facilitación, liderazgo de equipos, gestión del cambio |
+| CER-006 | Project Management with Agile | Google | Gestión de proyectos, métodos ágiles, planeación, monitoreo |
 
-- High staff turnover.
-- Consistently negative organizational reputation.
-- Recurring leadership problems.
-- Highly unstructured organizational processes.
-- Absence of professional development mechanisms.
-- Relevant public financial problems.
-- High organizational instability.
-- Widely questioned labor practices.
+**Área: BI, Automatización y Plataformas**
 
-The presence of a single signal should not be sufficient to discard an organization.
+| ID | Nombre | Institución | Capacidades fortalecidas |
+|---|---|---|---|
+| CER-007 | Power BI Data Analyst | Microsoft | Power BI, modelado de datos, DAX, dashboards, visualización |
+| CER-008 | Power Platform Functional Consultant | Microsoft | Automatización, Power Apps, integración, diseño funcional |
+| CER-009 | Power Automate RPA Developer Associate | Microsoft | Automatización de procesos, RPA, integración de sistemas, orquestación |
 
-The decision should be based on the joint analysis of multiple pieces of evidence.
-
----
-
-### EEV-007. Absence of Growth Opportunities
-
-The automation should reduce the priority of organizations that do not offer reasonable possibilities for:
-
-- Professional development.
-- Learning.
-- Participation in strategic projects.
-- Progressive increase in responsibilities.
-- Exposure to complex organizational problems.
-- Leadership development.
-
----
-
-### EEV-008. Low Strategic Compatibility
-
-The automation should penalize organizations where there is a combination of factors such as:
-
-- Low compatibility with professional identity.
-- Low compatibility with value proposition.
-- Low compatibility with professional focuses.
-- Scarce growth possibilities.
-- Low utilization of the user's strategic capabilities.
-
-The evaluation should be performed considering the set of factors and not only one of them.
-
----
-
-### EEV-009. Principles for Interpretation
-
-The automation must interpret this chapter considering that:
-
-- No organization should be discarded solely based on an isolated criterion.
-- Companies should be evaluated comprehensively.
-- Discarding should be based on verifiable evidence.
-- The existence of negative aspects may be compensated when the opportunity represents an exceptional strategic benefit for the user's professional development.
-- Every discarding decision must be documented and justified.
-
----
-
-### EEV-010. Principles of the Companies to Avoid Inventory
-
-The definition of companies to avoid must:
-
-- Constitute the official reference for identifying low-priority organizations.
-- Maintain coherence with the professional model and the user's job preferences.
-- Serve as a complementary criterion within the offer evaluation model.
-- Evolve as the user's professional strategy evolves.
-- Maintain traceability with the evaluation and prioritization process of job opportunities.
-- Favor objective, explainable, and auditable decisions.
-
----
-
-## 17. Profile Restrictions and Exclusions
-
-This chapter defines the restrictions, limitations, and exclusion criteria that must be considered by the automation during the search, evaluation, and recommendation process of job opportunities.
-
-Its purpose is to establish those conditions under which a job opportunity is not compatible with the user's professional profile, job preferences, or strategic objectives, allowing the reduction of false positives during the evaluation process.
-
-The restrictions documented herein should be interpreted as official rules of the evaluation model and complement the criteria defined in previous chapters.
-
----
-
-### REP-001. General Principles
-
-Restrictions should be applied in an objective, consistent, and traceable manner.
-
-Their purpose is not to unnecessarily limit the evaluated opportunities but to avoid recommendations incompatible with the user's professional project.
-
-Every restriction must be evaluated together with the other dimensions of the evaluation model.
-
----
-
-### REP-002. Work Modality Restrictions
-
-Work modality is one of the main restrictions of the professional profile.
-
-The automation must consider as accepted modalities only:
-
-- Remote work.
-- Hybrid work.
-
-Opportunities with a 100% on-site modality should be classified as incompatible with the user's current preferences.
-
----
-
-### REP-003. Geographic Restrictions
-
-The evaluation of geographic location will depend on the work modality and the requirements explicitly established by the contracting organization.
-
-#### Hybrid Modality
-
-The opportunity must be located within Colombian territory.
-
-#### Remote Modality
-
-Geographic location will not, by itself, constitute an exclusion criterion.
-
-However, the automation must expressly verify whether the offer establishes restrictions related to:
-
-- Mandatory country of residence.
-- Mandatory city or region of residence.
-- Mandatory nationality.
-- Mandatory work permits.
-- Mandatory work visa.
-- Legal authorization to work in a specific country.
-- Immigration restrictions.
-- Tax or contractual restrictions associated with the country of residence.
-- Any other geographic or legal condition expressly indicated by the organization.
-
-When the offer establishes any of these restrictions, the automation must determine whether the user effectively meets that requirement.
-
-If the requirement is not met and the organization does not explicitly indicate that it offers sponsorship, relocation, work visa, or equivalent mechanisms to overcome such restriction, the opportunity should be classified as incompatible.
-
-Conversely, when the organization expressly indicates that it provides immigration sponsorship, visa support, international relocation, or other mechanisms to overcome the restriction, the opportunity should continue the normal evaluation process.
-
----
-
-### REP-004. Language Restrictions
-
-Job opportunities should be developed mainly in:
-
-- Spanish.
-- English.
-
-Offers whose main working language is different from the above should be classified as incompatible, unless such language is not a requirement for performing the position.
-
-When the required language is English, the automation must consider the official level documented in Chapter 11 during the evaluation.
-
----
-
-### REP-005. Sector Restrictions
-
-The user does not wish to continue developing their professional career within the public sector.
-
-Consequently, opportunities belonging to public entities should be classified as incompatible with the professional strategy defined in this document.
-
-This restriction responds to a strategic decision by the user and does not constitute a judgment on that sector.
-
----
-
-### REP-006. Restrictions Related to the Professional Model
-
-The automation should discard opportunities that do not allow significantly applying the capabilities that make up the user's professional model.
-
-Among other cases:
-
-- Exclusively operational positions.
-- Repetitive functions with little analytical capacity.
-- Activities centered only on execution.
-- Positions without participation in improvement, design, or transformation processes.
-- Functions without analysis, decision-making, or strategic value generation capacity.
-
 ---
-
-### REP-007. Restrictions Related to Professional Growth
 
-Opportunities that represent a significant regression relative to the user's professional trajectory should not be prioritized.
+## 9. Competencias Profesionales
 
-At a minimum, the following should be considered:
+### CP-001. Caracterización
+Integración de múltiples disciplinas en un mismo modelo: ingeniería, diseño organizacional, transformación operacional, sistemas de decisión/información, ciencia de datos, automatización, gestión, planeación, gobernanza. **Esta integración es el principal diferenciador.**
 
-- Significant decrease in the strategic scope of the position.
-- Significant reduction in the level of autonomy.
-- Scarce learning possibilities.
-- Absence of growth opportunities.
-- Functions considerably inferior to demonstrated capabilities.
+### CP-002. Dominios de Competencia
 
-The automation may keep these opportunities only for traceability purposes, expressly indicating the reasons why they were not recommended.
-
----
+#### Dominio 1: Diseño de Sistemas Organizacionales
+**Objetivo:** Diseñar organizaciones capaces de operar, decidir, aprender y evolucionar coherentemente.
+**Competencias:** Diseño organizacional, arquitectura organizacional, pensamiento sistémico, diseño socio-técnico, arquitectura operacional, diseño de capacidades organizacionales, mecanismos de coordinación, modelos operativos, sistemas end-to-end, modelos de gobernanza.
 
-### REP-008. Restrictions Related to Mandatory Requirements
+#### Dominio 2: Transformación Operacional
+**Objetivo:** Aumentar capacidad operacional mediante rediseño estructural de sistemas de trabajo.
+**Competencias:** LSS, TOC, gestión de capacidad, optimización de flujos, diseño de procesos end-to-end, gestión visual, control estadístico, RCA, mejora continua, eliminación de desperdicios, indicadores operacionales, gestión de desempeño.
 
-When an offer establishes mandatory requirements impossible for the user to fulfill, the automation must clearly identify such incompatibility.
+#### Dominio 3: Sistemas de Decisión
+**Objetivo:** Diseñar mecanismos organizacionales para decisiones consistentes, oportunas y soportadas en información confiable.
+**Competencias:** Diseño de criterios de decisión, planeación operacional, planeación de demanda, priorización, sistemas de soporte a decisión, diseño de indicadores, gobernanza de métricas, sistemas de priorización, mecanismos de control, gestión data-driven.
 
-Among other cases:
+#### Dominio 4: Sistemas de Información
+**Objetivo:** Diseñar arquitecturas de información que soporten gobernanza y decisión organizacional.
+**Competencias:** Arquitecturas de datos, modelado de datos, ETL/ELT, calidad de datos, gobernanza de datos, BI, diseño de dashboards, modelado semántico, definición de KPIs, visualización para decisiones.
 
-- Mandatory legal requirements.
-- Non-existent mandatory professional licenses.
-- Incompatible mandatory nationality.
-- Work authorizations impossible to obtain.
-- Mandatory certifications whose absence prevents performing the position.
+#### Dominio 5: Analítica y Ciencia de Datos
+**Objetivo:** Transformar datos en conocimiento para entender comportamiento organizacional y soportar decisiones.
+**Competencias:** Estadística aplicada, análisis exploratorio, analítica descriptiva/diagnóstica/predictiva, Process Mining, ML, modelos de series de tiempo, modelos de regresión, diagnósticos organizacionales data-driven.
 
-These cases should be differentiated from those development gaps that can be overcome through experience or learning, as defined in Chapter 14.
+#### Dominio 6: Automatización y Transformación Digital
+**Objetivo:** Diseñar soluciones tecnológicas que fortalezcan el funcionamiento del sistema organizacional.
+**Competencias:** Automatización end-to-end, automatización con IA, automatización de procesos, integración de plataformas, orquestación de procesos, transformación digital, diseño funcional de soluciones, integración procesos-tecnología.
 
----
+#### Dominio 7: Planeación y Gestión Organizacional
+**Objetivo:** Diseñar mecanismos para planear, coordinar y gestionar recursos organizacionales eficientemente.
+**Competencias:** Planeación estratégica/operacional, Supply Planning, gestión de inventarios, gestión de capacidad, gestión por indicadores, gestión de desempeño, mecanismos de monitoreo, coordinación interdisciplinaria.
 
-### REP-009. Temporary Restrictions
+#### Dominio 8: Liderazgo de Transformación
+**Objetivo:** Liderar procesos de transformación organizacional mediante diseño, implementación y consolidación de nuevas capacidades.
+**Competencias:** Liderazgo técnico, gestión del cambio, dirección de proyectos de transformación, facilitación, alineación entre áreas, comunicación técnica, diseño participativo, implementación de iniciativas estratégicas.
 
-The automation should consider restrictions related to availability when these are officially documented by the user.
+### CP-003. Competencias Transversales (presentes en todos los dominios)
+Pensamiento sistémico, resolución estructural de problemas, capacidad analítica, toma de decisiones, aprendizaje continuo, integración interdisciplinaria, orientación a resultados sostenibles, diseño basado en evidencia, razonamiento cuantitativo, pensamiento crítico, comunicación técnica, adaptabilidad organizacional.
 
-As long as there is no specific restriction registered in this document, availability to participate in selection processes compatible with the other defined conditions will be assumed.
+### CP-004. Principios de Interpretación
+- Competencia = capacidad demostrada, no conocimiento teórico.
+- Evaluar junto con experiencia profesional.
+- Ausencia de keyword ≠ ausencia de competencia.
+- Analizar por dominio, no solo individualmente.
+- Competencias transversales presentes en todos los focos.
 
 ---
 
-### REP-010. Principles for Interpretation
+## 10. Tecnologías y Herramientas
 
-The automation must interpret the restrictions considering that:
+### TH-001. Caracterización
+Las tecnologías son **habilitadores** para materializar soluciones organizacionales, no el eje del perfil. Se interpretan siempre dentro del contexto del modelo profesional.
 
-- Restrictions represent official conditions of the professional profile.
-- They should not be confused with job preferences.
-- A restriction may lead to discarding an opportunity when there is objective incompatibility.
-- Every exclusion must be documented and fully justifiable.
-- Restrictions should be periodically reviewed to keep them aligned with the evolution of the professional profile.
+### TH-002. Inventario por Dominio
 
----
+| Dominio | Tecnologías | Aplicaciones principales |
+|---|---|---|
+| Analítica y Ciencia de Datos | Python, SQL, Process Mining, ML, modelos predictivos, series de tiempo, regresión, estadística aplicada, análisis exploratorio | Modelado predictivo, diagnósticos organizacionales, análisis de desempeño, planeación, identificación de restricciones, soporte a decisión |
+| Business Intelligence | Power BI, Tableau, DAX, modelado semántico, diseño de dashboards, gobernanza de indicadores, storytelling con datos | Sistemas de información institucional, indicadores estratégicos, dashboards ejecutivos/operacionales, monitoreo, visualización para decisión |
+| Automatización | Power Platform, Power Automate, Power Apps, RPA, automatización end-to-end, integración de procesos, automatización con IA, agentes inteligentes | Automatización de procesos/documentos, integración de plataformas, flujos de trabajo, decisiones repetitivas, transformación digital |
+| Gestión y Arquitectura de Datos | ETL, ELT, modelado de datos, gobernanza de datos, calidad de datos, integración de fuentes, arquitecturas de información | Centralización de información, arquitecturas de datos, gobernanza, sistemas de decisión, BI, analítica |
+| Optimización y Gestión Operacional | LSS, TOC, VSM, SPC, Cp/CpK, RCA, DMAIC, gestión de capacidad, planeación operacional | Diseño de sistemas operativos, transformación operacional, optimización de flujos, reducción de variabilidad, mecanismos de control, mejora continua |
+| Productividad y Colaboración | Microsoft 365, Excel, PowerPoint, Word, Teams, Notion | Análisis de información, documentación técnica, comunicación, presentaciones ejecutivas, gestión documental, trabajo colaborativo |
+| Gestión de Proyectos | Scrum, métodos ágiles, gestión de proyectos, planeación, monitoreo, priorización | Gestión de iniciativas de transformación, coordinación interdisciplinaria, gestión del cambio, implementación de soluciones |
 
-### REP-011. Principles of the Restrictions Inventory
+### TH-003. Niveles de Uso
+- **Estratégico:** diseño de soluciones organizacionales y soporte a decisiones.
+- **Táctico:** implementación, configuración o adaptación de soluciones.
+- **Operativo:** ejecución de actividades específicas dentro de proyectos.
 
-The profile restrictions and exclusions must:
+Una misma tecnología puede usarse en más de un nivel según contexto.
 
-- Constitute the official reference for applying exclusion criteria.
-- Maintain coherence with the professional identity, job preferences, and professional objectives.
-- Serve as support for the official offer evaluation model.
-- Favor objective, consistent, and auditable decisions.
-- Evolve as the user's professional and personal conditions evolve.
-- Maintain traceability with the rest of the official project documentation.
+### TH-004. Principios de Interpretación
+- Las herramientas no constituyen el núcleo del perfil.
+- Siempre analizar dentro del modelo profesional.
+- Experiencia demostrada > conocimiento de herramienta.
+- Ausencia de tecnología específica ≠ ausencia de competencia relacionada.
+- Son habilitadores, no fines.
 
 ---
-
-## 18. Profile Update Criteria
-
-This chapter defines the official rules by which the user's professional profile must be kept updated.
 
-Its purpose is to ensure that the information documented in this Document 10 remains current, consistent, and aligned with the user's professional, academic, and personal evolution, preserving its function as the official source of information for the entire automation.
+## 11. Idiomas
 
-Every profile update must be made on this document before being reflected in any other derived resource, including resumes, cover letters, portfolios, professional profiles, or any other artifact used during the job search process.
+### LANG-001. Español
+- **Condición:** Lengua nativa.
+- **Nivel:** Dominio profesional pleno.
+- **Aplicación:** Lengua principal de actividad profesional, comunicación técnica, documentación organizacional e interacción con organizaciones hispanohablantes.
 
----
-
-### CAP-001. Single Source of Truth Principle
+### LANG-002. Inglés
+- **Nivel:** B1 (MCER). Intermedio funcional.
+- **Capacidades:** Comprensión de documentación técnica/académica, artículos científicos, manuales; comunicación escrita/oral en contextos profesionales de complejidad intermedia; participación en reuniones, formaciones y actividades académicas en inglés; preparación de documentación técnica de complejidad intermedia; interacción con equipos internacionales en ingeniería, analítica, automatización y transformación organizacional.
+- **Limitaciones actuales:** Oportunidades de fortalecimiento para negociación avanzada, liderazgo ejecutivo internacional o comunicación altamente especializada.
+- **Aplicación:** Habilitador estratégico para acceso a literatura científica, documentación técnica, programas académicos internacionales, certificaciones, comunidades profesionales y oportunidades laborales globales. Soporte al programa de maestría en Stanford y actualización continua.
 
-Document 10 is the only official source of the user's professional profile.
+### ID-004. Principios de Interpretación
+- Los idiomas son capacidades habilitantes, no solo requisitos curriculares.
+- El nivel debe corresponder al registrado oficialmente aquí.
+- Evaluar ofertas considerando el nivel real del usuario.
+- Artefactos profesionales respetan el nivel documentado.
+- Si una oferta requiere inglés > B1: disminuir puntaje de compatibilidad en este criterio, **sin descartar automáticamente** salvo que el requisito sea excluyente.
 
-No change related to trajectory, experience, education, competencies, preferences, or professional objectives should be made directly on derived documents without having been previously incorporated into this document.
-
 ---
-
-### CAP-002. Events Requiring Update
-
-The automation must consider that this document requires updating when any of the following events occur:
-
-#### Professional Experience
-
-- Start of a new work experience.
-- End of a professional experience.
-- Significant change in responsibilities.
-- Participation in relevant strategic projects.
-- Achievement of high-impact results.
-
-#### Academic Education
-
-- Start of a new academic program.
-- Completion of studies.
-- Obtaining a new degree.
-- Change in the status of an academic program.
-
-#### Certifications
-
-- Obtaining new certifications.
-- Renewal of existing certifications.
-- Expiration of certifications when applicable.
-
-#### Competencies
-
-- Development of new competencies.
-- Consolidation of previously documented competencies.
-- Relevant changes in proficiency level.
-
-#### Technologies
-
-- Incorporation of new technologies.
-- Significant changes in proficiency level.
-- Discontinuation of technologies that are no longer part of the professional profile.
-
-#### Languages
 
-- Change in the official proficiency level.
-- Obtaining international certifications.
-- Incorporation of new languages.
+## 12. Preferencias Laborales
 
-#### Job Preferences
+### PL-001. Principio General
+Criterios oficiales para búsqueda, evaluación, priorización y selección de oportunidades. Se ponderan en el modelo de evaluación. No modifican el perfil; orientan la selección.
 
-- Change in work modality.
-- Change of location.
-- Change in professional interests.
-- Change in work restrictions.
+### PL-002. Modalidad de Trabajo
+| Aceptadas | No aceptada |
+|---|---|
+| Híbrida, Remota | 100% presencial |
 
-#### Professional Objectives
+Penalización significativa para oportunidades 100% presenciales, independientemente de la afinidad técnica.
 
-- Modification of career strategy.
-- Changes in the professional horizon.
-- New development interests.
+### PL-003. Ubicación Geográfica
+- **Híbrida:** solo Colombia.
+- **Remota:** cualquier país, siempre que: idioma de trabajo sea español o inglés compatible con el nivel documentado; no haya restricciones incompatibles con la ubicación actual; coherencia con el perfil.
+- La ubicación nunca se evalúa independientemente de la modalidad.
 
----
-
-### CAP-003. Types of Updates
-
-Modifications to the professional profile should be classified according to their impact.
-
-#### Minor Update
+### PL-004. Tipo de Organización
+No es criterio de preferencia. No favorecer ni penalizar por: tamaño, naturaleza jurídica, nacionalidad, industria, nivel de madurez, tipo de negocio. La evaluación se centra en la naturaleza del cargo y alineación con el perfil.
 
-Corresponds to changes that do not modify the professional model.
+### PL-005. Sectores de Interés
+Cualquier sector económico con alta alineación al perfil.
+**Sector no deseado:** Público. Penalización significativa. Los demás sectores se evalúan en igualdad de condiciones.
 
-Among others:
+### PL-006. Tipo de Cargo
+**Priorizar cargos relacionados con:** diseño de sistemas organizacionales, transformación organizacional/operacional, sistemas de decisión/información, BI, analítica, ciencia de datos aplicada, automatización, arquitectura organizacional, planeación, gestión de operaciones, consultoría estratégica, optimización organizacional.
 
-- New certifications.
-- New tools.
-- Language updates.
-- New technologies.
-- Minor changes in preferences.
+**Favorecer evolución natural de la trayectoria.** Además de posiciones técnicas, priorizar niveles de liderazgo: Líder, Coordinador, Gerente, Subdirector, Director, Jefe, Principal, Manager, Consultor Senior, Arquitecto de Soluciones, Líder de Transformación.
 
-These updates do not require reviewing the general structure of the document.
+**Valorar positivamente** oportunidades que permitan aumentar progresivamente alcance estratégico, capacidad de decisión e impacto organizacional.
 
----
+### PL-007. Nivel de Responsabilidad
+No es criterio independiente. Analizar según: alcance real, nivel de autonomía, capacidad de decisión, impacto organizacional esperado, oportunidades de crecimiento. Evaluar junto con tipo de cargo.
 
-#### Major Update
+### PL-008. Tipo de Desafíos Profesionales
+Priorizar desafíos en: diseño de sistemas organizacionales, transformación organizacional/operacional, sistemas de decisión/información, analítica aplicada, ciencia de datos, automatización inteligente, gobernanza organizacional, planeación, optimización, arquitectura empresarial, diseño de capacidades organizacionales. Favorecer expansión progresiva de impacto y complejidad.
 
-Corresponds to changes that affect the professional model.
+### PL-009. Cultura Organizacional
+Criterio relevante pero normalmente no disponible en la oferta. La automatización debe: identificar la empresa, investigar información pública, analizar señales de innovación, transformación, desarrollo profesional, liderazgo, reputación, ambiente laboral. Si no hay información suficiente: reducir peso del criterio, nunca descartar automáticamente.
 
-Among others:
+### PL-010. Desarrollo Profesional
+Favorecer: desarrollo de nuevas capacidades, participación en proyectos estratégicos, aumento progresivo de responsabilidad, exposición a problemas complejos, procesos de transformación, integración negocio-tecnología-analítica, aprendizaje continuo, innovación, desarrollo internacional, liderazgo de iniciativas estratégicas, crecimiento sostenido. **Valorar especialmente oportunidades de crecimiento exponencial, no solo cambio de empleador.**
 
-- New work experience.
-- Significant change in responsibilities.
-- Change of professional focus.
-- Modification of the value proposition.
-- Change in professional objectives.
-- Incorporation of new lines of specialization.
+### PL-011. Flexibilidad
+Se pueden recomendar oportunidades que no cumplan todas las preferencias si hay alta afinidad estratégica con el perfil. **Criterios a preservar siempre:** modalidad híbrida/remota, alta alineación con identidad, propuesta de valor, focos y objetivos profesionales. La modalidad es el criterio de flexibilidad más importante (mayor peso que el resto).
 
-These updates should review the coherence of the entire document.
+### PL-012. Principios de Interpretación
+- Ninguna preferencia se analiza aisladamente.
+- Afinidad estratégica > coincidencias superficiales.
+- Modalidad: criterio de mayor peso.
+- Ubicación se analiza con modalidad.
+- Cultura organizacional: investigación complementaria cuando sea posible.
+- Favorecer evolución progresiva del modelo profesional.
+- La evaluación final integra todos los elementos del documento.
 
 ---
-
-### CAP-004. Consistency Principles
 
-Every update must preserve coherence between:
+## 13. Objetivos Profesionales
 
-- Professional identity.
-- Value proposition.
-- Professional focuses.
-- Experience.
-- Education.
-- Competencies.
-- Technologies.
-- Job preferences.
-- Professional objectives.
-- Offer evaluation model.
+### OP-001. Visión
+Consolidarse como profesional de referencia en diseño de sistemas organizacionales, integrando transformación organizacional/operacional, sistemas de decisión/información, analítica, automatización e ingeniería organizacional para resolver problemas complejos de alto impacto. Diseñar organizaciones capaces de operar, decidir, aprender y evolucionar mediante sistemas sostenibles. Evolución hacia posiciones con mayor influencia en diseño organizacional y decisión estratégica.
 
-No modification should generate contradictions between chapters.
-
----
+### OP-002. Objetivos por Horizonte
 
-### CAP-005. Change Propagation
+| Horizonte | Objetivos |
+|---|---|
+| **Corto plazo** | Reinsertarse laboralmente en posición altamente alineada al modelo profesional; continuar desarrollando experiencia en transformación y sistemas organizacionales; aplicar integradamente operaciones, analítica, automatización y sistemas de decisión; participar en proyectos estratégicos transversales; consolidar experiencia para acceder progresivamente a mayor responsabilidad |
+| **Mediano plazo** | Asumir posiciones de liderazgo técnico/estratégico; dirigir iniciativas de transformación organizacional; aumentar influencia en decisiones organizacionales; participar en proyectos de mayor complejidad e impacto; consolidarse como referencia en diseño de sistemas organizacionales; integrar permanentemente ingeniería, analítica y gestión; fortalecer práctica mediante aplicación de conocimientos del MS&E |
+| **Largo plazo** | Diseñar sistemas organizacionales de alta complejidad; liderar transformaciones empresariales de gran escala; participar en decisiones estratégicas de alto nivel; dirigir organizaciones, unidades de negocio o áreas de transformación; desarrollar metodologías propias de sistemas organizacionales; contribuir al desarrollo de conocimiento en las disciplinas del modelo profesional |
 
-Once this document is updated, the automation must consider that any derived artifact requires synchronization.
+### OP-003. Aprendizaje Continuo
+Valorar oportunidades que favorezcan: nuevas competencias, problemas complejos, educación continua, proyectos innovadores, equipos multidisciplinarios, tecnologías emergentes, desarrollo internacional.
 
-Among others:
+### OP-004. Criterios de Crecimiento Profesional
+Una oportunidad favorece crecimiento si contribuye a: mayor responsabilidad, mayor impacto organizacional, mayor alcance de decisiones, nuevas capacidades del modelo profesional, iniciativas estratégicas, liderazgo técnico/gerencial, exposición a organizaciones de alta complejidad, aplicación integrada de ambos focos.
 
-- Resumes.
-- Cover letters.
-- Professional profile.
-- Portfolio.
-- Interview responses.
-- Knowledge bases used by the automation.
-- Prompts or configurations that depend on the professional profile.
+### OP-005. Restricciones de Crecimiento
+**No priorizar** oportunidades que: representen regresión significativa; limiten el desarrollo de los focos profesionales; reduzcan autonomía técnica/estratégica sin justificación; se centren exclusivamente en actividades operativas repetitivas sin diseño/transformación/decisión; no aporten crecimiento, aprendizaje ni impacto.
 
-Synchronization should be performed using this document as the official source.
+### OP-006. Principios de Interpretación
+- Crecimiento profesional > cambio de empleador.
+- Evolución coherente con el modelo profesional.
+- Desarrollo de capacidades > cambio de cargo por sí mismo.
+- Balancear afinidad actual y potencial de crecimiento.
+- Perspectiva de largo plazo.
 
 ---
 
-### CAP-006. Version Control
+## 14. Criterios de Evaluación de Ofertas
 
-Every update to Document 10 must record, at minimum:
+### CEO-001. Principios Generales
+Evaluación objetiva, reproducible, trazable, consistente, basada en evidencia. Sin interpretaciones subjetivas. Considera el perfil integralmente. Evalúa potencial de crecimiento además de compatibilidad inmediata.
 
-- Update date.
-- Modified elements.
-- Justification for the change.
-- Expected impact.
-- Document version.
+### CEO-002. Evaluación Multidimensional
+Dimensiones mínimas a evaluar:
+1. Identidad profesional
+2. Propuesta de valor
+3. Focos profesionales
+4. Experiencia profesional
+5. Formación académica
+6. Certificaciones
+7. Competencias profesionales
+8. Tecnologías requeridas
+9. Idiomas
+10. Preferencias laborales
+11. Objetivos profesionales
+12. Potencial de crecimiento
+13. Investigación de empresa
+14. Calidad de la oferta
 
-This record will allow maintaining traceability of the evolution of the professional profile.
+La ausencia de afinidad en una dimensión no implica descarte automático.
 
----
-
-### CAP-007. Change Validation
+### CEO-003. Compatibilidad con Identidad Profesional
+Evaluar: tipo de problemas a resolver, naturaleza de responsabilidades, nivel de diseño/análisis/decisión esperado, tipo de impacto. **Uno de los criterios de mayor peso.**
 
-Before considering an update as official, the automation must verify that:
+### CEO-004. Compatibilidad con Propuesta de Valor
+Evaluar si la organización requiere: diseño organizacional, transformación, sistemas de decisión/información, automatización, analítica, gobernanza, planeación, optimización, desarrollo de capacidades organizacionales.
 
-- The information is verifiable.
-- There are no contradictions with the rest of the document.
-- The modification maintains coherence with the professional model.
-- The update responds to a real change in the user's profile.
+### CEO-005. Compatibilidad con Focos Profesionales
+Calcular independientemente afinidad con: (a) Transformación Operacional, (b) Sistemas de Decisión e Información, (c) Perfil integrado. Usar resultados para definir estrategia de postulación.
 
-When a modification does not meet these criteria, it should be marked for review before being officially incorporated.
+### CEO-006. Compatibilidad de Experiencia
+Considerar: capacidades demostradas, resultados, complejidad de proyectos, sectores, alcance de responsabilidades. **No limitarse a comparar años de experiencia.**
 
----
+### CEO-007. Compatibilidad Académica
+Evaluar: formación requerida, nivel académico, formación complementaria, certificaciones relevantes, estudios en curso.
 
-### CAP-008. Principles for Interpretation
+### CEO-008. Compatibilidad Técnica
+Evaluar: competencias, tecnologías, herramientas, metodologías, nivel de dominio esperado. Ausencia de herramienta específica no invalida si existen competencias equivalentes.
 
-The automation must interpret this chapter considering that:
+### CEO-009. Compatibilidad de Idiomas
+Evaluar: idioma requerido, nivel solicitado, compatibilidad con nivel oficial documentado, posibilidad real de desempeño adecuado.
 
-- Document 10 is the official source of the professional profile.
-- Every update must maintain the coherence of the professional model.
-- No derived artifact should be updated before this document.
-- Modifications must be fully traceable.
-- The evolution of the professional profile must be documented in a controlled and consistent manner.
+### CEO-010. Compatibilidad con Preferencias Laborales
+Evaluar: modalidad, ubicación, sector, tipo de cargo, potencial de crecimiento, compatibilidad con objetivos. **Modalidad híbrida/remota: peso prioritario.**
 
----
+### CEO-011. Investigación de Empresa
+Cuando la oferta identifica la organización, investigar mínimo: actividad económica, tamaño, presencia nacional/internacional, productos/servicios, cultura organizacional, procesos de transformación, reputación, reseñas de empleados (si son públicas), estabilidad, potencial de crecimiento profesional.
 
-### CAP-009. Principles of the Update Process
+### CEO-012. Potencial de Crecimiento
+Analizar: aumento esperado de responsabilidades, nivel de liderazgo, exposición a problemas complejos, posibilidad de aprendizaje, participación en iniciativas estratégicas, desarrollo internacional, evolución relativa a la trayectoria actual.
 
-The official professional profile update process must:
+### CEO-013. Evaluación de Brecha de Desarrollo
+No limitar la evaluación a compatibilidad actual. Analizar la brecha entre perfil actual y perfil esperado:
+- Diferencia en años de experiencia.
+- Diferencias en nivel jerárquico.
+- Competencias estratégicas no completamente desarrolladas.
+- Experiencias específicas adquiribles por transición natural.
+- Requisitos altamente especializados cuya ausencia no impide desempeño exitoso.
 
-- Guarantee the consistency of Document 10.
-- Maintain traceability of all changes.
-- Preserve the user's professional identity.
-- Avoid contradictions between chapters.
-- Serve as the official mechanism for the evolution of the professional profile.
-- Keep all artifacts derived from this document synchronized.
-- Constitute the only authorized mechanism for modifying the official information of the professional profile.
+**La brecha no es criterio de descarte por sí misma.** Una oportunidad puede ser altamente recomendable cuando: alta alineación con identidad, coherencia con propuesta de valor y focos, crecimiento significativo respecto a la trayectoria actual, brecha razonablemente alcanzable con experiencia y capacidades ya demostradas. En estos casos: clasificar como **oportunidad estratégica de crecimiento**.
 
----
+### CEO-014. Factores de Descarte Automático
+Regla general: evitar descartes automáticos. Descartar solo ante incompatibilidad evidente:
+- Modalidad 100% presencial.
+- Sector público.
+- Idioma principal distinto de español o inglés.
+- Requisitos obligatorios imposibles de cumplir.
 
-## 19. Acceptance Criteria
+**Antes de descartar por diferencias de experiencia, seniority o nivel jerárquico:** aplicar primero la evaluación de brecha (CEO-013).
 
-This chapter defines the official criteria that Document 10 must meet to be considered complete, consistent, and suitable for use as the official source of the professional profile within the job search automation project.
+### CEO-015. Resultado de la Evaluación
+Toda oportunidad debe producir mínimo:
+- Puntaje global de compatibilidad.
+- Puntaje por dimensión.
+- Puntaje de potencial de crecimiento.
+- Puntaje de brecha de desarrollo.
+- Principales fortalezas y debilidades.
+- Riesgos identificados.
+- Oportunidades de desarrollo.
+- Recomendación final.
+- Justificación completa.
 
-Its purpose is to establish the minimum quality standards that ensure the information contained in this document can be reliably used by all components of the automation, avoiding ambiguities, inconsistencies, or incorrect interpretations.
+La evaluación debe ser completamente explicable, trazable y permitir entender por qué se recomienda o descarta.
 
-The criteria defined herein must be applied both during the initial construction of the document and in each of its future updates.
+### CEO-016. Principios de Interpretación
+- El puntaje es aproximación, no decisión definitiva.
+- La justificación tiene la misma importancia que el puntaje.
+- Transparencia obligatoria.
+- Toda recomendación basada en evidencia documentada.
+- Comparación entre ofertas con exactamente los mismos criterios.
+- Una oportunidad puede ser altamente recomendable sin cumplir todos los requisitos si es oportunidad estratégica de crecimiento con brecha alcanzable.
+- No favorecer solo oportunidades conservadoras; privilegiar también las que permiten evolución significativa de la carrera.
 
 ---
-
-### CA-001. Document Integrity
-
-The document must contain all the information necessary to officially represent the user's professional profile.
-
-There should be no incomplete chapters, pending sections, provisional information, or ambiguous content that prevents the correct interpretation of the professional profile.
 
----
+## 15. Empresas Objetivo
 
-### CA-002. Internal Consistency
+### EO-001. Principio General
+Priorizar organizaciones que permitan desarrollar, aplicar y expandir las capacidades del Documento 10. La pertenencia a este grupo depende de características organizacionales, no exclusivamente de nombre, tamaño o reconocimiento.
 
-All documented information must be consistent across different chapters.
+### EO-002. Perfil de Empresa Objetivo
+Organizaciones con una o más de estas características: operaciones complejas, en crecimiento o transformación, operaciones intensivas en información, uso de datos para decisión, interés en mejorar desempeño operacional, iniciativas de transformación digital, desafíos de diseño organizacional, proyectos estratégicos de alto impacto, promoción de innovación y mejora continua.
 
-There should be no contradictions between:
+### EO-003. Tipos de Organización Prioritarios
+Multinacionales, grandes empresas nacionales, medianas con alto potencial de crecimiento, consultoras, empresas de tecnología, industriales, de servicios, logística, consumo masivo, salud, educación, startups en escalamiento, scaleups. **Preferencia, no criterio excluyente.**
 
-- Professional identity.
-- Value proposition.
-- Professional experience.
-- Academic education.
-- Certifications.
-- Competencies.
-- Technologies.
-- Job preferences.
-- Professional objectives.
-- Offer evaluation model.
+### EO-004. Criterios de Compatibilidad Organizacional
+Complejidad organizacional, nivel de transformación, madurez de procesos, nivel de analítica, madurez tecnológica, capacidad de innovación, cultura de aprendizaje, potencial de desarrollo profesional, capacidad de emprender proyectos estratégicos.
 
----
+### EO-005. Oportunidades de Desarrollo a Valorar
+Participación en proyectos de transformación, exposición a problemas complejos, equipos multidisciplinarios, desarrollo internacional, crecimiento profesional, educación continua, innovación, desarrollo de liderazgo, participación en decisiones estratégicas.
 
-### CA-003. Truthfulness of Information
+### EO-006. Investigación Organizacional
+Cuando la empresa es identificable, investigar: historia, modelo de negocio, productos/servicios, cobertura geográfica, tamaño, procesos de transformación, iniciativas de innovación, cultura, reputación, reseñas de empleados, información financiera pública, noticias recientes, estrategia corporativa. Incorporar como evidencia en la evaluación.
 
-All recorded information must correspond to verifiable information.
+### EO-007. Empresas Estratégicas
+Identificar organizaciones excepcionales: líderes de industria, reconocimiento internacional, alta innovación, referentes en transformación digital, excelencia operacional, fuerte inversión en analítica/automatización/IA. Pueden recibir ponderación adicional cuando hay alta compatibilidad con el perfil.
 
-The automation should not assume information that has not been officially documented by the user.
+### EO-008. Priorización
+Priorizar organizaciones que simultáneamente ofrezcan: alta compatibilidad con el perfil, alto potencial de crecimiento, aplicación de focos profesionales, proyectos estratégicos, crecimiento progresivo, ambientes de aprendizaje continuo.
 
-Inferences may only be made when expressly authorized by the rules defined in this document.
+### EO-009. Principios de Interpretación
+- No priorizar solo por reconocimiento de marca.
+- Potencial de desarrollo > prestigio.
+- Evaluar oportunidades que ofrece la empresa, no solo tamaño.
+- Investigación complementa la información de la oferta.
+- La clasificación puede modificarse con nueva información.
 
 ---
 
-### CA-004. Traceability
+## 16. Empresas a Evitar
 
-Every relevant statement included in the document must be relatable to one of the following sources:
+### EEV-001. Principio General
+Evaluación basada en evidencia objetiva y verificable. No descartar por percepciones subjetivas, comentarios aislados o reputación informal. Toda recomendación de evitar una organización debe estar soportada en información pública, verificable y consistente.
 
-- Professional experience.
-- Academic education.
-- Certifications.
-- Professional portfolio.
-- Information provided directly by the user.
-- Official project documentation.
+### EEV-002. Incompatibilidad con el Modelo Profesional
+Penalizar organizaciones cuyo cargo impida desarrollar las capacidades del documento: posiciones exclusivamente operativas sin capacidad analítica, funciones altamente repetitivas, actividades solo de ejecución, sin capacidad de diseño, sin participación en decisiones, muy baja autonomía profesional.
 
-This will guarantee the auditability of the professional profile.
+### EEV-003. Regresión Profesional
+Identificar oportunidades que representen regresión significativa: reducción importante de alcance, nivel de responsabilidad o funciones considerablemente inferiores a la experiencia demostrada; escasa posibilidad de crecimiento; ausencia de proyectos estratégicos. No aplicar cuando hay justificación estratégica clara.
 
----
+### EEV-004. Condiciones Laborales Incompatibles
+Penalizar: modalidad 100% presencial, restricciones geográficas incompatibles, condiciones que limiten significativamente el desarrollo profesional, esquemas de trabajo incompatibles con las preferencias oficiales.
 
-### CA-005. Coherence with the Professional Model
+### EEV-005. Sector Público
+El usuario no desea continuar su carrera en el sector público. Oportunidades de entidades públicas: prioridad muy baja. Registrar para trazabilidad, indicando que el descarte es por preferencia del usuario, no por incompatibilidad profesional.
 
-The document must faithfully represent the professional model defined by the user.
+### EEV-006. Señales de Riesgo Organizacional
+Investigar (cuando la información pública lo permita): alta rotación, reputación organizacional consistentemente negativa, problemas recurrentes de liderazgo, procesos altamente desestructurados, ausencia de mecanismos de desarrollo profesional, problemas financieros públicos relevantes, alta inestabilidad, prácticas laborales ampliamente cuestionadas. **Una sola señal no basta para descartar.** La decisión se basa en análisis conjunto de múltiples evidencias.
 
-All chapters must maintain coherence with:
+### EEV-007. Ausencia de Oportunidades de Crecimiento
+Reducir prioridad de organizaciones sin posibilidades razonables de: desarrollo profesional, aprendizaje, proyectos estratégicos, aumento progresivo de responsabilidades, exposición a problemas complejos, desarrollo de liderazgo.
 
-- Professional identity.
-- Value proposition.
-- Professional focuses.
-- Professional objectives.
+### EEV-008. Baja Compatibilidad Estratégica
+Penalizar combinación de: baja compatibilidad con identidad, propuesta de valor, focos; escasas posibilidades de crecimiento; bajo aprovechamiento de capacidades estratégicas. Evaluar el conjunto de factores, no uno aislado.
 
-There should be no elements that contradict the defined professional strategy.
+### EEV-009. Principios de Interpretación
+- No descartar por criterio aislado.
+- Evaluación integral.
+- Descarte basado en evidencia verificable.
+- Aspectos negativos pueden compensarse si la oportunidad representa beneficio estratégico excepcional.
+- Toda decisión de descarte documentada y justificada.
 
 ---
-
-### CA-006. Reusability
 
-All documented information must be reusable to automatically build, among others:
-
-- Resumes.
-- Cover letters.
-- Professional profiles.
-- Interview responses.
-- Compatibility evaluations.
-- Curricular adaptations.
-- Executive summaries.
-- Specialized prompts.
-- Knowledge bases for the automation.
-
-The document should minimize the need for manual reinterpretation.
-
----
+## 17. Restricciones y Exclusiones del Perfil
 
-### CA-007. Interpretability for Artificial Intelligence
+### REP-001. Principio General
+Aplicación objetiva, consistente y trazable. No limitan innecesariamente las oportunidades; evitan recomendaciones incompatibles con el proyecto profesional. Se evalúan junto con las demás dimensiones.
 
-The document structure must allow an Artificial Intelligence system to:
+### REP-002. Modalidad de Trabajo
+**Solo se aceptan:** remoto, híbrido. **100% presencial = incompatible.**
 
-- Understand the professional profile.
-- Correctly interpret the professional identity.
-- Identify the user's capabilities.
-- Differentiate facts, preferences, restrictions, and objectives.
-- Reason about compatibility between the user and a job opportunity.
-- Justify decisions made during the evaluation process.
+### REP-003. Restricciones Geográficas
+- **Híbrida:** debe estar en Colombia.
+- **Remota:** la ubicación geográfica no es excluyente por sí misma. Sin embargo, verificar expresamente si la oferta establece restricciones de: país/ciudad/región de residencia obligatoria, nacionalidad obligatoria, permisos de trabajo, visa, autorización legal, restricciones migratorias, restricciones fiscales/contractuales asociadas al país de residencia, cualquier otra condición geográfica o legal.
 
----
+Si existe restricción y el usuario no la cumple **y** la organización no ofrece explícitamente patrocinio migratorio, visa, reubicación internacional o mecanismo equivalente → **incompatible**.
+Si la organización ofrece explícitamente esos mecanismos → continúa evaluación normal.
 
-### CA-008. Scalability
+### REP-004. Idiomas
+Idiomas principales de trabajo: español o inglés. Ofertas en otro idioma principal: incompatibles, salvo que el idioma no sea requisito para el desempeño. Cuando se requiere inglés: considerar el nivel oficial B1 documentado.
 
-The document must allow incorporating new information without requiring major structural modifications.
+### REP-005. Sector
+**Sector público = incompatible** con la estrategia profesional. Responde a decisión estratégica del usuario, no a juicio sobre el sector.
 
-The incorporation of new experiences, certifications, technologies, or competencies must be done preserving the general organization of the document.
+### REP-006. Modelo Profesional
+Descartar oportunidades que no permitan aplicar significativamente las capacidades del modelo: posiciones exclusivamente operativas, funciones repetitivas con poca capacidad analítica, actividades solo de ejecución, sin participación en mejora/diseño/transformación, sin capacidad de análisis/decisión/generación de valor estratégico.
 
----
+### REP-007. Crecimiento Profesional
+No priorizar oportunidades con regresión significativa: disminución importante de alcance estratégico, reducción significativa de autonomía, escasas posibilidades de aprendizaje/crecimiento, funciones considerablemente inferiores a capacidades demostradas. Pueden mantenerse solo para trazabilidad, indicando razones de no recomendación.
 
-### CA-009. Maintainability
+### REP-008. Requisitos Obligatorios
+Cuando la oferta establece requisitos obligatorios imposibles de cumplir (requisitos legales, licencias profesionales inexistentes, nacionalidad incompatible, autorizaciones de trabajo imposibles, certificaciones obligatorias cuya ausencia impide el desempeño): identificar claramente la incompatibilidad. **Diferenciar** de brechas de desarrollo superables (Cap. 14, CEO-013).
 
-The update of the document must be simple, consistent, and fully traceable.
+### REP-009. Restricciones Temporales
+Considerar restricciones de disponibilidad cuando estén oficialmente documentadas. Sin restricción registrada: se asume disponibilidad para participar en procesos compatibles con las demás condiciones.
 
-Modifications made must subsequently propagate to the rest of the derived artifacts without needing to redefine the professional profile.
+### REP-010. Principios de Interpretación
+- Restricciones = condiciones oficiales del perfil.
+- No confundir con preferencias.
+- Una restricción puede llevar al descarte ante incompatibilidad objetiva.
+- Toda exclusión documentada y justificable.
+- Revisión periódica para mantener alineación con la evolución del perfil.
 
 ---
-
-### CA-010. Compatibility with the Automation
-
-The document must be directly usable as the official source for the different modules of the project, including, among others:
 
-- Opportunity discovery.
-- Offer evaluation.
-- Resume adaptation.
-- Cover letter generation.
-- Professional profile construction.
-- Interview preparation.
-- Report generation.
-- Decision support.
+## 18. Criterios de Actualización del Perfil
 
----
+### CAP-001. Fuente Única de Verdad
+Este documento es la única fuente oficial. Ningún cambio se hace directamente en artefactos derivados sin incorporarse primero aquí.
 
-### CA-011. Robustness Against Interpretation
+### CAP-002. Eventos que Requieren Actualización
 
-The wording must minimize ambiguities and reduce to a minimum the possibility of different interpretations between different Artificial Intelligence models.
+| Categoría | Eventos |
+|---|---|
+| Experiencia profesional | Inicio/fin de experiencia, cambio significativo de responsabilidades, participación en proyectos estratégicos relevantes, logros de alto impacto |
+| Formación académica | Inicio/finalización de programa, obtención de título, cambio de estado |
+| Certificaciones | Nuevas certificaciones, renovaciones, vencimientos |
+| Competencias | Nuevas competencias, consolidación de existentes, cambios relevantes de nivel |
+| Tecnologías | Incorporación, cambios significativos de nivel, descontinuación |
+| Idiomas | Cambio de nivel oficial, certificaciones internacionales, nuevos idiomas |
+| Preferencias laborales | Cambio de modalidad, ubicación, intereses, restricciones |
+| Objetivos profesionales | Modificación de estrategia, cambios de horizonte, nuevos intereses de desarrollo |
 
-To this end:
+### CAP-003. Tipos de Actualización
 
-- Concepts must be clearly defined.
-- Rules must be expressed explicitly.
-- Exceptions must be documented.
-- Preferences must be clearly differentiated from restrictions.
-- Evaluation criteria must be fully documented.
+| Tipo | Definición | Ejemplos | Acción |
+|---|---|---|---|
+| Menor | No modifica el modelo profesional | Nuevas certificaciones, herramientas, idiomas, tecnologías, cambios menores de preferencias | No requiere revisar estructura general |
+| Mayor | Afecta el modelo profesional | Nueva experiencia laboral, cambio significativo de responsabilidades, cambio de foco, modificación de propuesta de valor, cambio de objetivos, nuevas líneas de especialización | Revisar coherencia de todo el documento |
 
----
+### CAP-004. Consistencia
+Toda actualización debe preservar coherencia entre: identidad, propuesta de valor, focos, experiencia, formación, competencias, tecnologías, preferencias, objetivos y modelo de evaluación. Ninguna modificación debe generar contradicciones entre capítulos.
 
-### CA-012. Document Quality
+### CAP-005. Propagación de Cambios
+Tras actualizar este documento, sincronizar todos los artefactos derivados: CVs, cartas de presentación, perfil profesional, portafolio, respuestas de entrevista, bases de conocimiento, prompts o configuraciones dependientes. Usar este documento como fuente.
 
-The document must meet the following quality standards:
+### CAP-006. Control de Versiones
+Toda actualización registra mínimo: fecha, elementos modificados, justificación, impacto esperado, versión del documento.
 
-- Clarity.
-- Precision.
-- Exhaustiveness.
-- Consistency.
-- Traceability.
-- Reusability.
-- Scalability.
-- Maintainability.
-- Auditability.
+### CAP-007. Validación de Cambios
+Antes de considerar una actualización oficial, verificar: información verificable, sin contradicciones con el resto del documento, coherencia con el modelo profesional, responde a un cambio real. Si no cumple: marcar para revisión antes de incorporación oficial.
 
 ---
 
-### CA-013. Final Acceptance Criterion
+## 19. Criterios de Aceptación del Documento
 
-Document 10 will be considered officially accepted when it simultaneously meets the following conditions:
-
-- It completely represents the user's professional profile.
-- It constitutes the only official source of professional profile information within the project.
-- It can be used directly by any component of the automation without requiring substantial reinterpretations.
-- It allows evaluating job opportunities in an objective, consistent, and explainable manner.
-- It allows automatically generating professional artifacts adapted to different contexts.
-- It maintains coherence with all the strategic documentation of the project.
-- It is prepared to evolve along with the user's professional career without losing consistency.
-
----
+| ID | Criterio | Definición |
+|---|---|---|
+| CA-001 | Integridad | Sin capítulos incompletos, secciones pendientes, información provisional o contenido ambiguo |
+| CA-002 | Consistencia interna | Sin contradicciones entre ningún capítulo |
+| CA-003 | Veracidad | Solo información verificable. Sin suposiciones no autorizadas |
+| CA-004 | Trazabilidad | Toda afirmación relacionable con: experiencia, formación, certificaciones, portafolio, información del usuario o documentación oficial |
+| CA-005 | Coherencia con el modelo | Representación fiel del modelo profesional. Sin elementos que contradigan la estrategia |
+| CA-006 | Reusabilidad | Información reutilizable para construir automáticamente: CVs, cartas, perfiles, respuestas de entrevista, evaluaciones, adaptaciones, resúmenes, prompts, bases de conocimiento. Minimizar reinterpretación manual |
+| CA-007 | Interpretabilidad para IA | La estructura permite a una IA: entender el perfil, interpretar identidad, identificar capacidades, diferenciar hechos/preferencias/restricciones/objetivos, razonar sobre compatibilidad, justificar decisiones |
+| CA-008 | Escalabilidad | Incorporar nueva información sin modificaciones estructurales mayores |
+| CA-009 | Mantenibilidad | Actualización simple, consistente, trazable. Propagación a artefactos derivados sin redefinir el perfil |
+| CA-010 | Compatibilidad con la automatización | Usable directamente como fuente oficial para: descubrimiento de oportunidades, evaluación de ofertas, adaptación de CV, generación de cartas, construcción de perfil, preparación de entrevistas, generación de reportes, soporte a decisión |
+| CA-011 | Robustez ante interpretación | Minimizar ambigüedades: conceptos definidos, reglas explícitas, excepciones documentadas, preferencias diferenciadas de restricciones, criterios de evaluación completamente documentados |
+| CA-012 | Calidad | Claridad, precisión, exhaustividad, consistencia, trazabilidad, reusabilidad, escalabilidad, mantenibilidad, auditabilidad |
 
-## 20. Document Index
-
-1. Document Purpose
-2. Professional Profile Principles
-3. Personal and Professional Contact Information
-4. Professional Profile
-5. Value Proposition and Professional Identity
-6. Work Experience
-7. Academic Education
-8. Certifications and Complementary Education
-9. Professional Competencies
-10. Technologies and Tools
-11. Languages
-12. Job Preferences
-13. Professional Objectives
-14. Offer Evaluation Criteria
-15. Target Companies
-16. Companies to Avoid
-17. Profile Restrictions and Exclusions
-18. Profile Update Criteria
-19. Acceptance Criteria
-20. Document Index
+### CA-013. Criterio Final de Aceptación
+El documento se considera oficialmente aceptado cuando simultáneamente:
+1. Representa completamente el perfil profesional.
+2. Es la única fuente oficial de información del perfil en el proyecto.
+3. Es utilizable directamente por cualquier componente de la automatización sin reinterpretaciones sustanciales.
+4. Permite evaluar ofertas de forma objetiva, consistente y explicable.
+5. Permite generar artefactos profesionales adaptados automáticamente.
+6. Mantiene coherencia con toda la documentación estratégica del proyecto.
+7. Está preparado para evolucionar con la carrera del usuario sin perder consistencia.

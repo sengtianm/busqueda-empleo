@@ -1,1505 +1,301 @@
-# Document 1
-# Functional Requirements
+# Requisitos Funcionales (DOC-01)
 
-## 1. System Purpose
+## 1. Propósito y Objetivos
 
-Develop a comprehensive automation that autonomously discovers, collects, processes, evaluates, and manages job postings by handling all repetitive tasks involved in the job search process.
+**Propósito:** Automatización modular, escalable y mantenible que gestiona integralmente la búsqueda de empleo: descubre, recopila, prepara, evalúa y administra ofertas de trabajo; automatiza tareas repetitivas y operativas; genera información estructurada y recursos de postulación; mantiene las decisiones estratégicas bajo control del usuario.
 
-The system shall transform discovered job postings into structured information, evaluate them according to predefined criteria, and generate all the resources required to facilitate and accelerate the application process.
+**Objetivos específicos:**
 
-The automation shall act as an intelligent assistant specialized in job searching, automating repetitive and operational activities while keeping strategic or high-impact decisions under the user's control.
+1. Descubrir oportunidades desde fuentes configuradas.
+2. Centralizar ofertas en un repositorio único estructurado, sin duplicados, con historial.
+3. Preparar cada oferta (limpieza, normalización, validación).
+4. Evaluar automáticamente compatibilidad con el perfil profesional usando criterios predefinidos.
+5. Clasificar por prioridad y estado de procesamiento.
+6. Analizar en profundidad ofertas que superan la evaluación inicial.
+7. Generar automáticamente recursos de apoyo a la postulación según características de cada oferta.
+8. Mantener registro completo del ciclo de vida (cambios de estado, decisiones, resultados).
+9. Proveer información clara, organizada y suficiente para decisiones del usuario en cada etapa.
+10. Reducir tiempo/esfuerzo en tareas repetitivas mediante automatización.
+11. Permitir incorporar nuevas fuentes, reglas y funcionalidades sin afectar componentes existentes.
 
 ---
 
-## 2. General Objective
+## 2. Alcance Funcional
 
-Design and implement a modular, scalable, and maintainable automation that comprehensively manages the job search process, from discovering opportunities to generating the resources required for job applications, while automating repetitive tasks and providing the user with structured information and analysis to support decision-making.
+### 2.1 Capacidades incluidas
 
----
-
-## 3. Specific Objectives
-
-1. Automatically discover job opportunities from the configured job sources.
-
-2. Centralize all discovered job postings in a single structured repository, preventing duplicates and maintaining their history.
-
-3. Prepare each job posting through data cleaning, normalization, and validation processes.
-
-4. Automatically evaluate job postings using predefined criteria to determine their compatibility with the user's professional profile.
-
-5. Classify job postings according to their priority and processing status.
-
-6. Perform in-depth analysis of job postings that pass the initial evaluation in order to generate valuable information for the application process.
-
-7. Automatically generate the resources required to support the job application process according to the characteristics of each job posting.
-
-8. Maintain a complete record of each job posting's lifecycle, including status changes, decisions, and results.
-
-9. Provide the user with clear, organized, and sufficient information to support decision-making throughout every stage of the process.
-
-10. Reduce the time and effort spent on repetitive job search tasks through automated processes.
-
-11. Allow the incorporation of new job sources, evaluation rules, and functionalities without affecting the operation of existing components.
-
----
-
-## 4. Functional Scope
-
-The automation shall provide the following functional capabilities:
-
-### 4.1 Opportunity Discovery
-
-- Query the configured job sources.
-- Detect new job postings.
-- Extract the available information from each job posting.
-- Register discovered job postings.
-
-### 4.2 Job Posting Preparation
-
-- Clean and normalize the extracted information.
-- Validate data integrity.
-- Detect and remove duplicate job postings.
-- Assign the initial processing status.
-
-### 4.3 Initial Evaluation
-
-- Automatically analyze each job posting according to the defined criteria.
-- Calculate a compatibility score.
-- Classify job postings by priority.
-- Automatically discard job postings that violate predefined rules.
-
-### 4.4 Deep Processing
-
-- Perform a detailed analysis of selected job postings.
-- Identify requirements, responsibilities, benefits, and other relevant information.
-- Generate structured information to support application preparation.
-- Prepare the defined resources for the application process.
-
-### 4.5 Process Management
-
-- Maintain the complete history of each job posting.
-- Manage processing workflow statuses.
-- Record decisions and results.
-- Enable tracking of each job posting throughout its lifecycle.
-
-### 4.6 Administration
-
-- Allow the configuration of job sources.
-- Allow updates to evaluation criteria.
-- Allow the incorporation of new rules and functionalities without affecting existing components.
-
-## Out of Scope
-
-The automation shall not be responsible for:
-
-- Making strategic decisions that require user approval.
-- Modifying the user's professional profile without authorization.
-- Automatically submitting job applications unless that functionality has been explicitly approved and implemented.
-- Replacing the user's judgment in high-impact decisions.
-- Performing activities unrelated to the job search and job opportunity preparation process.
-
----
-
-## 5. Main System Functions
-
-The system shall provide the following primary functions:
-
-### F1. Opportunity Discovery
-
-- Automatically query the configured job sources.
-- Detect newly available job postings.
-- Extract relevant information from each job posting.
-- Record the date, time, and source of discovery.
-
----
-
-### F2. Job Posting Management
-
-- Create a unique record for each job posting.
-- Detect and prevent duplicate records.
-- Update information when a job posting changes.
-- Maintain a history of modifications.
-
----
-
-### F3. Information Preparation
-
-- Clean extracted data.
-- Normalize formats and structures.
-- Complete derived information whenever possible.
-- Validate the quality of the obtained data.
-
----
-
-### F4. Automated Evaluation
-
-- Analyze job postings using predefined criteria.
-- Calculate a compatibility score.
-- Classify job postings according to priority.
-- Automatically identify job postings that should be discarded.
-
----
-
-### F5. Deep Processing
-
-- Analyze the complete content of job postings.
-- Identify technical and functional requirements.
-- Extract responsibilities, benefits, and working conditions.
-- Generate structured information to support the application process.
-
----
-
-### F6. Resource Generation
-
-- Generate the documents, analyses, or resources defined to support each job application.
-- Organize generated resources by job posting.
-- Maintain traceability between each generated resource and its corresponding job posting.
-
----
-
-### F7. Workflow Management
-
-- Control the status of each job posting throughout its entire lifecycle.
-- Record every status transition.
-- Record both automated decisions and user decisions.
-- Allow interrupted processes to be resumed.
-
----
-
-### F8. Administration
-
-- Manage job sources.
-- Manage evaluation criteria.
-- Manage general system settings.
-- Manage catalogs, rules, and parameters.
-
----
-
-### F9. Query and Tracking
-
-- Allow users to view the complete history of job postings.
-- Display the current status of each job posting.
-- View evaluation results.
-- Access information generated during processing.
-
----
-
-### F10. Logging and Auditing
-
-- Record relevant system events.
-- Record errors and exceptions.
-- Record automated decisions.
-- Maintain complete traceability for the processing of every job posting.
-
----
-
-## 6. Functions Out of Scope
-
-The automation shall not be responsible for the following functions unless their implementation is explicitly approved in future versions of the project.
-
-### FNA-1. Automatic Job Application
-
-The system shall not automatically submit job applications without the user's explicit approval.
-
----
-
-### FNA-2. Strategic Decision-Making
-
-The system shall not replace the user's judgment in high-impact decisions, including but not limited to:
-
-- Choosing which company to apply to.
-- Deciding whether an opportunity is personally worthwhile.
-- Modifying professional criteria without authorization.
-
----
-
-### FNA-3. Professional Profile Modification
-
-The system shall not automatically modify the user's professional information, including:
-
-- Resume.
-- Professional profile.
-- Portfolio.
-- Personal information.
-- Job preferences.
-
----
-
-### FNA-4. Communication with Third Parties
-
-The system shall not send emails, messages, or any other external communication on behalf of the user unless such functionality has been explicitly designed, implemented, and approved.
-
----
-
-### FNA-5. Interview Management
-
-The system shall not schedule interviews, accept invitations, or respond automatically to recruitment processes.
-
----
-
-### FNA-6. Activities Outside the Scope
-
-The system shall not perform tasks that are not directly related to the discovery, analysis, evaluation, preparation, and management of job opportunities.
-
----
-
-### FNA-7. Autonomous Learning
-
-The system shall not modify business rules, evaluation criteria, or system configurations on its own without user intervention.
-
----
-
-## 7. System Actors
-
-Actors represent the people or systems that interact directly or indirectly with the automation.
-
-Actors and external dependencies:
-
-- User
-
-External dependencies:
-
-- Job platforms
-- AI model
-- Database
-- Browser
-- File system
-- APIs
-
----
-
-### A1. User
-
-The owner and operator of the automation.
-
-**Responsibilities:**
-
-- Configure the system.
-- Define evaluation criteria.
-- Authorize decisions that require human intervention.
-- Review generated results.
-- Update professional information when necessary.
-
----
-
-### A2. Job Platforms
-
-The sources from which the automation retrieves job opportunities.
-
-**Examples:**
-
-- LinkedIn
-- Indeed
-- Computrabajo
-- Magneto
-- Corporate career websites
-- Other sources configured by the user
-
-**Responsibilities:**
-
-- Publish job postings.
-- Provide the available information for processing.
-
----
-
-### A3. Artificial Intelligence Model
-
-The AI service used by the automation to analyze and generate information.
-
-**Responsibilities:**
-
-- Analyze job postings.
-- Extract relevant information.
-- Classify content.
-- Generate analyses.
-- Support the generation of application resources.
-
----
-
-### A4. External Services
-
-Any service used to support the operation of the automation.
-
-**Examples:**
-
-- Storage services.
-- Databases.
-- File services.
-- Automation tools.
-- Auxiliary APIs.
-
-**Responsibilities:**
-
-- Store information.
-- Facilitate communication between components.
-- Provide supporting services for the system.
-
----
-
-## 8. System Inputs
-
-System inputs include all the information required to execute the discovery, evaluation, processing, and management of job opportunities.
-
-### E-001. User Configuration
-
-Information defined by the user to customize the behavior of the automation.
-
-Includes, among others:
-
-- Job sources.
-- Execution frequency.
-- General preferences.
-- Configuration parameters.
-
----
-
-### E-002. Professional Profile
-
-Information used to evaluate compatibility between the user and job postings.
-
-Includes:
-
-- Resume.
-- Professional profile.
-- Work experience.
-- Skills.
-- Technologies.
-- Languages.
-- Certifications.
-- Academic background.
-- Job preferences.
-- Salary expectations.
-- Work arrangement.
-- Location.
-- Target companies.
-- Restricted companies.
-
----
-
-### E-003. Job Postings
-
-Information obtained from the different job platforms.
-
-May include:
-
-- Title.
-- Company.
-- Description.
-- Requirements.
-- Responsibilities.
-- Benefits.
-- Salary.
-- Work arrangement.
-- Location.
-- Publication date.
-- URL.
-- Job posting identifier.
-- Source platform.
-
----
-
-### E-004. Business Rules
-
-The set of criteria defined to control the behavior of the automation.
-
-Includes:
-
-- Evaluation rules.
-- Rejection rules.
-- Acceptance rules.
-- Priorities.
-- Thresholds.
-- Exceptions.
-
----
-
-### E-005. AI Prompts and Configurations
-
-The set of instructions used to request analysis and information generation from the AI model.
-
-Includes:
-
-- Prompts.
-- Templates.
-- Execution parameters.
-- Processing configurations.
-
----
-
-### E-006. Historical Information
-
-Information generated during previous executions.
-
-Includes:
-
-- Job posting history.
-- Previous statuses.
-- Evaluation results.
-- Generated documents.
-- Execution logs.
-- User decisions.
-
----
-
-### E-007. User Decisions
-
-Information provided by the user whenever a decision cannot be made automatically.
-
-**Examples:**
-
-- Approve a job posting.
-- Reject a job posting.
-- Request a new analysis.
-- Modify evaluation criteria.
-- Resume a process.
-
----
-
-## 9. Internal System Data
-
-Internal data consists of all information generated, transformed, and maintained by the automation to control job posting processing and ensure system consistency.
-
-### DI-001. Internal Identifiers
-
-Information used to uniquely identify system elements.
-
-Includes:
-
-- Internal job posting ID.
-- Processing ID.
-- Execution ID.
-- Analysis ID.
-- Generated document ID.
-
----
-
-### DI-002. Processing Status
-
-Information used to track the progress of each job posting within the workflow.
-
-Includes:
-
-- Current status.
-- Previous status.
-- Date of change.
-- Reason for the change.
-- Entity responsible for the change (user or system).
-
----
-
-### DI-003. Intermediate Results
-
-Information generated during the different processing stages.
-
-Examples:
-
-- Partial scores.
-- Temporary classifications.
-- Extracted information.
-- Normalized data.
-- Validation results.
-
----
-
-### DI-004. Operational Configuration
-
-Information used by the automation during execution.
-
-Includes:
-
-- Internal parameters.
-- Execution variables.
-- Module configuration.
-- Workflow configuration.
-- Internal thresholds.
-
----
-
-### DI-005. System History
-
-Information maintained to guarantee processing traceability.
-
-Includes:
-
-- Change history.
-- Evaluation history.
-- Decision history.
-- Reprocessing history.
-
----
-
-### DI-006. Execution Metrics
-
-Information used to measure the performance of the automation.
-
-Includes:
-
-- Execution time.
-- Duration per module.
-- Number of processed job postings.
-- Number of errors.
-- Number of retries.
-- Performance indicators.
-
----
-
-### DI-007. Internal Relationships
-
-Information used to relate the different system elements.
-
-Examples:
-
-- Job Posting ↔ Evaluations
-- Job Posting ↔ Documents
-- Job Posting ↔ History
-- Job Posting ↔ Decisions
-- Job Posting ↔ Executions
-
----
-
-## 10. System Outputs
-
-System outputs consist of all information generated by the automation as a result of processing job postings.
-
-### S-001. Structured Job Postings
-
-Normalized information for each job posting, ready to be used by the different automation processes.
-
-Includes, among others:
-
-- Clean information.
-- Normalized fields.
-- Validated data.
-- Internal identifiers.
-
----
-
-### S-002. Initial Evaluation Results
-
-Information obtained during the automated compatibility analysis.
-
-Includes:
-
-- Score.
-- Compatibility level.
-- Priority.
-- Acceptance reasons.
-- Rejection reasons.
-- Recommendations.
-
----
-
-### S-003. In-Depth Job Posting Analysis
-
-Information obtained during the detailed processing of the job posting.
-
-Includes:
-
-- Executive summary.
-- Identified requirements.
-- Technical competencies.
-- Soft skills.
-- Responsibilities.
-- Benefits.
-- Risks.
-- Relevant observations.
-
----
-
-### S-004. Application Resources
-
-Resources generated to facilitate the preparation of a job application.
-
-May include:
-
-- Strategic analyses.
-- Organized information.
-- Documents defined for each job posting.
-- Other resources approved during project development.
-
----
-
-### S-005. Job Posting Status
-
-Updated information about the current situation of each job posting within the processing workflow.
-
-Includes:
-
-- Current status.
-- Last update date.
-- Status history.
-- Person or system responsible for the latest decision.
-
----
-
-### S-006. Reports
-
-Consolidated information about the operation of the automation.
-
-May include:
-
-- Number of discovered job postings.
-- Number of discarded job postings.
-- Number of prioritized job postings.
-- Processing time.
-- Execution metrics.
-- General statistics.
-
----
-
-### S-007. System Logs
-
-Information used for auditing and monitoring.
-
-Includes:
-
-- Events.
-- Errors.
-- Warnings.
-- Automated decisions.
-- User decisions.
-- Execution history.
-
----
-
-## 11. General Functional Workflow
-
-The system shall manage every job posting through a functional workflow consisting of the following stages.
-
-### FF-01. Discovery
-
-- Query configured job sources.
-- Detect new job postings.
-- Extract available information.
-- Register the job posting in the system.
-
-↓
-
-### FF-02. Preparation
-
-- Clean the information.
-- Normalize the data.
-- Validate the integrity of the job posting.
-- Detect duplicates.
-- Assign the initial status.
-
-↓
-
-### FF-03. Initial Evaluation
-
-- Analyze compatibility with the professional profile.
-- Apply rejection rules.
-- Calculate the initial score.
-- Classify priority.
-
-↓
-
-### FF-04. Initial Decision
-
-If the job posting does not meet the minimum criteria:
-
-→ End processing.
-
-If it meets the criteria:
-
-→ Continue to Deep Processing.
-
-↓
-
-### FF-05. Deep Processing
-
-- Analyze the job posting in detail.
-- Identify requirements.
-- Identify competencies.
-- Analyze responsibilities.
-- Analyze benefits.
-- Generate structured information.
-
-↓
-
-### FF-06. Resource Generation
-
-- Prepare the resources defined to support the application.
-- Organize the generated results.
-- Associate the generated resources with the corresponding job posting.
-
-↓
-
-### FF-07. User Review
-
-Whenever the workflow requires a strategic decision:
-
-- Present the information to the user.
-- Wait for the corresponding decision.
-- Record the decision made.
-
-↓
-
-### FF-08. Management and Tracking
-
-- Update the job posting status.
-- Record its history.
-- Preserve complete traceability.
-- Keep all generated information available.
-
-↓
-
-### FF-09. Completion
-
-- Mark processing as completed.
-- Record the completion date.
-- Preserve all information for future reference.
-
----
-
-## 12. Job Posting Lifecycle
-
-Each job posting shall follow a lifecycle consisting of the following stages.
-
-### LC-01. Discovered
-
-The job posting has been found on a job source and registered in the system for the first time.
-
----
-
-### LC-02. Prepared
-
-The information has been cleaned, normalized, validated, and is ready for evaluation.
-
----
-
-### LC-03. Evaluated
-
-The job posting has been analyzed using the initial evaluation rules and has received a compatibility score.
-
----
-
-### LC-04. Accepted
-
-The job posting has passed the initial evaluation and is approved to continue in the process.
-
----
-
-### LC-05. Discarded
-
-The job posting is no longer being processed because it did not satisfy the defined rules or because the user decided to discard it.
-
----
-
-### LC-06. Processed
-
-The job posting has been analyzed in depth, and all information required to support the application has been generated.
-
----
-
-### LC-07. Finalized
-
-The job posting has completed its lifecycle within the automation, and all related information has been stored for future reference.
-
----
-
-## 13. Job Posting Status Catalog
-
-The system shall control the lifecycle of every job posting using a predefined set of statuses.
-
-> **Official catalog (decision 2026-07-30):** the 7 statuses below are the single source of truth for the offer lifecycle, aligned with `shared/state_machine.py`. Previous versions of this catalog (EST-001..010, EST-999 Error) are superseded.
-
-### EST-001. Discovered
-
-**Description**
-
-The job posting has been identified from a job source and registered for the first time.
-
-**Functional Process**
-
-FP-01 — Discovery
-
-**Assigned By**
-
-System
-
-**Previous Statuses**
-
-None
-
-**Next Statuses**
-
-- EST-002 Prepared
-
----
-
-### EST-002. Prepared
-
-**Description**
-
-The information has been cleaned, normalized, and validated.
-
-**Functional Process**
-
-FP-02 — Preparation
-
-**Assigned By**
-
-System
-
-**Previous Statuses**
-
-- EST-001
-
-**Next Statuses**
-
-- EST-003 Evaluated
-
----
-
-### EST-003. Evaluated
-
-**Description**
-
-The job posting has been evaluated according to the business rules.
-
-**Functional Process**
-
-FP-03 — Initial Evaluation
-
-**Assigned By**
-
-System
-
-**Previous Statuses**
-
-- EST-002
-
-**Next Statuses**
-
-- EST-004 Accepted
-- EST-005 Discarded
-
----
-
-### EST-004. Accepted
-
-**Description**
-
-The job posting has passed the initial evaluation and is approved to continue in the process.
-
-**Functional Process**
-
-FP-03 — Initial Evaluation
-
-**Assigned By**
-
-System
-
-**Previous Statuses**
-
-- EST-003
-
-**Next Statuses**
-
-- EST-006 Processed
-
----
-
-### EST-005. Discarded
-
-**Description**
+| Área | Capacidades |
+|------|-------------|
+| **Descubrimiento** | Consultar fuentes configuradas · Detectar nuevas ofertas · Extraer información disponible · Registrar ofertas descubiertas |
+| **Preparación** | Limpiar y normalizar información extraída · Validar integridad de datos · Detectar y eliminar duplicados · Asignar estado inicial de procesamiento |
+| **Evaluación inicial** | Analizar cada oferta según criterios definidos · Calcular puntuación de compatibilidad · Clasificar por prioridad · Descartar automáticamente ofertas que violan reglas predefinidas |
+| **Procesamiento profundo** | Analizar en detalle ofertas seleccionadas · Identificar requisitos, responsabilidades, beneficios y otra información relevante · Generar información estructurada para preparación de postulación · Preparar recursos definidos para el proceso de postulación |
+| **Gestión de procesos** | Mantener historial completo de cada oferta · Gestionar estados del flujo de trabajo · Registrar decisiones y resultados · Permitir seguimiento del ciclo de vida completo |
+| **Administración** | Configurar fuentes de empleo · Actualizar criterios de evaluación · Incorporar nuevas reglas y funcionalidades sin afectar componentes existentes |
 
-The job posting is no longer being processed because it did not satisfy the defined rules or because the user decided to discard it.
+### 2.2 Funciones principales (F1–F10)
 
-**Functional Process**
+| Código | Función | Detalle |
+|--------|---------|---------|
+| **F1** | Descubrimiento de oportunidades | Consultar fuentes configuradas · Detectar ofertas nuevas · Extraer información relevante · Registrar fecha, hora y fuente del descubrimiento |
+| **F2** | Gestión de ofertas | Crear registro único por oferta · Detectar y prevenir duplicados · Actualizar información cuando la oferta cambia · Mantener historial de modificaciones |
+| **F3** | Preparación de información | Limpiar datos extraídos · Normalizar formatos y estructuras · Completar información derivada cuando sea posible · Validar calidad de datos obtenidos |
+| **F4** | Evaluación automatizada | Analizar ofertas con criterios predefinidos · Calcular puntuación de compatibilidad · Clasificar por prioridad · Identificar automáticamente ofertas a descartar |
+| **F5** | Procesamiento profundo | Analizar contenido completo de la oferta · Identificar requisitos técnicos y funcionales · Extraer responsabilidades, beneficios y condiciones laborales · Generar información estructurada para apoyar la postulación |
+| **F6** | Generación de recursos | Generar documentos, análisis o recursos definidos para cada postulación · Organizar por oferta · Mantener trazabilidad entre recurso generado y oferta correspondiente |
+| **F7** | Gestión del flujo de trabajo | Controlar estados de cada oferta durante todo su ciclo de vida · Registrar cada transición de estado · Registrar decisiones automatizadas y del usuario · Permitir reanudar procesos interrumpidos |
+| **F8** | Administración | Gestionar fuentes de empleo · Gestionar criterios de evaluación · Gestionar configuración general del sistema · Gestionar catálogos, reglas y parámetros |
+| **F9** | Consulta y seguimiento | Ver historial completo de ofertas · Ver estado actual de cada oferta · Ver resultados de evaluación · Acceder a información generada durante el procesamiento |
+| **F10** | Registro y auditoría | Registrar eventos relevantes del sistema · Registrar errores y excepciones · Registrar decisiones automatizadas · Mantener trazabilidad completa del procesamiento de cada oferta |
 
-FP-03 — Initial Evaluation
-FP-07 — User Review
+### 2.3 Fuera de alcance
 
-**Assigned By**
+**Principio general:** La automatización no realiza decisiones estratégicas, no modifica el perfil profesional sin autorización, no envía postulaciones automáticamente salvo aprobación explícita, no reemplaza el juicio del usuario en decisiones de alto impacto, y no ejecuta actividades ajenas al proceso de búsqueda y preparación de oportunidades laborales.
 
-System
-User
+| Código | Función excluida | Detalle |
+|--------|------------------|---------|
+| **FNA-1** | Postulación automática | No enviar postulaciones sin aprobación explícita del usuario |
+| **FNA-2** | Decisiones estratégicas | No reemplazar el juicio del usuario en decisiones de alto impacto: elegir empresa, decidir si una oportunidad vale la pena personalmente, modificar criterios profesionales sin autorización |
+| **FNA-3** | Modificación del perfil profesional | No modificar automáticamente: currículum, perfil profesional, portafolio, información personal, preferencias laborales |
+| **FNA-4** | Comunicación con terceros | No enviar correos, mensajes ni comunicación externa en nombre del usuario salvo funcionalidad explícitamente diseñada, implementada y aprobada |
+| **FNA-5** | Gestión de entrevistas | No programar entrevistas, aceptar invitaciones ni responder automáticamente a procesos de reclutamiento |
+| **FNA-6** | Actividades fuera del alcance | No ejecutar tareas no directamente relacionadas con descubrimiento, análisis, evaluación, preparación y gestión de oportunidades laborales |
+| **FNA-7** | Aprendizaje autónomo | No modificar reglas de negocio, criterios de evaluación ni configuraciones del sistema por sí mismo sin intervención del usuario |
 
-**Previous Statuses**
-
-- EST-003
-
-**Final Status**
-
-Yes
-
----
-
-### EST-006. Processed
-
-**Description**
-
-The job posting has been analyzed in depth, and all information required to support the application has been generated.
-
-**Functional Process**
-
-FP-05 — Deep Processing
-
-**Assigned By**
-
-System
-
-**Previous Statuses**
-
-- EST-004
-
-**Next Statuses**
-
-- EST-007 Finalized
-
----
-
-### EST-007. Finalized
-
-**Description**
-
-The job posting has completed its lifecycle within the automation, and all related information has been stored for future reference.
-
-**Functional Process**
-
-FP-08 — Management and Tracking
-
-**Assigned By**
-
-System
-
-**Previous Statuses**
-
-- EST-005
-- EST-006
-
-**Final Status**
-
-Yes
-
----
-
-## 14. Automated Decisions
-
-The automation may make decisions autonomously only when predefined and documented rules exist.
-
-### DA-001. Job Discovery
-
-- Detect new job postings.
-- Identify whether a job posting already exists.
-- Register new opportunities.
-
----
-
-### DA-002. Information Preparation
-
-- Clean data.
-- Normalize formats.
-- Validate required fields.
-- Detect inconsistent information.
-
----
-
-### DA-003. Duplicate Management
-
-- Identify duplicate job postings.
-- Associate equivalent records.
-- Prevent duplicate processing.
-
----
-
-### DA-004. Initial Evaluation
-
-- Calculate the compatibility score.
-- Apply rejection rules.
-- Assign a priority.
-- Classify the job posting.
-
----
-
-### DA-005. Deep Processing
-
-- Analyze the content of the job posting.
-- Extract requirements.
-- Identify competencies.
-- Generate structured information.
-- Produce the analyses defined by the system.
-
----
-
-### DA-006. Resource Generation
-
-- Generate the resources defined to support the job application.
-- Organize the generated information.
-- Associate each resource with its corresponding job posting.
-
----
-
-### DA-007. Workflow Management
-
-- Change the lifecycle status when the defined conditions are met.
-- Update the operational status.
-- Record events.
-- Record metrics.
-- Record history.
-
----
-
-### DA-008. Operational Recovery
-
-- Retry processes when a recovery strategy has been defined.
-- Resume interrupted processes.
-- Mark processes that require user intervention.
-
----
-
-### General Principle
-
-Every automated decision shall be:
-
-- Reproducible.
-- Traceable.
-- Auditable.
-- Based on documented rules.
-- Reversible whenever technically possible.
-
----
-
-## 15. Decisions Requiring User Intervention
-
-The following decisions shall be made exclusively by the user unless their automation is explicitly approved in a future version of the project.
-
-### DU-001. Opportunity Approval
-
-Decide whether a job posting should continue to be considered a worthwhile opportunity.
-
----
-
-### DU-002. Manual Rejection
-
-Discard a job posting for personal or strategic reasons that cannot be determined automatically.
-
-Examples:
-
-- Personal preferences.
-- Organizational culture.
-- Interest in the company.
-- External information unavailable to the system.
-
----
-
-### DU-003. Exceptional Prioritization
-
-Manually modify the priority automatically assigned by the system.
-
----
-
-### DU-004. Job Application Approval
-
-Authorize the final preparation of an application for a specific job posting.
-
----
-
-### DU-005. Application Submission
-
-Authorize any action that involves sending the user's information to third parties.
-
-Examples:
-
-- Send a resume.
-- Complete an application form.
-- Send an email.
-- Share documents.
-
----
-
-### DU-006. Professional Profile Modification
-
-Authorize changes to:
-
-- Resume.
-- Professional profile.
-- Portfolio.
-- Personal information.
-- Job preferences.
-
----
-
-### DU-007. System Rule Modification
-
-Approve changes to:
-
-- Evaluation rules.
-- Rejection rules.
-- Thresholds.
-- Critical configurations.
-- Decision criteria.
-
----
-
-### DU-008. Exceptional Reprocessing
-
-Authorize the reprocessing of job postings when the system detects situations that cannot be resolved automatically.
-
----
-
-### General Principle
-
-Any decision involving strategic, legal, personal, or user representation consequences shall require the user's explicit approval before execution.
-
----
-
-## 16. General Functional Rules
-
-The following rules shall be observed throughout the operation of the automation.
-
-### GFR-001. Traceability
-
-Every action, decision, recommendation, and status change shall be recorded.
-
----
-
-### GFR-002. Unique Identification
-
-Every job posting shall have a unique and immutable identifier within the system.
-
----
-
-### GFR-003. No Duplication
-
-The same job posting shall never be processed simultaneously more than once.
-
----
-
-### GFR-004. Information Integrity
-
-The automation shall not delete or modify the original information obtained from job sources.
-
-Any transformations shall be performed on derived or normalized data.
-
----
-
-### GFR-005. Data Separation
-
-Inputs, internal data, and outputs shall remain conceptually independent entities.
-
----
-
-### GFR-006. Document Traceability
-
-Every generated document, analysis, or resource shall be traceable to the job posting from which it originated.
-
----
-
-### GFR-007. Status Control
-
-Every job posting shall always have exactly one lifecycle status and one operational status.
-
-Conflicting statuses shall never exist simultaneously.
-
----
-
-### GFR-008. Pre-Validation
-
-No process shall be executed unless the job posting satisfies the minimum requirements defined for that stage.
-
----
-
-### GFR-009. Controlled Recovery
-
-Whenever a recoverable error occurs, the system shall attempt to resolve it according to the defined recovery strategy before requesting user intervention.
-
----
-
-### GFR-010. User Intervention
-
-Strategic decisions shall only be executed after the user's explicit authorization.
-
----
-
-### GFR-011. Processing Consistency
-
-Every job posting shall progress through the functional workflow according to the defined lifecycle transitions.
-
----
-
-### GFR-012. Auditability
-
-Every automated decision shall be justifiable through documented rules.
-
----
-
-### GFR-013. Centralized Configuration
-
-Business rules, parameters, and configurations shall be managed from a single configuration point.
-
----
-
-### GFR-014. Modularity
-
-Components shall be designed to minimize dependencies and facilitate maintenance, replacement, and future expansion.
-
----
-
-### GFR-015. Scalability
-
-The addition of new job sources, business rules, modules, or functionalities shall not require significant modifications to existing components.
-
----
-
-## 17. Use Case Catalog
-
-The following use cases represent the system's primary functionalities. The detailed specification of each use case shall be documented in a separate document.
-
-### Configuration Management
-
-- UC-001 Configure the system.
-- UC-002 Configure job sources.
-- UC-003 Configure evaluation rules.
-- UC-004 Configure user preferences.
-
----
-
-### Discovery
-
-- UC-005 Discover new job postings.
-- UC-006 Register a job posting.
-- UC-007 Detect duplicate job postings.
-
----
-
-### Preparation
-
-- UC-008 Prepare a job posting.
-- UC-009 Normalize information.
-- UC-010 Validate information.
-
----
-
-### Evaluation
-
-- UC-011 Evaluate a job posting.
-- UC-012 Classify a job posting.
-- UC-013 Discard a job posting.
-
----
-
-### Deep Processing
-
-- UC-014 Analyze a job posting.
-- UC-015 Extract requirements.
-- UC-016 Generate analyses.
-- UC-017 Generate application resources.
-
----
-
-### Management
-
-- UC-018 View a job posting.
-- UC-019 View history.
-- UC-020 View the status of a job posting.
-- UC-021 Reprocess a job posting.
-- UC-022 Record a user decision.
-
----
-
-### Administration
-
-- UC-023 View metrics.
-- UC-024 View logs.
-- UC-025 Manage system configurations.
-
----
-
-## 18. Functional Constraints
-
-### FC-001
-
-The system shall process only job postings originating from previously configured sources.
-
----
-
-### FC-002
-
-Every job posting shall have a unique identifier before processing begins.
-
----
-
-### FC-003
-
-No more than one active processing instance shall exist for the same job posting.
-
----
-
-### FC-004
-
-No job posting shall advance to the next workflow stage unless it has successfully completed the previous stage, except when a documented rule explicitly allows it.
-
 ---
 
-### FC-005
+## 3. Actores del Sistema
 
-Strategic decisions shall always require the user's explicit authorization.
+| Código | Actor | Descripción | Responsabilidades / Ejemplos |
+|--------|-------|-------------|------------------------------|
+| **A1** | Usuario | Propietario y operador de la automatización | Configurar el sistema · Definir criterios de evaluación · Autorizar decisiones que requieren intervención humana · Revisar resultados generados · Actualizar información profesional cuando sea necesario |
+| **A2** | Plataformas de empleo | Fuentes de las cuales la automatización obtiene oportunidades | Publicar ofertas · Proveer información disponible para procesamiento · *Ejemplos:* LinkedIn, Indeed, Computrabajo, Magneto, sitios corporativos de carreras, otras fuentes configuradas por el usuario |
+| **A3** | Modelo de IA | Servicio de IA usado para analizar y generar información | Analizar ofertas · Extraer información relevante · Clasificar contenido · Generar análisis · Apoyar generación de recursos de postulación |
+| **A4** | Servicios externos | Cualquier servicio de apoyo a la operación de la automatización | Almacenar información · Facilitar comunicación entre componentes · Proveer servicios de soporte · *Ejemplos:* servicios de almacenamiento, bases de datos, servicios de archivos, herramientas de automatización, APIs auxiliares |
 
----
-
-### FC-006
+**Dependencias externas:** Plataformas de empleo · Modelo de IA · Base de datos · Navegador · Sistema de archivos · APIs.
 
-Every automated decision shall be supported by a documented rule.
-
 ---
 
-### FC-007
+## 4. Entradas del Sistema (E-001 a E-007)
 
-All generated information shall maintain traceability to the job posting from which it originated.
+| Código | Entrada | Contenido |
+|--------|---------|-----------|
+| **E-001** | Configuración del usuario | Fuentes de empleo · Frecuencia de ejecución · Preferencias generales · Parámetros de configuración |
+| **E-002** | Perfil profesional | Currículum · Perfil profesional · Experiencia laboral · Habilidades · Tecnologías · Idiomas · Certificaciones · Formación académica · Preferencias laborales · Expectativas salariales · Modalidad de trabajo · Ubicación · Empresas objetivo · Empresas restringidas |
+| **E-003** | Ofertas de trabajo | Título · Empresa · Descripción · Requisitos · Responsabilidades · Beneficios · Salario · Modalidad de trabajo · Ubicación · Fecha de publicación · URL · Identificador de la oferta · Plataforma de origen |
+| **E-004** | Reglas de negocio | Reglas de evaluación · Reglas de rechazo · Reglas de aceptación · Prioridades · Umbrales · Excepciones |
+| **E-005** | Prompts y configuraciones de IA | Prompts · Plantillas · Parámetros de ejecución · Configuraciones de procesamiento |
+| **E-006** | Información histórica | Historial de ofertas · Estados anteriores · Resultados de evaluación · Documentos generados · Logs de ejecución · Decisiones del usuario |
+| **E-007** | Decisiones del usuario | Aprobar una oferta · Rechazar una oferta · Solicitar nuevo análisis · Modificar criterios de evaluación · Reanudar un proceso |
 
 ---
 
-### FC-008
+## 5. Datos Internos (DI-001 a DI-007)
 
-The automation shall preserve the complete history of every job posting.
+| Código | Dato interno | Contenido |
+|--------|--------------|-----------|
+| **DI-001** | Identificadores internos | ID interno de oferta · ID de procesamiento · ID de ejecución · ID de análisis · ID de documento generado |
+| **DI-002** | Estados de procesamiento | Estado actual · Estado anterior · Fecha de cambio · Motivo del cambio · Responsable del cambio (usuario o sistema) |
+| **DI-003** | Resultados intermedios | Puntuaciones parciales · Clasificaciones temporales · Información extraída · Datos normalizados · Resultados de validación |
+| **DI-004** | Configuración operativa | Parámetros internos · Variables de ejecución · Configuración de módulos · Configuración del flujo de trabajo · Umbrales internos |
+| **DI-005** | Historial del sistema | Historial de cambios · Historial de evaluaciones · Historial de decisiones · Historial de reprocesamiento |
+| **DI-006** | Métricas de ejecución | Tiempo de ejecución · Duración por módulo · Número de ofertas procesadas · Número de errores · Número de reintentos · Indicadores de rendimiento |
+| **DI-007** | Relaciones internas | Oferta ↔ Evaluaciones · Oferta ↔ Documentos · Oferta ↔ Historial · Oferta ↔ Decisiones · Oferta ↔ Ejecuciones |
 
 ---
 
-### FC-009
+## 6. Salidas del Sistema (S-001 a S-007)
 
-Errors shall be recorded before any recovery process begins.
+| Código | Salida | Contenido |
+|--------|--------|-----------|
+| **S-001** | Ofertas estructuradas | Información normalizada de cada oferta, lista para ser usada por los procesos de la automatización: información limpia · campos normalizados · datos validados · identificadores internos |
+| **S-002** | Resultados de evaluación inicial | Puntuación · Nivel de compatibilidad · Prioridad · Motivos de aceptación · Motivos de rechazo · Recomendaciones |
+| **S-003** | Análisis profundo de la oferta | Resumen ejecutivo · Requisitos identificados · Competencias técnicas · Habilidades blandas · Responsabilidades · Beneficios · Riesgos · Observaciones relevantes |
+| **S-004** | Recursos de postulación | Análisis estratégicos · Información organizada · Documentos definidos para cada oferta · Otros recursos aprobados durante el desarrollo del proyecto |
+| **S-005** | Estado de la oferta | Estado actual · Fecha de última actualización · Historial de estados · Persona o sistema responsable de la última decisión |
+| **S-006** | Informes | Número de ofertas descubiertas · Número de ofertas descartadas · Número de ofertas priorizadas · Tiempo de procesamiento · Métricas de ejecución · Estadísticas generales |
+| **S-007** | Logs del sistema | Eventos · Errores · Advertencias · Decisiones automatizadas · Decisiones del usuario · Historial de ejecución |
 
 ---
 
-### FC-010
+## 7. Flujo de Trabajo Funcional (FF-01 a FF-09)
 
-The system shall maintain consistency between the lifecycle status and the operational status of every job posting.
+| Etapa | Código | Proceso | Acciones |
+|-------|--------|---------|----------|
+| **1. Descubrimiento** | FF-01 | FP-01 | Consultar fuentes configuradas · Detectar nuevas ofertas · Extraer información disponible · Registrar la oferta en el sistema |
+| **2. Preparación** | FF-02 | FP-02 | Limpiar información · Normalizar datos · Validar integridad de la oferta · Detectar duplicados · Asignar estado inicial |
+| **3. Evaluación inicial** | FF-03 | FP-03 | Analizar compatibilidad con el perfil profesional · Aplicar reglas de rechazo · Calcular puntuación inicial · Clasificar prioridad |
+| **4. Decisión inicial** | FF-04 | — | Si la oferta no cumple criterios mínimos → fin del procesamiento. Si cumple → continuar a procesamiento profundo |
+| **5. Procesamiento profundo** | FF-05 | FP-05 | Analizar la oferta en detalle · Identificar requisitos y competencias · Analizar responsabilidades y beneficios · Generar información estructurada |
+| **6. Generación de recursos** | FF-06 | FP-06 | Preparar recursos definidos para apoyar la postulación · Organizar resultados generados · Asociar recursos con la oferta correspondiente |
+| **7. Revisión del usuario** | FF-07 | FP-07 | Cuando el flujo requiere decisión estratégica: presentar información al usuario · esperar decisión · registrar decisión tomada |
+| **8. Gestión y seguimiento** | FF-08 | FP-08 | Actualizar estado de la oferta · Registrar historial · Preservar trazabilidad completa · Mantener disponible toda la información generada |
+| **9. Finalización** | FF-09 | — | Marcar procesamiento como completado · Registrar fecha de finalización · Preservar toda la información para referencia futura |
 
 ---
 
-## 19. Acceptance Criteria
+## 8. Ciclo de Vida y Catálogo de Estados
 
-The system shall satisfy the functional requirements when it can be verified that:
+**Nota (decisión 2026-07-30):** Los 7 estados siguientes son la única fuente de verdad para el ciclo de vida de la oferta, alineados con `shared/state_machine.py`. Versiones anteriores del catálogo (EST-001..010, EST-999 Error) quedan obsoletas.
 
-### AC-001
+| Código | Estado | Descripción | Proceso funcional | Asignado por | Estados anteriores | Estados siguientes | Estado final |
+|--------|--------|-------------|-------------------|--------------|--------------------|--------------------|--------------|
+| **EST-001** | Descubierto | La oferta fue identificada en una fuente y registrada por primera vez | FP-01 Descubrimiento | Sistema | Ninguno | EST-002 | No |
+| **EST-002** | Preparado | La información fue limpiada, normalizada y validada | FP-02 Preparación | Sistema | EST-001 | EST-003 | No |
+| **EST-003** | Evaluado | La oferta fue evaluada según las reglas de negocio | FP-03 Evaluación inicial | Sistema | EST-002 | EST-004 · EST-005 | No |
+| **EST-004** | Aceptado | La oferta superó la evaluación inicial y está aprobada para continuar | FP-03 Evaluación inicial | Sistema | EST-003 | EST-006 | No |
+| **EST-005** | Descartado | La oferta ya no se procesa porque no cumplió las reglas definidas o porque el usuario decidió descartarla | FP-03 Evaluación inicial · FP-07 Revisión del usuario | Sistema · Usuario | EST-003 | EST-007 | **Sí** |
+| **EST-006** | Procesado | La oferta fue analizada en profundidad y toda la información requerida para apoyar la postulación fue generada | FP-05 Procesamiento profundo | Sistema | EST-004 | EST-007 | No |
+| **EST-007** | Finalizado | La oferta completó su ciclo de vida dentro de la automatización y toda la información relacionada fue almacenada para referencia futura | FP-08 Gestión y seguimiento | Sistema | EST-005 · EST-006 | — | **Sí** |
 
-It is capable of discovering job postings from the configured sources.
+**Etapas del ciclo de vida (LC-01 a LC-07):** Corresponden directamente a los estados EST-001 a EST-007 respectivamente: LC-01 Descubierto · LC-02 Preparado · LC-03 Evaluado · LC-04 Aceptado · LC-05 Descartado · LC-06 Procesado · LC-07 Finalizado.
 
 ---
-
-### AC-002
 
-It registers every job posting with a unique identifier.
+## 9. Decisiones Automatizadas (DA-001 a DA-008)
 
----
-
-### AC-003
+**Principio general:** Toda decisión automatizada debe ser: reproducible · trazable · auditable · basada en reglas documentadas · reversible cuando sea técnicamente posible.
 
-It correctly prepares and validates the obtained information.
+| Código | Decisión | Acciones |
+|--------|----------|----------|
+| **DA-001** | Descubrimiento de ofertas | Detectar nuevas ofertas · Identificar si una oferta ya existe · Registrar nuevas oportunidades |
+| **DA-002** | Preparación de información | Limpiar datos · Normalizar formatos · Validar campos requeridos · Detectar información inconsistente |
+| **DA-003** | Gestión de duplicados | Identificar ofertas duplicadas · Asociar registros equivalentes · Prevenir procesamiento duplicado |
+| **DA-004** | Evaluación inicial | Calcular puntuación de compatibilidad · Aplicar reglas de rechazo · Asignar prioridad · Clasificar la oferta |
+| **DA-005** | Procesamiento profundo | Analizar contenido de la oferta · Extraer requisitos · Identificar competencias · Generar información estructurada · Producir los análisis definidos por el sistema |
+| **DA-006** | Generación de recursos | Generar recursos definidos para apoyar la postulación · Organizar la información generada · Asociar cada recurso con su oferta correspondiente |
+| **DA-007** | Gestión del flujo de trabajo | Cambiar estado del ciclo de vida cuando se cumplen las condiciones definidas · Actualizar estado operativo · Registrar eventos, métricas e historial |
+| **DA-008** | Recuperación operativa | Reintentar procesos cuando existe estrategia de recuperación definida · Reanudar procesos interrumpidos · Marcar procesos que requieren intervención del usuario |
 
 ---
-
-### AC-004
-
-It automatically evaluates job postings using the defined rules.
 
----
+## 10. Decisiones que Requieren Intervención del Usuario (DU-001 a DU-008)
 
-### AC-005
+**Principio general:** Toda decisión con consecuencias estratégicas, legales, personales o de representación del usuario requiere aprobación explícita del usuario antes de su ejecución.
 
-It generates the information required to support the job application process.
+| Código | Decisión | Detalle |
+|--------|----------|---------|
+| **DU-001** | Aprobación de oportunidad | Decidir si una oferta debe seguir siendo considerada una oportunidad valiosa |
+| **DU-002** | Rechazo manual | Descartar una oferta por motivos personales o estratégicos que no pueden determinarse automáticamente: preferencias personales, cultura organizacional, interés en la empresa, información externa no disponible para el sistema |
+| **DU-003** | Priorización excepcional | Modificar manualmente la prioridad asignada automáticamente por el sistema |
+| **DU-004** | Aprobación de postulación | Autorizar la preparación final de una postulación para una oferta específica |
+| **DU-005** | Envío de postulación | Autorizar cualquier acción que implique enviar información del usuario a terceros: enviar currículum, completar formulario de postulación, enviar correo, compartir documentos |
+| **DU-006** | Modificación del perfil profesional | Autorizar cambios en: currículum, perfil profesional, portafolio, información personal, preferencias laborales |
+| **DU-007** | Modificación de reglas del sistema | Aprobar cambios en: reglas de evaluación, reglas de rechazo, umbrales, configuraciones críticas, criterios de decisión |
+| **DU-008** | Reprocesamiento excepcional | Autorizar reprocesamiento de ofertas cuando el sistema detecta situaciones que no pueden resolverse automáticamente |
 
 ---
 
-### AC-006
+## 11. Reglas Funcionales Generales (GFR-001 a GFR-015)
 
-It keeps both the lifecycle status and the operational status of every job posting up to date.
+| Código | Regla | Definición |
+|--------|-------|------------|
+| **GFR-001** | Trazabilidad | Toda acción, decisión, recomendación y cambio de estado debe ser registrado |
+| **GFR-002** | Identificación única | Toda oferta debe tener un identificador único e inmutable dentro del sistema |
+| **GFR-003** | No duplicación | La misma oferta nunca debe ser procesada simultáneamente más de una vez |
+| **GFR-004** | Integridad de la información | La automatización no debe eliminar ni modificar la información original obtenida de las fuentes. Cualquier transformación se realiza sobre datos derivados o normalizados |
+| **GFR-005** | Separación de datos | Entradas, datos internos y salidas deben permanecer como entidades conceptualmente independientes |
+| **GFR-006** | Trazabilidad documental | Todo documento, análisis o recurso generado debe ser trazable hasta la oferta que lo originó |
+| **GFR-007** | Control de estados | Toda oferta debe tener siempre exactamente un estado de ciclo de vida y un estado operativo. Nunca deben existir estados conflictivos simultáneamente |
+| **GFR-008** | Pre-validación | Ningún proceso debe ejecutarse a menos que la oferta cumpla los requisitos mínimos definidos para esa etapa |
+| **GFR-009** | Recuperación controlada | Ante un error recuperable, el sistema debe intentar resolverlo según la estrategia de recuperación definida antes de solicitar intervención del usuario |
+| **GFR-010** | Intervención del usuario | Las decisiones estratégicas solo se ejecutan tras autorización explícita del usuario |
+| **GFR-011** | Consistencia del procesamiento | Toda oferta debe avanzar por el flujo de trabajo funcional según las transiciones de ciclo de vida definidas |
+| **GFR-012** | Auditabilidad | Toda decisión automatizada debe ser justificable mediante reglas documentadas |
+| **GFR-013** | Configuración centralizada | Reglas de negocio, parámetros y configuraciones se gestionan desde un único punto de configuración |
+| **GFR-014** | Modularidad | Los componentes deben diseñarse para minimizar dependencias y facilitar mantenimiento, reemplazo y expansión futura |
+| **GFR-015** | Escalabilidad | La adición de nuevas fuentes, reglas de negocio, módulos o funcionalidades no debe requerir modificaciones significativas de componentes existentes |
 
 ---
-
-### AC-007
 
-It records every action, decision, and recommendation performed during processing.
-
----
+## 12. Catálogo de Casos de Uso (UC-001 a UC-025)
 
-### AC-008
+| Área | Casos de uso |
+|------|--------------|
+| **Gestión de configuración** | UC-001 Configurar el sistema · UC-002 Configurar fuentes de empleo · UC-003 Configurar reglas de evaluación · UC-004 Configurar preferencias del usuario |
+| **Descubrimiento** | UC-005 Descubrir nuevas ofertas · UC-006 Registrar una oferta · UC-007 Detectar ofertas duplicadas |
+| **Preparación** | UC-008 Preparar una oferta · UC-009 Normalizar información · UC-010 Validar información |
+| **Evaluación** | UC-011 Evaluar una oferta · UC-012 Clasificar una oferta · UC-013 Descartar una oferta |
+| **Procesamiento profundo** | UC-014 Analizar una oferta · UC-015 Extraer requisitos · UC-016 Generar análisis · UC-017 Generar recursos de postulación |
+| **Gestión** | UC-018 Ver una oferta · UC-019 Ver historial · UC-020 Ver estado de una oferta · UC-021 Reprocesar una oferta · UC-022 Registrar decisión del usuario |
+| **Administración** | UC-023 Ver métricas · UC-024 Ver logs · UC-025 Gestionar configuraciones del sistema |
 
-It requests user intervention whenever a strategic decision is required.
+*Nota: La especificación detallada de cada caso de uso se documenta por separado.*
 
 ---
 
-### AC-009
+## 13. Restricciones Funcionales (FC-001 a FC-010)
 
-It maintains complete traceability for every job posting throughout its entire lifecycle.
+| Código | Restricción |
+|--------|-------------|
+| **FC-001** | El sistema solo procesa ofertas originadas en fuentes previamente configuradas |
+| **FC-002** | Toda oferta debe tener un identificador único antes de iniciar el procesamiento |
+| **FC-003** | No debe existir más de una instancia activa de procesamiento para la misma oferta |
+| **FC-004** | Ninguna oferta avanza a la siguiente etapa del flujo sin haber completado exitosamente la etapa anterior, salvo regla documentada que lo permita explícitamente |
+| **FC-005** | Las decisiones estratégicas siempre requieren autorización explícita del usuario |
+| **FC-006** | Toda decisión automatizada debe estar respaldada por una regla documentada |
+| **FC-007** | Toda información generada debe mantener trazabilidad hasta la oferta que la originó |
+| **FC-008** | La automatización debe preservar el historial completo de cada oferta |
+| **FC-009** | Los errores deben registrarse antes de iniciar cualquier proceso de recuperación |
+| **FC-010** | El sistema debe mantener consistencia entre el estado de ciclo de vida y el estado operativo de cada oferta |
 
 ---
 
-### AC-010
+## 14. Criterios de Aceptación (AC-001 a AC-010)
 
-It allows the system to be extended with new job sources, business rules, and functionalities without affecting the behavior of existing components.
+| Código | Criterio |
+|--------|----------|
+| **AC-001** | Es capaz de descubrir ofertas desde las fuentes configuradas |
+| **AC-002** | Registra cada oferta con un identificador único |
+| **AC-003** | Prepara y valida correctamente la información obtenida |
+| **AC-004** | Evalúa automáticamente las ofertas usando las reglas definidas |
+| **AC-005** | Genera la información requerida para apoyar el proceso de postulación |
+| **AC-006** | Mantiene actualizados tanto el estado de ciclo de vida como el estado operativo de cada oferta |
+| **AC-007** | Registra toda acción, decisión y recomendación realizada durante el procesamiento |
+| **AC-008** | Solicita intervención del usuario cuando se requiere una decisión estratégica |
+| **AC-009** | Mantiene trazabilidad completa de cada oferta durante todo su ciclo de vida |
+| **AC-010** | Permite extender el sistema con nuevas fuentes, reglas de negocio y funcionalidades sin afectar el comportamiento de componentes existentes |
 
 ---
-
-## 20. Module 1: Opportunity Discovery — Functional Requirements
-
-The following requirements complement the general ones established in this document for the Opportunity Discovery module (Module 1). They derive from the comparative analysis of the technical sheet (M1, 2026-08-07, §7c — mandatory set) and the decisions D1–D4.
-
-### RF-M1-001. Single run
-
-The module shall execute a single run per invocation (`corrida`), uniquely identified by `run_id`, and every record generated by the module (offers, events, sessions) shall be anchored to its `run_id` (traceability in every record; RN-01).
 
-### RF-M1-002. Concurrency lock
-
-The module shall not allow a second run while another run is active; the concurrency control shall be a persistent lock (`bloqueo` with `run_id` and timestamp) with a configurable obsolescence threshold (D3; ERR-06/07/08/09).
-
-### RF-M1-003. Reusable platform session
-
-When the source entry succeeds, the module shall create a session (`session_id`), keep it available for subsequent nodes during the run, and close it on exit; the session shall be auditable (T2 audit, D3: `session_id`, `run_id`, `source_id`, `set_indice`, `timestamp`, `total_declarado`, `conteo`, `estado`).
-
-### RF-M1-004. Secure credential store
-
-The module shall resolve credentials only from a secure store (reference in config, values in `.env` via dotenv — D4); credentials shall never be registered in logs, events, or the database.
-
-### RF-M1-005. Capture policies
-
-The module shall apply capture policies per source and per run (`max_paginas`, `max_ofertas_por_corrida`, `pausa_entre_lotes`, anti-block strategy), resolving effective values by merging per-source policies with global defaults (RN-11).
-
-### RF-M1-006. Filter sets
-
-The module shall iterate the configured basic filter sets (`sets_de_filtros`) of the current source in configuration order (empty set = base search) and expose the index of the set in progress (`set_indice`).
-
-### RF-M1-007. Platform adapter
-
-The module shall interact with each platform through an adapter that encapsulates the access parameters (access ficha), credential resolution, search, parsing, and capture of offers; the adapter shall preserve the original information in its integrity (C2) and support the massive/incremental mechanism of the platform (RN-10).
-
-### RF-M1-008. Conditional retries
-
-The module shall retry only the motives `fuente_inalcanzable` and `timeout_*` (entry/consult/capture), with exponential backoff and from a closed channel; the remaining codes shall produce an immediate failure and shall never be retried (REC-003, DOC-06 §11).
-
-### RF-M1-009. Error codes per node
-
-Every node shall identify its failure with the official business code of the catalog (`ERR-XX`/`EVT-01`) and a `codigo_motivo`, mapping to the technical category `ER-<CAT>-<n>` (DOC-06, C7); node-local codes without a technical mapping are not allowed.
-
----
+## 15. Módulo 1: Descubrimiento de Oportunidades — Requisitos Funcionales Específicos
 
-### Note — state assignment (C5)
+Los siguientes requisitos complementan los generales de este documento para el Módulo 1. Derivan del análisis comparativo de la ficha técnica (M1, 2026-08-07, §7c — conjunto imprescindible) y las decisiones D1–D4.
 
-In compatibility with the general requirements of this document (state catalog EST-001), Module 1 inserts the offers discovered in the "Ofertas Totales" store with `estado='discovered'` (default assignment, no deduplication; normalization and deduplication belong to Module 2).
+| Código | Requisito | Detalle |
+|--------|-----------|---------|
+| **RF-M1-001** | Corrida única | El módulo ejecuta una sola corrida por invocación (`corrida`), identificada unívocamente por `run_id`; todo registro generado por el módulo (ofertas, eventos, sesiones) se ancla a su `run_id` (trazabilidad en todo registro; RN-01) |
+| **RF-M1-002** | Bloqueo de concurrencia | El módulo no permite una segunda corrida mientras otra está activa; el control de concurrencia es un bloqueo persistente (`bloqueo` con `run_id` y timestamp) con umbral de obsolescencia configurable (D3; ERR-06/07/08/09) |
+| **RF-M1-003** | Sesión de plataforma reutilizable | Cuando la entrada a la fuente tiene éxito, el módulo crea una sesión (`session_id`), la mantiene disponible para nodos subsiguientes durante la corrida, y la cierra al salir; la sesión es auditable (auditoría T2, D3: `session_id`, `run_id`, `source_id`, `set_indice`, `timestamp`, `total_declarado`, `conteo`, `estado`) |
+| **RF-M1-004** | Almacén seguro de credenciales | El módulo resuelve credenciales solo desde un almacén seguro (referencia en configuración, valores en `.env` vía dotenv — D4); las credenciales nunca se registran en logs, eventos ni base de datos |
+| **RF-M1-005** | Políticas de captura | El módulo aplica políticas de captura por fuente y por corrida (`max_paginas`, `max_ofertas_por_corrida`, `pausa_entre_lotes`, estrategia anti-bloqueo), resolviendo valores efectivos fusionando políticas por fuente con defaults globales (RN-11) |
+| **RF-M1-006** | Sets de filtros | El módulo itera los sets de filtros básicos configurados (`sets_de_filtros`) de la fuente actual en orden de configuración (set vacío = búsqueda base) y expone el índice del set en curso (`set_indice`) |
+| **RF-M1-007** | Adaptador de plataforma | El módulo interactúa con cada plataforma mediante un adaptador que encapsula: parámetros de acceso (ficha de acceso), resolución de credenciales, búsqueda, parseo y captura de ofertas; el adaptador preserva la integridad de la información original (C2) y soporta el mecanismo masivo/incremental de la plataforma (RN-10) |
+| **RF-M1-008** | Reintentos condicionales | El módulo reintenta solo los motivos `fuente_inalcanzable` y `timeout_*` (entrada/consulta/captura), con backoff exponencial y desde canal cerrado; los demás códigos producen fallo inmediato y nunca se reintentan (REC-003, DOC-06 §11) |
+| **RF-M1-009** | Códigos de error por nodo | Todo nodo identifica su fallo con el código de negocio oficial del catálogo (`ERR-XX`/`EVT-01`) y un `codigo_motivo`, mapeando a la categoría técnica `ER-<CAT>-<n>` (DOC-06, C7); no se permiten códigos locales de nodo sin mapeo técnico |
 
-### Note — resolution of D1 (`fuentes.activa`)
+**Nota — Asignación de estado (C5):** En compatibilidad con los requisitos generales de este documento (catálogo de estados EST-001), el Módulo 1 inserta las ofertas descubiertas en el almacén "Ofertas Totales" con `estado='discovered'` (asignación por defecto, sin deduplicación; la normalización y deduplicación pertenecen al Módulo 2).
 
-The `active` attribute of each source remains in the data model as a catalog attribute (decision D1, 2026-08-07): its value is managed manually and is ignored at runtime — the absence of `active` set to true shall not filter sources, excluded or included during execution.
+**Nota — Resolución de D1 (`fuentes.activa`):** El atributo `active` de cada fuente permanece en el modelo de datos como atributo de catálogo (decisión D1, 2026-08-07): su valor se gestiona manualmente y se ignora en tiempo de ejecución — la ausencia de `active` establecido en true no filtra fuentes, excluidas o incluidas durante la ejecución.
 
 ---
 
-## 21. Module 1 — Mandatory set (imprescindibles, §7c of the analysis)
+## 16. Módulo 1 — Conjunto Imprescindible (§7c del análisis)
 
-The mandatory functional scope of Module 1, without which the module does not meet the general requirements (FF-01) nor the data flow (DFT), is the following set:
+El alcance funcional obligatorio del Módulo 1, sin el cual el módulo no cumple los requisitos generales (FF-01) ni el flujo de datos (DFT), es el siguiente conjunto:
 
-| Imprescindible (§7c) | Requirement |
-|----------------------|-------------|
-| Traceability in every record | RF-M1-001 (run), plus `source_id`/`session_id`/`set_indice` per record |
-| Source access card (ficha de acceso) | Covered by "Entrar a la fuente" (access validation) |
-| Persistent lock | RF-M1-002 (D3, concurrency) |
+| Imprescindible (§7c) | Requisito que lo cubre |
+|----------------------|------------------------|
+| Trazabilidad en todo registro | RF-M1-001 (corrida), más `source_id` / `session_id` / `set_indice` por registro |
+| Ficha de acceso a la fuente | Cubierto por "Entrar a la fuente" (validación de acceso) |
+| Bloqueo persistente | RF-M1-002 (D3, concurrencia) |
 | `sets_de_filtros` | RF-M1-006 |
 | `politicas_de_captura` | RF-M1-005 |
-| Secure credential store | RF-M1-004 |
-| Platform adapter | RF-M1-007 |
-| Conditional retries | RF-M1-008 |
-| Error codes per node | RF-M1-009 |
+| Almacén seguro de credenciales | RF-M1-004 |
+| Adaptador de plataforma | RF-M1-007 |
+| Reintentos condicionales | RF-M1-008 |
+| Códigos de error por nodo | RF-M1-009 |
 
-These nine points constitute the minimal functional scope of Module 1; their traceability is mandatory in every record (`run_id` + `source_id` + `session_id` + `set_indice` when applicable).
+Estos nueve puntos constituyen el alcance funcional mínimo del Módulo 1; su trazabilidad es obligatoria en todo registro (`run_id` + `source_id` + `session_id` + `set_indice` cuando aplique).
+**Reducción estimada:** ~65-70 % del volumen original, 0 % de pérdida informativa.
