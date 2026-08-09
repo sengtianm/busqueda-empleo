@@ -10,7 +10,9 @@
  
 | № | Date | Session ID | Summary |
 |---|------|------------|---------|
-| 10 | 08/08/2026 | `ses_01d9bc5d2ffe0OwXiVc3MrXgBo` | Sub-fase 4.2: Ingreso flow implemented (3 nodes) and validated (152 tests) |
+| 12 | 08/08/2026 | `ses_01c089ce2ffe9MvQT4F1pC0MJN` | Sub-fase 4.2 deep audit + post-audit fixes (credentials mapping, playwright lifecycle) |
+| 11 | 08/08/2026 | `ses_01c312689ffewPDBUxLcQIRb5L` | Sub-fase 4.3: Filter search + generic register implemented and validated (171 tests) |
+| 10 | 08/08/2026 | `ses_01d9bc3d2ffe0OwXiVc3Mw8NWO` | Sub-fase 4.2: Ingreso flow implemented (3 nodes) and validated (152 tests) |
 | 9 | 08/08/2026 | `ses_01ebcd885ffe7UB5IsfCrylV90` | Sub-fase 4.1: INICIO node implemented and validated (123 tests), reviewer fixes applied, branch `fase-4` created |
 | 8 | 07/08/2026 | `ses_021c087e1ffePrh0h4O4Zzb4BY` | Module 1 preparation: discovery scaffold (run context + LinkedIn adapter), full validation passed, build ready |
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
@@ -18,7 +20,62 @@
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
  
 ---
+
+## Session 12 — 08/08/2026
+
+**ID:** `ses_01c089ce2ffe9MvQT4F1pC0MJN` · **Branch:** `fase-4`
+
+**Topics:**
+- Context recovery: AGENTS.md, MVP Plan, tracker, session history
+- Deep audit of Sub-fase 4.2 across eleven verification sections (structure, resource lifecycle, credentials, session_id, retries, decision node, event registration, tests, cleanliness, suite, commit/tracker)
+- Critical finding: credential key mismatch between node and adapter (refs versus canonical keys)
+- Minor finding: playwright `finally` guard depended on shared context state (multi-source leak risk)
+- Post-audit fixes implemented and validated
+
+**Decisions:**
+- Credential mapping convention (MVP): `credenciales_referencia[0] → username`, `[1] → password`
+- Adapter consumes canonical keys; node performs the mapping (Option A over changing the adapter)
+- Playwright lifecycle tracked by local `playwright_activo` flag instead of context state, preventing multi-source leaks
+- On success, the local flag is reset so `finally` does not close the session intended for subsequent nodes
+- Decisions from previous sessions remain in effect
+
+**Status:**
+- Sub-fase 4.2 post-audit fixes applied and validated
+- Ruff 0, mypy 0 (37 files), pytest 172/172
+- Branch: `fase-4`; fix committed on it (no merge)
+
+---
+
+## Session 11 — 08/08/2026
  
+**ID:** `ses_01c312689ffewPDBUxLcQIRb5L` · **Branch:** `fase-4`
+ 
+**Topics:**
+- Sub-fase 4.3 complete: search nodes ("Aplicar filtros básicos", "¿Se encontraron ofertas?", "Registrar suceso/error")
+- Set iteration (indices) with reset and marking as processed when source changes
+- Adapter search with filters
+- Conditional retries (source unavailable / timeouts) and retry counts
+- Search_result contract fixing (`exito` vs `ok` literal)
+- Generic event node that reads search_result or entry_result, typed to suceso/error, via shared/persistence
+- Event logging of failures/successes not aborted
+- Discovery of errors in the reviewer and final tests
+
+**Decisions:**
+- Search filters unsupported (`filtros_no_aplicables`) fail the set completely instead of silently continuing without filters
+- Success path of retries validated: successful retries count against actual attempts (`numero_de_intentos`)
+- Event search scoped to the current source (search_result of a previous source is inhibited)
+- Logging of a write failure must still continue (registered node)
+- Playwright mocked in node tests to avoid async/event-loop issues
+- Decisions from previous sessions remain in effect
+ 
+**Status:**
+- Phase 4.3 ✅: Filter search + generic register nodes done and validated
+- Ruff 0, mypy 0 (37 files), pytest 171/171
+- Branch: `fase-4`; commit created on it
+ 
+---
+
+
 ## Session 10 — 08/08/2026
  
 **ID:** `ses_01d9bc5d2ffe0OwXiVc3MrXgBo` · **Branch:** `fase-4`
