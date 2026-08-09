@@ -6,6 +6,8 @@ Update (or create if it does not exist) the current session's entry in `docs/his
 
 Rules:
 
+- This command only runs when the user invokes it (`/save`). The agent must
+  never execute it — nor anticipate it — on its own initiative.
 - The history is managed by **session number**, newest entry first. The session number is the last existing number + 1 (the consolidated Sessions 1–5 entry counts as one).
 - Each entry corresponds to **one OpenCode session** (one conversation), not one calendar day.
 - Get the current session ID from the OpenCode local database:
