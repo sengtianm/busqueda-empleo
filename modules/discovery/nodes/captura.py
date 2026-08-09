@@ -255,12 +255,19 @@ def registrar_ofertas(contexto: RunContext) -> ResultadoCaptura:
 
 
 def _oferta_a_dict(oferta: Offer, contexto: RunContext) -> dict[str, Any]:
-    """Construye el dict de la fila `ofertas` desde una oferta capturada."""
+    """Construye el dict de la fila `ofertas` desde una oferta capturada.
+
+    `empresa_id`/`ubicacion_id` se guardan como NULL (los catálogos aún no
+    existen en el MVP); el string del adaptador se conserva en las columnas
+    `empresa_nombre`/`ubicacion_nombre` y `fuente_id` conserva su source_id.
+    """
     return {
         "titulo": oferta.titulo,
         "descripcion_original": oferta.descripcion_original,
-        "empresa_id": oferta.empresa_id,
-        "ubicacion_id": oferta.ubicacion_id,
+        "empresa_id": None,
+        "ubicacion_id": None,
+        "empresa_nombre": oferta.empresa_id,
+        "ubicacion_nombre": oferta.ubicacion_id,
         "url": oferta.url,
         "fuente_id": oferta.fuente_id,
         "set_indice": oferta.set_indice,

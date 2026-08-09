@@ -315,3 +315,165 @@ def test_lock_forzar_sobrescribe_y_contienda_mantiene(temp_db_file: Path) -> Non
     lock = check_lock()
     assert lock is not None
     assert lock["run_id"] == "COR-0002"
+
+
+def test_upsert_oferta_inserta_nueva(temp_db_file: Path) -> None:
+    from shared.persistence import read_table, upsert_oferta
+
+    oferta = {
+        "titulo": "Desarrollador Python",
+        "descripcion_original": "Descripcion.",
+        "empresa_id": None,
+        "ubicacion_id": None,
+        "empresa_nombre": "TechCorp",
+        "ubicacion_nombre": "Madrid",
+        "url": "https://www.linkedin.com/jobs/view/123",
+        "fuente_id": "LI-01",
+        "set_indice": 0,
+        "id_externo_url": "123",
+        "run_id": "RUN-0001",
+        "session_id": "SES-0001",
+        "discovery_date": "2026-08-09 10:00:00",
+    }
+
+    id_oferta = upsert_oferta(oferta)
+    assert id_oferta.startswith("OFE-")
+
+    filas = read_table("ofertas", {"id": id_oferta})
+    assert len(filas) == 1
+    assert filas[0]["titulo"] == "Desarrollador Python"
+    assert filas[0]["fuente_id"] == "LI-01"
+    assert filas[0]["empresa_id"] is None
+    assert filas[0]["ubicacion_id"] is None
+
+
+def test_upsert_oferta_ids_nulos_sin_fk_error(temp_db_file: Path) -> None:
+    from shared.persistence import read_table, upsert_oferta
+
+    id_oferta = upsert_oferta(
+        {
+            "titulo": "Data Analyst",
+            "descripcion_original": "Sin empresa registrada.",
+            "empresa_id": None,
+            "ubicacion_id": None,
+            "empresa_nombre": "",
+            "ubicacion_nombre": "Remoto",
+            "url": "https://www.linkedin.com/jobs/view/456",
+            "fuente_id": "LI-01",
+            "set_indice": 1,
+            "id_externo_url": "456",
+            "run_id": "RUN-0002",
+            "session_id": "SES-0002",
+            "discovery_date": "2026-08-09 10:05:00",
+        }
+    )
+    assert id_oferta.startswith("OFE-")
+    filas = read_table("ofertas", {"id_externo_url": "456"})
+    assert len(filas) == 1
+    assert filas[0]["empresa_nombre"] == ""
+    assert filas[0]["ubicacion_nombre"] == "Remoto"
+
+
+def test_upsert_oferta_mismo_id_externo_no_duplica_y_actualiza_timestamp(
+    temp_db_file: Path,
+) -> None:
+    from shared.persistence import read_table, upsert_oferta
+
+    base = {
+        "titulo": "Ingeniero DevOps",
+        "descripcion_original": "Descripcion.",
+        "empresa_id": None,
+        "ubicacion_id": None,
+        "empresa_nombre": "",
+        "ubicacion_nombre": "",
+        "url": "https://www.linkedin.com/jobs/view/789",
+        "fuente_id": "LI-01",
+        "set_indice": 0,
+        "id_externo_url": "789",
+        "run_id": "RUN-0003",
+        "session_id": "SES-0003",
+        "discovery_date": "2026-08-09 10:00:00",
+    }
+    primero = upsert_oferta(dict(base))
+    segundo = upsert_oferta(dict(base))
+
+    assert primero == segundo
+    filas = read_table("ofertas", {"id_externo_url": "789"})
+    assert len(filas) == 1
+    assert filas[0]["timestamp_ultima_verificacion"] != ""
+    assert filas[0]["id"] == primero
+
+
+def test_upsert_oferta_con_empresa_nombre_persistido(temp_db_file: Path) -> None:
+    from shared.persistence import read_table, upsert_oferta
+
+    id_oferta = upsert_oferta(
+        {
+            "titulo": "Backend Engineer",
+            "descripcion_original": "Descripcion.",
+            "empresa_id": None,
+            "ubicacion_id": None,
+            "empresa_nombre": "OpenAI",
+            "ubicacion_nombre": "Barcelona",
+            "url": "https://www.linkedin.com/jobs/view/1011",
+            "fuente_id": "LI-01",
+            "set_indice": 0,
+            "id_externo_url": "1011",
+            "run_id": "RUN-0004",
+            "session_id": "SES-0004",
+            "discovery_date": "2026-08-09 10:10:00",
+        }
+    )
+    assert id_oferta.startswith("OFE-")
+    filas = read_table("ofertas", {"id": id_oferta})
+    assert filas[0]["empresa_nombre"] == "OpenAI"
+    assert filas[0]["ubicacion_nombre"] == "Barcelona"
+
+
+def test_migracion_4_4_fks_anulables_idempotente(tmp_path: Path) -> None:
+    import sqlite3
+
+    from shared.persistence import change_path, init_db, read_table, reset_path
+
+    path = tmp_path / "fk.db"
+    conn = sqlite3.connect(str(path))
+    conn.execute(
+        "CREATE TABLE ofertas ("
+        "id TEXT PRIMARY KEY,"
+        "url TEXT NOT NULL,"
+        "titulo TEXT NOT NULL,"
+        "descripcion_original TEXT NOT NULL,"
+        "fuente_id TEXT REFERENCES fuentes(id),"
+        "empresa_id TEXT REFERENCES empresas(id),"
+        "ubicacion_id TEXT REFERENCES ubicaciones(id)"
+        ")"
+    )
+    conn.execute(
+        "INSERT INTO ofertas (id, url, titulo, descripcion_original) "
+        "VALUES ('OFE-0001', 'https://x.com/1', 'Vieja', 'Desc')"
+    )
+    conn.commit()
+    conn.close()
+
+    change_path(path)
+    try:
+        init_db()
+        init_db()
+        columnas = {
+            fila[1]
+            for fila in sqlite3.connect(str(path)).execute(
+                "PRAGMA table_info(ofertas)"
+            ).fetchall()
+        }
+        assert "empresa_nombre" in columnas
+        assert "ubicacion_nombre" in columnas
+        fks = sqlite3.connect(str(path)).execute(
+            "PRAGMA foreign_key_list(ofertas)"
+        ).fetchall()
+        assert fks == []
+        rows = read_table("ofertas")
+        assert len(rows) == 1
+        assert rows[0]["id"] == "OFE-0001"
+        assert rows[0]["titulo"] == "Vieja"
+    finally:
+        reset_path()

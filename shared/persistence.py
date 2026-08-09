@@ -86,9 +86,11 @@ ESQUEMAS: dict[str, str] = {
         "observaciones TEXT DEFAULT '',"
         "creation_date TEXT DEFAULT '',"
         "last_edit_date TEXT DEFAULT '',"
-        "fuente_id TEXT REFERENCES fuentes(id),"
-        "empresa_id TEXT REFERENCES empresas(id),"
-        "ubicacion_id TEXT REFERENCES ubicaciones(id),"
+        "fuente_id TEXT DEFAULT '',"
+        "empresa_id TEXT DEFAULT '',"
+        "ubicacion_id TEXT DEFAULT '',"
+        "empresa_nombre TEXT DEFAULT '',"
+        "ubicacion_nombre TEXT DEFAULT '',"
         "run_id TEXT DEFAULT '',"
         "session_id TEXT DEFAULT '',"
         "set_indice INTEGER DEFAULT '',"
@@ -205,6 +207,7 @@ def init_db() -> None:
             conn.execute(ESQUEMAS[nombre_tabla])
         _migrate_ofertas(conn)
         _migrate_ofertas_timestamp_ultima_verificacion(conn)
+        _migrate_ofertas_empresa_nombre(conn)
         conn.commit()
     finally:
         conn.close()
@@ -229,12 +232,53 @@ def _migrate_ofertas(conn: sqlite3.Connection) -> None:
     conn.execute(
         ESQUEMAS["ofertas"].replace("TABLE IF NOT EXISTS ofertas", "TABLE ofertas_nueva")
     )
-    comunes = [c for c in conn.execute("PRAGMA table_info(ofertas)").fetchall()]
-    nombres = [fila["name"] for fila in comunes]
-    lista = ", ".join(nombres)
+    nuevas = {
+        fila["name"]
+        for fila in conn.execute("PRAGMA table_info(ofertas_nueva)").fetchall()
+    }
+    comunes = [
+        fila["name"]
+        for fila in conn.execute("PRAGMA table_info(ofertas)").fetchall()
+        if fila["name"] in nuevas
+    ]
+    lista = ", ".join(comunes)
     conn.execute(
         f"INSERT INTO ofertas_nueva ({lista}) SELECT {lista} FROM ofertas"
     )
+    conn.execute("DROP TABLE ofertas")
+    conn.execute("ALTER TABLE ofertas_nueva RENAME TO ofertas")
+
+
+def _migrate_ofertas_empresa_nombre(conn: sqlite3.Connection) -> None:
+    """4.4 fix migration: rebuild `ofertas` with FK-free schema + name columns.
+
+    The old schema declared `fuente_id`, `empresa_id` and `ubicacion_id` as
+    foreign keys, so capturing without catalog rows failed with FOREIGN KEY
+    constraint errors. SQLite cannot drop FK constraints in place, so the
+    table is rebuilt from the current schema (no REFERENCES clauses, plus
+    `empresa_nombre` and `ubicacion_nombre`). Idempotent: only runs when the
+    current table still lacks `empresa_nombre`.
+    """
+    columnas = {
+        fila["name"]
+        for fila in conn.execute("PRAGMA table_info(ofertas)").fetchall()
+    }
+    if "empresa_nombre" in columnas and "ubicacion_nombre" in columnas:
+        return
+    conn.execute(
+        ESQUEMAS["ofertas"].replace("TABLE IF NOT EXISTS ofertas", "TABLE ofertas_nueva")
+    )
+    nuevas = {
+        fila["name"]
+        for fila in conn.execute("PRAGMA table_info(ofertas_nueva)").fetchall()
+    }
+    comunes = [
+        fila["name"]
+        for fila in conn.execute("PRAGMA table_info(ofertas)").fetchall()
+        if fila["name"] in nuevas
+    ]
+    lista = ", ".join(comunes)
+    conn.execute(f"INSERT INTO ofertas_nueva ({lista}) SELECT {lista} FROM ofertas")
     conn.execute("DROP TABLE ofertas")
     conn.execute("ALTER TABLE ofertas_nueva RENAME TO ofertas")
 

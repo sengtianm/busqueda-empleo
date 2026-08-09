@@ -1009,7 +1009,9 @@ Registro de ofertas — "Registrar ofertas capturadas en 'Ofertas Totales'".
 Entre "Capturar ofertas" (v1.0) y la decisión "¿Quedan ofertas por capturar en la búsqueda actual (según políticas)?". Posición definitiva.
 
 ### 1.3 Objetivo
-Persistir el lote capturado (`capture_batch`) en la base de datos "Ofertas Totales" conservando la información original de cada oferta con trazabilidad completa y el identificador externo crudo cuando exista, y liberar el lote del contexto. **Este nodo no deduplica, no normaliza y no verifica identidad de ofertas**: la deduplicación pertenece al Módulo 2 sobre este almacén crudo.
+Persistir el lote capturado (`capture_batch`) en la base de datos "Ofertas Totales" conservando la información original de cada oferta con trazabilidad completa y el identificador externo crudo cuando exista, y liberar el lote del contexto. **Este nodo no normaliza y no verifica identidad de ofertas más allá de `id_externo_url`**: la deduplicación avanzada (dos capas, estricta y difusa) pertenece al Módulo 2 sobre este almacén crudo.
+
+> **NOTA — Aprobación de implementación (Sub-fase 4.4, 2026-08-09):** durante la implementación de la Sub-fase 4.4 se introdujo un desvío deliberado sobre la Especificación 1.0: el nodo **sí deduplica por `id_externo_url`** vía un *upsert* (`upsert_oferta`): si la fila ya existe, solo se refresca `timestamp_ultima_verificacion` y se conserva el `id` existente; si no existe, se inserta una fila nueva. La persistencia se ejecuta por oferta (no transacción única de lote, RN-06 relajada a nivel de oferta). Además, en el MVP los catálogos `empresas`/`ubicaciones` aún no se resuelven: `empresa_id` y `ubicacion_id` se almacenan como `NULL` y la información cruda del adaptador se conserva en `empresa_nombre` y `ubicacion_nombre` (el `source_id` de la fuente se guarda en `fuente_id`, sin constraint de FK). Esta decisión se documenta en DOC-13/13-A y en el tracker como parte de la corriente de la decisión (2026-08-09).
 
 ### 1.4 Descripción funcional
 El nodo lee `capture_batch` del contexto. Si el lote está vacío, no escribe nada y continúa (no-op). Si no, persiste todas las ofertas del lote en una única transacción: cada oferta se inserta como una fila nueva con su información original íntegra tal como llegó del adaptador, el campo `id_externo_url` en modo best-effort (ID de la plataforma o URL cruda; nulo si el adaptador no pudo extraerlo) y los metadatos de trazabilidad (`run_id`, `source_id`, `session_id`, `set_indice`, marca de tiempo de captura). Ante fallo de escritura o transacción, reintenta una vez; si persiste, emite evento crítico y aborta la corrida ("Ofertas Totales" es la salida esencial del módulo). Tras persistir, libera el lote del contexto y entrega control a la decisión de continuación.
@@ -1017,7 +1019,7 @@ El nodo lee `capture_batch` del contexto. Si el lote está vacío, no escribe na
 **Separación de responsabilidades:**
 - *Flujo de negocio:* conservar la información original de cada oferta capturada con trazabilidad.
 - *Implementación técnica:* transaccionalidad, reintento único, liberación de memoria.
-- *Límite:* este nodo **no** deduplica (Módulo 2), **no** normaliza URLs ni contenido (Módulo 2), **no** interpreta ni clasifica contenido, **no** sobrescribe filas existentes (solo inserta).
+- *Límite:* este nodo **no** normaliza URLs ni contenido (Módulo 2), **no** interpreta ni clasifica contenido; la deduplicación de dos capas (estricta y difusa) del Módulo 2 tampoco se ejecuta aquí — en su lugar, la implementación 4.4 aplica el dedup de registro por `id_externo_url` (ver NOTA 1.3; desvío aprobado 2026-08-09).
 
 ### 1.5 Entradas
 - Contexto de ejecución: `capture_batch` (ofertas con información original íntegra, `id_externo_url` best-effort, y metadatos `run_id`, `source_id`, `session_id`, `set_indice`, referencia), conexión a "Ofertas Totales".
@@ -1030,8 +1032,8 @@ El nodo lee `capture_batch` del contexto. Si el lote está vacío, no escribe na
 
 ### 1.7 Reglas de negocio
 - **RN-01:** El nodo opera sobre el contexto; no relee almacenes de configuración ni re-consulta plataformas.
-- **RN-02:** Inserción simple: cada oferta capturada produce una fila nueva; sin verificación de duplicados, sin comparación contra filas existentes, sin sobrescritura. La deduplicación pertenece al Módulo 2.
-- **RN-03:** Cada fila conserva la información original íntegra tal como llegó del adaptador, más `id_externo_url` (best-effort, nullable) y los metadatos de trazabilidad (`run_id`, `source_id`, `session_id`, `set_indice`, marca de tiempo de captura).
+- **RN-02:** Upsert por `id_externo_url`: si la oferta ya fue registrada con el mismo identificador externo, se refresca `timestamp_ultima_verificacion` conservando la fila y su `id`; si no, se inserta una fila nueva. La deduplicación de dos capas (estricta y difusa, Módulo 2) no se ejecuta en este nodo (desvío aprobado en NOTA 1.3).
+- **RN-03:** Cada fila conserva la información original íntegra tal como llegó del adaptador, más `id_externo_url` (best-effort, nullable), `empresa_nombre`/`ubicacion_nombre` (strings crudos del adaptador; `empresa_id`/`ubicacion_id` como `NULL` en el MVP) y los metadatos de trazabilidad (`run_id`, `source_id`, `session_id`, `set_indice`, marcas de tiempo de captura y de última verificación).
 - **RN-04:** Prohibido transformar, normalizar o limpiar contenido o URLs en este nodo; lo crudo se conserva crudo. La normalización pertenece al Módulo 2.
 - **RN-05:** Lote vacío = no-op: sin escrituras, sin error, continuación normal.
 - **RN-06:** El lote se persiste en una única transacción (todo o nada); no se admiten lotes parcialmente persistidos.
@@ -1089,7 +1091,7 @@ Escenarios límite cubiertos: lote vacío por límite alcanzado o lote fallido (
 |---|---|---|---|---|---|---|
 | 1 | Leer lote del contexto | Contexto (`capture_batch`, conexión a "Ofertas Totales") | Acceder al lote desde el contexto; no releer almacenes ni re-consultar plataformas (RN-01) | Lote a persistir | VAL-01 | ERR-01 |
 | 2 | Evaluar lote vacío | Lote | Si lote vacío: no-op; salto al paso 4 (RN-05) | Señal de continuación | — | Ninguna |
-| 3 | Persistir lote transaccionalmente | Lote con información original, `id_externo_url` y metadatos | En una única transacción (RN-06/VAL-03): insertar cada oferta como fila nueva con información original íntegra, `id_externo_url` (nullable) y metadatos de trazabilidad (RN-02, RN-03, RN-04). Fallo de escritura/transacción: reintento único; si persiste, aborto (RN-07) | Lote persistido en "Ofertas Totales" | VAL-02, VAL-03 | ERR-02 |
+| 3 | Persistir lote | Lote con información original, `id_externo_url` y metadatos | Upsert por oferta (RN-02, desvío aprobado NOTA 1.3): si `id_externo_url` ya existe, refrescar `timestamp_ultima_verificacion`; si no, insertar fila nueva con información original íntegra, `empresa_nombre`/`ubicacion_nombre` (strings del adaptador; IDs NULL), `id_externo_url` (nullable) y metadatos de trazabilidad (RN-03, RN-04). Fallo de escritura: reintento único; si persiste, aborto (RN-07) | Lote persistido en "Ofertas Totales" | VAL-02, VAL-03 | ERR-02 |
 | 4 | Liberar lote y entregar control | Contexto | Liberar `capture_batch` del contexto (RN-08); cerrar el nodo y entregar control | Contexto con lote liberado; flujo hacia "¿Quedan ofertas por capturar en la búsqueda actual (según políticas)?" | VAL-04 | Ninguna |
 
 ---

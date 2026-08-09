@@ -96,14 +96,17 @@ The entity preserves the official reference of the offer throughout its entire l
 | Attribute | Logical Type | Required | Description |
 |----------|-------------|-------------|-------------|
 | id | UUID | Yes | Unique identifier of the offer. |
-| source_id | UUID | Yes | Reference to the source where the offer was discovered. |
-| company_id | UUID | Yes | Reference to the company that publishes the offer. |
-| location_id | UUID | No | Reference to the location associated with the offer. |
+| source_id | UUID | Yes | Reference to the source where the offer was discovered (stored as `fuente_id`, raw `source_id` string; no FK constraint, decision D4 2026-08-09). |
+| company_id | UUID | No | Reference to the company that publishes the offer (stored as `empresa_id`; `NULL` in the MVP capture, decision D4 2026-08-09). |
+| location_id | UUID | No | Reference to the location associated with the offer (stored as `ubicacion_id`; `NULL` in the MVP capture, decision D4 2026-08-09). |
+| company_name | Text | No | Raw company string as provided by the adapter (stored as `empresa_nombre`; decision D4 2026-08-09). |
+| location_name | Text | No | Raw location string as provided by the adapter (stored as `ubicacion_nombre`; decision D4 2026-08-09). |
 | source_identifier | Text | No | Identifier used by the source of origin for the offer. |
 | run_id | UUID | No | Identifier of the run (Corrida) that discovered the offer (module traceability, RN-01). |
 | session_id | UUID | No | Identifier of the platform session used to discover the offer (optional, module 1). |
 | set_indice | Integer | No | Index of the filter set that produced the offer (optional, module 1). |
 | id_externo_url | Text | No | External identifier of the offer in the source of origin (alias of `source_identifier`; best effort). |
+| timestamp_ultima_verificacion | Date/Time | No | Date and time of the last capture verification of the offer; refreshed on every dedup hit by `id_externo_url` (decision D4 2026-08-09). |
 | url | Text | Yes | Original link of the offer. |
 | title | Text | Yes | Original title of the offer. |
 | original_description | Long Text | Yes | Original content of the offer obtained during discovery. |
@@ -2514,6 +2517,7 @@ Any modification made to the data model must be recorded before being considered
 | 1.1 | 2026-07-30 | System | Alignment with the implementation: official Offer Statuses catalog reduced to the 7 states of `shared/state_machine.py`; attribute names aligned with `shared/models.py` (`version_modelo`, `region`); recorded deviations (PMD-020) of the Processed Offer entity; scope note of implemented persistence. |
 | 1.2 | 2026-07-30 | System | Detailed Evaluation entity redefined to Spanish attribute names (decision C2: prompts adjusted to the entity); Overqualification Risk and Final Recommendation catalog values in Spanish; Official Data Dictionary (§5.5) for the 13 entities; ERD (§6.6) in Mermaid + ASCII; sensitivity classification per DOC-12 section 14.2. |
 | 1.3 | 2026-08-07 | System | Discovery module (module 1): traceability fields added to Offer (`run_id`, `session_id`, `set_indice`, `id_externo_url`); `active` of Source redefined as catalog attribute (decision D1); Event entity formalized (`run_id` mandatory, typology `tipo` error/suceso, `codigo`, `evidencia`; `offer_id` optional); new entities Corrida, Sesion, and Bloqueo (decisions D2 and D3, 2026-08-07); inventory, Logical Data Model, Official Data Dictionary, and ERD updated accordingly. |
+| 1.4 | 2026-08-09 | System | Sub-fase 4.4 capture registration (decision D4): Offer gains `empresa_nombre`, `ubicacion_nombre` and `timestamp_ultima_verificacion`; `empresa_id`/`ubicacion_id` optional (`NULL` in the MVP) and `fuente_id` stored as raw string without FK constraint; registration deduplicates by `id_externo_url` via upsert. Data Dictionary updated accordingly. |
 
 ---
 

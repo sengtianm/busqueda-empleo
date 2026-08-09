@@ -151,6 +151,7 @@ def test_captura_timeout_todos_intentos(contexto: RunContext, adapter: MagicMock
     assert contexto.estado_captura.estado == "fallo"
     assert contexto.estado_captura.codigo_motivo == "timeout_captura"
     assert contexto.capture_batch is None
+    assert adapter.capture_batch.call_count == 3
 
 
 def test_captura_bloqueo_inmediato(contexto: RunContext, adapter: MagicMock) -> None:
@@ -220,12 +221,13 @@ def test_captura_auditoria_falla_no_aborta(
 
     with patch(
         "modules.discovery.nodes.captura.write_row", side_effect=RuntimeError("db")
-    ):
+    ) as mock_write_row:
         with patch("modules.discovery.nodes.captura.logger"):
             res = capturar_ofertas(contexto)
 
     assert res.estado == "ok"
     assert contexto.estado_captura is estado
+    assert mock_write_row.call_count == 2
 
 
 def test_registrar_una_oferta_upsert(

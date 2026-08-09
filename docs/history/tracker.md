@@ -88,7 +88,7 @@
 | 4.1 | Startup and source control (INICIO + 3 nodes) | Ficha técnica | ✅ | INICIO + 3 control nodes implemented and validated: run instantiation, config (ERR-02..04/11), DB probe (ERR-05), concurrency lock (ERR-06..09), source validation with ERR-12 discard, run state (ERR-10), existence decision, iteration decision, source selection. 136 tests passing. |
 | 4.2 | Platform entry (2 nodes) | Ficha técnica, DOC-09, Annex 9A | ✅ | LinkedIn login, credentials, conditional retries, entry_result. 152 tests passing. |
 | 4.3 | Filter search (2 nodes) | Ficha técnica, DOC-09 | ✅ | Set iterator (reset on source switch), adapter search (`filtros_no_aplicables`, empty values skipped), `search_result` contract (`exito`/`fallo`), conditional retries, generic register node scoped to current source (`TipoEvento` enum, write failure tolerated). 171 tests passing. |
-| 4.4 | Capture and registration (4 nodes) | Ficha técnica, DOC-09, DOC-13, DOC-04 | ⬜ | Capture policies, batch write, Grupo A/B, pagination loop. |
+| 4.4 | Capture and registration (4 nodes) | Ficha técnica, DOC-09, DOC-13, DOC-04 | ✅ | Capture policies, batch write, dedup by `id_externo_url` (upsert, decision D4 2026-08-09), Grupo A/B, pagination loop. 199 tests passing. |
 | 4.5 | Closure and orchestrator (2 nodes) | Ficha técnica | ⬜ | Termination, lock release, full flow integration. |
 
 ---
