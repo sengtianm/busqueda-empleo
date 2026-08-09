@@ -72,6 +72,8 @@ class RunContext:
         self.paginas_consumidas = 0
         self.capturadas_acumuladas_fuente = 0
         self.limite_alcanzado = False
+        self.set_corriente: SetFiltros | None = None
+        self._ultimo_source_id_sets: str | None = None
 
     def _construir_ficha(
         self, conf: dict[str, Any], config_captura: dict[str, Any]
@@ -245,6 +247,8 @@ class RunContext:
         self.paginas_consumidas = 0
         self.capturadas_acumuladas_fuente = 0
         self.limite_alcanzado = False
+        self.set_corriente = None
+        self._ultimo_source_id_sets = None
 
     def seleccionar_siguiente_set(self, source_id: str) -> int:
         if source_id not in self.iterador_sets:

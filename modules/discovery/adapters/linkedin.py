@@ -255,7 +255,7 @@ class LinkedInAdapter:
         total = _parsear_numero(total_el.get_text(strip=True)) if total_el else None
         hay_mas = self._hay_pagina_siguiente(html)
         return SearchResult(
-            estado="ok",
+            estado="exito",
             ofertas_primera_pagina=ofertas,
             estado_paginacion="hay_mas" if hay_mas else "fin",
             total_declarado=total,
@@ -336,7 +336,12 @@ class LinkedInAdapter:
             tipo = str(filtro.get("tipo") or "")
             valor = filtro.get("valor")
             parametro = _PARAMETROS_FILTROS.get(tipo)
-            if not parametro or not valor:
+            if not parametro:
+                raise FlowError(
+                    "filtros_no_aplicables",
+                    f"Filter type '{tipo}' not supported by this platform.",
+                )
+            if not valor:
                 continue
             if tipo == "modalidad":
                 valores: list[str] = valor if isinstance(valor, list) else [str(valor)]

@@ -141,7 +141,7 @@ def test_apply_filters_parsea_resultados(
 ) -> None:
     pagina = FakePage({URL_CON_FILTROS: _leer("lista_linkedin.html")})
     resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
-    assert resultado.estado == "ok"
+    assert resultado.estado == "exito"
     assert len(resultado.ofertas_primera_pagina) == 2
     oferta = resultado.ofertas_primera_pagina[0]
     assert oferta.titulo == "Data Engineer"
@@ -158,6 +158,38 @@ def test_apply_filters_bloqueo(
     with pytest.raises(FlowError) as exc:
         LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
     assert exc.value.codigo_motivo == "bloqueo_plataforma"
+
+
+def test_apply_filters_filtro_tipo_no_soportado(
+    ficha_publica: FichaFuente, politicas: PoliticasCaptura
+) -> None:
+    set_no_soportado = SetFiltros(
+        source_id=ficha_publica.source_id,
+        indice=0,
+        filtros=[{"tipo": "salario", "valor": "50000"}],
+    )
+    pagina = FakePage({})
+    with pytest.raises(FlowError) as exc:
+        LinkedInAdapter().apply_filters(pagina, ficha_publica, set_no_soportado, politicas)
+    assert exc.value.codigo_motivo == "filtros_no_aplicables"
+
+
+def test_apply_filters_filtro_valor_vacio_se_ignora(
+    ficha_publica: FichaFuente, politicas: PoliticasCaptura
+) -> None:
+    set_valor_vacio = SetFiltros(
+        source_id=ficha_publica.source_id,
+        indice=0,
+        filtros=[
+            {"tipo": "keywords", "valor": ""},
+            {"tipo": "modalidad", "valor": "remoto"},
+        ],
+    )
+    url_solo_modalidad = "https://www.linkedin.com/jobs/search?f_WT=2"
+    pagina = FakePage({url_solo_modalidad: _leer("lista_linkedin.html")})
+    resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_valor_vacio, politicas)
+    assert resultado.estado == "exito"
+    assert pagina.gotos[-1] == url_solo_modalidad
 
 
 def test_capture_batch_captura_dos_ofertas(

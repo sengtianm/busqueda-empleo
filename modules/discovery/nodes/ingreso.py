@@ -7,8 +7,8 @@ from playwright.sync_api import sync_playwright
 from modules.discovery.adapters.linkedin import FlowError, LinkedInAdapter
 from modules.discovery.run_context import RunContext
 from shared.config import load
-from shared.models import EntryResult, FichaFuente, TipoEvento
-from shared.persistence import generate_id, write_evento
+from shared.models import EntryResult, FichaFuente
+from shared.persistence import generate_id
 from shared.retry import should_retry
 
 
@@ -153,6 +153,9 @@ def _ejecutar_ingreso_loop(
             if playwright_instance:
                 playwright_instance.stop()
 
+    # Path unreachable with max_attempts > 0; satisfies mypy strict.
+    return ResultadoIngreso(estado="error", codigo="ERR-09", descripcion="sin intentos")
+
 
 
 def _obtener_credenciales(ficha: FichaFuente) -> dict[str, str]:
@@ -188,30 +191,3 @@ def ingreso_exitoso(contexto: RunContext) -> ResultadoIngreso:
     decision = "si" if res.estado == "exito" else "no"
     return ResultadoIngreso(estado="ok", decision=decision, contexto=contexto)
 
-
-def registrar_evento_fallo(contexto: RunContext) -> ResultadoIngreso:
-    """
-    Nodo: Registrar error o suceso en 'errores o sucesos'.
-    Escribe el resultado del ingreso en la tabla de eventos.
-    """
-    res = contexto.entry_result
-    if res is None:
-        logger.warning(f"No hay entry_result para registrar evento en corrida {contexto.run_id}")
-        return ResultadoIngreso(estado="ok", contexto=contexto)
-
-    tipo = TipoEvento.SUCESO if res.estado == "exito" else TipoEvento.ERROR
-
-    try:
-        write_evento({
-            "run_id": contexto.run_id,
-            "source_id": contexto.fuente_corriente.source_id if contexto.fuente_corriente else "",
-            "session_id": contexto.session_id,
-            "tipo": tipo.value if hasattr(tipo, "value") else tipo,
-            "codigo": res.codigo_motivo,
-            "evidencia": f"{res.evidencia_acotada} | intentos: {res.numero_de_intentos}",
-        })
-    except Exception as e:
-        logger.error(f"Fallo al escribir evento en BD para corrida {contexto.run_id}: {e}")
-        # No aborta la corrida
-
-    return ResultadoIngreso(estado="ok", contexto=contexto)
