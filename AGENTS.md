@@ -3,7 +3,7 @@
 ## Project
 Automated job search pipeline: discovers, collects, prepares, evaluates, processes, and manages opportunities to reduce search time/effort and support decision-making. Objective: from discovery to high-quality application inputs with full traceability and minimal manual intervention (DOC-08).
 
-**Status:** MVP in progress — Phases 0–3 done (infrastructure, shared services, prompts tested with `gemma4:31b-cloud`); Phase 4 (Module 1 — Opportunity Discovery, branch `fase-4`) active with sub-phases 4.1–4.4 implemented & validated (INICIO + control nodes, platform entry, filter search + generic register, capture/registration with dedup by `id_externo_url`); Phases 5–9 pending. Authoritative status: `docs/history/tracker.md`.
+**Status:** MVP in progress — Phases 0–3 done (infrastructure, shared services, prompts tested with `gemma4:31b-cloud`); Phase 4 (Module 1 — Opportunity Discovery, branch `fase-4`) active with sub-phases 4.1–4.5 implemented & validated (INICIO + control nodes, platform entry, filter search + generic register, capture/registration with dedup by `id_externo_url`, closure node + full-flow orchestrator); Phases 5–9 pending. Authoritative status: `docs/history/tracker.md`.
 
 ## Architecture
 Three layers: Functional modules → Shared services → Infrastructure.

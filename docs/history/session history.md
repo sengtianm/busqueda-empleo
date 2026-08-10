@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 16 | 10/08/2026 | `ses_0133020ecffeN4R4bi4Y7MXDAF` | Sub-fase 4.5: terminal closure node + full-flow orchestrator implemented, validated, and audited CONFORME (229 tests) |
 | 15 | 09/08/2026 | `ses_01823c05affeFQbFrKubp332mC` | Skills inventory reviewed; review-against-documentation fully rewritten; /save authorized full commit of worktree |
 | 14 | 09/08/2026 | `ses_01bcc78adffemcqFEiZxT52Eli` | Sub-fase 4.4: capture/registration nodes implemented, audited, and post-audit fixes applied (FK-free schema, name columns, upsert tests) |
 | 13 | 08/08/2026 | `ses_01be77680ffeuyoKct4Qrfx1GG` | Repo sync to `fase-4`; new `/save` section with general git commit and push guidance |
@@ -17,7 +18,29 @@ Unless noted, decisions from previous sessions remain in effect.
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
 
-## Session 15 — 09/08/2026
+## Session 16 — 10/08/2026
+`ses_0133020ecffeN4R4bi4Y7MXDAF` · `fase-4`
+
+**Topics**
+- Sub-fase 4.5 implemented: terminal node Finalizar Proceso + orchestrator connecting the 13 nodes + module entry point (python -m)
+- Persistence additions only (no other files touched): `actualizar_corrida`, `liberar_bloqueo` alias, 6 closure columns on `corridas`, idempotent migration
+- Closure semantics: state mapping by motivo, metrics query with zero fallback, single-retry on update, best-effort event/resource-close/lock-release
+- Custom Playwright closing (page/browser/instance attributes) without touching existing adapters
+- Orchestrator loops: sources × filter sets, session close between sources, abort with motivo on any node error; INICIO non-ok exits without Finalizar
+- Unit tests: 17 node + 13 orchestrator (mocks, temp DB end-to-end, order-of-calls tracking); full suite 229
+- Read-only audit by user request: CONFORME with minor findings (metric query duplicated on close, user-specified deviations vs ficha pending D4 documentation)
+- Reviewer sub-agents: code-reviewer returned empty twice; docs-reviewer flagged ficha deviations later confirmed as user-specified
+
+**Decisions**
+- Estado vocabulary defined by user: completada/sin_fuentes/abortada (reconciles the session 9 pending item; deviations vs ficha/doc to be documented as D4 in a later session)
+- Termination event: tipo suceso only on completada, error otherwise; INICIO non-ok (error/concurrencia) prints and returns without Finalizar — both per user spec
+- Documentation updates (tracker/ficha/DOC-13A) deferred by user during implementation; /save applies only session history + tracker status
+- No commit was made during implementation; /save authorizes the single closing commit and push on `fase-4`
+
+**Status**
+- Sub-fase 4.5 ✅: closure node + orchestrator implemented and audited CONFORME
+- Ruff 0, mypy 0 (44 files), pytest 229/229
+- Branch: `fase-4` · committed & pushed via /save, no merge
 `ses_01823c05affeFQbFrKubp332mC` · `fase-4`
 
 **Topics**

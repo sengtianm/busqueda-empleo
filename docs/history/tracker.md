@@ -89,7 +89,7 @@
 | 4.2 | Platform entry (2 nodes) | Ficha técnica, DOC-09, Annex 9A | ✅ | LinkedIn login, credentials, conditional retries, entry_result. 152 tests passing. |
 | 4.3 | Filter search (2 nodes) | Ficha técnica, DOC-09 | ✅ | Set iterator (reset on source switch), adapter search (`filtros_no_aplicables`, empty values skipped), `search_result` contract (`exito`/`fallo`), conditional retries, generic register node scoped to current source (`TipoEvento` enum, write failure tolerated). 171 tests passing. |
 | 4.4 | Capture and registration (4 nodes) | Ficha técnica, DOC-09, DOC-13, DOC-04 | ✅ | Capture policies, batch write, dedup by `id_externo_url` (upsert, decision D4 2026-08-09), Grupo A/B, pagination loop. 199 tests passing. |
-| 4.5 | Closure and orchestrator (2 nodes) | Ficha técnica | ⬜ | Termination, lock release, full flow integration. |
+| 4.5 | Closure and orchestrator (2 nodes) | Ficha técnica | ✅ | Terminal node Finalizar Proceso (closure metrics with zero fallback, single-retry update, exit event, Playwright resource close, lock release) + full-flow orchestrator (`ejecutar_flujo`, 13 nodes, source/set loops, abort with motivo, INICIO non-ok exits without Finalizar). 229 tests passing. Audited CONFORME (minor findings: duplicated metrics query; estado/event-type deviations per user spec pending D4 doc). |
 
 ---
 

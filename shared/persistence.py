@@ -102,7 +102,13 @@ ESQUEMAS: dict[str, str] = {
         "CREATE TABLE IF NOT EXISTS corridas ("
         "run_id TEXT PRIMARY KEY,"
         "timestamp_inicio TEXT NOT NULL,"
-        "estado TEXT NOT NULL"
+        "estado TEXT NOT NULL,"
+        "timestamp_fin TEXT DEFAULT '',"
+        "motivo_terminacion TEXT DEFAULT '',"
+        "total_ofertas INTEGER DEFAULT 0,"
+        "total_errores INTEGER DEFAULT 0,"
+        "total_sucesos INTEGER DEFAULT 0,"
+        "fuentes_procesadas INTEGER DEFAULT 0"
         ")"
     ),
     "eventos": (
@@ -208,6 +214,7 @@ def init_db() -> None:
         _migrate_ofertas(conn)
         _migrate_ofertas_timestamp_ultima_verificacion(conn)
         _migrate_ofertas_empresa_nombre(conn)
+        _migrate_corridas_finalizacion(conn)
         conn.commit()
     finally:
         conn.close()
@@ -298,6 +305,35 @@ def _migrate_ofertas_timestamp_ultima_verificacion(conn: sqlite3.Connection) -> 
             "ALTER TABLE ofertas ADD COLUMN "
             "timestamp_ultima_verificacion TEXT DEFAULT ''"
         )
+
+
+_COLUMNAS_FINALIZACION_CORRIDAS: tuple[str, ...] = (
+    "timestamp_fin TEXT DEFAULT ''",
+    "motivo_terminacion TEXT DEFAULT ''",
+    "total_ofertas INTEGER DEFAULT 0",
+    "total_errores INTEGER DEFAULT 0",
+    "total_sucesos INTEGER DEFAULT 0",
+    "fuentes_procesadas INTEGER DEFAULT 0",
+)
+
+
+def _migrate_corridas_finalizacion(conn: sqlite3.Connection) -> None:
+    """4.5 migration: add closure metrics columns to `corridas`.
+
+    The Finalizar Proceso node persists closure metrics (timestamp_fin,
+    motivo_terminacion, total_ofertas, total_errores, total_sucesos,
+    fuentes_procesadas) via `actualizar_corrida`. Columns are added one by
+    one on first init if absent; subsequent inits are no-ops (idempotent,
+    tolerates partially migrated legacy DBs).
+    """
+    columnas = {
+        fila["name"]
+        for fila in conn.execute("PRAGMA table_info(corridas)").fetchall()
+    }
+    for definicion in _COLUMNAS_FINALIZACION_CORRIDAS:
+        nombre_columna = definicion.split(" ")[0]
+        if nombre_columna not in columnas:
+            conn.execute(f"ALTER TABLE corridas ADD COLUMN {definicion}")
 
 
 def generate_id(tabla: str) -> str:
@@ -496,6 +532,11 @@ def release_lock(run_id: str) -> None:
         conn.close()
 
 
+def liberar_bloqueo(run_id: str) -> None:
+    """Spanish alias of `release_lock` for the discovery nodes (Finalizar)."""
+    release_lock(run_id)
+
+
 def check_lock() -> dict[str, Any] | None:
     conn = _connection()
     try:
@@ -541,6 +582,27 @@ def write_corrida(datos: dict[str, Any]) -> None:
             },
         )
         conn.commit()
+    finally:
+        conn.close()
+
+
+def actualizar_corrida(run_id: str, campos: dict[str, Any]) -> bool:
+    """Updates the `corridas` row of a run; returns whether a row matched.
+
+    Closes a run (Finalizar Proceso node): persists the final state and the
+    closure metrics (`timestamp_fin`, `motivo_terminacion`, `total_ofertas`,
+    `total_errores`, `total_sucesos`, `fuentes_procesadas`). Follows the
+    `update` pattern; `corridas` is keyed by `run_id` instead of `id`.
+    """
+    d = _serialize(campos)
+    asignaciones = ", ".join(f"{k} = :{k}" for k in d.keys())
+    d["_run_id"] = run_id
+    sql = f"UPDATE corridas SET {asignaciones} WHERE run_id = :_run_id"
+    conn = _connection()
+    try:
+        cursor = conn.execute(sql, d)
+        conn.commit()
+        return cursor.rowcount > 0
     finally:
         conn.close()
 
