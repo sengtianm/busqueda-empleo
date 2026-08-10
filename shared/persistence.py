@@ -127,14 +127,17 @@ ESQUEMAS: dict[str, str] = {
     ),
     "sesiones": (
         "CREATE TABLE IF NOT EXISTS sesiones ("
-        "session_id TEXT PRIMARY KEY,"
+        "id TEXT PRIMARY KEY,"
+        "session_id TEXT NOT NULL,"
         "run_id TEXT NOT NULL,"
         "source_id TEXT NOT NULL,"
         "set_indice INTEGER DEFAULT '',"
         "timestamp TEXT NOT NULL,"
         "total_declarado INTEGER DEFAULT '',"
         "conteo INTEGER DEFAULT '',"
-        "estado TEXT NOT NULL"
+        "estado TEXT NOT NULL,"
+        "creation_date TEXT DEFAULT '',"
+        "last_edit_date TEXT DEFAULT ''"
         ")"
     ),
     "bloqueo": (
@@ -215,9 +218,46 @@ def init_db() -> None:
         _migrate_ofertas_timestamp_ultima_verificacion(conn)
         _migrate_ofertas_empresa_nombre(conn)
         _migrate_corridas_finalizacion(conn)
+        _migrate_sesiones_id(conn)
         conn.commit()
     finally:
         conn.close()
+
+
+def _migrate_sesiones_id(conn: sqlite3.Connection) -> None:
+    """Sesiones migration: align the table with `write_row` generic inserts.
+
+    `write_row` inserts an `id` (and `creation_date`/`last_edit_date`) column
+    by default, but the legacy `sesiones` table was declared with
+    `session_id TEXT PRIMARY KEY` and no `id` column, so every session audit
+    insert failed with "table sesiones has no column named id". The table is
+    rebuilt with `id TEXT PRIMARY KEY` carrying the session_id value.
+    Migration is idempotent: it only runs when the `id` column is missing.
+    """
+    columnas = {
+        fila["name"]
+        for fila in conn.execute("PRAGMA table_info(sesiones)").fetchall()
+    }
+    if "id" in columnas:
+        return
+    conn.execute("ALTER TABLE sesiones RENAME TO sesiones_legacy")
+    conn.execute(ESQUEMAS["sesiones"])
+    comunes = [
+        nombre
+        for nombre in columnas
+        if nombre in {
+            fila["name"]
+            for fila in conn.execute("PRAGMA table_info(sesiones)").fetchall()
+        }
+    ]
+    lista = ", ".join(comunes)
+    conn.execute(
+        f"INSERT INTO sesiones ({lista}) SELECT {lista} FROM sesiones_legacy"
+    )
+    conn.execute(
+        "UPDATE sesiones SET id = session_id WHERE id IS NULL OR id = ''"
+    )
+    conn.execute("DROP TABLE sesiones_legacy")
 
 
 def _migrate_ofertas(conn: sqlite3.Connection) -> None:

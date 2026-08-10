@@ -477,3 +477,127 @@ def test_migracion_4_4_fks_anulables_idempotente(tmp_path: Path) -> None:
         assert rows[0]["titulo"] == "Vieja"
     finally:
         reset_path()
+
+
+def test_migracion_sesiones_desde_esquema_antiguo(tmp_path: Path) -> None:
+    import sqlite3
+
+    from shared.persistence import change_path, init_db, reset_path
+
+    path = tmp_path / "legacy.db"
+    conn = sqlite3.connect(str(path))
+    conn.execute(
+        "CREATE TABLE sesiones ("
+        "session_id TEXT PRIMARY KEY,"
+        "run_id TEXT NOT NULL,"
+        "source_id TEXT NOT NULL,"
+        "set_indice INTEGER DEFAULT '',"
+        "timestamp TEXT NOT NULL,"
+        "total_declarado INTEGER DEFAULT '',"
+        "conteo INTEGER DEFAULT '',"
+        "estado TEXT NOT NULL"
+        ")"
+    )
+    conn.execute(
+        "INSERT INTO sesiones (session_id, run_id, source_id, timestamp, "
+        "conteo, estado) VALUES "
+        "('SES-0100', 'COR-1000', 'linkedin', '2026-08-10 10:00:00', 5, "
+        "'completa')"
+    )
+    conn.commit()
+    conn.close()
+
+    change_path(path)
+    try:
+        init_db()
+        columnas = {
+            fila[1]
+            for fila in sqlite3.connect(str(path)).execute(
+                "PRAGMA table_info(sesiones)"
+            ).fetchall()
+        }
+        assert "id" in columnas
+        assert "creation_date" in columnas
+        assert "last_edit_date" in columnas
+        rows = read_table("sesiones")
+        assert len(rows) == 1
+        assert rows[0]["id"] == "SES-0100"
+        assert rows[0]["session_id"] == "SES-0100"
+        assert rows[0]["conteo"] == 5
+    finally:
+        reset_path()
+
+
+def test_migracion_sesiones_idempotente(tmp_path: Path) -> None:
+    import sqlite3
+
+    from shared.persistence import change_path, init_db, reset_path
+
+    path = tmp_path / "nueva.db"
+    conn = sqlite3.connect(str(path))
+    conn.execute(
+        "CREATE TABLE sesiones ("
+        "session_id TEXT PRIMARY KEY,"
+        "run_id TEXT NOT NULL,"
+        "source_id TEXT NOT NULL,"
+        "set_indice INTEGER DEFAULT '',"
+        "timestamp TEXT NOT NULL,"
+        "total_declarado INTEGER DEFAULT '',"
+        "conteo INTEGER DEFAULT '',"
+        "estado TEXT NOT NULL"
+        ")"
+    )
+    conn.commit()
+    conn.close()
+
+    change_path(path)
+    try:
+        init_db()
+        init_db()
+        columnas = {
+            fila[1]
+            for fila in sqlite3.connect(str(path)).execute(
+                "PRAGMA table_info(sesiones)"
+            ).fetchall()
+        }
+        assert "id" in columnas
+        assert len(read_table("sesiones")) == 0
+    finally:
+        reset_path()
+
+
+def test_write_row_sesiones_auditoria(temp_db_file: Path) -> None:
+    import sqlite3
+
+    from shared.persistence import write_row
+
+    fila = {
+        "id": "SES-0201",
+        "session_id": "SES-0201",
+        "run_id": "COR-1839",
+        "source_id": "linkedin",
+        "set_indice": 0,
+        "timestamp": "2026-08-10 16:37:08",
+        "total_declarado": 7,
+        "conteo": 7,
+        "estado": "completa",
+    }
+    returned_id = write_row("sesiones", fila)
+    assert returned_id == "SES-0201"
+
+    conn = sqlite3.connect(str(temp_db_file))
+    try:
+        rows = conn.execute(
+            "SELECT id, session_id, run_id, conteo, estado, creation_date, "
+            "last_edit_date FROM sesiones"
+        ).fetchall()
+    finally:
+        conn.close()
+    assert len(rows) == 1
+    assert rows[0][0] == "SES-0201"
+    assert rows[0][1] == "SES-0201"
+    assert rows[0][2] == "COR-1839"
+    assert rows[0][3] == 7
+    assert rows[0][4] == "completa"
+    assert rows[0][5] != ""
+    assert rows[0][6] == rows[0][5]

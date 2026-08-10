@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 17 | 10/08/2026 | `ses_0133020ecffeN4R4bi4Y7MXDAF` | LinkedIn 2026 SSR login fixed (direct login, `voyager` criterion, multi-variant parsing) + `sesiones` schema migration + closure-metrics success event (240 tests) |
 | 16 | 10/08/2026 | `ses_0133020ecffeN4R4bi4Y7MXDAF` | Sub-fase 4.5: terminal closure node + full-flow orchestrator implemented, validated, and audited CONFORME (229 tests) |
 | 15 | 09/08/2026 | `ses_01823c05affeFQbFrKubp332mC` | Skills inventory reviewed; review-against-documentation fully rewritten; /save authorized full commit of worktree |
 | 14 | 09/08/2026 | `ses_01bcc78adffemcqFEiZxT52Eli` | Sub-fase 4.4: capture/registration nodes implemented, audited, and post-audit fixes applied (FK-free schema, name columns, upsert tests) |
@@ -17,6 +18,32 @@ Unless noted, decisions from previous sessions remain in effect.
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+## Session 17 — 10/08/2026
+`ses_0133020ecffeN4R4bi4Y7MXDAF` · `fase-4`
+
+**Topics**
+- Deep-debug of LinkedIn 2026 login: page renders two copies of the form — invisible SSR residual (`autocomplete="username"`, 0×0) vs real React one (`autocomplete="username webauthn"`, visible); exact-attribute CSS selector matched only the residual → 30s fill timeout; authwall/modal hypothesis was a false lead
+- Direct login: authenticated sources go straight to the Spanish login URL (search URL no longer visited first); selectors `[autocomplete^='username']:visible` + Enter submit with click fallback; form-detach wait; entry criterion verified by HTML polling tolerant to in-flight navigation
+- Entry criterion switched from `global-nav` to `voyager` (feed no longer renders `global-nav`; SSR shell arrives first, `voyager` ~3.5s later)
+- Multi-variant listing/detail parsing: per-page exclusive CSS variants (2026 job-card → generic anchor → classic base-search-card), href dedup, title/description fallbacks; new fixtures + adapter tests
+- Two pre-existing findings fixed: session-audit insert (generic writer requires `id` column; schema migrated idempotently with id=session_id) and closure metrics (happy path wrote no events, so finalize counts showed 0/0)
+- Capture success now writes `ofertas_registradas` success event; functional run COR-1957: session audit persisted, events traceable, closure `total_sucesos=2 | fuentes_procesadas=1`
+- Re-visit dedup verified: re-seen offers become UPDATEs, so run-level `total_ofertas` counts only newly registered offers (7/7 of COR-1839 duplicated in COR-1957 → 0 new by design)
+- Tests: 240 passing (persistence migration, `write_row` on sesiones, register-success event tests added)
+
+**Decisions**
+- LinkedIn 2026 login selectors: prefix match + `:visible`, Enter submit with click fallback — never exact-attribute match on username
+- Entry success for authenticated sources: HTML polling for `voyager` on the feed, tolerant to navigation; direct login URL instead of visiting search first
+- Parsing variants resolved per page by exclusivity (one variant per page, selectors never mixed)
+- `sesiones` schema aligned with the generic writer (`id` PK + creation dates); migration copies legacy rows with id=session_id; session audit passes the explicit id
+- Happy-path capture writes `ofertas_registradas` so closure metrics reflect the run; degraded/partial lote events unchanged
+- Run `total_ofertas` counts only newly registered offers by design (upsert dedup); no semantic change
+
+**Status**
+- Login SSR fix + multi-variant parsing + both pre-existing findings ✅ (validated on real DB via COR-1957)
+- Ruff 0 · mypy 0 (46 files) · pytest 240/240
+- Branch: `fase-4` · /save single commit + push, no merge
 
 ## Session 16 — 10/08/2026
 `ses_0133020ecffeN4R4bi4Y7MXDAF` · `fase-4`

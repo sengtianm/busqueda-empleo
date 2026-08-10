@@ -19,6 +19,7 @@ from shared.config import load
 from shared.models import CaptureBatch, EstadoCaptura, Offer
 from shared.persistence import upsert_oferta, write_evento, write_row
 from shared.retry import should_retry
+from shared.utilidades import acotar_evidencia
 
 
 @dataclass
@@ -139,7 +140,7 @@ def capturar_ofertas(contexto: RunContext) -> ResultadoCaptura:
                 contexto,
                 tipo="error",
                 codigo=fe.codigo_motivo,
-                evidencia=fe.mensaje,
+                evidencia=acotar_evidencia(fe.mensaje),
             )
             return ResultadoCaptura(estado="ok", contexto=contexto)
         except Exception as exc:
@@ -184,6 +185,7 @@ def _escribir_auditoria_sesion(contexto: RunContext, lote: CaptureBatch) -> None
     )
     set_indice = lote.set_indice
     datos = {
+        "id": session_id,
         "session_id": session_id,
         "run_id": contexto.run_id,
         "source_id": (
@@ -229,6 +231,17 @@ def registrar_ofertas(contexto: RunContext) -> ResultadoCaptura:
             registradas += 1
         else:
             fallidas += 1
+
+    if registradas > 0:
+        _registrar_evento(
+            contexto,
+            tipo="suceso",
+            codigo="ofertas_registradas",
+            evidencia=(
+                f"ofertas registradas: {registradas} | "
+                f"total: {len(lote.ofertas)}"
+            ),
+        )
 
     if fallidas > 0 and registradas == 0:
         _registrar_evento(

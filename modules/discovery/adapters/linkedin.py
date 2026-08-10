@@ -36,6 +36,7 @@ from shared.models import (
     SetFiltros,
     TipoEvento,
 )
+from shared.utilidades import acotar_evidencia
 
 _PARAMETROS_FILTROS: dict[str, str] = {
     "keywords": "keywords",
@@ -52,6 +53,8 @@ _MODALIDAD_F_WT: dict[str, str] = {
 }
 
 _SEL_ENLACE_TARJETA = "a.base-search-card__link"
+_SEL_ENLACE_TARJETA_2026 = "div.job-card-container a.job-card-container__link"
+_SEL_ENLACE_TARJETA_GENERICO = "a[href*='/jobs/view/']"
 _SEL_TITULO_TARJETA = ".base-search-card__title"
 _SEL_EMPRESA_TARJETA = ".base-search-card__subtitle"
 _SEL_UBICACION_TARJETA = ".base-search-card__location"
@@ -59,8 +62,11 @@ _SEL_TOTAL_RESULTADOS = "span.jobs-search-results__total-count"
 _SEL_SIGUIENTE = ("button[aria-label='Next']", "a[aria-label='Next']")
 _SEL_TITULO_DETALLE = "h1.jobs-unified-top-card__title"
 _SEL_DESCRIPCION_DETALLE = "div.jobs-description__content"
+_SEL_ENCABEZADOS_DESCRIPCION = ("Acerca del empleo", "About the job")
 
 _RE_ID_EXTERNO = re.compile(r"/jobs/view/(\d+)")
+
+_URL_LOGIN = "https://www.linkedin.com/login/es/?fromSignIn=true"
 
 
 class FlowError(Exception):
@@ -89,10 +95,6 @@ class LinkedInAdapter:
     ) -> EntryResult:
         """Enter the source and verify the DOC-09 Section 6.1 entry criteria."""
         self.eventos_declarados.clear()
-        try:
-            page.goto(ficha.url)
-        except Exception as exc:
-            raise FlowError("fuente_inalcanzable", f"Entry navigation failed: {exc}") from exc
         if ficha.tipo_acceso == "con_autenticacion":
             if not credenciales:
                 raise FlowError(
@@ -100,6 +102,16 @@ class LinkedInAdapter:
                     "Authenticated source without credentials.",
                 )
             self._autenticar(page, credenciales)
+            self._esperar_criterio_ingreso(page, ficha)
+            return EntryResult(
+                estado="exito",
+                evidencia_acotada=f"criterio: {ficha.criterio_exito}",
+                numero_de_intentos=1,
+            )
+        try:
+            page.goto(ficha.url)
+        except Exception as exc:
+            raise FlowError("fuente_inalcanzable", f"Entry navigation failed: {exc}") from exc
         if not self._criterio_ingreso_cumplido(page, ficha):
             raise FlowError(
                 "criterio_no_cumplido",
@@ -197,17 +209,73 @@ class LinkedInAdapter:
 
     def _autenticar(self, page: Any, credenciales: dict[str, str]) -> None:
         try:
-            page.wait_for_selector("input[name='session_key']")
-            page.fill("input[name='session_key']", credenciales.get("username", ""))
-            page.fill("input[name='session_password']", credenciales.get("password", ""))
-            page.click("button[type='submit']")
+            page.goto(_URL_LOGIN)
+            self._esperar_form_login(page)
+            page.fill(
+                "input[autocomplete^='username']:visible",
+                credenciales.get("username", ""),
+            )
+            page.fill(
+                "input[autocomplete='current-password']:visible",
+                credenciales.get("password", ""),
+            )
+            page.keyboard.press("Enter")
+            try:
+                page.wait_for_selector(
+                    "input[autocomplete^='username']:visible",
+                    state="detached",
+                    timeout=15000,
+                )
+            except Exception:
+                page.click("button:visible:text-is('Iniciar sesión')", timeout=15000)
+                try:
+                    page.wait_for_selector(
+                        "input[autocomplete^='username']:visible",
+                        state="detached",
+                        timeout=30000,
+                    )
+                except Exception:
+                    pass
         except Exception as exc:
-            raise FlowError("autenticacion_rechazada", f"Login failed: {exc}") from exc
+            raise FlowError(
+                "autenticacion_rechazada",
+                acotar_evidencia(f"Login failed: {exc}"),
+            ) from exc
+
+    def _esperar_form_login(self, page: Any) -> None:
+        try:
+            page.wait_for_selector(
+                "input[autocomplete^='username']:visible", timeout=15000
+            )
+        except Exception:
+            page.wait_for_selector(
+                "input[autocomplete*='username']", state="attached", timeout=30000
+            )
 
     def _criterio_ingreso_cumplido(self, page: Any, ficha: FichaFuente) -> bool:
         html = self._contenido(page)
         self._revisar_estado_pagina(html, "timeout_ingreso")
         return ficha.criterio_exito in html
+
+    def _esperar_criterio_ingreso(self, page: Any, ficha: FichaFuente) -> None:
+        """Wait for the entry criterion, allowing the app shell to hydrate."""
+        limite = time.monotonic() + ficha.timeout_segundos
+        while time.monotonic() < limite:
+            try:
+                html = self._contenido(page)
+            except Exception as exc:
+                if "navigating" not in str(exc):
+                    raise
+                time.sleep(1)
+                continue
+            self._revisar_estado_pagina(html, "timeout_ingreso")
+            if ficha.criterio_exito in html:
+                return
+            time.sleep(1)
+        raise FlowError(
+            "criterio_no_cumplido",
+            f"Entry criterion '{ficha.criterio_exito}' not verified.",
+        )
 
     def _revisar_estado_pagina(self, html: str, codigo_timeout: str) -> None:
         self._revisar_bloqueo_html(html)
@@ -234,13 +302,8 @@ class LinkedInAdapter:
     ) -> SearchResult:
         soup = BeautifulSoup(html, "lxml")
         ofertas: list[Offer] = []
-        for enlace in soup.select(_SEL_ENLACE_TARJETA):
-            href = str(enlace.get("href") or "")
-            if "/jobs/view/" not in href:
-                continue
+        for href, titulo in _tarjetas_resultado(soup):
             url = _url_absoluta(href, ficha.url)
-            tarjeta = enlace.parent
-            titulo = _texto_de(tarjeta, _SEL_TITULO_TARJETA)
             ofertas.append(
                 Offer(
                     url=url,
@@ -265,12 +328,7 @@ class LinkedInAdapter:
 
     def _extraer_referencias(self, html: str, base: str) -> list[str]:
         soup = BeautifulSoup(html, "lxml")
-        urls: list[str] = []
-        for enlace in soup.select(_SEL_ENLACE_TARJETA):
-            href = str(enlace.get("href") or "")
-            if "/jobs/view/" in href:
-                urls.append(_url_absoluta(href, base))
-        return urls
+        return [_url_absoluta(href, base) for href, _ in _tarjetas_resultado(soup)]
 
     def _hay_pagina_siguiente(self, html: str) -> bool:
         soup = BeautifulSoup(html, "lxml")
@@ -290,22 +348,57 @@ class LinkedInAdapter:
         html = self._contenido(page)
         self._revisar_estado_captura(html, "timeout_captura")
         soup = BeautifulSoup(html, "lxml")
-        titulo_el = soup.select_one(_SEL_TITULO_DETALLE)
-        if titulo_el is None:
+        titulo = self._titulo_detalle(soup)
+        if titulo is None:
             self._declarar_evento("EVT-01", "Detalle sin titulo (excluida del lote).")
             return None
-        descripcion_el = soup.select_one(_SEL_DESCRIPCION_DETALLE)
         return Offer(
             url=url_referencia,
-            titulo=titulo_el.get_text(strip=True),
-            descripcion_original=(
-                descripcion_el.get_text(separator=" ", strip=True)
-                if descripcion_el
-                else ""
-            ),
+            titulo=titulo,
+            descripcion_original=self._descripcion_detalle(soup),
             fuente_id=ficha.source_id,
             set_indice=set_filtros.indice,
             id_externo_url=_extraer_id_externo(url_referencia),
+        )
+
+    def _titulo_detalle(self, soup: BeautifulSoup) -> str | None:
+        """Job title from the classic heading or the stable <title> tab."""
+        titulo_el = soup.select_one(_SEL_TITULO_DETALLE)
+        if titulo_el is not None:
+            return titulo_el.get_text(strip=True)
+        tag_title = soup.select_one("title")
+        if tag_title is None:
+            return None
+        candidato = tag_title.get_text(strip=True).split(" | ")[0].strip()
+        return candidato or None
+
+    def _descripcion_detalle(self, soup: BeautifulSoup) -> str:
+        """Full description following the section heading, classic fallback."""
+        for encabezado in _SEL_ENCABEZADOS_DESCRIPCION:
+            h2 = next(
+                (
+                    h
+                    for h in soup.find_all("h2")
+                    if h.get_text(" ", strip=True).startswith(encabezado)
+                ),
+                None,
+            )
+            if h2 is None:
+                continue
+            contenedor = h2.parent
+            if contenedor is None:
+                break
+            hermano = contenedor.find_next_sibling()
+            while hermano is not None and not hermano.get_text(strip=True):
+                hermano = hermano.find_next_sibling()
+            if hermano is not None:
+                return hermano.get_text(separator=" ", strip=True)
+            break
+        descripcion_el = soup.select_one(_SEL_DESCRIPCION_DETALLE)
+        return (
+            descripcion_el.get_text(separator=" ", strip=True)
+            if descripcion_el
+            else ""
         )
 
     def _declarar_evento(self, codigo: str, evidencia: str) -> None:
@@ -368,6 +461,39 @@ def _url_absoluta(href: str, base: str) -> str:
         return href
     origen = urlparse(base)
     return f"{origen.scheme}://{origen.netloc}{href}"
+
+
+def _tarjetas_resultado(soup: BeautifulSoup) -> list[tuple[str, str]]:
+    """(href, title) pairs of job cards across the known SSR variants.
+
+    Priority: session SSR 2026 cards, classic logged-out cards, then any
+    canonical ``/jobs/view/`` link. Variants are exclusive per page and each
+    href is returned once.
+    """
+    for selector in (_SEL_ENLACE_TARJETA_2026, _SEL_ENLACE_TARJETA, _SEL_ENLACE_TARJETA_GENERICO):
+        enlaces = soup.select(selector)
+        if enlaces:
+            break
+    tarjetas: list[tuple[str, str]] = []
+    vistos: set[str] = set()
+    for enlace in enlaces:
+        href = str(enlace.get("href") or "")
+        if "/jobs/view/" not in href or href in vistos:
+            continue
+        vistos.add(href)
+        if selector == _SEL_ENLACE_TARJETA_2026:
+            lineas = [
+                linea.strip()
+                for linea in enlace.get_text("\n", strip=True).split("\n")
+                if linea.strip()
+            ]
+            titulo = lineas[0] if lineas else ""
+        elif selector == _SEL_ENLACE_TARJETA:
+            titulo = _texto_de(enlace.parent, _SEL_TITULO_TARJETA)
+        else:
+            titulo = enlace.get_text(strip=True)
+        tarjetas.append((href, titulo))
+    return tarjetas
 
 
 def _texto_de(elemento: Any, selector: str) -> str:

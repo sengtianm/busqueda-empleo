@@ -12,6 +12,7 @@ from modules.discovery.run_context import RunContext
 from shared.config import load
 from shared.models import SearchResult
 from shared.retry import should_retry
+from shared.utilidades import acotar_evidencia
 
 
 @dataclass
@@ -95,7 +96,7 @@ def aplicar_filtros(contexto: RunContext) -> ResultadoBusqueda:
                 contexto.search_result = SearchResult(
                     estado="fallo",
                     codigo_motivo=fe.codigo_motivo,
-                    evidencia_acotada=fe.mensaje,
+                    evidencia_acotada=acotar_evidencia(fe.mensaje),
                     numero_de_intentos=attempt,
                     ofertas_primera_pagina=[],
                     estado_paginacion="fin",
@@ -107,7 +108,7 @@ def aplicar_filtros(contexto: RunContext) -> ResultadoBusqueda:
             contexto.search_result = SearchResult(
                 estado="fallo",
                 codigo_motivo="error_interno_consulta",
-                evidencia_acotada=str(e),
+                evidencia_acotada=acotar_evidencia(str(e)),
                 numero_de_intentos=attempt,
                 ofertas_primera_pagina=[],
                 estado_paginacion="fin",

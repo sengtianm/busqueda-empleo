@@ -10,6 +10,7 @@ from shared.config import load
 from shared.models import EntryResult, FichaFuente
 from shared.persistence import generate_id
 from shared.retry import should_retry
+from shared.utilidades import acotar_evidencia
 
 
 @dataclass
@@ -134,7 +135,7 @@ def _ejecutar_ingreso_loop(
                     contexto.entry_result = EntryResult(
                         estado="fallo",
                         codigo_motivo=fe.codigo_motivo,
-                        evidencia_acotada=fe.mensaje,
+                        evidencia_acotada=acotar_evidencia(fe.mensaje),
                         numero_de_intentos=attempt,
                     )
                     contexto.session_id = None

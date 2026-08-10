@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -122,11 +123,10 @@ def test_flujo_completo_exitoso_finaliza_completada() -> None:
             return_value=_res_capt("no"),
         ),
         patch("modules.discovery.orchestrator.registrar_evento"),
-        patch("modules.discovery.orchestrator.finalizar_proceso") as mock_final,
         patch(
-            "modules.discovery.orchestrator.consultar_metricas",
-            return_value=_METRICAS,
-        ),
+            "modules.discovery.orchestrator.finalizar_proceso",
+            return_value=SimpleNamespace(metricas=_METRICAS),
+        ) as mock_final,
     ):
         ejecutar_flujo()
 
@@ -179,11 +179,10 @@ def test_sin_fuentes_finaliza_con_sin_fuentes() -> None:
             "modules.discovery.orchestrator.existen_fuentes_configuradas",
             return_value=_res_ctrl("no"),
         ),
-        patch("modules.discovery.orchestrator.finalizar_proceso") as mock_final,
         patch(
-            "modules.discovery.orchestrator.consultar_metricas",
-            return_value=_METRICAS,
-        ),
+            "modules.discovery.orchestrator.finalizar_proceso",
+            return_value=SimpleNamespace(metricas=_METRICAS),
+        ) as mock_final,
     ):
         ejecutar_flujo()
 
@@ -222,11 +221,10 @@ def test_ingreso_falla_registra_evento_y_sigue_fuente_siguiente() -> None:
             return_value=_res_ing("no"),
         ),
         patch("modules.discovery.orchestrator.registrar_evento") as mock_evento,
-        patch("modules.discovery.orchestrator.finalizar_proceso") as mock_final,
         patch(
-            "modules.discovery.orchestrator.consultar_metricas",
-            return_value=_METRICAS,
-        ),
+            "modules.discovery.orchestrator.finalizar_proceso",
+            return_value=SimpleNamespace(metricas=_METRICAS),
+        ) as mock_final,
     ):
         ejecutar_flujo()
 
@@ -288,10 +286,9 @@ def test_busqueda_sin_ofertas_registra_evento_y_sigue_set() -> None:
             side_effect=[_res_capt("si"), _res_capt("no")],
         ),
         patch("modules.discovery.orchestrator.registrar_evento") as mock_evento,
-        patch("modules.discovery.orchestrator.finalizar_proceso"),
         patch(
-            "modules.discovery.orchestrator.consultar_metricas",
-            return_value=_METRICAS,
+            "modules.discovery.orchestrator.finalizar_proceso",
+            return_value=SimpleNamespace(metricas=_METRICAS),
         ),
     ):
         ejecutar_flujo()
@@ -358,11 +355,10 @@ def test_error_nodo_aborta_con_aborto() -> None:
             return_value=_res_capt("no"),
         ),
         patch("modules.discovery.orchestrator.registrar_evento"),
-        patch("modules.discovery.orchestrator.finalizar_proceso") as mock_final,
         patch(
-            "modules.discovery.orchestrator.consultar_metricas",
-            return_value=_METRICAS,
-        ),
+            "modules.discovery.orchestrator.finalizar_proceso",
+            return_value=SimpleNamespace(metricas=_METRICAS),
+        ) as mock_final,
     ):
         ejecutar_flujo()
 
@@ -422,11 +418,10 @@ def test_bucle_fuentes_dos_fuentes_secuenciales() -> None:
             return_value=_res_capt("no"),
         ),
         patch("modules.discovery.orchestrator.registrar_evento"),
-        patch("modules.discovery.orchestrator.finalizar_proceso") as mock_final,
         patch(
-            "modules.discovery.orchestrator.consultar_metricas",
-            return_value=_METRICAS,
-        ),
+            "modules.discovery.orchestrator.finalizar_proceso",
+            return_value=SimpleNamespace(metricas=_METRICAS),
+        ) as mock_final,
     ):
         ejecutar_flujo()
 
@@ -487,10 +482,9 @@ def test_bucle_sets_dos_sets_para_una_fuente() -> None:
             side_effect=[_res_capt("si"), _res_capt("no")],
         ) as mock_sets,
         patch("modules.discovery.orchestrator.registrar_evento"),
-        patch("modules.discovery.orchestrator.finalizar_proceso"),
         patch(
-            "modules.discovery.orchestrator.consultar_metricas",
-            return_value=_METRICAS,
+            "modules.discovery.orchestrator.finalizar_proceso",
+            return_value=SimpleNamespace(metricas=_METRICAS),
         ),
     ):
         ejecutar_flujo()
@@ -557,10 +551,9 @@ def test_sesion_anterior_cerrada_al_cambiar_fuente() -> None:
             return_value=_res_capt("no"),
         ),
         patch("modules.discovery.orchestrator.registrar_evento"),
-        patch("modules.discovery.orchestrator.finalizar_proceso"),
         patch(
-            "modules.discovery.orchestrator.consultar_metricas",
-            return_value=_METRICAS,
+            "modules.discovery.orchestrator.finalizar_proceso",
+            return_value=SimpleNamespace(metricas=_METRICAS),
         ),
     ):
         ejecutar_flujo()
@@ -627,10 +620,9 @@ def test_logging_informativo_en_hitos() -> None:
             return_value=_res_capt("no"),
         ),
         patch("modules.discovery.orchestrator.registrar_evento"),
-        patch("modules.discovery.orchestrator.finalizar_proceso"),
         patch(
-            "modules.discovery.orchestrator.consultar_metricas",
-            return_value=_METRICAS,
+            "modules.discovery.orchestrator.finalizar_proceso",
+            return_value=SimpleNamespace(metricas=_METRICAS),
         ),
         patch("modules.discovery.orchestrator.logger") as mock_logger,
     ):
@@ -699,10 +691,9 @@ def test_metricas_en_mensaje_final() -> None:
             return_value=_res_capt("no"),
         ),
         patch("modules.discovery.orchestrator.registrar_evento"),
-        patch("modules.discovery.orchestrator.finalizar_proceso"),
         patch(
-            "modules.discovery.orchestrator.consultar_metricas",
-            return_value=_METRICAS,
+            "modules.discovery.orchestrator.finalizar_proceso",
+            return_value=SimpleNamespace(metricas=_METRICAS),
         ),
         patch("modules.discovery.orchestrator.logger") as mock_logger,
     ):
@@ -778,11 +769,7 @@ def test_orden_llamadas_nodos() -> None:
         patch("modules.discovery.orchestrator.registrar_evento"),
         patch(
             "modules.discovery.orchestrator.finalizar_proceso",
-            side_effect=_rastrear(orden, "finalizar", None),
-        ),
-        patch(
-            "modules.discovery.orchestrator.consultar_metricas",
-            side_effect=_rastrear(orden, "metricas", _METRICAS),
+            side_effect=_rastrear(orden, "finalizar", SimpleNamespace(metricas=_METRICAS)),
         ),
     ):
         ejecutar_flujo()
@@ -802,5 +789,4 @@ def test_orden_llamadas_nodos() -> None:
         "quedan_sets",
         "quedan_fuentes",
         "finalizar",
-        "metricas",
     ]

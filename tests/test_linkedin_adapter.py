@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from modules.discovery.adapters.linkedin import FlowError, LinkedInAdapter
+from modules.discovery.adapters.linkedin import _URL_LOGIN, FlowError, LinkedInAdapter
 from shared.models import FichaFuente, PoliticasCaptura, SetFiltros
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
@@ -26,6 +26,7 @@ class FakePage:
         self._actual = ""
         self.gotos: list[str] = []
         self.cerrada = False
+        self.keyboard = FakeKeyboard()
 
     def goto(self, url: str) -> None:
         self.gotos.append(url)
@@ -40,8 +41,26 @@ class FakePage:
     def click(self, selector: str) -> None:
         pass
 
+    def wait_for_selector(
+        self,
+        selector: str,
+        timeout: int | None = None,
+        state: str | None = None,
+    ) -> None:
+        pass
+
+    def wait_for_timeout(self, ms: int) -> None:
+        pass
+
     def close(self) -> None:
         self.cerrada = True
+
+
+class FakeKeyboard:
+    """Playwright-like keyboard stub with no-op press."""
+
+    def press(self, tecla: str) -> None:
+        pass
 
 
 @pytest.fixture
@@ -106,6 +125,24 @@ def test_enter_source_autenticada_sin_credenciales(
     assert exc.value.codigo_motivo == "credenciales_no_disponibles"
 
 
+def test_enter_source_autenticada_con_credenciales(
+    ficha_autenticada: FichaFuente,
+) -> None:
+    pagina = FakePage(
+        {
+            URL_BUSQUEDA: _leer("lista_linkedin.html"),
+            _URL_LOGIN: "<html><body>global-nav login</body></html>",
+        }
+    )
+    resultado = LinkedInAdapter().enter_source(
+        pagina,
+        ficha_autenticada,
+        {"username": "usuario", "password": "clave"},
+    )
+    assert resultado.estado == "exito"
+    assert pagina.gotos == [_URL_LOGIN]
+
+
 def test_enter_source_criterio_no_cumplido() -> None:
     pagina = FakePage({"https://x.com": "<html><body>sin nav</body></html>"})
     ficha = FichaFuente(
@@ -158,6 +195,60 @@ def test_apply_filters_bloqueo(
     with pytest.raises(FlowError) as exc:
         LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
     assert exc.value.codigo_motivo == "bloqueo_plataforma"
+
+
+def test_apply_filters_parsea_resultados_ssr_2026(
+    ficha_publica: FichaFuente,
+    set_filtros: SetFiltros,
+    politicas: PoliticasCaptura,
+) -> None:
+    pagina = FakePage({URL_CON_FILTROS: _leer("lista_linkedin_sesion.html")})
+    resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
+    assert resultado.estado == "exito"
+    assert len(resultado.ofertas_primera_pagina) == 2
+    oferta = resultado.ofertas_primera_pagina[0]
+    assert oferta.titulo == "Oferta Uno"
+    assert oferta.id_externo_url == "77701"
+    assert oferta.url == "https://www.linkedin.com/jobs/view/77701/?refId=abc"
+    assert resultado.total_declarado is None
+
+
+def test_apply_filters_fallback_enlace_generico(
+    ficha_publica: FichaFuente,
+    set_filtros: SetFiltros,
+    politicas: PoliticasCaptura,
+) -> None:
+    html = "<html><body><a href='/jobs/view/99901'>Titulo Generico</a></body></html>"
+    pagina = FakePage({URL_CON_FILTROS: html})
+    resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
+    assert len(resultado.ofertas_primera_pagina) == 1
+    assert resultado.ofertas_primera_pagina[0].titulo == "Titulo Generico"
+
+
+def test_capture_batch_detalle_ssr_2026(
+    ficha_publica: FichaFuente,
+    set_filtros: SetFiltros,
+    politicas: PoliticasCaptura,
+) -> None:
+    pagina = FakePage(
+        {
+            URL_CON_FILTROS: _leer("lista_linkedin_sesion.html"),
+            "https://www.linkedin.com/jobs/view/77701/?refId=abc": _leer(
+                "detalle_linkedin_sesion.html"
+            ),
+            "https://www.linkedin.com/jobs/view/77702/": _leer(
+                "detalle_linkedin_sesion.html"
+            ),
+        }
+    )
+    lote, estado = LinkedInAdapter().capture_batch(
+        pagina, ficha_publica, set_filtros, politicas
+    )
+    assert estado.estado == "ok"
+    assert len(lote.ofertas) == 2
+    assert lote.ofertas[0].titulo == "Oferta Uno"
+    assert lote.ofertas[0].id_externo_url == "77701"
+    assert "analítica" in lote.ofertas[0].descripcion_original
 
 
 def test_apply_filters_filtro_tipo_no_soportado(

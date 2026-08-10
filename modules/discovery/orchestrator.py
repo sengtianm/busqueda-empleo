@@ -24,7 +24,7 @@ from modules.discovery.nodes.control_fuentes import (
     quedan_fuentes_por_procesar,
     seleccionar_fuente_pendiente,
 )
-from modules.discovery.nodes.finalizar import consultar_metricas, finalizar_proceso
+from modules.discovery.nodes.finalizar import finalizar_proceso
 from modules.discovery.nodes.ingreso import ejecutar_ingreso, ingreso_exitoso
 from modules.discovery.nodes.inicio import ejecutar_inicio
 from modules.discovery.nodes.registro import registrar_evento
@@ -54,17 +54,16 @@ def _cerrar_sesion_anterior(contexto: RunContext) -> None:
 def _terminar(contexto: RunContext, motivo: str) -> None:
     """Controlled termination: persist closure and log final metrics."""
     contexto.motivo_terminacion = motivo
-    finalizar_proceso(contexto, motivo)
-    metricas = consultar_metricas(contexto)
-    resumen = " | ".join(
-        f"{campo}={metricas.get(campo, 0)}" for campo in metricas
-    )
-    logger.info(
-        f"Corrida finalizada | run={contexto.run_id} | motivo={motivo} | "
-        f"{resumen}"
-    )
-
-
+    resultado = finalizar_proceso(contexto, motivo)
+    metricas = resultado.metricas
+    if metricas:
+        resumen = " | ".join(
+            f"{campo}={metricas.get(campo, 0)}" for campo in metricas
+        )
+        logger.info(
+            f"Corrida finalizada | run={contexto.run_id} | motivo={motivo} | "
+            f"{resumen}"
+        )
 def _fallo_nodo(
     contexto: RunContext, nodo: str, resultado: Any, descripcion_texto: str
 ) -> None:

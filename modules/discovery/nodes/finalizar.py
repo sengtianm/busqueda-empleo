@@ -47,6 +47,7 @@ class ResultadoFinalizar:
     estado: str
     contexto: RunContext | None = None
     codigo: str = ""
+    metricas: dict[str, int] | None = None
 
 
 def _ahora() -> str:
@@ -177,14 +178,20 @@ def finalizar_proceso(
     estado = _ESTADOS_POR_MOTIVO.get(motivo, "abortada")
     run_id = contexto.run_id if contexto is not None else ""
 
+    metricas_previas = consultar_metricas(contexto)
+
+    if run_id:
+        _escribir_evento_terminacion(run_id, estado, motivo, metricas_previas)
+
     metricas = consultar_metricas(contexto)
 
     if run_id:
         _persistir_cierre_corrida(run_id, estado, motivo, metricas)
-        _escribir_evento_terminacion(run_id, estado, motivo, metricas)
 
     _cerrar_recursos(contexto)
     if run_id:
         _liberar_bloqueo(run_id)
 
-    return ResultadoFinalizar(estado="ok", contexto=contexto, codigo=motivo)
+    return ResultadoFinalizar(
+        estado="ok", contexto=contexto, codigo=motivo, metricas=metricas
+    )

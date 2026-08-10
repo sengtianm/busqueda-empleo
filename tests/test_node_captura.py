@@ -205,6 +205,7 @@ def test_captura_auditoria_sesion_escrita(
     mock_write_row.assert_called_once()
     args = mock_write_row.call_args.args
     assert args[0] == "sesiones"
+    assert args[1]["id"] == "SES-1"
     assert args[1]["session_id"] == "SES-1"
     assert args[1]["conteo"] == 1
     assert args[1]["estado"] == "completa"
@@ -237,7 +238,8 @@ def test_registrar_una_oferta_upsert(
     contexto.capture_batch = CaptureBatch(ofertas=[_oferta()], set_indice=0)
 
     with patch("modules.discovery.nodes.captura.upsert_oferta") as mock_upsert:
-        res = registrar_ofertas(contexto)
+        with patch("modules.discovery.nodes.captura.write_evento"):
+            res = registrar_ofertas(contexto)
 
     assert res.estado == "ok"
     mock_upsert.assert_called_once()
@@ -278,6 +280,34 @@ def test_registrar_dedup_id_externo(contexto: RunContext) -> None:
     assert fila["id_externo_url"] == "123"
 
 
+def test_registrar_ofertas_exito_registra_suceso(
+    contexto: RunContext,
+) -> None:
+    contexto.session_id = "SES-9"
+    contexto.fuente_corriente = _run_context().fuentes_filtradas[0]
+    oferta_a = _oferta("https://www.linkedin.com/jobs/view/11")
+    oferta_b = _oferta("https://www.linkedin.com/jobs/view/22")
+    contexto.capture_batch = CaptureBatch(
+        ofertas=[oferta_a, oferta_b], set_indice=0
+    )
+    contexto.set_corriente = SetFiltros(source_id="LI-01", indice=0, filtros=[])
+
+    with patch("modules.discovery.nodes.captura.upsert_oferta") as mock_upsert:
+        with patch("modules.discovery.nodes.captura.write_evento") as mock_evento:
+            res = registrar_ofertas(contexto)
+
+    assert res.estado == "ok"
+    assert mock_upsert.call_count == 2
+    mock_evento.assert_called_once()
+    evento = mock_evento.call_args.args[0]
+    assert evento["tipo"] == "suceso"
+    assert evento["codigo"] == "ofertas_registradas"
+    assert evento["evidencia"] == "ofertas registradas: 2 | total: 2"
+    assert evento["run_id"] == contexto.run_id
+    assert evento["session_id"] == "SES-9"
+    assert evento["source_id"] == "LI-01"
+
+
 def test_registrar_fallo_parcial(contexto: RunContext) -> None:
     oferta_a = _oferta("https://www.linkedin.com/jobs/view/1")
     oferta_b = _oferta("https://www.linkedin.com/jobs/view/2")
@@ -293,8 +323,9 @@ def test_registrar_fallo_parcial(contexto: RunContext) -> None:
 
     assert res.estado == "ok"
     assert mock_upsert.call_count == 3
-    mock_evento.assert_called_once()
-    assert mock_evento.call_args.args[0]["codigo"] == "registro_parcial"
+    assert mock_evento.call_count == 2
+    assert mock_evento.call_args_list[0].args[0]["codigo"] == "ofertas_registradas"
+    assert mock_evento.call_args_list[1].args[0]["codigo"] == "registro_parcial"
 
 
 def test_registrar_fallo_total(contexto: RunContext) -> None:
