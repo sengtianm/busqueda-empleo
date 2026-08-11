@@ -32,15 +32,17 @@ Unless noted, decisions from previous sessions remain in effect.
 - Review skill streamlined: precedence = primary docs, 3-step workflow, conditional report template
 - README links updated to living documents only
 - Functional inputs (requirements, decision model, data flow, error catalog, user profile) removed: future module fichas will be rebuilt from module-1 ficha + decision log + data model
+- Workflow audit (checks, implementation, documentation, closure skills): read/update scope verified aligned with primary docs only; project-documentation skill adjusted to forbid consulting deleted docs and over-reading
 
 **Decisions**
 - Only primary documentation remains consultable; all non-primary docs deleted physically, never to be consulted again
 - Future module fichas (2–5) are built from module-1 ficha + decision log + data model, without prior functional inputs
 - Closure documentation review limited to changed files and primary documents, with conditional output
+- Documentation consultation across all workflow skills scoped to primary documents only, minimum required by the task
 
 **Status**
-- Documentation depuration + reviewer optimization ✅ (no code changes: ruff/mypy/pytest n/a)
-- Branch: `fase-4` · /save pending (single commit + push, no merge)
+- Documentation depuration + reviewer optimization + workflow alignment ✅ (no code changes: ruff/mypy/pytest n/a)
+- Branch: `fase-4` · /save single commit + push, no merge
 
 ## Session 17 — 10/08/2026
 `ses_0133020ecffeN4R4bi4Y7MXDAF` · `fase-4`

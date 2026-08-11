@@ -44,9 +44,7 @@ If yes, consult the documentation first.
 
 ## 2. Locate the relevant documentation
 
-Identify every document related to the request.
-
-Never rely on only one document if multiple documents are applicable.
+Consult only the project's primary documents (see Key Documents in AGENTS.md): module ficha, decision log, DOC-13A, Appendix 5A, MVP Execution Plan, tracker.md. Never consult deleted documentation (only git history). Read the minimum required by the task; do not read unnecessary documentation.
 
 ---
 
