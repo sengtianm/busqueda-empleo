@@ -26,27 +26,22 @@ Antes de revisar, identificar:
 
 ## Documentation Precedence
 
-Orden de prioridad:
+Only the project's **primary documents** are consultable (all non-primary docs were removed from the repository):
 
-1. Architecture Decision Records / decisiones explícitas de diseño
-2. Documentación de arquitectura
-3. Documentación de modelo de datos
-4. Documentación de workflow, flujos o procesos
-5. Requisitos de backlog, tickets o tareas
-6. Estándares de código, naming o convenciones
-7. Otra documentación de soporte
+1. AGENTS.md — operating contract, conventions, restrictions
+2. Decision log — approved decisions and deviations (D1–D6, C2/C5, PMD-020/021, DE-LI)
+3. Current module ficha (`docs/diagrams/`) — node-level spec of the module under review
+4. DOC-13A — data model (only if the task touched the model)
+5. MVP Execution Plan — acceptance criteria of the task
+6. tracker.md — current status of phases and tasks
 
-**Ante contradicción entre documentos:** no elegir silenciosamente; reportar como `Documentation Conflict`; indicar cuál prevalece según jerarquía; solicitar aclaración si el conflicto impide validar.
+**Ante contradicción entre documentos:** no elegir silenciosamente; reportar como `Documentation Conflict`; indicar cuál prevalece según la jerarquía; solicitar aclaración si el conflicto impide validar.
 
 ## Review Workflow
 
-1. **Identificar implementación:** archivos modificados/relevantes, módulos afectados, interfaces/endpoints/componentes/servicios, alcance real del cambio.
-2. **Identificar documentación aplicable:** arquitectura, modelo de datos, workflows, reglas de negocio, estándares, decisiones de diseño, backlog/requisitos, cualquier documento relevante al alcance.
-3. **Aplicar jerarquía documental:** determinar qué documentos aplican, detectar conflictos, identificar vacíos o ambigüedades.
-4. **Comparar implementación vs documentación:** comportamiento funcional, reglas de negocio, responsabilidades de módulos, interfaces y contratos, modelo de datos, workflow esperado, naming (si documentado), restricciones técnicas/funcionales, decisiones de arquitectura.
-5. **Detectar inconsistencias:** funcionalidad faltante, funcionalidad extra no documentada, violaciones de arquitectura, suposiciones incorrectas, desajustes documentación-implementación, documentación desactualizada/ambigua/incompleta.
-6. **No proponer mejoras no documentadas:** la revisión no es refactorización; no recomendar cambios por preferencias personales; solo reportar desviaciones frente a documentación vigente.
-7. **Producir revisión:** clasificar cada hallazgo, explicar razón, referenciar documento, incluir evidencia en código, indicar acción recomendada.
+1. **Acotar el alcance:** identificar los archivos cambiados (`git diff` contra la base) y los documentos primarios que aplican a la tarea. Leer solo lo estrictamente necesario; nunca revisar la implementación completa.
+2. **Comparar implementación vs documentación:** criterios de aceptación de la tarea, reglas de la ficha del módulo, decisiones de arquitectura/negocio del decision log, modelo de datos (DOC-13A solo si aplica), convenciones de AGENTS.md (separación de configuración, sin valores hardcoded, reglas de persistencia, naming).
+3. **Producir revisión:** si no hay hallazgos, responder CONFORME en máximo 5 líneas. Si los hay: clasificar cada hallazgo, explicar razón, referenciar documento, incluir evidencia en código, indicar acción recomendada.
 
 ## Finding Categories
 
@@ -99,7 +94,9 @@ Orden de prioridad:
 
 La revisión debe responder: **¿la implementación coincide con la documentación oficial del proyecto?** Si no hay documentación suficiente, indicar explícitamente qué no puede validarse y qué información falta.
 
-```markdown
+**Si no hay hallazgos:** responder CONFORME en máximo 5 líneas (qué se revisó, contra qué documentos, resultado). No usar la plantilla completa.
+
+**Si hay hallazgos**, usar la plantilla (solo secciones con contenido):
 # Documentation Compliance Review
 
 ## Summary
@@ -130,6 +127,5 @@ Indicar si la documentación debe actualizarse por: implementación correcta no 
 
 ## Open Questions / Clarifications Needed
 Preguntas necesarias por: documentación ambigua, información faltante, conflictos documentales, comportamiento no validable o decisión requerida del usuario/equipo.
-```
 
 Hallazgos sin respaldo documental deben marcarse como `Documentation Gap`, `Unable to Validate` o `Documentation Conflict` según corresponda.

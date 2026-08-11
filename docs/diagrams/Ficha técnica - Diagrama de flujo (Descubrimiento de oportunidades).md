@@ -762,7 +762,8 @@ Contexto: `search_result`, `run_id`, `source_id`, `session_id`.
 ---
 
 ## Nodo proceso: “Capturar ofertas”  
-**Versión**: 1.0 (aprobada)
+**Versión**: 1.1 (aprobada)  
+**Nota de implementación aprobada**: reedición 2026-08-11 — `estado_captura` incorpora `set_indice`; la implementación de la sub-fase 4.4 ya lo produce (desde 2026-08-09).
 
 ### Posición
 Entre:
@@ -795,7 +796,7 @@ Captura información original de cada oferta del lote. Falla individual excluye 
 
 ### Salidas
 - `capture_batch`: ofertas capturadas con información original + trazabilidad por oferta.
-- `estado_captura`: `{estado, codigo_motivo, paginas_consumidas, capturadas_acumuladas_fuente, limite_alcanzado}`.
+- `estado_captura`: `{estado, codigo_motivo, paginas_consumidas, capturadas_acumuladas_fuente, limite_alcanzado, set_indice}`.
 - Auditoría de sesión en `"control de sesiones"` o marca degradada.
 - Control único a `"Registrar ofertas capturadas en 'Ofertas Totales'"`.
 - Aborto → `"Finalizar Proceso"` con `error`.
@@ -879,7 +880,6 @@ Captura información original de cada oferta del lote. Falla individual excluye 
 - Conservar lote parcial ante fallo.
 - Auditoría única por `(session_id, set_indice)`; idempotencia ante reentradas.
 - No escribir en `"Ofertas Totales"`; no interpretar contenido.
-- **Pendiente aprobado**: reedición v1.1 para agregar `set_indice` a `estado_captura`.
 
 ### Pasos funcionales
 1. **Leer insumos**. Entrada: `search_result`, sesión, políticas, progreso, IDs. Proceso: acceder desde contexto. Salida: insumos. Val: VAL-01. Err: ERR-01.
@@ -1150,7 +1150,7 @@ Contexto: iterador de sets, `search_result`, `estado_captura`, `limite_alcanzado
 - **Sucesor No**: `"¿Quedan fuentes por procesar…?"`.
 - **Impactos aprobados**:
   - rama No retorna sin mutación adicional;
-  - reedición `"Capturar ofertas"` v1.1 con `set_indice` en `estado_captura` aprobada; documento a entregar si se solicita.
+  - reedición `"Capturar ofertas"` v1.1 con `set_indice` en `estado_captura` implementada (sub-fase 4.4) y documentada en este documento (2026-08-11).
 
 ### Notas de implementación
 - Evaluación pura; sin I/O, sin mutación.
@@ -1232,4 +1232,4 @@ No es nodo de decisión.
 - Tabla funcional tal como está.
 
 ### Estado del módulo
-Con este nodo queda completo el conjunto de nodos del Módulo 1. Pendiente solo la reedición `"Capturar ofertas"` v1.1 con `set_indice`, aprobada y a entregar si se solicita.
+Con este nodo queda completo el conjunto de nodos del Módulo 1. Pendientes de implementación: ninguno. La reedición `"Capturar ofertas"` v1.1 con `set_indice` en `estado_captura` quedó implementada y documentada (2026-08-11); el documento pasa a ser el registro as-built del Módulo 1.

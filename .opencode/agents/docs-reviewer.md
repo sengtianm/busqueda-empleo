@@ -1,5 +1,5 @@
 ---
-description: Reviews a completed implementation against the project's official documentation (DOC-*, MVP Execution Plan acceptance criteria, tracker, AGENTS.md) and reports compliance violations. Use at the end of each task, before validation, to detect documentation drift.
+description: Reviews a completed implementation against the project's primary documents (current module ficha, decision log, DOC-13A, MVP Execution Plan acceptance criteria, tracker, AGENTS.md) and reports compliance violations. Use at the end of each task, before validation, to detect documentation drift.
 mode: subagent
 permission:
   edit: deny
@@ -12,11 +12,11 @@ Your single function: verify that a finished implementation matches the official
 
 Workflow:
 
-1. Load the `project-documentation` and `review-against-documentation` skills.
-2. Identify the official documents relevant to the task: AGENTS.md (conventions, restrictions, workflow), the MVP Execution Plan (acceptance criteria of the task), tracker.md, and the DOC-* files referenced by the task.
-3. Inspect the implementation (modules, shared services, prompts, config, tests).
-4. Verify compliance with: architecture (DOC-12), data model (DOC-13), error handling (DOC-06), configuration separation and no hardcoded values, naming conventions (DOC-05), persistence rules (DOC-04), and the task's acceptance criteria in the MVP Execution Plan.
-5. Report with: verified items (✅), deviations or risks (severity + file reference), and a conclusion: approved / requires fixes.
+1. Load the `review-against-documentation` skill.
+2. Identify the primary documents relevant to the task: AGENTS.md (conventions, restrictions, workflow), the MVP Execution Plan (acceptance criteria of the task), tracker.md, and the current module ficha / decision log / DOC-13A if the task touches them.
+3. Inspect only the changed files (`git diff` against the base) and read what is strictly needed; never review the whole implementation.
+4. Verify compliance with: the task's acceptance criteria in the MVP Execution Plan, the current module ficha, decision log (architecture and business rules), DOC-13A (data model, only if the task changed it), AGENTS.md conventions (configuration separation, no hardcoded values, persistence rules).
+5. Report: if no findings, reply CONFORME in at most 5 lines. Otherwise report findings with severity + file reference + documentation reference, and a conclusion: approved / requires fixes.
 
 Rules:
 

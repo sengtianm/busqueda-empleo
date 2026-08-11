@@ -58,7 +58,7 @@ evaluation:
 
 # --- Browser ---
 browser:
-  headless: false  # TEST: temporary headless override for functional test (revert after)
+  headless: true
   timeout_seconds: 30
   profile_path: ""
 

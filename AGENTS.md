@@ -1,14 +1,14 @@
 # AGENTS.md
 
 ## Project
-Automated job search pipeline: discovers, collects, prepares, evaluates, processes, and manages opportunities to reduce search time/effort and support decision-making. Objective: from discovery to high-quality application inputs with full traceability and minimal manual intervention (DOC-08).
+Automated job search pipeline: discovers, collects, prepares, evaluates, processes, and manages opportunities to reduce search time/effort and support decision-making. Objective: from discovery to high-quality application inputs with full traceability and minimal manual intervention.
 
-**Status:** MVP in progress — Phases 0–3 done (infrastructure, shared services, prompts tested with `gemma4:31b-cloud`); Phase 4 (Module 1 — Opportunity Discovery, branch `fase-4`) active with sub-phases 4.1–4.5 implemented & validated (INICIO + control nodes, platform entry, filter search + generic register, capture/registration with dedup by `id_externo_url`, closure node + full-flow orchestrator); Phases 5–9 pending. Authoritative status: `docs/history/tracker.md`.
+**Status:** MVP in progress — Phases 0–3 done (infrastructure, shared services, prompts tested with `gemma4:31b-cloud`); Phase 4 (Module 1 — Opportunity Discovery, branch `fase-4`) complete & recorded as-built (INICIO + control nodes, platform entry, filter search + generic register, capture/registration with dedup by `id_externo_url`, closure node + full-flow orchestrator; ficha técnica closed v1.1, decision log v1.0 created); Phases 5–9 pending. Authoritative status: `docs/history/tracker.md`.
 
 ## Architecture
 Three layers: Functional modules → Shared services → Infrastructure.
 Workflow: Discovery → Preparation → Evaluation → Processing → Management.
-All implementations must follow this architecture (DOC-12).
+All implementations must follow this architecture (see decision log v1.0).
 
 ## Technology Stack
 Python 3.12 · Playwright · BeautifulSoup + lxml · SQLite · Pydantic · httpx · Loguru · RapidFuzz · Tenacity · Ollama · PyYAML · python-dotenv · pytest · Ruff · mypy
@@ -76,7 +76,7 @@ Task rules:
 ## Validation & Commands
 - `ruff check .` — lint (E/F/I/N/W, line length 100)
 - `mypy .` — typecheck (strict)
-- `pytest tests/` — test suite (currently 199 passing)
+- `pytest tests/` — test suite (currently 240 passing)
 - Local venv runs Python 3.14.6 (3.12 unavailable).
 
 Definition of Done:
@@ -86,24 +86,23 @@ Definition of Done:
 - Testing strategy: unit tests with fixtures in `tests/fixtures/`; integration tests tagged (Playwright); LLM responses mockable; data layer tested with temporary SQLite files.
 
 ## Key Documents
-| Doc | Covers |
-|---|---|
-| DOC-00 | Glossary |
-| DOC-01 | Functional requirements |
-| DOC-03 | Decision model |
-| DOC-04 | Data flow |
-| DOC-05 | Project standards (naming, formats) |
-| DOC-06 | Error handling |
-| DOC-07 | Folder architecture |
-| DOC-08 | Scope and objectives |
-| DOC-09 | Job sources research (LinkedIn) |
-| DOC-11 | Technology stack |
-| DOC-12 | General system architecture |
-| DOC-13 | Data model |
-| MVP Execution Plan | Build order and acceptance criteria per task |
-| tracker.md | Current status of each phase and task |
+Documentation authority model: only **primary construction docs** are consultable (authoritative, always current). All non-primary docs were removed from the repository; never rely on deleted documentation (only git history).
 
-Reading order: DOC-00 first → document related to current task → documents referenced by it. Do not read unnecessary documentation.
+| Category | Doc | Covers |
+|---|---|---|
+| **Primary** | Ficha técnica (per module) | Node-level module spec: flow, business rules, error codes, states — authoritative for building (`docs/diagrams/`) |
+| **Primary** | DOC-13A | Detailed data model: entities, attributes, catalogs, ERD — aligned with implementation deviations |
+| **Primary** | Appendix 5A | Official prefix catalog (IDs, codes) |
+| **Primary** | Decision log | Approved decisions and deviations D1–D6, C2/C5, PMD-020/021, DE-LI (`docs/history/decision log.md`) |
+| **Primary** | MVP Execution Plan | Build order and acceptance criteria per task |
+| **Primary** | tracker.md | Current status of each phase and task |
+| **Primary** | AGENTS.md (this file) | Operating contract, conventions, validation |
+| **Operational** | session history.md | Per-session record, updated only by `/save` (`docs/history/session history.md`) |
+
+Reading order: AGENTS.md → decision log → current module ficha → DOC-13A → docs referenced by the task. Do not read unnecessary documentation.
+
+## Close gate
+At every closure, run the `docs-reviewer` agent: verify the implemented changes against the primary documents (decision log, current module ficha, DOC-13A, MVP Execution Plan acceptance criteria, tracker, AGENTS.md) and detect documentation drift before validation.
 
 ## Version Control
 - Develop each phase/module/significant change in a dedicated branch; use descriptive names (e.g., `modulo-1`, `docs/...`).

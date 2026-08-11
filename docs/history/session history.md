@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 18 | 11/08/2026 | `ses_011dd31a8ffe0sUJfx0l66OpUJ` | Documentation depuration: only primary docs kept, all non-primary deleted physically; docs-reviewer optimized (single skill, git-diff scope, primary-only checks, conditional output) |
 | 17 | 10/08/2026 | `ses_0133020ecffeN4R4bi4Y7MXDAF` | LinkedIn 2026 SSR login fixed (direct login, `voyager` criterion, multi-variant parsing) + `sesiones` schema migration + closure-metrics success event (240 tests) |
 | 16 | 10/08/2026 | `ses_0133020ecffeN4R4bi4Y7MXDAF` | Sub-fase 4.5: terminal closure node + full-flow orchestrator implemented, validated, and audited CONFORME (229 tests) |
 | 15 | 09/08/2026 | `ses_01823c05affeFQbFrKubp332mC` | Skills inventory reviewed; review-against-documentation fully rewritten; /save authorized full commit of worktree |
@@ -18,6 +19,28 @@ Unless noted, decisions from previous sessions remain in effect.
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+## Session 18 — 11/08/2026
+`ses_011dd31a8ffe0sUJfx0l66OpUJ` · `fase-4`
+
+**Topics**
+- Documentation authority clarified: only primary docs are consultable when building (module ficha, decision log, data model, prefix catalog, plan, tracker, AGENTS.md)
+- Docs-reviewer inefficiency diagnosed: two heavy skills loaded, full-implementation inspection, checks against retired docs, inflated output template
+- Physical deletion of all non-primary documentation: design docs and retired docs removed from the repo (history preserved in git)
+- Authority model simplified in AGENTS.md: single consultable category; generic close gate against primary docs replaces the DOC-01 sync gate
+- Docs-reviewer optimized: one lightweight skill, git-diff scoped inspection, primary-docs-only checks, CONFORME output in ≤5 lines when no findings
+- Review skill streamlined: precedence = primary docs, 3-step workflow, conditional report template
+- README links updated to living documents only
+- Functional inputs (requirements, decision model, data flow, error catalog, user profile) removed: future module fichas will be rebuilt from module-1 ficha + decision log + data model
+
+**Decisions**
+- Only primary documentation remains consultable; all non-primary docs deleted physically, never to be consulted again
+- Future module fichas (2–5) are built from module-1 ficha + decision log + data model, without prior functional inputs
+- Closure documentation review limited to changed files and primary documents, with conditional output
+
+**Status**
+- Documentation depuration + reviewer optimization ✅ (no code changes: ruff/mypy/pytest n/a)
+- Branch: `fase-4` · /save pending (single commit + push, no merge)
 
 ## Session 17 — 10/08/2026
 `ses_0133020ecffeN4R4bi4Y7MXDAF` · `fase-4`
