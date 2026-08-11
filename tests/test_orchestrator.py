@@ -21,15 +21,15 @@ _METRICAS = {
 def _contexto(n_fuentes: int = 1) -> RunContext:
     config_fuentes = [
         {
-            "source_id": f"LI-0{i}",
+            "fuente_id": f"LI-0{i}",
             "nombre": "LinkedIn",
             "ficha_acceso": {
-                "url": "https://www.linkedin.com/jobs",
+                "enlace": "https://www.linkedin.com/jobs",
                 "tipo_acceso": "publico",
                 "criterio_exito": "global-nav",
                 "timeout_segundos": 10,
             },
-            "sets_de_filtros": [{"set_indice": 0, "filtros": []}],
+            "sets_de_filtros": [{"indice_set": 0, "filtros": []}],
         }
         for i in range(n_fuentes)
     ]
@@ -75,7 +75,7 @@ def test_flujo_completo_exitoso_finaliza_completada() -> None:
         patch(
             "modules.discovery.orchestrator.ejecutar_inicio",
             return_value=ResultadoInicio(
-                estado="ok", run_id=contexto.run_id, contexto=contexto
+                estado="ok", id_corrida=contexto.id_corrida, contexto=contexto
             ),
         ),
         patch(
@@ -172,7 +172,7 @@ def test_sin_fuentes_finaliza_con_sin_fuentes() -> None:
         patch(
             "modules.discovery.orchestrator.ejecutar_inicio",
             return_value=ResultadoInicio(
-                estado="ok", run_id=contexto.run_id, contexto=contexto
+                estado="ok", id_corrida=contexto.id_corrida, contexto=contexto
             ),
         ),
         patch(
@@ -197,7 +197,7 @@ def test_ingreso_falla_registra_evento_y_sigue_fuente_siguiente() -> None:
         patch(
             "modules.discovery.orchestrator.ejecutar_inicio",
             return_value=ResultadoInicio(
-                estado="ok", run_id=contexto.run_id, contexto=contexto
+                estado="ok", id_corrida=contexto.id_corrida, contexto=contexto
             ),
         ),
         patch(
@@ -241,7 +241,7 @@ def test_busqueda_sin_ofertas_registra_evento_y_sigue_set() -> None:
         patch(
             "modules.discovery.orchestrator.ejecutar_inicio",
             return_value=ResultadoInicio(
-                estado="ok", run_id=contexto.run_id, contexto=contexto
+                estado="ok", id_corrida=contexto.id_corrida, contexto=contexto
             ),
         ),
         patch(
@@ -305,7 +305,7 @@ def test_error_nodo_aborta_con_aborto() -> None:
         patch(
             "modules.discovery.orchestrator.ejecutar_inicio",
             return_value=ResultadoInicio(
-                estado="ok", run_id=contexto.run_id, contexto=contexto
+                estado="ok", id_corrida=contexto.id_corrida, contexto=contexto
             ),
         ),
         patch(
@@ -373,7 +373,7 @@ def test_bucle_fuentes_dos_fuentes_secuenciales() -> None:
         patch(
             "modules.discovery.orchestrator.ejecutar_inicio",
             return_value=ResultadoInicio(
-                estado="ok", run_id=contexto.run_id, contexto=contexto
+                estado="ok", id_corrida=contexto.id_corrida, contexto=contexto
             ),
         ),
         patch(
@@ -437,7 +437,7 @@ def test_bucle_sets_dos_sets_para_una_fuente() -> None:
         patch(
             "modules.discovery.orchestrator.ejecutar_inicio",
             return_value=ResultadoInicio(
-                estado="ok", run_id=contexto.run_id, contexto=contexto
+                estado="ok", id_corrida=contexto.id_corrida, contexto=contexto
             ),
         ),
         patch(
@@ -498,12 +498,12 @@ def test_sesion_anterior_cerrada_al_cambiar_fuente() -> None:
     contexto.fuente_corriente = contexto.fuentes_filtradas[0]
     pagina = MagicMock()
     contexto.handle_sesion = pagina
-    contexto.session_id = "SES-0001"
+    contexto.id_sesion = "SES-0001"
     with (
         patch(
             "modules.discovery.orchestrator.ejecutar_inicio",
             return_value=ResultadoInicio(
-                estado="ok", run_id=contexto.run_id, contexto=contexto
+                estado="ok", id_corrida=contexto.id_corrida, contexto=contexto
             ),
         ),
         patch(
@@ -560,7 +560,7 @@ def test_sesion_anterior_cerrada_al_cambiar_fuente() -> None:
 
     pagina.close.assert_called_once()
     assert contexto.handle_sesion is None
-    assert contexto.session_id is None
+    assert contexto.id_sesion is None
 
 
 def test_logging_informativo_en_hitos() -> None:
@@ -572,7 +572,7 @@ def test_logging_informativo_en_hitos() -> None:
         patch(
             "modules.discovery.orchestrator.ejecutar_inicio",
             return_value=ResultadoInicio(
-                estado="ok", run_id=contexto.run_id, contexto=contexto
+                estado="ok", id_corrida=contexto.id_corrida, contexto=contexto
             ),
         ),
         patch(
@@ -643,7 +643,7 @@ def test_metricas_en_mensaje_final() -> None:
         patch(
             "modules.discovery.orchestrator.ejecutar_inicio",
             return_value=ResultadoInicio(
-                estado="ok", run_id=contexto.run_id, contexto=contexto
+                estado="ok", id_corrida=contexto.id_corrida, contexto=contexto
             ),
         ),
         patch(
@@ -717,7 +717,7 @@ def test_orden_llamadas_nodos() -> None:
             side_effect=_rastrear(
                 orden,
                 "inicio",
-                ResultadoInicio(estado="ok", run_id=contexto.run_id, contexto=contexto),
+                ResultadoInicio(estado="ok", id_corrida=contexto.id_corrida, contexto=contexto),
             ),
         ),
         patch(

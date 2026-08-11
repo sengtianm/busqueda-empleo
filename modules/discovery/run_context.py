@@ -37,7 +37,7 @@ class RunContext:
         self,
         config_fuentes: list[dict[str, Any]],
         config_captura: dict[str, Any] | None = None,
-        run_id: str | None = None,
+        id_corrida: str | None = None,
         permitir_vacio: bool = False,
     ) -> None:
         if not config_fuentes and not permitir_vacio:
@@ -46,8 +46,8 @@ class RunContext:
             )
         if config_captura is None:
             config_captura = load().get("captura", {})
-        self.run_id = run_id or generate_id("corridas")
-        self.timestamp_inicio: str = _ahora()
+        self.id_corrida = id_corrida or generate_id("corridas")
+        self.fecha_inicio: str = _ahora()
         self.fuentes_filtradas: list[FichaFuente] = []
         self._sets_validos: dict[str, list[SetFiltros]] = {}
         self._politicas_por_fuente: dict[str, PoliticasCaptura] = {}
@@ -56,15 +56,15 @@ class RunContext:
             self.fuentes_filtradas.append(ficha)
         self.iterador_fuentes = -1
         self.iterador_sets: dict[str, int] = {
-            f.source_id: -1 for f in self.fuentes_filtradas
+            f.fuente_id: -1 for f in self.fuentes_filtradas
         }
         self.bloqueo_adquirido = False
-        self.session_id: str | None = None
+        self.id_sesion: str | None = None
         self.handle_sesion: Any | None = None
         self.fuente_corriente: FichaFuente | None = None
         self.posicion_fuente_corriente: int = -1
         self.motivo_terminacion: str = ""
-        self.timestamp_terminacion: str = ""
+        self.fecha_terminacion: str = ""
         self.entry_result: EntryResult | None = None
         self.search_result: SearchResult | None = None
         self.capture_batch: CaptureBatch | None = None
@@ -73,7 +73,7 @@ class RunContext:
         self.capturadas_acumuladas_fuente = 0
         self.limite_alcanzado = False
         self.set_corriente: SetFiltros | None = None
-        self._ultimo_source_id_sets: str | None = None
+        self._ultimo_fuente_id_sets: str | None = None
 
     def _construir_ficha(
         self, conf: dict[str, Any], config_captura: dict[str, Any]
@@ -91,9 +91,9 @@ class RunContext:
             )
         try:
             ficha = FichaFuente(
-                source_id=str(conf.get("source_id", "")),
+                fuente_id=str(conf.get("fuente_id", "")),
                 nombre=str(conf.get("nombre", "")),
-                url=str(ficha_raw.get("url", "")),
+                enlace=str(ficha_raw.get("enlace", "")),
                 tipo_acceso=str(ficha_raw.get("tipo_acceso", "")),
                 credenciales_referencia=[
                     str(c) for c in ficha_raw.get("credenciales_referencia", [])
@@ -107,11 +107,11 @@ class RunContext:
                 f"Invalid access sheet fields ({exc}).",
                 source_module="run_context",
             ) from exc
-        if not ficha.source_id or not ficha.nombre or not ficha.url:
+        if not ficha.fuente_id or not ficha.nombre or not ficha.enlace:
             raise ConfigurationError(
                 "12",
                 "Incomplete access sheet (ERR-12): "
-                "source_id, nombre and url are mandatory.",
+                "fuente_id, nombre and enlace are mandatory.",
                 source_module="run_context",
             )
         if not ficha.criterio_exito:
@@ -132,32 +132,32 @@ class RunContext:
                 "Authenticated source without credential references.",
                 source_module="run_context",
             )
-        sets = self._construir_sets(conf, ficha.source_id)
-        self._sets_validos[ficha.source_id] = sets
-        self._politicas_por_fuente[ficha.source_id] = self._construir_politicas(
+        sets = self._construir_sets(conf, ficha.fuente_id)
+        self._sets_validos[ficha.fuente_id] = sets
+        self._politicas_por_fuente[ficha.fuente_id] = self._construir_politicas(
             conf, config_captura
         )
         return ficha
 
     def _construir_sets(
-        self, conf: dict[str, Any], source_id: str
+        self, conf: dict[str, Any], fuente_id: str
     ) -> list[SetFiltros]:
         sets_raw = conf.get("sets_de_filtros")
         if not isinstance(sets_raw, list) or not sets_raw:
-            return [SetFiltros(source_id=source_id, indice=0, filtros=[])]
+            return [SetFiltros(fuente_id=fuente_id, indice=0, filtros=[])]
         sets: list[SetFiltros] = []
         for item in sets_raw:
             if not isinstance(item, dict):
                 continue
-            indice = item.get("set_indice")
+            indice = item.get("indice_set")
             filtros = item.get("filtros", [])
             if not isinstance(indice, int) or not isinstance(filtros, list):
                 continue
-            if any(f.source_id == source_id and f.indice == indice for f in sets):
+            if any(f.fuente_id == fuente_id and f.indice == indice for f in sets):
                 continue
             sets.append(
                 SetFiltros(
-                    source_id=source_id,
+                    fuente_id=fuente_id,
                     indice=indice,
                     filtros=[f for f in filtros if isinstance(f, dict)],
                 )
@@ -214,7 +214,7 @@ class RunContext:
         )
 
     def set_filtros(self, fuente: FichaFuente, indice: int = 0) -> SetFiltros | None:
-        sets = self._sets_validos.get(fuente.source_id)
+        sets = self._sets_validos.get(fuente.fuente_id)
         if not sets:
             return None
         for s in sets:
@@ -223,23 +223,23 @@ class RunContext:
         return None
 
     def sets_validos(self, fuente: FichaFuente) -> list[SetFiltros]:
-        return self._sets_validos.get(fuente.source_id, [])
+        return self._sets_validos.get(fuente.fuente_id, [])
 
     def politicas(self, fuente: FichaFuente) -> PoliticasCaptura:
         return self._politicas_por_fuente.get(
-            fuente.source_id, PoliticasCaptura()
+            fuente.fuente_id, PoliticasCaptura()
         )
 
     def reset_iteradores(self) -> None:
         self.iterador_fuentes = -1
-        self.iterador_sets = {f.source_id: -1 for f in self.fuentes_filtradas}
+        self.iterador_sets = {f.fuente_id: -1 for f in self.fuentes_filtradas}
         self.bloqueo_adquirido = False
-        self.session_id = None
+        self.id_sesion = None
         self.handle_sesion = None
         self.fuente_corriente = None
         self.posicion_fuente_corriente = -1
         self.motivo_terminacion = ""
-        self.timestamp_terminacion = ""
+        self.fecha_terminacion = ""
         self.entry_result = None
         self.search_result = None
         self.capture_batch = None
@@ -248,10 +248,10 @@ class RunContext:
         self.capturadas_acumuladas_fuente = 0
         self.limite_alcanzado = False
         self.set_corriente = None
-        self._ultimo_source_id_sets = None
+        self._ultimo_fuente_id_sets = None
 
-    def seleccionar_siguiente_set(self, source_id: str) -> int:
-        if source_id not in self.iterador_sets:
-            raise ValueError(f"Unknown source in context: {source_id}")
-        self.iterador_sets[source_id] += 1
-        return self.iterador_sets[source_id]
+    def seleccionar_siguiente_set(self, fuente_id: str) -> int:
+        if fuente_id not in self.iterador_sets:
+            raise ValueError(f"Unknown source in context: {fuente_id}")
+        self.iterador_sets[fuente_id] += 1
+        return self.iterador_sets[fuente_id]

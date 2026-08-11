@@ -6,51 +6,51 @@ from shared.state_machine import possible_transitions, transition
 
 
 def test_transition_discovered_to_prepared() -> None:
-    result = transition(OfferState.DISCOVERED, OfferState.PREPARED)
-    assert result == OfferState.PREPARED
+    result = transition(OfferState.DESCUBIERTA, OfferState.PREPARADA)
+    assert result == OfferState.PREPARADA
 
 
 def test_transition_prepared_to_evaluated() -> None:
-    result = transition(OfferState.PREPARED, OfferState.EVALUATED)
-    assert result == OfferState.EVALUATED
+    result = transition(OfferState.PREPARADA, OfferState.EVALUADA)
+    assert result == OfferState.EVALUADA
 
 
 def test_transition_evaluated_to_accepted() -> None:
-    result = transition(OfferState.EVALUATED, OfferState.ACCEPTED)
-    assert result == OfferState.ACCEPTED
+    result = transition(OfferState.EVALUADA, OfferState.ACEPTADA)
+    assert result == OfferState.ACEPTADA
 
 
 def test_transition_evaluated_to_discarded() -> None:
-    result = transition(OfferState.EVALUATED, OfferState.DISCARDED)
-    assert result == OfferState.DISCARDED
+    result = transition(OfferState.EVALUADA, OfferState.DESCARTADA)
+    assert result == OfferState.DESCARTADA
 
 
 def test_transition_accepted_to_processed() -> None:
-    result = transition(OfferState.ACCEPTED, OfferState.PROCESSED)
-    assert result == OfferState.PROCESSED
+    result = transition(OfferState.ACEPTADA, OfferState.PROCESADA)
+    assert result == OfferState.PROCESADA
 
 
 def test_transition_discarded_to_finalized() -> None:
-    result = transition(OfferState.DISCARDED, OfferState.FINALIZED)
-    assert result == OfferState.FINALIZED
+    result = transition(OfferState.DESCARTADA, OfferState.FINALIZADA)
+    assert result == OfferState.FINALIZADA
 
 
 def test_transition_processed_to_finalized() -> None:
-    result = transition(OfferState.PROCESSED, OfferState.FINALIZED)
-    assert result == OfferState.FINALIZED
+    result = transition(OfferState.PROCESADA, OfferState.FINALIZADA)
+    assert result == OfferState.FINALIZADA
 
 
 def test_invalid_transition() -> None:
     with pytest.raises(InternalError, match="ER-INT-010"):
-        transition(OfferState.DISCOVERED, OfferState.FINALIZED)
+        transition(OfferState.DESCUBIERTA, OfferState.FINALIZADA)
 
 
 def test_possible_transitions_from_evaluated() -> None:
-    destinations = possible_transitions(OfferState.EVALUATED)
-    assert OfferState.ACCEPTED in destinations
-    assert OfferState.DISCARDED in destinations
+    destinations = possible_transitions(OfferState.EVALUADA)
+    assert OfferState.ACEPTADA in destinations
+    assert OfferState.DESCARTADA in destinations
 
 
 def test_possible_transitions_from_finalized() -> None:
-    destinations = possible_transitions(OfferState.FINALIZED)
+    destinations = possible_transitions(OfferState.FINALIZADA)
     assert destinations == []

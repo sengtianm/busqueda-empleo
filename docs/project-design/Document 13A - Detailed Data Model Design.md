@@ -19,7 +19,7 @@ Official record of all persistent entities in the job search automation data mod
 | Decision | Operational | Decision Model | Functional decisions made by the automation during offer processing. |
 | Configuration | Support | Configuration | Configuration parameters used during execution. |
 | Catalog | Support | References | Controlled values used by model entities. |
-| Corrida | Operational | Traceability | Discovery module execution instance (run); all module records anchor to its `run_id` (RN-01). |
+| Corrida | Operational | Traceability | Discovery module execution instance (run); all module records anchor to its `id_corrida` (RN-01). |
 | Sesion | Operational | Traceability | Audit of each platform session used by the Discovery module during a run. |
 | Bloqueo | Operational | Concurrency | Persistent lock guaranteeing a single active Discovery module run. |
 
@@ -36,12 +36,12 @@ Specification order: Offer, Source, Company, Location, Processed Offer, Initial 
 
 **Description/purpose:** Represents each job opportunity identified during discovery. Main entity of the model. Stores original offer information before normalization, evaluation, or document generation, and preserves the official reference throughout its lifecycle.
 
-**Attributes:** `id`, `source_id`, `company_id`, `location_id`, `company_name`, `location_name`, `source_identifier`, `run_id`, `session_id`, `set_indice`, `id_externo_url`, `timestamp_ultima_verificacion`, `url`, `title`, `original_description`, `publication_date`, `discovery_date`, `status`, `active`, `observations`, `creation_date`, `update_date`.
+**Attributes:** `id`, `fuente_id`, `company_id`, `location_id`, `company_name`, `location_name`, `identificador_origen`, `id_corrida`, `id_sesion`, `indice_set`, `id_externo`, `fecha_ultima_verificacion`, `enlace`, `title`, `original_description`, `publication_date`, `fecha_descubrimiento`, `status`, `active`, `observations`, `fecha_creacion`, `update_date`.
 
 **Primary key:** `id`.  
 **Alternate keys:** None.  
-**Foreign keys:** `source_id → Source`; `company_id → Company`; `location_id → Location`; `run_id → Corrida`; `status → Catalog`.  
-MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_id` string without FK constraint; `empresa_id` and `ubicacion_id` may be `NULL`.
+**Foreign keys:** `fuente_id → Source`; `company_id → Company`; `location_id → Location`; `id_corrida → Corrida`; `status → Catalog`.  
+MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_id` string without FK constraint; `empresa_id` and `ubicacion_id` may be `NULL`.
 
 **Relationships:** belongs to Source N:1; captured by Corrida N:1; published by Company N:1; located in Location N:1; generates Processed Offer 1:1; evaluated by Initial Evaluation 1:1; may generate Detailed Evaluation 1:0..1; may generate Generated Document 1:N; may originate Application 1:0..1; records Event 1:N; records Decision 1:N.
 
@@ -51,10 +51,10 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 - The offer URL is preserved throughout its lifecycle.
 - Original offer content must not be overwritten after discovery.
 - Offer status follows the official state machine.
-- Discovery module records new offers with status `discovered` (decision C5, 2026-08-07); other transitions belong to Processing module 2.
+- Discovery module records new offers with status `descubierta` (decision C5, 2026-08-07); other transitions belong to Processing module 2.
 - `company_name` and `location_name` store raw adapter strings as `empresa_nombre` and `ubicacion_nombre` (D4).
-- `id_externo_url` is an external source identifier, alias of `source_identifier`, best effort.
-- Registration deduplicates by `id_externo_url` via upsert; each dedup hit refreshes `timestamp_ultima_verificacion` (D4).
+- `id_externo` is an external source identifier, alias of `identificador_origen`, best effort.
+- Registration deduplicates by `id_externo` via upsert; each dedup hit refreshes `fecha_ultima_verificacion` (D4).
 
 **State machine:** Official offer state machine applies; detailed specification is documented in the corresponding section.
 
@@ -64,7 +64,7 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 
 **Description/purpose:** Represents each origin from which offers are discovered: platform, website, job portal, corporate page, or authorized means. Centralizes origin information, provenance, and source-specific characteristics.
 
-**Attributes:** `id`, `name`, `type`, `main_url`, `description`, `active`, `query_frequency`, `last_query`, `last_update`, `observations`, `creation_date`, `update_date`.
+**Attributes:** `id`, `name`, `type`, `main_url`, `description`, `active`, `query_frequency`, `last_query`, `last_update`, `observations`, `fecha_creacion`, `update_date`.
 
 **Primary key:** `id`.  
 **Alternate keys:** None.  
@@ -86,7 +86,7 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 
 **Description/purpose:** Represents the organization responsible for publishing one or more offers. Centralizes company information and avoids duplication when the same organization publishes multiple offers or uses different sources.
 
-**Attributes:** `id`, `name`, `normalized_name`, `website`, `linkedin`, `sector`, `size`, `description`, `observations`, `creation_date`, `update_date`.
+**Attributes:** `id`, `name`, `nombre_normalizado`, `website`, `linkedin`, `sector`, `size`, `description`, `observations`, `fecha_creacion`, `update_date`.
 
 **Primary key:** `id`.  
 **Alternate keys:** None.  
@@ -95,7 +95,7 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 **Relationships:** publishes Offer 1:N.
 
 **Constraints:**
-- `normalized_name` is used to minimize duplicate companies.
+- `nombre_normalizado` is used to minimize duplicate companies.
 - A company may be associated with multiple offers.
 - A company may appear in multiple sources without generating duplicate records.
 - Sector and size must use official catalog values when used.
@@ -108,7 +108,7 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 
 **Description/purpose:** Represents the geographic location associated with a job offer. Stores normalized location information to avoid duplication when multiple offers share the same place.
 
-**Attributes:** `id`, `country`, `region`, `city`, `address`, `modality`, `location_type`, `observations`, `creation_date`, `update_date`.
+**Attributes:** `id`, `country`, `region`, `city`, `address`, `modality`, `location_type`, `observations`, `fecha_creacion`, `update_date`.
 
 **Primary key:** `id`.  
 **Alternate keys:** None.  
@@ -130,11 +130,11 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 
 **Description/purpose:** Structured, normalized, and enriched version of an offer after processing. Enables evaluation, comparison, document generation, and decision-making while preserving the original offer unchanged.
 
-**Attributes:** `id`, `offer_id`, `normalized_position`, `processed_description`, `summary`, `technical_skills`, `soft_skills`, `technologies`, `experience_level`, `education_level`, `contract_type`, `work_modality`, `salary_range`, `languages`, `benefits`, `requirements`, `responsibilities`, `processing_date`, `processing_version`, `observations`, `creation_date`, `update_date`.
+**Attributes:** `id`, `id_oferta`, `normalized_position`, `processed_description`, `summary`, `technical_skills`, `soft_skills`, `technologies`, `experience_level`, `education_level`, `contract_type`, `work_modality`, `salary_range`, `languages`, `benefits`, `requirements`, `responsibilities`, `fecha_procesamiento`, `processing_version`, `observations`, `fecha_creacion`, `update_date`.
 
 **Primary key:** `id`.  
-**Alternate keys:** `offer_id`.  
-**Foreign keys:** `offer_id → Offer`; `experience_level → Catalog`; `education_level → Catalog`; `contract_type → Catalog`; `work_modality → Catalog`.
+**Alternate keys:** `id_oferta`.  
+**Foreign keys:** `id_oferta → Offer`; `experience_level → Catalog`; `education_level → Catalog`; `contract_type → Catalog`; `work_modality → Catalog`.
 
 **Relationships:** generated from Offer 1:1; used by Initial Evaluation 1:1; may be used by Detailed Evaluation 1:0..1; serves as input for Generated Document 1:N.
 
@@ -152,11 +152,11 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 
 **Description/purpose:** Result of the first evaluation performed on a processed offer. Determines whether the offer proceeds to detailed evaluation or is discarded, preserving decision traceability.
 
-**Attributes:** `id`, `processed_offer_id`, `result`, `score`, `pass_threshold`, `decision`, `justification`, `evaluated_criteria`, `observations`, `evaluation_date`, `version_modelo`, `creation_date`, `update_date`.
+**Attributes:** `id`, `id_oferta_procesada`, `result`, `score`, `pass_threshold`, `decision`, `justificacion`, `criterios_evaluados`, `observations`, `fecha_evaluacion`, `version_modelo`, `fecha_creacion`, `update_date`.
 
 **Primary key:** `id`.  
-**Alternate keys:** `processed_offer_id`.  
-**Foreign keys:** `processed_offer_id → Processed Offer`; `result → Catalog`; `decision → Catalog`.
+**Alternate keys:** `id_oferta_procesada`.  
+**Foreign keys:** `id_oferta_procesada → Processed Offer`; `result → Catalog`; `decision → Catalog`.
 
 **Relationships:** evaluates Processed Offer 1:1; may generate Detailed Evaluation 1:0..1; records Decision 1:N; records Event 1:N.
 
@@ -165,7 +165,7 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 - At most one initial evaluation exists per processed offer.
 - `result` must be a valid official catalog value.
 - `decision` must correspond to the evaluation result.
-- Score, threshold, and justification used for decision-making must be preserved.
+- Score, threshold, and justificacion used for decision-making must be preserved.
 
 **State machine:** Not applicable.
 
@@ -175,11 +175,11 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 
 **Description/purpose:** Result of the in-depth diagnosis performed on an offer that passed initial evaluation. Corresponds to Phase 1 — Diagnosis of the vacancy for cover letter construction. Records the analysis and the fit between the organization’s needs and the user’s professional profile.
 
-**Attributes:** `id`, `processed_offer_id`, `resultado_organizacional`, `problema_organizacional`, `perfil_profesional_requerido`, `coincidencias_perfil`, `logica_xyz`, `hipotesis_valor`, `informacion_descartada`, `ajuste_tecnico`, `justificacion_ajuste_tecnico`, `ajuste_funcional`, `justificacion_ajuste_funcional`, `ajuste_estrategico`, `justificacion_ajuste_estrategico`, `riesgo_sobrecalificacion`, `justificacion_riesgo`, `recomendacion_final`, `justificacion_recomendacion`, `insumos_carta_presentacion`, `evaluation_date`, `version_metodologia`, `creation_date`, `update_date`.
+**Attributes:** `id`, `id_oferta_procesada`, `resultado_organizacional`, `problema_organizacional`, `perfil_profesional_requerido`, `coincidencias_perfil`, `logica_xyz`, `hipotesis_valor`, `informacion_descartada`, `ajuste_tecnico`, `justificacion_ajuste_tecnico`, `ajuste_funcional`, `justificacion_ajuste_funcional`, `ajuste_estrategico`, `justificacion_ajuste_estrategico`, `riesgo_sobrecalificacion`, `justificacion_riesgo`, `recomendacion_final`, `justificacion_recomendacion`, `insumos_carta_presentacion`, `fecha_evaluacion`, `version_metodologia`, `fecha_creacion`, `update_date`.
 
 **Primary key:** `id`.  
-**Alternate keys:** `processed_offer_id`.  
-**Foreign keys:** `processed_offer_id → Processed Offer`; `riesgo_sobrecalificacion → Catalog`; `recomendacion_final → Catalog`.
+**Alternate keys:** `id_oferta_procesada`.  
+**Foreign keys:** `id_oferta_procesada → Processed Offer`; `riesgo_sobrecalificacion → Catalog`; `recomendacion_final → Catalog`.
 
 **Relationships:** evaluates Processed Offer 1:1; provides inputs for Generated Document 1:N; may originate Application 1:0..1; records Decision 1:N; records Event 1:N.
 
@@ -200,11 +200,11 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 
 **Description/purpose:** Represents each document automatically produced from processing and evaluating an offer. Controls lifecycle, version history, and later retrieval.
 
-**Attributes:** `id`, `offer_id`, `detailed_evaluation_id`, `document_type`, `document_name`, `version`, `content`, `format`, `status`, `generation_date`, `last_modified_date`, `observations`, `creation_date`, `update_date`.
+**Attributes:** `id`, `id_oferta`, `detailed_evaluation_id`, `document_type`, `document_name`, `version`, `content`, `format`, `status`, `generation_date`, `last_modified_date`, `observations`, `fecha_creacion`, `update_date`.
 
 **Primary key:** `id`.  
 **Alternate keys:** None.  
-**Foreign keys:** `offer_id → Offer`; `detailed_evaluation_id → Detailed Evaluation`; `document_type → Catalog`; `format → Catalog`; `status → Catalog`.
+**Foreign keys:** `id_oferta → Offer`; `detailed_evaluation_id → Detailed Evaluation`; `document_type → Catalog`; `format → Catalog`; `status → Catalog`.
 
 **Relationships:** generated for Offer N:1; based on Detailed Evaluation N:1; may be used in Application 1:N.
 
@@ -222,11 +222,11 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 
 **Description/purpose:** Represents the process through which the user applies to an offer using generated documents. Records and manages the complete application lifecycle up to the final selection result.
 
-**Attributes:** `id`, `offer_id`, `main_document_id`, `application_date`, `application_channel`, `status`, `company_response`, `response_date`, `next_action`, `next_action_date`, `observations`, `creation_date`, `update_date`.
+**Attributes:** `id`, `id_oferta`, `main_document_id`, `application_date`, `application_channel`, `status`, `company_response`, `response_date`, `next_action`, `next_action_date`, `observations`, `fecha_creacion`, `update_date`.
 
 **Primary key:** `id`.  
 **Alternate keys:** None.  
-**Foreign keys:** `offer_id → Offer`; `main_document_id → Generated Document`; `application_channel → Catalog`; `status → Catalog`.
+**Foreign keys:** `id_oferta → Offer`; `main_document_id → Generated Document`; `application_channel → Catalog`; `status → Catalog`.
 
 **Relationships:** corresponds to Offer N:1; uses Generated Document N:1; records Event 1:N; may record Decision 1:N.
 
@@ -244,17 +244,17 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 
 **Description/purpose:** Represents each relevant fact occurring during automation execution: action, state change, process execution, error, or occurrence preserved for traceability, auditing, and diagnostics.
 
-**Attributes:** `id`, `run_id`, `source_id`, `session_id`, `set_indice`, `offer_id`, `tipo`, `codigo`, `evidencia`, `event_type`, `affected_entity`, `entity_id`, `action`, `description`, `result`, `origin`, `context`, `event_date`, `creation_date`.
+**Attributes:** `id`, `id_corrida`, `fuente_id`, `id_sesion`, `indice_set`, `id_oferta`, `tipo`, `codigo`, `evidencia`, `event_type`, `affected_entity`, `entity_id`, `action`, `description`, `result`, `origin`, `context`, `event_date`, `fecha_creacion`.
 
 **Primary key:** `id`.  
 **Alternate keys:** None.  
-**Foreign keys:** `offer_id → Offer`; `run_id → Corrida`; `source_id → Source`; `event_type → Catalog`; `tipo → Catalog`; `action → Catalog`; `result → Catalog`; `origin → Catalog`.
+**Foreign keys:** `id_oferta → Offer`; `id_corrida → Corrida`; `fuente_id → Source`; `event_type → Catalog`; `tipo → Catalog`; `action → Catalog`; `result → Catalog`; `origin → Catalog`.
 
 **Relationships:** records events of Offer N:1; anchored to Corrida N:1; may be associated with Decision N:0..1; may record Application N:0..1.
 
 **Constraints:**
-- In module 1, every event must be associated with a `run_id`.
-- `offer_id` is required only when the event belongs to a specific offer.
+- In module 1, every event must be associated with a `id_corrida`.
+- `id_oferta` is required only when the event belongs to a specific offer.
 - Every event must record the exact moment it occurred.
 - Every module 1 event must record `tipo` — `error` or `suceso` — and, when applicable, `codigo` from the Discovery module technical sheet.
 - `event_type`, `action`, `result`, and `origin` must use valid official catalog values.
@@ -263,17 +263,17 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 
 **State machine:** Not applicable.
 
-**Observations:** Chronological history of the automation. In Discovery module 1, events additionally record origin run `run_id`, typology `tipo`, and business `codigo` (`ERR-nn`, `EVT-nn`).
+**Observations:** Chronological history of the automation. In Discovery module 1, events additionally record origin run `id_corrida`, typology `tipo`, and business `codigo` (`ERR-nn`, `EVT-nn`).
 
 ### 2.11. Entity: Decision
 
 **Description/purpose:** Represents each decision made by the automation during offer processing after applying business rules, evaluation criteria, or analysis processes. Preserves reasoning and traceability.
 
-**Attributes:** `id`, `offer_id`, `stage`, `decision_type`, `decision`, `justification`, `evidence`, `confidence`, `origin_component`, `decision_date`, `observations`, `creation_date`.
+**Attributes:** `id`, `id_oferta`, `stage`, `decision_type`, `decision`, `justificacion`, `evidence`, `confidence`, `origin_component`, `decision_date`, `observations`, `fecha_creacion`.
 
 **Primary key:** `id`.  
 **Alternate keys:** None.  
-**Foreign keys:** `offer_id → Offer`; `stage → Catalog`; `decision_type → Catalog`; `origin_component → Catalog`.
+**Foreign keys:** `id_oferta → Offer`; `stage → Catalog`; `decision_type → Catalog`; `origin_component → Catalog`.
 
 **Relationships:** records decisions of Offer N:1; may originate Event 1:N; may be associated with Initial Evaluation N:0..1; may be associated with Detailed Evaluation N:0..1; may influence Application N:0..1.
 
@@ -292,7 +292,7 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 
 **Description/purpose:** Represents parameters controlling automation behavior during execution without modifying implementation.
 
-**Attributes:** `id`, `category`, `name`, `description`, `value`, `data_type`, `default_value`, `required`, `editable`, `active`, `observations`, `creation_date`, `update_date`.
+**Attributes:** `id`, `category`, `name`, `description`, `value`, `data_type`, `default_value`, `required`, `editable`, `active`, `observations`, `fecha_creacion`, `update_date`.
 
 **Primary key:** `id`.  
 **Alternate keys:** `name`.  
@@ -315,7 +315,7 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 
 **Description/purpose:** Represents controlled value sets used by model entities to normalize information, prevent inconsistent values, and maintain reference lists.
 
-**Attributes:** `id`, `catalog_name`, `code`, `name`, `description`, `order`, `active`, `observations`, `creation_date`, `update_date`.
+**Attributes:** `id`, `catalog_name`, `code`, `name`, `description`, `order`, `active`, `observations`, `fecha_creacion`, `update_date`.
 
 **Primary key:** `id`.  
 **Alternate keys:** `catalog_name + code`.  
@@ -335,19 +335,19 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 
 ### 2.14. Entity: Corrida
 
-**Description/purpose:** Execution instance (run) of the Discovery module. Created at startup, acquires the persistent lock, processes sources, and ends with a termination motive. Every module record anchors to its `run_id`.
+**Description/purpose:** Execution instance (run) of the Discovery module. Created at startup, acquires the persistent lock, processes sources, and ends with a termination motive. Every module record anchors to its `id_corrida`.
 
-**Attributes:** `id`, `run_id`, `start_timestamp`, `end_timestamp`, `estado`.
+**Attributes:** `id`, `id_corrida`, `fecha_inicio`, `fecha_fin`, `estado`.
 
 **Primary key:** `id`.  
-**Alternate keys:** `run_id` — unique.  
+**Alternate keys:** `id_corrida` — unique.  
 **Foreign keys:** `estado → Catalog`.
 
 **Relationships:** captures Offer 1:N; anchors Event 1:N; registers Sesion 1:N; protected by Bloqueo 1:0..1.
 
 **Constraints:**
-- `run_id` is unique within the system.
-- Every record generated by the module — errors, success events, sessions, offers — must reference its `run_id`.
+- `id_corrida` is unique within the system.
+- Every record generated by the module — errors, success events, sessions, offers — must reference its `id_corrida`.
 
 **State machine:** Run statuses and transitions are defined by the Discovery module technical sheet — INICIO and FINALIZAR PROCESO nodes.
 
@@ -357,11 +357,11 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 
 **Description/purpose:** Audit record of a platform session successfully established by the Discovery module. Records essential audit data only; it does not store credentials, tokens, or cookies.
 
-**Attributes:** `id`, `session_id`, `run_id`, `source_id`, `set_indice`, `timestamp`, `total_declarado`, `conteo`, `estado`.
+**Attributes:** `id`, `id_sesion`, `id_corrida`, `fuente_id`, `indice_set`, `marca_temporal`, `total_declarado`, `conteo`, `estado`.
 
 **Primary key:** `id`.  
-**Alternate keys:** `(session_id, set_indice)` per source.  
-**Foreign keys:** `run_id → Corrida`; `source_id → Source`.
+**Alternate keys:** `(id_sesion, indice_set)` per source.  
+**Foreign keys:** `id_corrida → Corrida`; `fuente_id → Source`.
 
 **Relationships:** registered by Corrida N:1; established on Source N:1.
 
@@ -377,17 +377,17 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `source_i
 
 **Description/purpose:** Persistent concurrency lock for the Discovery module: at most one active run at a time.
 
-**Attributes:** `id`, `run_id`, `timestamp`, `umbral_obsolescencia`, `estado`.
+**Attributes:** `id`, `id_corrida`, `marca_temporal`, `umbral_obsolescencia`, `estado`.
 
 **Primary key:** `id`.  
 **Alternate keys:** None.  
-**Foreign keys:** `run_id → Corrida`.
+**Foreign keys:** `id_corrida → Corrida`.
 
 **Relationships:** protects Corrida 1:0..1.
 
 **Constraints:**
 - At most one record with `estado = activo` per module.
-- If an active lock’s `timestamp` is older than `umbral_obsolescencia`, a new run may take over the lock as obsolete.
+- If an active lock's `marca_temporal` is older than `umbral_obsolescencia`, a new run may take over the lock as obsolete.
 
 **State machine:** Not applicable.
 
@@ -401,7 +401,7 @@ Catalogs are controlled value sets used through foreign keys to guarantee consis
 
 | § | Catalog | Purpose | Initial values and notes |
 | --- | --- | --- | --- |
-| 3.1 | Offer Statuses | Define offer lifecycle states. | `Discovered`, `Prepared`, `Evaluated`, `Accepted`, `Discarded`, `Processed`, `Finalized`. Official 7-status source of truth, aligned with `shared/state_machine.py` and DOC-01 §13; previous 12-value versions are superseded. |
+| 3.1 | Offer Statuses | Define offer lifecycle states. | `descubierta`, `preparada`, `evaluada`, `aceptada`, `descartada`, `procesada`, `finalizada`. Official 7-status source of truth, aligned with `shared/state_machine.py` and DOC-01 §13; previous 12-value versions are superseded. |
 | 3.2 | Source Types | Classify offer origins. | `Job portal`, `Corporate page`, `LinkedIn`, `Recruitment agency`, `Referral`, `Other`. |
 | 3.3 | Work Modalities | Classify vacancy execution modality. | `On-site`, `Remote`, `Hybrid`. |
 | 3.4 | Contract Types | Classify contractual modality. | `Permanent`, `Fixed term`, `Temporary`, `Service provision`, `Freelance`, `Internship`, `Not specified`. |
@@ -453,7 +453,7 @@ Main information flow:
 
 `Source → Offer → Processed Offer → Initial Evaluation → Detailed Evaluation → Generated Document → Application`
 
-Event and Decision record traceability throughout the process. Catalog and Configuration provide supporting controlled values and operational parameters. During Discovery — module 1 — each Corrida anchors Offers, Events, and Sesiones via `run_id`, and is protected by Bloqueo while active.
+Event and Decision record traceability throughout the process. Catalog and Configuration provide supporting controlled values and operational parameters. During Discovery — module 1 — each Corrida anchors Offers, Events, and Sesiones via `id_corrida`, and is protected by Bloqueo while active.
 
 ### 4.5. Model integrity
 
@@ -461,7 +461,7 @@ The model must guarantee:
 - Referential integrity across all relationships.
 - No orphan entities.
 - Every main entity is traceable to the originating offer.
-- Every Discovery-module record — offers, events, sessions — is traceable to its run via `run_id` — RN-01.
+- Every Discovery-module record — offers, events, sessions — is traceable to its run via `id_corrida` — RN-01.
 - Original offer information remains unchanged throughout processing.
 - Processing traceability is fully reconstructible from entity relationships.
 
@@ -487,10 +487,10 @@ The dictionary includes all attributes of: Offer, Source, Company, Location, Pro
 
 **Common audit fields:**  
 For entities §5.5.1–5.5.13, unless otherwise specified:
-- `creation_date` — Record creation timestamp. Date/Time; required. Sensitivity Internal; Persistence Permanent.
-- `update_date` — Last record update timestamp. Date/Time; required. Sensitivity Internal; Persistence Permanent. Actual name is `last_edit_date` for Offer, Source, Company, Location, Processed Offer, and Initial Evaluation; no actual name is noted for Detailed Evaluation, Generated Document, Application, Configuration, and Catalog.
+- `fecha_creacion` — Record creation timestamp. Date/Time; required. Sensitivity Internal; Persistence Permanent.
+- `update_date` — Last record update timestamp. Date/Time; required. Sensitivity Internal; Persistence Permanent. Actual name is `fecha_ultima_edicion` for Offer, Source, Company, Location, Processed Offer, and Initial Evaluation; no actual name is noted for Detailed Evaluation, Generated Document, Application, Configuration, and Catalog.
 
-Event and Decision include only `creation_date`. Corrida, Sesion, and Bloqueo use only their listed temporal fields.
+Event and Decision include only `fecha_creacion`. Corrida, Sesion, and Bloqueo use only their listed temporal fields.
 
 ### 5.3. Consistency
 
@@ -510,20 +510,20 @@ Any addition, modification, or deletion of attributes must update this dictionar
 #### 5.5.1. Offer
 
 - `id` — Unique identifier. UUID; required; PK. Sensitivity Internal; Permanent. Actual name: `id`.
-- `source_id` — Reference to the source where the offer was discovered. UUID; required; FK Source. Constraint: mandatory source. Internal; Permanent. Actual name: `fuente_id`; MVP stores raw `source_id` string without FK constraint — D4.
+- `fuente_id` — Reference to the source where the offer was discovered. UUID; required; FK Source. Constraint: mandatory source. Internal; Permanent. Actual name: `fuente_id`; MVP stores raw `fuente_id` string without FK constraint — D4.
 - `company_id` — Reference to the company publishing the offer. UUID; logically mandatory association; FK Company. Constraint: mandatory company. Internal; Permanent. Actual name: `empresa_id`; MVP capture may be `NULL` — D4.
 - `location_id` — Reference to the location associated with the offer. UUID; optional; FK Location. Public; Permanent. Actual name: `ubicacion_id`; MVP capture may be `NULL` — D4.
-- `source_identifier` — Identifier used by the source of origin. Text; optional. Public; Permanent.
-- `run_id` — Run that discovered the offer. UUID; optional; FK Corrida. Discovery traceability — RN-01. Internal; Permanent. Actual name: `run_id`.
-- `session_id` — Platform session used to discover the offer. UUID; optional; module 1. Internal; Permanent. Actual name: `session_id`.
-- `set_indice` — Index of the filter set that produced the offer. Integer; optional; module 1. Internal; Permanent. Actual name: `set_indice`.
-- `id_externo_url` — External identifier of the offer in the source of origin; alias of `source_identifier`; best effort. Text; optional. Public; Permanent. Actual name: `id_externo_url`.
-- `url` — Original offer link. Text; required. Constraint: preserved throughout lifecycle. Public; Permanent.
+- `identificador_origen` — Identifier used by the source of origin. Text; optional. Public; Permanent.
+- `id_corrida` — Run that discovered the offer. UUID; optional; FK Corrida. Discovery traceability — RN-01. Internal; Permanent. Actual name: `id_corrida`.
+- `id_sesion` — Platform session used to discover the offer. UUID; optional; module 1. Internal; Permanent. Actual name: `id_sesion`.
+- `indice_set` — Index of the filter set that produced the offer. Integer; optional; module 1. Internal; Permanent. Actual name: `indice_set`.
+- `id_externo` — External identifier of the offer in the source of origin; alias of `identificador_origen`; best effort. Text; optional. Public; Permanent. Actual name: `id_externo`.
+- `enlace` — Original offer link. Text; required. Constraint: preserved throughout lifecycle. Public; Permanent.
 - `title` — Original offer title. Text; required. Public; Permanent. Actual name: `titulo`.
 - `original_description` — Original content obtained during discovery. Long Text; required. Constraint: must not be overwritten after discovery. Public; Permanent. Actual name: `descripcion_original`.
-- `publication_date` — Publication date indicated by the source. Date/Time; optional. Public; Permanent.
-- `discovery_date` — Date/time when automation discovered the offer. Date/Time; required. Internal; Permanent.
-- `status` — Current offer status in the processing flow. Catalog; required; FK Catalog. Default: `discovered`. Domain: Offer Statuses — 7 values. Constraint: follows official state machine. Internal; Permanent. Actual name: `estado`.
+- `publication_date` — Publication date indicated by the source. Date/Time; optional. Public; Permanent. Actual name: `fecha_publicacion`.
+- `fecha_descubrimiento` — Date/time when automation discovered the offer. Date/Time; required. Internal; Permanent.
+- `status` — Current offer status in the processing flow. Catalog; required; FK Catalog. Default: `descubierta`. Domain: Offer Statuses — 7 values. Constraint: follows official state machine. Internal; Permanent. Actual name: `estado`.
 - `active` — Indicates whether the offer remains valid. Boolean; required; default `true`. Internal; Permanent.
 - `observations` — Additional relevant offer information. Long Text; optional. Internal; Permanent. Actual name: `observaciones`.
 
@@ -532,9 +532,9 @@ Any addition, modification, or deletion of attributes must update this dictionar
 - `id` — Unique identifier. UUID; required; PK. Internal; Permanent.
 - `name` — Official source name. Text; required. Constraint: unique name. Internal; Permanent. Actual name: `nombre`.
 - `type` — Source type. Catalog; required; FK Catalog. Domain: Source Types. Constraint: valid catalog value. Internal; Permanent. Actual name: `tipo`.
-- `main_url` — Main source URL. Text; required. Constraint: unique URL. Public; Permanent. Actual name: `url_base`.
+- `main_url` — Main source URL. Text; required. Constraint: unique URL. Public; Permanent. Actual name: `enlace_base`.
 - `description` — General source description. Long Text; optional. Internal; Permanent.
-- `active` — Indicates whether source is enabled for discovery. Boolean; required; default `true`. Constraint: catalog attribute for external administration; Discovery does not filter by it at runtime — D1. Internal; Permanent.
+- `active` — Indicates whether source is enabled for discovery. Boolean; required; default `true`. Constraint: catalog attribute for external administration; Discovery does not filter by it at runtime — D1. Internal; Permanent. Actual name: `activa`.
 - `query_frequency` — Configured query frequency. Catalog; optional; FK Catalog. Domain: Catalog. Constraint: valid catalog value. Internal; Permanent.
 - `last_query` — Last query date/time. Date/Time; optional. Internal; Permanent.
 - `last_update` — Last detected source update date/time, when determinable. Date/Time; optional. Internal; Permanent.
@@ -544,11 +544,11 @@ Any addition, modification, or deletion of attributes must update this dictionar
 
 - `id` — Unique identifier. UUID; required; PK. Internal; Permanent.
 - `name` — Official company name. Text; required. Public; Permanent. Actual name: `nombre`.
-- `normalized_name` — Standardized name used to avoid duplicates. Text; required. Internal; Permanent.
+- `nombre_normalizado` — Standardized name used to avoid duplicates. Text; required. Internal; Permanent.
 - `website` — Official website. Text; optional. Public; Permanent. Actual name: `sitio_web`.
-- `linkedin` — Official LinkedIn profile URL. Text; optional. Public; Permanent.
+- `linkedin` — Official LinkedIn profile URL. Text; optional. Public; Permanent. Actual name: `perfil_linkedin`.
 - `sector` — Economic sector. Catalog; optional; FK Catalog. Domain: Business Sectors. Constraint: valid catalog value. Internal; Permanent.
-- `size` — Company size classification. Catalog; optional; FK Catalog. Domain: Company Size. Constraint: valid catalog value. Internal; Permanent.
+- `size` — Company size classification. Catalog; optional; FK Catalog. Domain: Company Size. Constraint: valid catalog value. Internal; Permanent. Actual name: `tamano`.
 - `description` — General company description. Long Text; optional. Public; Permanent. Actual name: `descripcion`.
 - `observations` — Additional relevant information. Long Text; optional. Internal; Permanent.
 
@@ -566,9 +566,9 @@ Any addition, modification, or deletion of attributes must update this dictionar
 #### 5.5.5. Processed Offer
 
 - `id` — Unique identifier. UUID; required; PK. Internal; Permanent.
-- `offer_id` — Reference to original offer. UUID; required; AK; FK Offer. Constraint: unique per offer. Internal; Permanent.
-- `normalized_position` — Normalized position name. Text; required. Public; Permanent. Actual name: `clean_title`.
-- `processed_description` — Structured offer description. Long Text; required. Public; Permanent. Actual name: `clean_description`.
+- `id_oferta` — Reference to original offer. UUID; required; AK; FK Offer. Constraint: unique per offer. Internal; Permanent.
+- `normalized_position` — Normalized position name. Text; required. Public; Permanent. Actual name: `titulo_limpio`.
+- `processed_description` — Structured offer description. Long Text; required. Public; Permanent. Actual name: `descripcion_limpia`.
 - `summary` — Generated summary. Long Text; optional. Internal; Permanent. Not implemented — PMD-020.
 - `technical_skills` — Identified technical skills. Long Text; optional. Internal; Permanent. Not implemented — PMD-020.
 - `soft_skills` — Identified soft skills. Long Text; optional. Internal; Permanent. Not implemented — PMD-020.
@@ -582,28 +582,28 @@ Any addition, modification, or deletion of attributes must update this dictionar
 - `benefits` — Identified benefits. Long Text; optional. Public; Permanent.
 - `requirements` — Main requirements extracted from the offer. Long Text; optional. Public; Permanent. Implemented as JSON list — PMD-020. Actual name: `requisitos`.
 - `responsibilities` — Identified main responsibilities. Long Text; optional. Public; Permanent.
-- `processing_date` — Processing completion date/time. Date/Time; required. Internal; Permanent.
+- `fecha_procesamiento` — Processing completion date/time. Date/Time; required. Internal; Permanent.
 - `processing_version` — Version of the processing process used. Text; required. Internal; Permanent.
 - `observations` — Additional processing information. Long Text; optional. Internal; Permanent.
 
 #### 5.5.6. Initial Evaluation
 
 - `id` — Unique identifier. UUID; required; PK. Internal; Permanent.
-- `processed_offer_id` — Reference to evaluated processed offer. UUID; required; AK; FK Processed Offer. Constraint: unique per processed offer. Internal; Permanent.
+- `id_oferta_procesada` — Reference to evaluated processed offer. UUID; required; AK; FK Processed Offer. Constraint: unique per processed offer. Internal; Permanent.
 - `result` — Initial evaluation result. Catalog; required; FK Catalog. Domain: Evaluation Result. Constraint: valid catalog value. Internal; Permanent. Actual name: `resultado`.
 - `score` — Total evaluation score. Decimal; required. Domain: 0–100. Internal; Permanent.
-- `pass_threshold` — Minimum score required to pass. Decimal; required; default `50`. Internal; Permanent. Actual name: `approval_threshold`.
+- `pass_threshold` — Minimum score required to pass. Decimal; required; default `50`. Internal; Permanent. Actual name: `umbral_aprobacion`.
 - `decision` — Decision generated from result. Catalog; required; FK Catalog. Domain: Decision Evaluation. Constraint: must match result. Internal; Permanent.
-- `justification` — Justification for decision. Long Text; required. Confidential; Permanent.
-- `evaluated_criteria` — Summary of applied criteria. Long Text; required. Internal; Permanent.
+- `justificacion` — Justification for decision. Long Text; required. Confidential; Permanent.
+- `criterios_evaluados` — Summary of applied criteria. Long Text; required. Internal; Permanent.
 - `observations` — Additional evaluation information. Long Text; optional. Internal; Permanent.
-- `evaluation_date` — Evaluation execution date/time. Date/Time; required. Internal; Permanent.
+- `fecha_evaluacion` — Evaluation execution date/time. Date/Time; required. Internal; Permanent.
 - `version_modelo` — Version of model, rules, or configuration used. Text; required; default `v1`. Internal; Permanent. Actual name is official.
 
 #### 5.5.7. Detailed Evaluation
 
 - `id` — Unique identifier. UUID; required; PK. Internal; Permanent.
-- `processed_offer_id` — Reference to evaluated processed offer. UUID; required; AK; FK Processed Offer. Constraint: unique per processed offer. Internal; Permanent.
+- `id_oferta_procesada` — Reference to evaluated processed offer. UUID; required; AK; FK Processed Offer. Constraint: unique per processed offer. Internal; Permanent.
 - `resultado_organizacional` — Main and secondary organizational results identified. Long Text; required. Confidential; Permanent.
 - `problema_organizacional` — Main, explicit, inferred, and non-determinable organizational problems. Long Text; required. Confidential; Permanent.
 - `perfil_profesional_requerido` — Critical capabilities, way of thinking, experiences, and competencies required. Long Text; required. Confidential; Permanent.
@@ -612,23 +612,23 @@ Any addition, modification, or deletion of attributes must update this dictionar
 - `hipotesis_valor` — Value hypothesis supporting the candidacy. Long Text; required. Confidential; Permanent.
 - `informacion_descartada` — Profile information determined not to add value for this vacancy. Long Text; optional. Confidential; Permanent.
 - `ajuste_tecnico` — Technical fit score. Decimal; required. Domain: 0–10. Constraint: must be justified. Internal; Permanent.
-- `justificacion_ajuste_tecnico` — Technical fit justification. Long Text; required. Confidential; Permanent.
+- `justificacion_ajuste_tecnico` — Technical fit justificacion. Long Text; required. Confidential; Permanent.
 - `ajuste_funcional` — Functional fit score. Decimal; required. Domain: 0–10. Constraint: must be justified. Internal; Permanent.
-- `justificacion_ajuste_funcional` — Functional fit justification. Long Text; required. Confidential; Permanent.
+- `justificacion_ajuste_funcional` — Functional fit justificacion. Long Text; required. Confidential; Permanent.
 - `ajuste_estrategico` — Strategic fit score. Decimal; required. Domain: 0–10. Constraint: must be justified. Internal; Permanent.
-- `justificacion_ajuste_estrategico` — Strategic fit justification. Long Text; required. Confidential; Permanent.
+- `justificacion_ajuste_estrategico` — Strategic fit justificacion. Long Text; required. Confidential; Permanent.
 - `riesgo_sobrecalificacion` — Overqualification risk level. Catalog; required; FK Catalog. Domain: Overqualification Risk — `Bajo`, `Medio`, `Alto`. Constraint: valid catalog value. Confidential; Permanent.
 - `justificacion_riesgo` — Justification for risk level. Long Text; required. Confidential; Permanent.
 - `recomendacion_final` — Final recommendation on applying. Catalog; required; FK Catalog. Domain: Final Recommendation — `Aplicar`, `Aplicar con reservas`, `No aplicar`. Constraint: valid catalog value. Confidential; Permanent.
 - `justificacion_recomendacion` — Justification for final recommendation. Long Text; required. Confidential; Permanent.
 - `insumos_carta_presentacion` — Strategic inputs for cover letter construction. Long Text; required. Confidential; Permanent.
-- `evaluation_date` — Evaluation completion date/time. Date/Time; required. Internal; Permanent.
+- `fecha_evaluacion` — Evaluation completion date/time. Date/Time; required. Internal; Permanent.
 - `version_metodologia` — Methodology version used. Text; required; default `v1`. Internal; Permanent.
 
 #### 5.5.8. Generated Document
 
 - `id` — Unique identifier. UUID; required; PK. Internal; Permanent.
-- `offer_id` — Offer for which the document was generated. UUID; required; FK Offer. Confidential; Permanent.
+- `id_oferta` — Offer for which the document was generated. UUID; required; FK Offer. Confidential; Permanent.
 - `detailed_evaluation_id` — Detailed evaluation used as basis. UUID; required; FK Detailed Evaluation. Constraint: requires completed evaluation. Confidential; Permanent.
 - `document_type` — Type of generated document. Catalog; required; FK Catalog. Domain: Document Types. Constraint: valid catalog value. Internal; Permanent.
 - `document_name` — Assigned document name. Text; required. Confidential; Permanent.
@@ -643,7 +643,7 @@ Any addition, modification, or deletion of attributes must update this dictionar
 #### 5.5.9. Application
 
 - `id` — Unique identifier. UUID; required; PK. Internal; Permanent.
-- `offer_id` — Offer to which application is made. UUID; required; FK Offer. Confidential; Permanent.
+- `id_oferta` — Offer to which application is made. UUID; required; FK Offer. Confidential; Permanent.
 - `main_document_id` — Main document used for application. UUID; required; FK Generated Document. Constraint: at least one document required. Confidential; Permanent.
 - `application_date` — Application submission date/time. Date/Time; optional. Internal; Permanent.
 - `application_channel` — Means used to apply. Catalog; required; FK Catalog. Domain: Application Channels. Constraint: valid catalog value. Internal; Permanent.
@@ -657,40 +657,40 @@ Any addition, modification, or deletion of attributes must update this dictionar
 #### 5.5.10. Event
 
 - `id` — Unique identifier. UUID; required; PK. Internal; Permanent.
-- `run_id` — Run that generated the event. UUID; required; FK Corrida. Constraint: mandatory in module 1 — RN-01. Internal; Permanent. Actual name: `run_id`.
-- `source_id` — Source on which the event occurred. UUID; optional; FK Source. Module 1 traceability. Internal; Permanent.
-- `session_id` — Platform session in which the event occurred. UUID; optional; module 1. Internal; Permanent.
-- `set_indice` — Filter-set index where the event occurred. Integer; optional; module 1. Internal; Permanent.
-- `offer_id` — Offer related to the event. UUID; optional; FK Offer. Constraint: required only when event belongs to a specific offer. Internal; Permanent.
+- `id_corrida` — Run that generated the event. UUID; required; FK Corrida. Constraint: mandatory in module 1 — RN-01. Internal; Permanent. Actual name: `id_corrida`.
+- `fuente_id` — Source on which the event occurred. UUID; optional; FK Source. Module 1 traceability. Internal; Permanent.
+- `id_sesion` — Platform session in which the event occurred. UUID; optional; module 1. Internal; Permanent.
+- `indice_set` — Filter-set index where the event occurred. Integer; optional; module 1. Internal; Permanent.
+- `id_oferta` — Offer related to the event. UUID; optional; FK Offer. Constraint: required only when event belongs to a specific offer. Internal; Permanent.
 - `tipo` — Event classification: `error` or `suceso`. Catalog; required; FK Catalog. Domain: `error`, `suceso`. Module 1 typology — decision 2026-08-07. Internal; Permanent.
 - `codigo` — Business code — e.g., `ERR-01`, `EVT-01`. Text; optional. Per Discovery module technical sheet. Internal; Permanent.
 - `evidencia` — Evidence — screenshots, traces, raw snippets. Long Text; optional. Constraint: never credentials or session tokens. Internal; Permanent. Actual name: `evidencia`.
 - `event_type` — Type of event recorded. Catalog; required; FK Catalog. Domain: Event Types. Constraint: valid catalog value. Internal; Permanent.
 - `affected_entity` — Name of entity affected. Text; required. Internal; Permanent.
-- `entity_id` — Identifier of record affected. UUID; required. For run-level events, use `run_id`. Internal; Permanent.
+- `entity_id` — Identifier of record affected. UUID; required. For run-level events, use `id_corrida`. Internal; Permanent.
 - `action` — Executed action. Catalog; required; FK Catalog. Domain: Catalog. Constraint: valid catalog value. Internal; Permanent.
 - `description` — Detailed event description. Long Text; required. Internal; Permanent.
 - `result` — Result of associated operation. Catalog; required; FK Catalog. Domain: Catalog. Constraint: valid catalog value. Internal; Permanent.
 - `origin` — Automation component that generated the event. Catalog; required; FK Catalog. Domain: Catalog. Constraint: valid catalog value. Internal; Permanent.
 - `context` — Additional contextual information. Long Text; optional. Internal; Permanent.
 - `event_date` — Date/time when event occurred. Date/Time; required. Constraint: exact moment required. Internal; Permanent.
-- `creation_date` — Record creation date/time. Date/Time; required. Internal; Permanent.
+- `fecha_creacion` — Record creation date/time. Date/Time; required. Internal; Permanent.
 - Deletion constraint: events cannot be deleted once recorded; audit trail.
 
 #### 5.5.11. Decision
 
 - `id` — Unique identifier. UUID; required; PK. Internal; Permanent.
-- `offer_id` — Offer related to the decision. UUID; required; FK Offer. Constraint: mandatory. Internal; Permanent.
+- `id_oferta` — Offer related to the decision. UUID; required; FK Offer. Constraint: mandatory. Internal; Permanent.
 - `stage` — Process stage where decision was made. Catalog; required; FK Catalog. Domain: Catalog. Constraint: valid catalog value. Internal; Permanent.
 - `decision_type` — Decision classification. Catalog; required; FK Catalog. Domain: Decision Types. Constraint: valid catalog value. Internal; Permanent.
 - `decision` — Decision adopted. Text; required. Internal; Permanent.
-- `justification` — Explanation supporting decision. Long Text; required. Constraint: mandatory. Confidential; Permanent.
+- `justificacion` — Explanation supporting decision. Long Text; required. Constraint: mandatory. Confidential; Permanent.
 - `evidence` — Evidence supporting decision. Long Text; required. Constraint: mandatory. Confidential; Permanent.
 - `confidence` — Confidence level, when applicable. Decimal; optional. Internal; Permanent.
 - `origin_component` — Component that generated the decision. Catalog; required; FK Catalog. Domain: Catalog. Constraint: valid catalog value. Internal; Permanent.
 - `decision_date` — Decision date/time. Date/Time; required. Internal; Permanent.
 - `observations` — Additional decision information. Long Text; optional. Internal; Permanent.
-- `creation_date` — Record creation date/time. Date/Time; required. Internal; Permanent.
+- `fecha_creacion` — Record creation date/time. Date/Time; required. Internal; Permanent.
 - Deletion constraint: decisions cannot be deleted once recorded; audit trail.
 
 #### 5.5.12. Configuration
@@ -721,19 +721,19 @@ Any addition, modification, or deletion of attributes must update this dictionar
 #### 5.5.14. Corrida
 
 - `id` — Unique identifier of run record. UUID; required; PK. Internal; Permanent.
-- `run_id` — Public unique run identifier. UUID; required; AK. Constraint: referenced by every module record — RN-01. Internal; Permanent. Actual name: `run_id`.
-- `start_timestamp` — Run start date/time. Date/Time; required. Internal; Permanent.
-- `end_timestamp` — Run end date/time. Date/Time; optional. Applies to normal, concurrency, or failure termination. Internal; Permanent.
+- `id_corrida` — Public unique run identifier. UUID; required; AK. Constraint: referenced by every module record — RN-01. Internal; Permanent. Actual name: `id_corrida`.
+- `fecha_inicio` — Run start date/time. Date/Time; required. Internal; Permanent.
+- `fecha_fin` — Run end date/time. Date/Time; optional. Applies to normal, concurrency, or failure termination. Internal; Permanent.
 - `estado` — Run status. Catalog; required; FK Catalog. Default: `en_ejecucion`. Domain: `en_ejecucion`, `corrida_completada`, `sin_fuentes`, `error`, `concurrencia`. Constraint: follows Discovery technical sheet. Internal; Permanent. Actual name: `estado`.
 
 #### 5.5.15. Sesion
 
 - `id` — Unique identifier of session record. UUID; required; PK. Internal; Permanent.
-- `session_id` — Platform session identifier assigned by source. UUID; optional; AK. Constraint: unique per source. Internal; Permanent.
-- `run_id` — Run under which session was established. UUID; required; FK Corrida. Internal; Permanent.
-- `source_id` — Source on which session was established. UUID; required; FK Source. Internal; Permanent.
-- `set_indice` — Filter-set index for session. Integer; optional; AK with `session_id`. Internal; Permanent.
-- `timestamp` — Session establishment date/time. Date/Time; required. Internal; Permanent.
+- `id_sesion` — Platform session identifier assigned by source. UUID; optional; AK. Constraint: unique per source. Internal; Permanent.
+- `id_corrida` — Run under which session was established. UUID; required; FK Corrida. Internal; Permanent.
+- `fuente_id` — Source on which session was established. UUID; required; FK Source. Internal; Permanent.
+- `indice_set` — Filter-set index for session. Integer; optional; AK with `id_sesion`. Internal; Permanent.
+- `marca_temporal` — Session establishment date/time. Date/Time; required. Internal; Permanent.
 - `total_declarado` — Total offers declared by source, when exposed. Integer; optional. Internal; Permanent.
 - `conteo` — Offers captured during session. Integer; required. Internal; Permanent.
 - `estado` — Final session state. Catalog; required; FK Catalog. Domain: `activa`, `cerrada`, `expirada`. Internal; Permanent.
@@ -741,8 +741,8 @@ Any addition, modification, or deletion of attributes must update this dictionar
 #### 5.5.16. Bloqueo
 
 - `id` — Unique identifier of lock record. UUID; required; PK. Internal; Permanent.
-- `run_id` — Run owning the lock. UUID; required; FK Corrida. Internal; Permanent.
-- `timestamp` — Lock acquisition date/time. Date/Time; required. Internal; Permanent.
+- `id_corrida` — Run owning the lock. UUID; required; FK Corrida. Internal; Permanent.
+- `marca_temporal` — Lock acquisition date/time. Date/Time; required. Internal; Permanent.
 - `umbral_obsolescencia` — Seconds after which lock may become obsolete. Integer; required. Constraint: from configuration; no hardcoded values; defined in configuration file. Internal; Permanent.
 - `estado` — Lock state. Catalog; required; FK Catalog. Default: `activo`. Domain: `activo`, `obsoleto`, `liberado`. Constraint: single active lock per run. Internal; Permanent.
 
@@ -798,7 +798,7 @@ OFFER ──1:N──> EVENT ─────────────────
 OFFER ──1:N──> DECISION                                             │
 OFFER ──1:0..1──> APPLICATION <──1:N── GENERATED_DOCUMENT <──1:N────┘
 
-CORRIDA ──1:N──> OFFER / EVENT / SESION   — module 1 traceability, run_id
+CORRIDA ──1:N──> OFFER / EVENT / SESION   — module 1 traceability, id_corrida
 CORRIDA ──1:0..1──> BLOQUEO
 SESION ──N:1──> SOURCE
 CATALOG ──1:N──> all entities using controlled values — support
@@ -823,5 +823,6 @@ Every data-model modification must be recorded before becoming official. Each ve
 | 1.0 | 2026-07-30 | System | Initial creation of Document 13A — Detailed Data Model Design. |
 | 1.1 | 2026-07-30 | System | Alignment with implementation: official Offer Statuses catalog reduced to the 7 states of `shared/state_machine.py`; attribute names aligned with `shared/models.py` — `version_modelo`, `region`; recorded Processed Offer deviations — PMD-020; implemented-persistence scope note. |
 | 1.2 | 2026-07-30 | System | Detailed Evaluation entity redefined with Spanish attribute names — decision C2: prompts adjusted to the entity; Overqualification Risk and Final Recommendation catalog values in Spanish; Official Data Dictionary §5.5 for the 13 entities; ERD §6.6 in Mermaid + ASCII; sensitivity classification per DOC-12 §14.2. |
-| 1.3 | 2026-08-07 | System | Discovery module — module 1: traceability fields added to Offer — `run_id`, `session_id`, `set_indice`, `id_externo_url`; Source.`active` redefined as catalog attribute — decision D1; Event formalized — mandatory `run_id`, typology `tipo` error/suceso, `codigo`, `evidencia`, optional `offer_id`; new entities Corrida, Sesion, Bloqueo — decisions D2 and D3; inventory, Logical Data Model, Data Dictionary, and ERD updated. |
-| 1.4 | 2026-08-09 | System | Sub-phase 4.4 capture registration — decision D4: Offer gains `empresa_nombre`, `ubicacion_nombre`, and `timestamp_ultima_verificacion`; `empresa_id` / `ubicacion_id` optional — `NULL` in MVP; `fuente_id` stored as raw string without FK constraint; registration deduplicates by `id_externo_url` via upsert. Data Dictionary updated. |
+| 1.3 | 2026-08-07 | System | Discovery module — module 1: traceability fields added to Offer — `id_corrida`, `id_sesion`, `indice_set`, `id_externo`; Source.`active` redefined as catalog attribute — decision D1; Event formalized — mandatory `id_corrida`, typology `tipo` error/suceso, `codigo`, `evidencia`, optional `id_oferta`; new entities Corrida, Sesion, Bloqueo — decisions D2 and D3; inventory, Logical Data Model, Data Dictionary, and ERD updated. |
+| 1.4 | 2026-08-09 | System | Sub-phase 4.4 capture registration — decision D4: Offer gains `empresa_nombre`, `ubicacion_nombre`, and `fecha_ultima_verificacion`; `empresa_id` / `ubicacion_id` optional — `NULL` in MVP; `fuente_id` stored as raw string without FK constraint; registration deduplicates by `id_externo` via upsert. Data Dictionary updated. |
+| 1.5 | 2026-08-11 | System | Spanish naming catalog — decisions D7/D8: attribute/column identifiers, config keys, and Offer Statuses values aligned to the Spanish catalog (`id_corrida`, `fuente_id`, `id_sesion`, `indice_set`, `id_oferta`, `id_oferta_procesada`, `id_externo`, `fecha_creacion`, `fecha_ultima_edicion`, `fecha_descubrimiento`, `fecha_ultima_verificacion`, `marca_temporal`, `enlace`, `identificador_origen`, states `descubierta`…`finalizada`); `job_search.db` migrated preserving data (backup `job_search_pre_espanol_20260811_073632.db`). |

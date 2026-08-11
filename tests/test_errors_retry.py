@@ -59,9 +59,9 @@ def test_jerarquia_y_severidades_intactas() -> None:
 
 def test_should_retry_reintentables() -> None:
     assert should_retry("fuente_inalcanzable") is True
-    assert should_retry("timeout_ingreso") is True
-    assert should_retry("timeout_consulta") is True
-    assert should_retry("timeout_captura") is True
+    assert should_retry("tiempo_agotado_ingreso") is True
+    assert should_retry("tiempo_agotado_consulta") is True
+    assert should_retry("tiempo_agotado_captura") is True
 
 
 def test_should_retry_no_reintentables() -> None:
@@ -132,7 +132,7 @@ def test_retry_conditional_reintenta_y_exita() -> None:
         nonlocal llamadas
         llamadas += 1
         if llamadas == 1:
-            raise _ErrorConCodigo("timeout_captura")
+            raise _ErrorConCodigo("tiempo_agotado_captura")
         return "ok"
 
     assert _falla_una_vez() == "ok"

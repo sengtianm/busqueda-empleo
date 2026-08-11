@@ -1,9 +1,9 @@
 # --- Discovered sources (Module 1) ---
 fuentes:
-  - source_id: "linkedin"
+  - fuente_id: "linkedin"
     nombre: "LinkedIn"
     ficha_acceso:
-      url: "https://www.linkedin.com/jobs/search"
+      enlace: "https://www.linkedin.com/jobs/search"
       tipo_acceso: "con_autenticacion"
       credenciales_referencia:
         - "LINKEDIN_EMAIL"
@@ -11,7 +11,7 @@ fuentes:
       criterio_exito: "voyager"
       timeout_segundos: 30
     sets_de_filtros:
-      - set_indice: 0
+      - indice_set: 0
         filtros:
           - tipo: "keywords"
             valor: ["Data Engineer", "Analista de Datos", "Ingeniero de Datos"]
@@ -101,7 +101,7 @@ retries:
 # --- Professional Profile (DOC-10) ---
 profile:
   tecnologias: {}
-  experience_years: 0
+  anos_experiencia: 0
   seniority: ""
   idiomas: {}
   ubicaciones_preferidas: []

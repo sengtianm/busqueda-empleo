@@ -1,6 +1,6 @@
 """INICIO node of the Discovery flow (technical sheet v1.3, Section 1).
 
-Instantiates the run (run_id with a single retry), loads and validates the
+Instantiates the run (id_corrida with a single retry), loads and validates the
 global configuration (VAL-02), verifies the database with a rolled-back write
 probe (VAL-03), resolves the concurrency lock (VAL-04), filters structurally
 valid sources discarding incomplete sheets with an ERR-12 event (VAL-06),
@@ -51,7 +51,7 @@ class ResultadoInicio:
     """Outcome of the INICIO node handed to the orchestrator."""
 
     estado: str
-    run_id: str = ""
+    id_corrida: str = ""
     contexto: RunContext | None = None
     codigo: str = ""
     motivo: str = ""
@@ -62,7 +62,7 @@ def _ahora() -> str:
     return datetime.now().strftime(_FORMATO_TIMESTAMP)
 
 
-def _generar_run_id() -> str:
+def _generar_id_corrida() -> str:
     for intento in (1, 2):
         try:
             return generate_id("corridas")
@@ -72,52 +72,52 @@ def _generar_run_id() -> str:
     raise RuntimeError("unreachable")  # pragma: no cover
 
 
-def _es_obsoleto(timestamp: datetime, umbral_minutos: int) -> bool:
+def _es_obsoleto(marca_temporal: datetime, umbral_minutos: int) -> bool:
     """Mirrors `shared.persistence.acquire_lock` staleness semantics."""
     if umbral_minutos <= 0:
         return False
-    antiguedad = (datetime.now() - timestamp).total_seconds() / 60
+    antiguedad = (datetime.now() - marca_temporal).total_seconds() / 60
     return antiguedad >= umbral_minutos
 
 
 def _registrar_evento(
-    run_id: str,
+    id_corrida: str,
     tipo: str,
     codigo: str,
     evidencia: str,
-    source_id: str = "",
+    fuente_id: str = "",
 ) -> None:
     try:
         write_evento(
             {
-                "run_id": run_id,
-                "source_id": source_id,
+                "id_corrida": id_corrida,
+                "fuente_id": fuente_id,
                 "tipo": tipo,
                 "codigo": codigo,
                 "evidencia": evidencia,
-                "timestamp": _ahora(),
+                "marca_temporal": _ahora(),
             }
         )
     except Exception as exc:
-        logger.error(f"Evento no persistible | run={run_id} | {codigo} | {exc}")
+        logger.error(f"Evento no persistible | run={id_corrida} | {codigo} | {exc}")
 
 
 def _validar_fuente(conf: Any) -> str | None:
     """RN-08 sheet validation; returns an explanation or None when valid."""
     if not isinstance(conf, dict):
         return "la fuente no es un objeto"
-    source_id = conf.get("source_id")
-    if not isinstance(source_id, str) or not source_id.strip():
-        return "source_id ausente o invalido"
+    fuente_id = conf.get("fuente_id")
+    if not isinstance(fuente_id, str) or not fuente_id.strip():
+        return "fuente_id ausente o invalido"
     nombre = conf.get("nombre")
     if not isinstance(nombre, str) or not nombre.strip():
         return "nombre ausente o invalido"
     ficha = conf.get("ficha_acceso")
     if not isinstance(ficha, dict):
         return "ficha_acceso ausente o invalida"
-    url = ficha.get("url")
-    if not isinstance(url, str) or not url.strip():
-        return "url ausente"
+    enlace = ficha.get("enlace")
+    if not isinstance(enlace, str) or not enlace.strip():
+        return "enlace ausente"
     tipo = ficha.get("tipo_acceso")
     if tipo not in _TIPOS_ACCESO:
         return "tipo_acceso invalido"
@@ -138,8 +138,8 @@ def _validar_fuente(conf: Any) -> str | None:
     for s in sets:
         if not isinstance(s, dict):
             return "set de filtros invalido"
-        if not isinstance(s.get("set_indice"), int):
-            return "set sin set_indice valido"
+        if not isinstance(s.get("indice_set"), int):
+            return "set sin indice_set valido"
         if not isinstance(s.get("filtros"), list):
             return "filtros del set invalidos"
     politicas = conf.get("politicas_de_captura")
@@ -161,13 +161,13 @@ def _validar_fuente(conf: Any) -> str | None:
 def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
     """Run the INICIO node steps in order (section 2 of the sheet)."""
     try:
-        run_id = _generar_run_id()
+        id_corrida = _generar_id_corrida()
     except Exception as exc:
-        logger.error(f"ERR-01 | run_id generado dos veces con fallo | {exc}")
+        logger.error(f"ERR-01 | id_corrida generado dos veces con fallo | {exc}")
         return ResultadoInicio(
             estado="error",
             codigo="ERR-01",
-            descripcion="run_id generation failed after a single retry",
+            descripcion="id_corrida generation failed after a single retry",
         )
 
     try:
@@ -178,51 +178,51 @@ def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
         if "fuentes" not in config or not isinstance(config["fuentes"], list):
             raise ValueError("'fuentes' key missing or not a list")
     except FileNotFoundError:
-        logger.error(f"ERR-02 | run={run_id} | configuration file missing")
+        logger.error(f"ERR-02 | run={id_corrida} | configuration file missing")
         return ResultadoInicio(
             estado="error",
-            run_id=run_id,
+            id_corrida=id_corrida,
             codigo="ERR-02",
             descripcion="configuration file missing",
         )
     except OSError:
-        logger.error(f"ERR-03 | run={run_id} | configuration file unreadable")
+        logger.error(f"ERR-03 | run={id_corrida} | configuration file unreadable")
         return ResultadoInicio(
             estado="error",
-            run_id=run_id,
+            id_corrida=id_corrida,
             codigo="ERR-03",
             descripcion="configuration file unreadable",
         )
     except (ValueError, yaml.YAMLError):
-        logger.error(f"ERR-04 | run={run_id} | configuration corrupt or inconsistent")
+        logger.error(f"ERR-04 | run={id_corrida} | configuration corrupt or inconsistent")
         return ResultadoInicio(
             estado="error",
-            run_id=run_id,
+            id_corrida=id_corrida,
             codigo="ERR-04",
             descripcion="configuration corrupt or inconsistent structure",
         )
 
     fuentes = config["fuentes"]
-    ids = [str(c.get("source_id", "")) for c in fuentes if isinstance(c, dict)]
+    ids = [str(c.get("fuente_id", "")) for c in fuentes if isinstance(c, dict)]
     duplicados = sorted({i for i in ids if ids.count(i) > 1}) if ids else []
     if duplicados:
-        logger.error(f"ERR-11 | run={run_id} | duplicate source_ids: {duplicados}")
+        logger.error(f"ERR-11 | run={id_corrida} | duplicate fuente_ids: {duplicados}")
         return ResultadoInicio(
             estado="error",
-            run_id=run_id,
+            id_corrida=id_corrida,
             codigo="ERR-11",
-            descripcion=f"duplicate source_id(s) {duplicados}",
+            descripcion=f"duplicate fuente_id(s) {duplicados}",
         )
 
     try:
         init_db()
         probe_write()
     except Exception as error:
-        _registrar_evento(run_id, "error", "ERR-05", f"base de datos no disponible: {error}")
-        logger.error(f"ERR-05 | run={run_id} | database unavailable | {error}")
+        _registrar_evento(id_corrida, "error", "ERR-05", f"base de datos no disponible: {error}")
+        logger.error(f"ERR-05 | run={id_corrida} | database unavailable | {error}")
         return ResultadoInicio(
             estado="error",
-            run_id=run_id,
+            id_corrida=id_corrida,
             codigo="ERR-05",
             descripcion="database unavailable or not writable",
         )
@@ -230,94 +230,95 @@ def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
     try:
         bloqueo_actual = check_lock()
     except Exception as error:
-        _registrar_evento(run_id, "error", "ERR-08", f"estado de bloqueo no decidible: {error}")
-        logger.error(f"ERR-08 | run={run_id} | lock state undecidable | {error}")
+        _registrar_evento(id_corrida, "error", "ERR-08", f"estado de bloqueo no decidible: {error}")
+        logger.error(f"ERR-08 | run={id_corrida} | lock state undecidable | {error}")
         return ResultadoInicio(
             estado="error",
-            run_id=run_id,
+            id_corrida=id_corrida,
             codigo="ERR-08",
             descripcion="lock state undecidable",
         )
 
-    timestamp = _ahora()
+    marca_temporal = _ahora()
     if bloqueo_actual is not None:
         try:
             fecha_bloqueo = datetime.strptime(
-                str(bloqueo_actual.get("timestamp", "")), _FORMATO_TIMESTAMP
+                str(bloqueo_actual.get("marca_temporal", "")), _FORMATO_TIMESTAMP
             )
         except (TypeError, ValueError):
-            _registrar_evento(run_id, "error", "ERR-08", "timestamp del bloqueo no valido")
+            _registrar_evento(id_corrida, "error", "ERR-08", "marca_temporal del bloqueo no valido")
             return ResultadoInicio(
                 estado="error",
-                run_id=run_id,
+                id_corrida=id_corrida,
                 codigo="ERR-08",
-                descripcion="lock timestamp undecidable",
+                descripcion="lock marca_temporal undecidable",
             )
         if not _es_obsoleto(fecha_bloqueo, umbral_obsolescencia_minutos(config)):
             _registrar_evento(
-                run_id,
+                id_corrida,
                 "suceso",
                 "ERR-06",
-                f"corrida {bloqueo_actual.get('run_id', '')} activa; terminacion por concurrencia",
+                f"corrida {bloqueo_actual.get('id_corrida', '')} activa; "
+                "terminacion por concurrencia",
             )
             return ResultadoInicio(
                 estado="concurrencia",
-                run_id=run_id,
+                id_corrida=id_corrida,
                 codigo="ERR-06",
                 motivo="concurrencia",
                 descripcion="another run is active (lock not stale)",
             )
         try:
-            adquirido = acquire_lock(run_id, timestamp, forzar=True)
+            adquirido = acquire_lock(id_corrida, marca_temporal, forzar=True)
         except Exception as error:
-            _registrar_evento(run_id, "error", "ERR-08", f"fallo al sobrescribir: {error}")
+            _registrar_evento(id_corrida, "error", "ERR-08", f"fallo al sobrescribir: {error}")
             return ResultadoInicio(
                 estado="error",
-                run_id=run_id,
+                id_corrida=id_corrida,
                 codigo="ERR-08",
                 descripcion="lock overwrite failed (undecidable state)",
             )
         if not adquirido:
             _registrar_evento(
-                run_id,
+                id_corrida,
                 "suceso",
                 "ERR-06",
                 "contienda de adquisicion al sobrescribir: otro proceso gano el bloqueo",
             )
             return ResultadoInicio(
                 estado="concurrencia",
-                run_id=run_id,
+                id_corrida=id_corrida,
                 codigo="ERR-06",
                 motivo="concurrencia",
                 descripcion="lock contention at stale overwrite",
             )
         _registrar_evento(
-            run_id,
+            id_corrida,
             "suceso",
             "ERR-07",
-            f"bloqueo obsoleto de {bloqueo_actual.get('run_id', '')} sobrescrito",
+            f"bloqueo obsoleto de {bloqueo_actual.get('id_corrida', '')} sobrescrito",
         )
     else:
         try:
-            adquirido = acquire_lock(run_id, timestamp)
+            adquirido = acquire_lock(id_corrida, marca_temporal)
         except Exception as error:
-            _registrar_evento(run_id, "error", "ERR-08", f"fallo al adquirir: {error}")
+            _registrar_evento(id_corrida, "error", "ERR-08", f"fallo al adquirir: {error}")
             return ResultadoInicio(
                 estado="error",
-                run_id=run_id,
+                id_corrida=id_corrida,
                 codigo="ERR-08",
                 descripcion="lock acquisition failed (undecidable state)",
             )
         if not adquirido:
             _registrar_evento(
-                run_id,
+                id_corrida,
                 "suceso",
                 "ERR-06",
                 "contienda de adquisicion: otro proceso gano el bloqueo",
             )
             return ResultadoInicio(
                 estado="concurrencia",
-                run_id=run_id,
+                id_corrida=id_corrida,
                 codigo="ERR-06",
                 motivo="concurrencia",
                 descripcion="lock contention race at acquisition",
@@ -327,15 +328,17 @@ def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
     for raw in fuentes:
         problema = _validar_fuente(raw)
         if problema is not None:
-            source_id = str(raw.get("source_id", "")) if isinstance(raw, dict) else ""
+            fuente_id = str(raw.get("fuente_id", "")) if isinstance(raw, dict) else ""
             _registrar_evento(
-                run_id,
+                id_corrida,
                 "error",
                 "ERR-12",
                 f"ficha incompleta: {problema}",
-                source_id=source_id,
+                fuente_id=fuente_id,
             )
-            logger.warning(f"ERR-12 | run={run_id} | source={source_id} discarded | {problema}")
+            logger.warning(
+                f"ERR-12 | run={id_corrida} | source={fuente_id} descartada | {problema}"
+            )
             continue
         validas.append(raw)
 
@@ -343,39 +346,39 @@ def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
         contexto = RunContext(
             config_fuentes=validas,
             config_captura=config.get("captura") or {},
-            run_id=run_id,
+            id_corrida=id_corrida,
             permitir_vacio=True,
         )
         contexto.bloqueo_adquirido = True
         write_corrida(
             {
-                "run_id": run_id,
-                "timestamp_inicio": contexto.timestamp_inicio,
+                "id_corrida": id_corrida,
+                "fecha_inicio": contexto.fecha_inicio,
                 "estado": "en_ejecucion",
             }
         )
     except Exception as error:
         _registrar_evento(
-            run_id,
+            id_corrida,
             "error",
             "ERR-10",
             f"Fallo interno de inicializacion de estado: {error}",
         )
-        logger.error(f"ERR-10 | run={run_id} | internal initialization failure | {error}")
+        logger.error(f"ERR-10 | run={id_corrida} | internal initialization failure | {error}")
         return ResultadoInicio(
             estado="error",
-            run_id=run_id,
+            id_corrida=id_corrida,
             codigo="ERR-10",
             descripcion="internal run state initialization failure",
         )
 
-    if not (contexto.run_id == run_id and contexto.bloqueo_adquirido):
-        _registrar_evento(run_id, "error", "ERR-10", "contexto incompleto al entregar control")
+    if not (contexto.id_corrida == id_corrida and contexto.bloqueo_adquirido):
+        _registrar_evento(id_corrida, "error", "ERR-10", "contexto incompleto al entregar control")
         return ResultadoInicio(
             estado="error",
-            run_id=run_id,
+            id_corrida=id_corrida,
             codigo="ERR-10",
             descripcion="incomplete context before handover (VAL-05)",
         )
 
-    return ResultadoInicio(estado="ok", run_id=run_id, contexto=contexto)
+    return ResultadoInicio(estado="ok", id_corrida=id_corrida, contexto=contexto)

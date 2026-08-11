@@ -25,7 +25,7 @@ def registrar_evento(contexto: RunContext) -> ResultadoRegistro:
     and writes it to the events table.
     """
     resultado: SearchResult | EntryResult | None = None
-    set_indice: int | None = None
+    indice_set: int | None = None
 
     # 1. Determine result to read, scoped to the current source (RN-09):
     #    a search_result only belongs to the run segment of its own source.
@@ -35,17 +35,17 @@ def registrar_evento(contexto: RunContext) -> ResultadoRegistro:
         contexto.search_result is not None
         and set_actual is not None
         and fuente is not None
-        and set_actual.source_id == fuente.source_id
+        and set_actual.fuente_id == fuente.fuente_id
     )
     if search_de_fuente:
         search_resultado = contexto.search_result
         assert search_resultado is not None
         resultado = search_resultado
-        set_indice = search_resultado.set_indice
+        indice_set = search_resultado.indice_set
     elif contexto.entry_result is not None:
         resultado = contexto.entry_result
-    if resultado is None or isinstance(resultado, SearchResult) and set_indice is None:
-        logger.warning(f"[{contexto.run_id}] Result without context data to register.")
+    if resultado is None or isinstance(resultado, SearchResult) and indice_set is None:
+        logger.warning(f"[{contexto.id_corrida}] Result without context data to register.")
         return ResultadoRegistro(estado="ok", contexto=contexto)
 
     # 2. Typify with the official enum (DOC-05 CNP-014)
@@ -59,15 +59,15 @@ def registrar_evento(contexto: RunContext) -> ResultadoRegistro:
     try:
         write_evento(
             {
-                "run_id": contexto.run_id,
-                "source_id": (
-                    contexto.fuente_corriente.source_id
+                "id_corrida": contexto.id_corrida,
+                "fuente_id": (
+                    contexto.fuente_corriente.fuente_id
                     if contexto.fuente_corriente
                     else None
                 ),
-                "session_id": contexto.session_id,
-                "set_indice": set_indice,
-                "timestamp": _ahora(),
+                "id_sesion": contexto.id_sesion,
+                "indice_set": indice_set,
+                "marca_temporal": _ahora(),
                 "tipo": tipo.value,
                 "codigo": resultado.codigo_motivo,
                 "evidencia": evidencia,
@@ -75,7 +75,7 @@ def registrar_evento(contexto: RunContext) -> ResultadoRegistro:
         )
     except Exception as exc:
         logger.error(
-            f"[{contexto.run_id}] Failed to write event to DB: {exc} | "
+            f"[{contexto.id_corrida}] Failed to write event to DB: {exc} | "
             f"codigo={resultado.codigo_motivo} | evidencia={evidencia}"
         )
         # RN-04: Continue regardless of write failure

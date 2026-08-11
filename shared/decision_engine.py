@@ -26,8 +26,8 @@ def _warn_if_incomplete(profile: Profile) -> None:
     missing: list[str] = []
     if not profile.tecnologias:
         missing.append("tecnologias")
-    if profile.experience_years <= 0:
-        missing.append("experience_years")
+    if profile.anos_experiencia <= 0:
+        missing.append("anos_experiencia")
     if not profile.seniority:
         missing.append("seniority")
     if not profile.ubicaciones_preferidas:
@@ -45,9 +45,9 @@ def _warn_if_incomplete(profile: Profile) -> None:
 
 
 def _score_experience(offer: ProcessedOffer, profile: Profile) -> float:
-    if offer.experience_years is None or offer.experience_years == 0:
+    if offer.anos_experiencia is None or offer.anos_experiencia == 0:
         return 100.0
-    ratio = profile.experience_years / offer.experience_years
+    ratio = profile.anos_experiencia / offer.anos_experiencia
     return min(100.0, ratio * 100.0)
 
 
@@ -65,10 +65,10 @@ def _score_technology(offer: ProcessedOffer, profile: Profile) -> float:
 
 
 def _score_location(offer: ProcessedOffer, profile: Profile) -> float:
-    if not profile.ubicaciones_preferidas or not offer.clean_location:
+    if not profile.ubicaciones_preferidas or not offer.ubicacion_limpia:
         return 50.0
     best = max(
-        fuzz.partial_ratio(offer.clean_location, preferred)
+        fuzz.partial_ratio(offer.ubicacion_limpia, preferred)
         for preferred in profile.ubicaciones_preferidas
     )
     return float(best)
@@ -119,7 +119,7 @@ def _score_seniority(offer: ProcessedOffer, profile: Profile) -> float:
 
 
 def _infer_seniority(offer: ProcessedOffer) -> str:
-    text = (offer.clean_title + " " + offer.clean_description).lower()
+    text = (offer.titulo_limpio + " " + offer.descripcion_limpia).lower()
     levels = {
         "principal": "principal",
         "lead": "lead",
@@ -140,7 +140,7 @@ def _infer_seniority(offer: ProcessedOffer) -> str:
 def _check_excluded(offer: ProcessedOffer, profile: Profile) -> bool:
     if not profile.empresas_excluidas:
         return False
-    text = (offer.clean_title + " " + offer.clean_description).lower()
+    text = (offer.titulo_limpio + " " + offer.descripcion_limpia).lower()
     for company in profile.empresas_excluidas:
         if company.lower() in text:
             return True
@@ -209,7 +209,7 @@ def _justify(
     excluded: bool,
 ) -> str:
     if excluded:
-        return "Offer discarded: company is in the exclusion list"
+        return "Offer descartada: company is in the exclusion list"
     parts: list[str] = []
     for criterion, weight in weights.items():
         value = partials.get(criterion, 0.0)
@@ -239,16 +239,16 @@ def evaluate(offer: ProcessedOffer, profile: Profile | None = None) -> Evaluatio
     penalty = _penalize_salary(offer, profile)
     result = _classify(score)
     decision = _decide(result)
-    justification = _justify(score, partials, weights, penalty, excluded)
-    approval_threshold = float(
+    justificacion = _justify(score, partials, weights, penalty, excluded)
+    umbral_aprobacion = float(
         config.get("evaluation", {}).get("compatibility_threshold_medium", 50)
     )
     return Evaluation(
-        processed_offer_id=offer.id,
+        id_oferta_procesada=offer.id,
         resultado=result,
         score=score,
-        approval_threshold=approval_threshold,
+        umbral_aprobacion=umbral_aprobacion,
         decision=decision,
-        justification=justification,
-        evaluated_criteria=", ".join(weights.keys()),
+        justificacion=justificacion,
+        criterios_evaluados=", ".join(weights.keys()),
     )

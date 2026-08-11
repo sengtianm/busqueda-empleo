@@ -48,29 +48,29 @@ def _ahora() -> str:
 
 def _registrar_evento(contexto: RunContext | None, codigo: str, evidencia: str) -> None:
     """Critical abort event; falls back to Loguru when the store rejects it."""
-    run_id = contexto.run_id if contexto is not None else ""
-    if not run_id:
-        logger.error(f"{codigo} | sin run_id | {evidencia}")
+    id_corrida = contexto.id_corrida if contexto is not None else ""
+    if not id_corrida:
+        logger.error(f"{codigo} | sin id_corrida | {evidencia}")
         return
     try:
         write_evento(
             {
-                "run_id": run_id,
+                "id_corrida": id_corrida,
                 "tipo": "error",
                 "codigo": codigo,
                 "evidencia": evidencia,
-                "timestamp": _ahora(),
+                "marca_temporal": _ahora(),
             }
         )
     except Exception as exc:
-        logger.error(f"Evento no persistible | run={run_id} | {codigo} | {exc}")
+        logger.error(f"Evento no persistible | run={id_corrida} | {codigo} | {exc}")
 
 
 def _abortar(
     contexto: RunContext | None, codigo: str, descripcion: str
 ) -> ResultadoControlFuentes:
     _registrar_evento(contexto, codigo, descripcion)
-    logger.error(f"{codigo} | run={getattr(contexto, 'run_id', '')} | {descripcion}")
+    logger.error(f"{codigo} | run={getattr(contexto, 'id_corrida', '')} | {descripcion}")
     return ResultadoControlFuentes(
         estado="error",
         contexto=contexto,
@@ -104,7 +104,7 @@ def existen_fuentes_configuradas(
         )
 
     contexto.motivo_terminacion = _MOTIVO_SIN_FUENTES
-    contexto.timestamp_terminacion = _ahora()
+    contexto.fecha_terminacion = _ahora()
     return ResultadoControlFuentes(
         estado="ok", decision="no", contexto=contexto
     )
@@ -149,7 +149,7 @@ def quedan_fuentes_por_procesar(
         )
 
     contexto.motivo_terminacion = _MOTIVO_CORRIDA_COMPLETADA
-    contexto.timestamp_terminacion = _ahora()
+    contexto.fecha_terminacion = _ahora()
     return ResultadoControlFuentes(
         estado="ok", decision="no", contexto=contexto
     )
@@ -211,7 +211,7 @@ def seleccionar_fuente_pendiente(
         decision="",
         contexto=contexto,
         descripcion=(
-            f"fuente corriente fijada: {getattr(contexto.fuente_corriente, 'source_id', '')} "
+            f"fuente corriente fijada: {getattr(contexto.fuente_corriente, 'fuente_id', '')} "
             f"en posicion {posicion}"
         ),
     )

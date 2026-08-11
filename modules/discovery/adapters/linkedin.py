@@ -109,7 +109,7 @@ class LinkedInAdapter:
                 numero_de_intentos=1,
             )
         try:
-            page.goto(ficha.url)
+            page.goto(ficha.enlace)
         except Exception as exc:
             raise FlowError("fuente_inalcanzable", f"Entry navigation failed: {exc}") from exc
         if not self._criterio_ingreso_cumplido(page, ficha):
@@ -132,13 +132,13 @@ class LinkedInAdapter:
     ) -> SearchResult:
         """Apply the official filter set and parse the first results page."""
         self.eventos_declarados.clear()
-        url = self._construir_url_busqueda(ficha.url, set_filtros)
+        enlace = self._construir_url_busqueda(ficha.enlace, set_filtros)
         try:
-            page.goto(url)
+            page.goto(enlace)
         except Exception as exc:
             raise FlowError("fuente_inalcanzable", f"Search navigation failed: {exc}") from exc
         html = self._contenido(page)
-        self._revisar_estado_pagina(html, "timeout_consulta")
+        self._revisar_estado_pagina(html, "tiempo_agotado_consulta")
         return self._parsear_resultados(html, ficha, set_filtros)
 
     def capture_batch(
@@ -152,7 +152,7 @@ class LinkedInAdapter:
         self.eventos_declarados.clear()
         ofertas_capturadas: list[Offer] = []
         paginas_consumidas = 0
-        url_actual = self._construir_url_busqueda(ficha.url, set_filtros)
+        url_actual = self._construir_url_busqueda(ficha.enlace, set_filtros)
         hay_siguiente = True
         while (
             hay_siguiente
@@ -166,8 +166,8 @@ class LinkedInAdapter:
                     "fuente_inalcanzable", f"Batch navigation failed: {exc}"
                 ) from exc
             html = self._contenido(page)
-            self._revisar_estado_captura(html, "timeout_captura")
-            referencias = self._extraer_referencias(html, ficha.url)
+            self._revisar_estado_captura(html, "tiempo_agotado_captura")
+            referencias = self._extraer_referencias(html, ficha.enlace)
             if not referencias:
                 break
             restantes = politicas.max_ofertas_por_corrida - len(ofertas_capturadas)
@@ -191,9 +191,9 @@ class LinkedInAdapter:
         )
         lote = CaptureBatch(
             ofertas=ofertas_capturadas,
-            run_id="",
-            source_id=ficha.source_id,
-            set_indice=set_filtros.indice,
+            id_corrida="",
+            fuente_id=ficha.fuente_id,
+            indice_set=set_filtros.indice,
             paginas_consumidas=paginas_consumidas,
         )
         return lote, estado
@@ -254,7 +254,7 @@ class LinkedInAdapter:
 
     def _criterio_ingreso_cumplido(self, page: Any, ficha: FichaFuente) -> bool:
         html = self._contenido(page)
-        self._revisar_estado_pagina(html, "timeout_ingreso")
+        self._revisar_estado_pagina(html, "tiempo_agotado_ingreso")
         return ficha.criterio_exito in html
 
     def _esperar_criterio_ingreso(self, page: Any, ficha: FichaFuente) -> None:
@@ -268,7 +268,7 @@ class LinkedInAdapter:
                     raise
                 time.sleep(1)
                 continue
-            self._revisar_estado_pagina(html, "timeout_ingreso")
+            self._revisar_estado_pagina(html, "tiempo_agotado_ingreso")
             if ficha.criterio_exito in html:
                 return
             time.sleep(1)
@@ -303,15 +303,15 @@ class LinkedInAdapter:
         soup = BeautifulSoup(html, "lxml")
         ofertas: list[Offer] = []
         for href, titulo in _tarjetas_resultado(soup):
-            url = _url_absoluta(href, ficha.url)
+            enlace = _url_absoluta(href, ficha.enlace)
             ofertas.append(
                 Offer(
-                    url=url,
+                    enlace=enlace,
                     titulo=titulo,
                     descripcion_original="",
-                    fuente_id=ficha.source_id,
-                    set_indice=set_filtros.indice,
-                    id_externo_url=_extraer_id_externo(url),
+                    fuente_id=ficha.fuente_id,
+                    indice_set=set_filtros.indice,
+                    id_externo=_extraer_id_externo(enlace),
                 )
             )
         total_el = soup.select_one(_SEL_TOTAL_RESULTADOS)
@@ -322,7 +322,7 @@ class LinkedInAdapter:
             ofertas_primera_pagina=ofertas,
             estado_paginacion="hay_mas" if hay_mas else "fin",
             total_declarado=total,
-            set_indice=set_filtros.indice,
+            indice_set=set_filtros.indice,
             numero_de_intentos=1,
         )
 
@@ -346,19 +346,19 @@ class LinkedInAdapter:
         except Exception as exc:
             raise FlowError("error_interno_captura", f"Detail navigation failed: {exc}") from exc
         html = self._contenido(page)
-        self._revisar_estado_captura(html, "timeout_captura")
+        self._revisar_estado_captura(html, "tiempo_agotado_captura")
         soup = BeautifulSoup(html, "lxml")
         titulo = self._titulo_detalle(soup)
         if titulo is None:
             self._declarar_evento("EVT-01", "Detalle sin titulo (excluida del lote).")
             return None
         return Offer(
-            url=url_referencia,
+            enlace=url_referencia,
             titulo=titulo,
             descripcion_original=self._descripcion_detalle(soup),
-            fuente_id=ficha.source_id,
-            set_indice=set_filtros.indice,
-            id_externo_url=_extraer_id_externo(url_referencia),
+            fuente_id=ficha.fuente_id,
+            indice_set=set_filtros.indice,
+            id_externo=_extraer_id_externo(url_referencia),
         )
 
     def _titulo_detalle(self, soup: BeautifulSoup) -> str | None:
@@ -404,8 +404,8 @@ class LinkedInAdapter:
     def _declarar_evento(self, codigo: str, evidencia: str) -> None:
         self.eventos_declarados.append(
             EventoAlmacen(
-                run_id="",
-                source_id="",
+                id_corrida="",
+                fuente_id="",
                 tipo=TipoEvento.SUCESO,
                 codigo=codigo,
                 evidencia=evidencia,
@@ -449,8 +449,8 @@ class LinkedInAdapter:
         separador = "&" if "?" in base else "?"
         return f"{base}{separador}{urlencode(parametros)}"
 
-    def _construir_pagina_siguiente(self, url: str, desplazamiento: int) -> str:
-        partes = urlparse(url)
+    def _construir_pagina_siguiente(self, enlace: str, desplazamiento: int) -> str:
+        partes = urlparse(enlace)
         qs = parse_qs(partes.query)
         qs["start"] = [str(desplazamiento)]
         return urlunparse(partes._replace(query=urlencode(qs, doseq=True)))
@@ -501,8 +501,8 @@ def _texto_de(elemento: Any, selector: str) -> str:
     return el.get_text(strip=True) if el else ""
 
 
-def _extraer_id_externo(url: str) -> str | None:
-    match = _RE_ID_EXTERNO.search(url)
+def _extraer_id_externo(enlace: str) -> str | None:
+    match = _RE_ID_EXTERNO.search(enlace)
     return match.group(1) if match else None
 
 

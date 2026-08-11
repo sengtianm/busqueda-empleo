@@ -2,12 +2,12 @@ from shared.errors import InternalError
 from shared.models import OfferState
 
 VALID_TRANSITIONS: dict[OfferState, list[OfferState]] = {
-    OfferState.DISCOVERED: [OfferState.PREPARED],
-    OfferState.PREPARED: [OfferState.EVALUATED],
-    OfferState.EVALUATED: [OfferState.ACCEPTED, OfferState.DISCARDED],
-    OfferState.ACCEPTED: [OfferState.PROCESSED],
-    OfferState.DISCARDED: [OfferState.FINALIZED],
-    OfferState.PROCESSED: [OfferState.FINALIZED],
+    OfferState.DESCUBIERTA: [OfferState.PREPARADA],
+    OfferState.PREPARADA: [OfferState.EVALUADA],
+    OfferState.EVALUADA: [OfferState.ACEPTADA, OfferState.DESCARTADA],
+    OfferState.ACEPTADA: [OfferState.PROCESADA],
+    OfferState.DESCARTADA: [OfferState.FINALIZADA],
+    OfferState.PROCESADA: [OfferState.FINALIZADA],
 }
 
 

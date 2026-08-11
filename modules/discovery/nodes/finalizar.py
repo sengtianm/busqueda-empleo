@@ -63,19 +63,19 @@ def consultar_metricas(contexto: RunContext | None) -> dict[str, int]:
     """
     if contexto is None:
         return {campo: 0 for campo in _CAMPOS_METRICAS}
-    run_id = contexto.run_id
+    id_corrida = contexto.id_corrida
     try:
-        ofertas = read_table("ofertas", {"run_id": run_id})
-        eventos = read_table("eventos", {"run_id": run_id})
+        ofertas = read_table("ofertas", {"id_corrida": id_corrida})
+        eventos = read_table("eventos", {"id_corrida": id_corrida})
     except Exception as exc:
         logger.error(
-            f"Metricas no consultables | run={run_id} | {exc} | "
+            f"Metricas no consultables | run={id_corrida} | {exc} | "
             "se degrada a ceros"
         )
         return {campo: 0 for campo in _CAMPOS_METRICAS}
     errores = sum(1 for e in eventos if e.get("tipo") == "error")
     sucesos = len(eventos) - errores
-    fuentes = len({e.get("source_id") for e in eventos if e.get("source_id")})
+    fuentes = len({e.get("fuente_id") for e in eventos if e.get("fuente_id")})
     return {
         "total_ofertas": len(ofertas),
         "total_errores": errores,
@@ -85,29 +85,29 @@ def consultar_metricas(contexto: RunContext | None) -> dict[str, int]:
 
 
 def _persistir_cierre_corrida(
-    run_id: str, estado: str, motivo: str, metricas: dict[str, int]
+    id_corrida: str, estado: str, motivo: str, metricas: dict[str, int]
 ) -> None:
     """Step 3: update the run row with a single retry; never aborts."""
     campos: dict[str, Any] = {
         "estado": estado,
-        "timestamp_fin": _ahora(),
+        "fecha_fin": _ahora(),
         "motivo_terminacion": motivo,
         **metricas,
     }
     for intento in (1, 2):
         try:
-            actualizar_corrida(run_id, campos)
+            actualizar_corrida(id_corrida, campos)
             return
         except Exception as exc:
             logger.error(
                 f"actualizar_corrida fallo (intento {intento}/2) | "
-                f"run={run_id} | {exc}"
+                f"run={id_corrida} | {exc}"
             )
-    logger.error(f"Corrida no persistida | run={run_id} | estado={estado} | {motivo}")
+    logger.error(f"Corrida no persistida | run={id_corrida} | estado={estado} | {motivo}")
 
 
 def _escribir_evento_terminacion(
-    run_id: str, estado: str, motivo: str, metricas: dict[str, int]
+    id_corrida: str, estado: str, motivo: str, metricas: dict[str, int]
 ) -> None:
     """Step 4: write the termination event; never aborts."""
     evidencia = " | ".join(
@@ -116,16 +116,16 @@ def _escribir_evento_terminacion(
     try:
         write_evento(
             {
-                "run_id": run_id,
+                "id_corrida": id_corrida,
                 "tipo": "suceso" if estado == "completada" else "error",
                 "codigo": motivo,
                 "evidencia": evidencia,
-                "timestamp": _ahora(),
+                "marca_temporal": _ahora(),
             }
         )
     except Exception as exc:
         logger.error(
-            f"Evento de terminacion no persistible | run={run_id} | "
+            f"Evento de terminacion no persistible | run={id_corrida} | "
             f"motivo={motivo} | {exc}"
         )
 
@@ -139,30 +139,30 @@ def _cerrar_recursos(contexto: RunContext | None) -> None:
             contexto.handle_sesion.close()
         except Exception as exc:
             logger.error(
-                f"page.close() fallo | run={contexto.run_id} | {exc}"
+                f"page.close() fallo | run={contexto.id_corrida} | {exc}"
             )
     browser = getattr(contexto, "browser", None)
     if browser is not None:
         try:
             browser.close()
         except Exception as exc:
-            logger.error(f"browser.close() fallo | run={contexto.run_id} | {exc}")
+            logger.error(f"browser.close() fallo | run={contexto.id_corrida} | {exc}")
     playwright_instance = getattr(contexto, "playwright_instance", None)
     if playwright_instance is not None:
         try:
             playwright_instance.stop()
         except Exception as exc:
             logger.error(
-                f"playwright.stop() fallo | run={contexto.run_id} | {exc}"
+                f"playwright.stop() fallo | run={contexto.id_corrida} | {exc}"
             )
 
 
-def _liberar_bloqueo(run_id: str) -> None:
+def _liberar_bloqueo(id_corrida: str) -> None:
     """Step 6: release the concurrency lock; never aborts."""
     try:
-        liberar_bloqueo(run_id)
+        liberar_bloqueo(id_corrida)
     except Exception as exc:
-        logger.error(f"liberar_bloqueo fallo | run={run_id} | {exc}")
+        logger.error(f"liberar_bloqueo fallo | run={id_corrida} | {exc}")
 
 
 def finalizar_proceso(
@@ -176,21 +176,21 @@ def finalizar_proceso(
             `error_critico`, `aborto`).
     """
     estado = _ESTADOS_POR_MOTIVO.get(motivo, "abortada")
-    run_id = contexto.run_id if contexto is not None else ""
+    id_corrida = contexto.id_corrida if contexto is not None else ""
 
     metricas_previas = consultar_metricas(contexto)
 
-    if run_id:
-        _escribir_evento_terminacion(run_id, estado, motivo, metricas_previas)
+    if id_corrida:
+        _escribir_evento_terminacion(id_corrida, estado, motivo, metricas_previas)
 
     metricas = consultar_metricas(contexto)
 
-    if run_id:
-        _persistir_cierre_corrida(run_id, estado, motivo, metricas)
+    if id_corrida:
+        _persistir_cierre_corrida(id_corrida, estado, motivo, metricas)
 
     _cerrar_recursos(contexto)
-    if run_id:
-        _liberar_bloqueo(run_id)
+    if id_corrida:
+        _liberar_bloqueo(id_corrida)
 
     return ResultadoFinalizar(
         estado="ok", contexto=contexto, codigo=motivo, metricas=metricas

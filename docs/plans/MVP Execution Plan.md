@@ -24,7 +24,7 @@ Working document: exact MVP build order, step by step, based on approved documen
 5. `shared/errors.py` — exception hierarchy by category (ER-RED, ER-NAV, ER-LLM, etc., DOC-06); attributes: code, severity (SV-1..SV-5), source_module, offer_id, timestamp.
 6. `shared/logging_setup.py` — Loguru: standard format, rotation, `logs/` directory.
 7. `shared/retry.py` — Tenacity wrapper, policies per DOC-06.
-8. `shared/models.py` — Pydantic v2: `Offer`, `Evaluation`, `Result`, `Company`, etc. (DOC-13); sequential string IDs, ISO 8601 `creation_date`/`update_date`.
+8. `shared/models.py` — Pydantic v2: `Offer`, `Evaluation`, `Result`, `Company`, etc. (DOC-13); sequential string IDs, ISO 8601 `fecha_creacion`/`fecha_ultima_edicion`.
 9. `shared/persistence.py` — SQLite via sqlite3: read, write, update, find by ID, generate sequential IDs; path from config.
 10. `tests/conftest.py` + `tests/fixtures/` — basic fixtures (test config, mock logger, temp persistence); `.gitkeep` in fixtures dir.
 
@@ -55,31 +55,31 @@ Objective: Pydantic `Profile` model representing user's professional profile, re
 ```python
 class Profile(BaseModel):
     id: UUID = Field(default_factory=uuid4)
-    technologies: dict[str, int] = Field(default_factory=dict)
-    experience_years: int = 0
-    languages: dict[str, str] = Field(default_factory=dict)
-    preferred_locations: list[str] = Field(default_factory=list)
-    preferred_modalities: list[str] = Field(default_factory=list)
-    minimum_salary: float | None = None
+    tecnologias: dict[str, int] = Field(default_factory=dict)
+    anos_experiencia: int = 0
+    idiomas: dict[str, str] = Field(default_factory=dict)
+    ubicaciones_preferidas: list[str] = Field(default_factory=list)
+    modalidades_preferidas: list[str] = Field(default_factory=list)
+    salario_minimo: float | None = None
     seniority: str = ""
-    target_companies: list[str] = Field(default_factory=list)
-    excluded_companies: list[str] = Field(default_factory=list)
-    education_level: str = ""
+    empresas_objetivo: list[str] = Field(default_factory=list)
+    empresas_excluidas: list[str] = Field(default_factory=list)
+    educacion_nivel: str = ""
 ```
 
 `profile` section (add to `config/config.yaml`):
 ```yaml
 profile:
-  technologies: {}
-  experience_years: 0
+  tecnologias: {}
+  anos_experiencia: 0
   seniority: ""
-  languages: {}
-  preferred_locations: []
-  preferred_modalities: []
-  minimum_salary: null
-  target_companies: []
-  excluded_companies: []
-  education_level: ""
+  idiomas: {}
+  ubicaciones_preferidas: []
+  modalidades_preferidas: []
+  salario_minimo: null
+  empresas_objetivo: []
+  empresas_excluidas: []
+  educacion_nivel: ""
 ```
 Rationale: Based on DOC-10 (technologies, experience, languages, job preferences) and criteria CE-001 through CE-012 from DOC-03. `Profile` is a value model (not persistent entity), consistent with DOC-13/13A.
 
@@ -119,16 +119,16 @@ Evaluated criteria (weights from `config.yaml` → `evaluation.weights`):
 
 | Criterion | Configurable weight | Matching |
 |---|---|---|
-| Experience | 0.30 | `profile.experience_years` vs offer |
-| Technology | 0.25 | RapidFuzz between `profile.technologies` and `offer.technologies` |
-| Location | 0.15 | RapidFuzz between `profile.preferred_locations` and offer |
-| Modality | 0.10 | Exact match against `profile.preferred_modalities` |
-| Languages | 0.10 | Level match between `profile.languages` and `offer.languages` |
+| Experience | 0.30 | `profile.anos_experiencia` vs offer |
+| Technology | 0.25 | RapidFuzz between `profile.tecnologias` and `offer.tecnologias` |
+| Location | 0.15 | RapidFuzz between `profile.ubicaciones_preferidas` and offer |
+| Modality | 0.10 | Exact match against `profile.modalidades_preferidas` |
+| Languages | 0.10 | Level match between `profile.idiomas` and `offer.idiomas` |
 | Seniority | 0.10 | Match between `profile.seniority` and offer |
 
 Business rules:
-- Companies in `profile.excluded_companies` → automatic discard (score = 0).
-- `profile.minimum_salary` not met → penalized score.
+- Companies in `profile.empresas_excluidas` → automatic discard (score = 0).
+- `profile.salario_minimo` not met → penalized score.
 - Justification includes per-criterion breakdown.
 
 ### Task 4 — `shared/state_machine.py`
@@ -191,7 +191,7 @@ Build strategy: functional sub-phases grouping nodes by testable unit, per canon
 - Normalize: dates (ISO 8601), salaries (number + currency), locations, modality.
 - Validate required fields, integrity, consistency.
 - Detect duplicates (RapidFuzz on title + company).
-- Assign initial state (`discovered` → `prepared`, EST-001 → EST-002).
+- Assign initial state (`descubierta` → `preparada`, EST-001 → EST-002).
 - Save prepared version + transformation log.
 - Error handling: ER-VAL, ER-DAT.
 - Tests: unit with anonymized real offers as fixtures; edge cases (empty fields, unusual formats, duplicates).

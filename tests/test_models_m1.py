@@ -19,62 +19,62 @@ from shared.models import (
 
 
 def test_offer_trazabilidad_opcional(example_offer: Offer) -> None:
-    assert example_offer.run_id is None
-    assert example_offer.session_id is None
-    assert example_offer.set_indice is None
-    assert example_offer.id_externo_url is None
+    assert example_offer.id_corrida is None
+    assert example_offer.id_sesion is None
+    assert example_offer.indice_set is None
+    assert example_offer.id_externo is None
 
 
 def test_offer_trazabilidad_completa() -> None:
     offer = Offer(
-        url="https://www.linkedin.com/jobs/view/123",
+        enlace="https://www.linkedin.com/jobs/view/123",
         titulo="Data Engineer",
         descripcion_original="Descripcion",
-        run_id="COR-0001",
-        session_id="SES-0001",
-        set_indice=0,
-        id_externo_url="123",
+        id_corrida="COR-0001",
+        id_sesion="SES-0001",
+        indice_set=0,
+        id_externo="123",
     )
-    assert offer.run_id == "COR-0001"
-    assert offer.session_id == "SES-0001"
-    assert offer.set_indice == 0
-    assert offer.id_externo_url == "123"
+    assert offer.id_corrida == "COR-0001"
+    assert offer.id_sesion == "SES-0001"
+    assert offer.indice_set == 0
+    assert offer.id_externo == "123"
 
 
 def test_corrida_estado_por_defecto() -> None:
-    corrida = Corrida(run_id="COR-0001")
+    corrida = Corrida(id_corrida="COR-0001")
     assert corrida.estado == EstadoCorrida.EN_EJECUCION
-    corrida = Corrida(run_id="COR-0002", estado=EstadoCorrida.COMPLETADA)
+    corrida = Corrida(id_corrida="COR-0002", estado=EstadoCorrida.COMPLETADA)
     assert corrida.estado == EstadoCorrida.COMPLETADA
 
 
 def test_evento_almacen() -> None:
     evento = EventoAlmacen(
-        run_id="COR-0001",
+        id_corrida="COR-0001",
         tipo=TipoEvento.ERROR,
         codigo="ERR-05",
         evidencia="evidencia",
     )
     assert evento.tipo == TipoEvento.ERROR
     assert evento.codigo == "ERR-05"
-    assert evento.offer_id is None
+    assert evento.id_oferta is None
 
 
 def test_auditoria_sesion_minima() -> None:
     auditoria = AuditoriaSesion(
-        session_id="SES-0001",
-        run_id="COR-0001",
-        source_id="linkedin",
-        set_indice=0,
-        timestamp=datetime(2026, 8, 7, tzinfo=timezone.utc),
+        id_sesion="SES-0001",
+        id_corrida="COR-0001",
+        fuente_id="linkedin",
+        indice_set=0,
+        marca_temporal=datetime(2026, 8, 7, tzinfo=timezone.utc),
         total_declarado=37,
         conteo=25,
         estado="activa",
     )
-    assert auditoria.session_id == "SES-0001"
-    assert auditoria.run_id == "COR-0001"
-    assert auditoria.source_id == "linkedin"
-    assert auditoria.set_indice == 0
+    assert auditoria.id_sesion == "SES-0001"
+    assert auditoria.id_corrida == "COR-0001"
+    assert auditoria.fuente_id == "linkedin"
+    assert auditoria.indice_set == 0
     assert auditoria.total_declarado == 37
     assert auditoria.conteo == 25
     assert auditoria.estado == "activa"
@@ -90,15 +90,15 @@ def test_politicas_captura_defaults() -> None:
 
 def test_ficha_fuente_linkedin() -> None:
     ficha = FichaFuente(
-        source_id="linkedin",
+        fuente_id="linkedin",
         nombre="LinkedIn",
-        url="https://www.linkedin.com/jobs/search",
+        enlace="https://www.linkedin.com/jobs/search",
         tipo_acceso="con_autenticacion",
         credenciales_referencia=["LINKEDIN_EMAIL", "LINKEDIN_PASSWORD"],
         criterio_exito="global-nav",
         timeout_segundos=30,
     )
-    assert ficha.source_id == "linkedin"
+    assert ficha.fuente_id == "linkedin"
     assert ficha.tipo_acceso == "con_autenticacion"
     assert "LINKEDIN_EMAIL" in ficha.credenciales_referencia
     assert ficha.criterio_exito == "global-nav"
@@ -106,7 +106,7 @@ def test_ficha_fuente_linkedin() -> None:
 
 def test_set_filtros() -> None:
     set_filtros = SetFiltros(
-        source_id="linkedin",
+        fuente_id="linkedin",
         indice=0,
         filtros=[{"tipo": "keywords", "valor": ["Data Engineer"]}],
     )
@@ -131,22 +131,22 @@ def test_search_result() -> None:
         ofertas_primera_pagina=[],
         estado_paginacion="inicial",
         total_declarado=37,
-        set_indice=0,
+        indice_set=0,
     )
     assert resultado.total_declarado == 37
-    assert resultado.set_indice == 0
+    assert resultado.indice_set == 0
 
 
 def test_capture_batch() -> None:
     ofertas = [
-        Offer(url="https://x.com/1", titulo="Oferta 1", descripcion_original="d1"),
+        Offer(enlace="https://x.com/1", titulo="Oferta 1", descripcion_original="d1"),
     ]
     lote = CaptureBatch(
         ofertas=ofertas,
-        run_id="COR-0001",
-        source_id="linkedin",
-        session_id="SES-0001",
-        set_indice=0,
+        id_corrida="COR-0001",
+        fuente_id="linkedin",
+        id_sesion="SES-0001",
+        indice_set=0,
         paginas_consumidas=1,
     )
     assert len(lote.ofertas) == 1

@@ -20,21 +20,21 @@ from shared.models import (
 
 
 def test_score_experience_exceeds() -> None:
-    profile = Profile(experience_years=8)
-    offer = ProcessedOffer(offer_id="OFP-T1", clean_title="Test", experience_years=5)
+    profile = Profile(anos_experiencia=8)
+    offer = ProcessedOffer(id_oferta="OFP-T1", titulo_limpio="Test", anos_experiencia=5)
     assert _score_experience(offer, profile) == 100.0
 
 
 def test_score_experience_partial() -> None:
-    profile = Profile(experience_years=3)
-    offer = ProcessedOffer(offer_id="OFP-T2", clean_title="Test", experience_years=6)
+    profile = Profile(anos_experiencia=3)
+    offer = ProcessedOffer(id_oferta="OFP-T2", titulo_limpio="Test", anos_experiencia=6)
     assert _score_experience(offer, profile) == 50.0
 
 
 def test_score_technology_match() -> None:
     profile = Profile(tecnologias={"Python": 5, "SQL": 4})
     offer = ProcessedOffer(
-        offer_id="OFP-T3", clean_title="Test", tecnologias=["Python", "SQL"]
+        id_oferta="OFP-T3", titulo_limpio="Test", tecnologias=["Python", "SQL"]
     )
     score = _score_technology(offer, profile)
     assert score > 90.0
@@ -63,11 +63,11 @@ def test_decide_discard() -> None:
 
 def test_evaluate_high(example_profile: Profile) -> None:
     offer = ProcessedOffer(
-        offer_id="OFP-T4",
-        clean_title="Data Engineer Senior",
+        id_oferta="OFP-T4",
+        titulo_limpio="Data Engineer Senior",
         tecnologias=["Python", "SQL", "Spark"],
-        experience_years=5,
-        clean_location="Madrid",
+        anos_experiencia=5,
+        ubicacion_limpia="Madrid",
         modalidad="remoto",
         idiomas=["Ingles"],
         salario_min=60000,
@@ -84,11 +84,11 @@ def test_evaluate_high(example_profile: Profile) -> None:
 
 def test_evaluate_low(example_profile: Profile) -> None:
     offer = ProcessedOffer(
-        offer_id="OFP-T5",
-        clean_title="Junior Trainee",
+        id_oferta="OFP-T5",
+        titulo_limpio="Junior Trainee",
         tecnologias=[],
-        experience_years=0,
-        clean_location="OtroPais",
+        anos_experiencia=0,
+        ubicacion_limpia="OtroPais",
         modalidad="presencial",
         idiomas=[],
     )
@@ -98,8 +98,8 @@ def test_evaluate_low(example_profile: Profile) -> None:
 
 def test_evaluate_excluded(example_profile: Profile) -> None:
     offer = ProcessedOffer(
-        offer_id="OFP-T6",
-        clean_title="Senior en EvilCorp",
+        id_oferta="OFP-T6",
+        titulo_limpio="Senior en EvilCorp",
         tecnologias=["Python"],
     )
     result = evaluate(offer, example_profile)
@@ -109,10 +109,10 @@ def test_evaluate_excluded(example_profile: Profile) -> None:
 
 def test_valid_weights_continue(example_profile: Profile) -> None:
     offer = ProcessedOffer(
-        offer_id="OFP-T7",
-        clean_title="Data Engineer",
+        id_oferta="OFP-T7",
+        titulo_limpio="Data Engineer",
         tecnologias=["Python"],
-        experience_years=3,
+        anos_experiencia=3,
     )
     valid_config = {
         "evaluation": {
@@ -140,8 +140,8 @@ def test_load_profile_warns_if_incomplete() -> None:
 
 def test_invalid_weights_raise(example_profile: Profile) -> None:
     offer = ProcessedOffer(
-        offer_id="OFP-T8",
-        clean_title="Data Engineer",
+        id_oferta="OFP-T8",
+        titulo_limpio="Data Engineer",
         tecnologias=["Python"],
     )
     invalid_config = {

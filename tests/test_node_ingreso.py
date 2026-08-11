@@ -13,10 +13,10 @@ from shared.models import EntryResult
 def mock_context() -> RunContext:
     config_fuentes = [
         {
-            "source_id": "LI-01",
+            "fuente_id": "LI-01",
             "nombre": "LinkedIn",
             "ficha_acceso": {
-                "url": "https://linkedin.com",
+                "enlace": "https://linkedin.com",
                 "tipo_acceso": "publico",
                 "criterio_exito": "global-nav",
                 "timeout_segundos": 10,
@@ -61,7 +61,7 @@ def test_ejecutar_ingreso_publico_exito(
 
     assert res.estado == "ok"
     assert _entry_result(mock_context).estado == "exito"
-    assert mock_context.session_id is not None
+    assert mock_context.id_sesion is not None
     assert mock_context.handle_sesion is not None
 
 
@@ -231,7 +231,7 @@ def test_ingreso_exitoso_si(mock_context: RunContext) -> None:
     mock_context.entry_result = EntryResult(
         estado="exito", codigo_motivo="", evidencia_acotada="ok", numero_de_intentos=1
     )
-    mock_context.session_id = "SES-1"
+    mock_context.id_sesion = "SES-1"
     mock_context.handle_sesion = MagicMock()
 
     res = ingreso_exitoso(mock_context)
@@ -259,7 +259,7 @@ def test_ingreso_exitoso_inconsistente(mock_context: RunContext) -> None:
     mock_context.entry_result = EntryResult(
         estado="exito", codigo_motivo="", evidencia_acotada="ok", numero_de_intentos=1
     )
-    mock_context.session_id = None
+    mock_context.id_sesion = None
     res = ingreso_exitoso(mock_context)
     assert res.estado == "error"
     assert res.codigo == "ERR-02"

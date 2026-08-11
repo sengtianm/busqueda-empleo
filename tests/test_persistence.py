@@ -21,11 +21,11 @@ def test_generate_id_sequence(temp_db_file: Path) -> None:
 
 def test_generate_id_per_table(temp_db_file: Path) -> None:
     company_id = generate_id("empresas")
-    offer_id = generate_id("ofertas")
-    source_id = generate_id("fuentes")
+    id_oferta = generate_id("ofertas")
+    fuente_id = generate_id("fuentes")
     assert company_id.startswith("EMP-")
-    assert offer_id.startswith("OFE-")
-    assert source_id.startswith("FNT-")
+    assert id_oferta.startswith("OFE-")
+    assert fuente_id.startswith("FNT-")
 
 
 def test_write_and_read(temp_db_file: Path) -> None:
@@ -73,14 +73,14 @@ def test_write_with_explicit_id(temp_db_file: Path) -> None:
 
 
 def test_json_lists(temp_db_file: Path) -> None:
-    offer_id = write_row("ofertas", {
-        "url": "https://example.com/job",
+    id_oferta = write_row("ofertas", {
+        "enlace": "https://example.com/job",
         "titulo": "Data Engineer",
         "descripcion_original": "Test",
     })
-    result = find_by_id("ofertas", offer_id)
+    result = find_by_id("ofertas", id_oferta)
     assert result is not None
-    assert result["url"] == "https://example.com/job"
+    assert result["enlace"] == "https://example.com/job"
     assert result["titulo"] == "Data Engineer"
 
 
@@ -103,7 +103,7 @@ def test_init_db_crea_nueve_tablas(temp_db_file: Path) -> None:
 
 def test_write_batch_ok(temp_db_file: Path) -> None:
     filas = [
-        {"url": f"https://x.com/{i}", "titulo": f"Titulo {i}",
+        {"enlace": f"https://x.com/{i}", "titulo": f"Titulo {i}",
          "descripcion_original": "d"} for i in range(3)
     ]
     write_batch("ofertas", filas)
@@ -119,14 +119,14 @@ def test_write_batch_rollback_parcial(temp_db_file: Path) -> None:
 
     try:
         write_batch("ofertas", [
-            {"url": "https://x.com/ok", "titulo": "Ok",
+            {"enlace": "https://x.com/ok", "titulo": "Ok",
              "descripcion_original": "d"},
-            {"url": None},
+            {"enlace": None},
         ])
     except sqlite3.IntegrityError:
         pass
     else:
-        raise AssertionError("write_batch deberia fallar con url NULL")
+        raise AssertionError("write_batch deberia fallar con enlace NULL")
     rows = read_table("ofertas")
     assert rows == []
 
@@ -135,7 +135,7 @@ def test_acquire_and_release_lock(temp_db_file: Path) -> None:
     from shared.persistence import acquire_lock, check_lock, release_lock
 
     assert acquire_lock("COR-0001", "2026-08-07 10:00:00") is True
-    assert check_lock() == {"run_id": "COR-0001", "timestamp": "2026-08-07 10:00:00"}
+    assert check_lock() == {"id_corrida": "COR-0001", "marca_temporal": "2026-08-07 10:00:00"}
     release_lock("COR-0001")
     assert check_lock() is None
 
@@ -151,7 +151,7 @@ def test_lock_obsoleto_se_sobrescribe(temp_db_file: Path) -> None:
         "%Y-%m-%d %H:%M:%S")) is True
     lock = check_lock()
     assert lock is not None
-    assert lock["run_id"] == "COR-0002"
+    assert lock["id_corrida"] == "COR-0002"
 
 
 def test_lock_vigente_rechaza(temp_db_file: Path) -> None:
@@ -199,13 +199,13 @@ def test_migracion_c2_desde_esquema_antiguo(tmp_path: Path) -> None:
     conn.execute(
         "CREATE TABLE ofertas ("
         "id TEXT PRIMARY KEY,"
-        "url TEXT NOT NULL,"
+        "enlace TEXT NOT NULL,"
         "titulo TEXT NOT NULL,"
         "descripcion_original TEXT NOT NULL"
         ")"
     )
     conn.execute(
-        "INSERT INTO ofertas (id, url, titulo, descripcion_original) "
+        "INSERT INTO ofertas (id, enlace, titulo, descripcion_original) "
         "VALUES ('OFE-0001', 'https://x.com/1', 'Titulo Antiguo', 'Desc')"
     )
     conn.commit()
@@ -239,7 +239,7 @@ def test_migracion_c2_idempotente(tmp_path: Path) -> None:
     conn.execute(
         "CREATE TABLE ofertas ("
         "id TEXT PRIMARY KEY,"
-        "url TEXT NOT NULL,"
+        "enlace TEXT NOT NULL,"
         "titulo TEXT NOT NULL,"
         "descripcion_original TEXT NOT NULL"
         ")"
@@ -273,15 +273,15 @@ def test_write_corrida_idempotente(temp_db_file: Path) -> None:
     from shared.persistence import read_table, write_corrida
 
     datos = {
-        "run_id": "COR-0009",
-        "timestamp_inicio": "2026-08-07 10:00:00",
+        "id_corrida": "COR-0009",
+        "fecha_inicio": "2026-08-07 10:00:00",
         "estado": "en_ejecucion",
     }
     write_corrida(datos)
     write_corrida(datos)
     filas = read_table("corridas")
     assert len(filas) == 1
-    assert filas[0]["run_id"] == "COR-0009"
+    assert filas[0]["id_corrida"] == "COR-0009"
     assert filas[0]["estado"] == "en_ejecucion"
 
 
@@ -290,12 +290,12 @@ def test_write_evento_genera_evento_id(temp_db_file: Path) -> None:
 
     evt_id = write_evento(
         {
-            "run_id": "RUN-0001",
-            "source_id": "linkedin",
+            "id_corrida": "RUN-0001",
+            "fuente_id": "linkedin",
             "tipo": "suceso",
             "codigo": "ERR-07",
             "evidencia": "lock sobrescrito",
-            "timestamp": "2026-08-07 10:00:00",
+            "marca_temporal": "2026-08-07 10:00:00",
         }
     )
     assert evt_id.startswith("EVT-")
@@ -314,7 +314,7 @@ def test_lock_forzar_sobrescribe_y_contienda_mantiene(temp_db_file: Path) -> Non
     assert acquire_lock("COR-0002", ahora, forzar=True) is True
     lock = check_lock()
     assert lock is not None
-    assert lock["run_id"] == "COR-0002"
+    assert lock["id_corrida"] == "COR-0002"
 
 
 def test_upsert_oferta_inserta_nueva(temp_db_file: Path) -> None:
@@ -327,13 +327,13 @@ def test_upsert_oferta_inserta_nueva(temp_db_file: Path) -> None:
         "ubicacion_id": None,
         "empresa_nombre": "TechCorp",
         "ubicacion_nombre": "Madrid",
-        "url": "https://www.linkedin.com/jobs/view/123",
+        "enlace": "https://www.linkedin.com/jobs/view/123",
         "fuente_id": "LI-01",
-        "set_indice": 0,
-        "id_externo_url": "123",
-        "run_id": "RUN-0001",
-        "session_id": "SES-0001",
-        "discovery_date": "2026-08-09 10:00:00",
+        "indice_set": 0,
+        "id_externo": "123",
+        "id_corrida": "RUN-0001",
+        "id_sesion": "SES-0001",
+        "fecha_descubrimiento": "2026-08-09 10:00:00",
     }
 
     id_oferta = upsert_oferta(oferta)
@@ -358,17 +358,17 @@ def test_upsert_oferta_ids_nulos_sin_fk_error(temp_db_file: Path) -> None:
             "ubicacion_id": None,
             "empresa_nombre": "",
             "ubicacion_nombre": "Remoto",
-            "url": "https://www.linkedin.com/jobs/view/456",
+            "enlace": "https://www.linkedin.com/jobs/view/456",
             "fuente_id": "LI-01",
-            "set_indice": 1,
-            "id_externo_url": "456",
-            "run_id": "RUN-0002",
-            "session_id": "SES-0002",
-            "discovery_date": "2026-08-09 10:05:00",
+            "indice_set": 1,
+            "id_externo": "456",
+            "id_corrida": "RUN-0002",
+            "id_sesion": "SES-0002",
+            "fecha_descubrimiento": "2026-08-09 10:05:00",
         }
     )
     assert id_oferta.startswith("OFE-")
-    filas = read_table("ofertas", {"id_externo_url": "456"})
+    filas = read_table("ofertas", {"id_externo": "456"})
     assert len(filas) == 1
     assert filas[0]["empresa_nombre"] == ""
     assert filas[0]["ubicacion_nombre"] == "Remoto"
@@ -386,21 +386,21 @@ def test_upsert_oferta_mismo_id_externo_no_duplica_y_actualiza_timestamp(
         "ubicacion_id": None,
         "empresa_nombre": "",
         "ubicacion_nombre": "",
-        "url": "https://www.linkedin.com/jobs/view/789",
+        "enlace": "https://www.linkedin.com/jobs/view/789",
         "fuente_id": "LI-01",
-        "set_indice": 0,
-        "id_externo_url": "789",
-        "run_id": "RUN-0003",
-        "session_id": "SES-0003",
-        "discovery_date": "2026-08-09 10:00:00",
+        "indice_set": 0,
+        "id_externo": "789",
+        "id_corrida": "RUN-0003",
+        "id_sesion": "SES-0003",
+        "fecha_descubrimiento": "2026-08-09 10:00:00",
     }
     primero = upsert_oferta(dict(base))
     segundo = upsert_oferta(dict(base))
 
     assert primero == segundo
-    filas = read_table("ofertas", {"id_externo_url": "789"})
+    filas = read_table("ofertas", {"id_externo": "789"})
     assert len(filas) == 1
-    assert filas[0]["timestamp_ultima_verificacion"] != ""
+    assert filas[0]["fecha_ultima_verificacion"] != ""
     assert filas[0]["id"] == primero
 
 
@@ -415,13 +415,13 @@ def test_upsert_oferta_con_empresa_nombre_persistido(temp_db_file: Path) -> None
             "ubicacion_id": None,
             "empresa_nombre": "OpenAI",
             "ubicacion_nombre": "Barcelona",
-            "url": "https://www.linkedin.com/jobs/view/1011",
+            "enlace": "https://www.linkedin.com/jobs/view/1011",
             "fuente_id": "LI-01",
-            "set_indice": 0,
-            "id_externo_url": "1011",
-            "run_id": "RUN-0004",
-            "session_id": "SES-0004",
-            "discovery_date": "2026-08-09 10:10:00",
+            "indice_set": 0,
+            "id_externo": "1011",
+            "id_corrida": "RUN-0004",
+            "id_sesion": "SES-0004",
+            "fecha_descubrimiento": "2026-08-09 10:10:00",
         }
     )
     assert id_oferta.startswith("OFE-")
@@ -440,7 +440,7 @@ def test_migracion_4_4_fks_anulables_idempotente(tmp_path: Path) -> None:
     conn.execute(
         "CREATE TABLE ofertas ("
         "id TEXT PRIMARY KEY,"
-        "url TEXT NOT NULL,"
+        "enlace TEXT NOT NULL,"
         "titulo TEXT NOT NULL,"
         "descripcion_original TEXT NOT NULL,"
         "fuente_id TEXT REFERENCES fuentes(id),"
@@ -449,7 +449,7 @@ def test_migracion_4_4_fks_anulables_idempotente(tmp_path: Path) -> None:
         ")"
     )
     conn.execute(
-        "INSERT INTO ofertas (id, url, titulo, descripcion_original) "
+        "INSERT INTO ofertas (id, enlace, titulo, descripcion_original) "
         "VALUES ('OFE-0001', 'https://x.com/1', 'Vieja', 'Desc')"
     )
     conn.commit()
@@ -488,18 +488,18 @@ def test_migracion_sesiones_desde_esquema_antiguo(tmp_path: Path) -> None:
     conn = sqlite3.connect(str(path))
     conn.execute(
         "CREATE TABLE sesiones ("
-        "session_id TEXT PRIMARY KEY,"
-        "run_id TEXT NOT NULL,"
-        "source_id TEXT NOT NULL,"
-        "set_indice INTEGER DEFAULT '',"
-        "timestamp TEXT NOT NULL,"
+        "id_sesion TEXT PRIMARY KEY,"
+        "id_corrida TEXT NOT NULL,"
+        "fuente_id TEXT NOT NULL,"
+        "indice_set INTEGER DEFAULT '',"
+        "marca_temporal TEXT NOT NULL,"
         "total_declarado INTEGER DEFAULT '',"
         "conteo INTEGER DEFAULT '',"
         "estado TEXT NOT NULL"
         ")"
     )
     conn.execute(
-        "INSERT INTO sesiones (session_id, run_id, source_id, timestamp, "
+        "INSERT INTO sesiones (id_sesion, id_corrida, fuente_id, marca_temporal, "
         "conteo, estado) VALUES "
         "('SES-0100', 'COR-1000', 'linkedin', '2026-08-10 10:00:00', 5, "
         "'completa')"
@@ -517,12 +517,12 @@ def test_migracion_sesiones_desde_esquema_antiguo(tmp_path: Path) -> None:
             ).fetchall()
         }
         assert "id" in columnas
-        assert "creation_date" in columnas
-        assert "last_edit_date" in columnas
+        assert "fecha_creacion" in columnas
+        assert "fecha_ultima_edicion" in columnas
         rows = read_table("sesiones")
         assert len(rows) == 1
         assert rows[0]["id"] == "SES-0100"
-        assert rows[0]["session_id"] == "SES-0100"
+        assert rows[0]["id_sesion"] == "SES-0100"
         assert rows[0]["conteo"] == 5
     finally:
         reset_path()
@@ -537,11 +537,11 @@ def test_migracion_sesiones_idempotente(tmp_path: Path) -> None:
     conn = sqlite3.connect(str(path))
     conn.execute(
         "CREATE TABLE sesiones ("
-        "session_id TEXT PRIMARY KEY,"
-        "run_id TEXT NOT NULL,"
-        "source_id TEXT NOT NULL,"
-        "set_indice INTEGER DEFAULT '',"
-        "timestamp TEXT NOT NULL,"
+        "id_sesion TEXT PRIMARY KEY,"
+        "id_corrida TEXT NOT NULL,"
+        "fuente_id TEXT NOT NULL,"
+        "indice_set INTEGER DEFAULT '',"
+        "marca_temporal TEXT NOT NULL,"
         "total_declarado INTEGER DEFAULT '',"
         "conteo INTEGER DEFAULT '',"
         "estado TEXT NOT NULL"
@@ -573,11 +573,11 @@ def test_write_row_sesiones_auditoria(temp_db_file: Path) -> None:
 
     fila = {
         "id": "SES-0201",
-        "session_id": "SES-0201",
-        "run_id": "COR-1839",
-        "source_id": "linkedin",
-        "set_indice": 0,
-        "timestamp": "2026-08-10 16:37:08",
+        "id_sesion": "SES-0201",
+        "id_corrida": "COR-1839",
+        "fuente_id": "linkedin",
+        "indice_set": 0,
+        "marca_temporal": "2026-08-10 16:37:08",
         "total_declarado": 7,
         "conteo": 7,
         "estado": "completa",
@@ -588,8 +588,8 @@ def test_write_row_sesiones_auditoria(temp_db_file: Path) -> None:
     conn = sqlite3.connect(str(temp_db_file))
     try:
         rows = conn.execute(
-            "SELECT id, session_id, run_id, conteo, estado, creation_date, "
-            "last_edit_date FROM sesiones"
+            "SELECT id, id_sesion, id_corrida, conteo, estado, fecha_creacion, "
+            "fecha_ultima_edicion FROM sesiones"
         ).fetchall()
     finally:
         conn.close()
@@ -601,3 +601,286 @@ def test_write_row_sesiones_auditoria(temp_db_file: Path) -> None:
     assert rows[0][4] == "completa"
     assert rows[0][5] != ""
     assert rows[0][6] == rows[0][5]
+
+
+def _crear_esquema_ingles(path: Path) -> None:
+    """Crea una BD con el esquema legacy (inglés) de la era pre-español."""
+    import sqlite3
+
+    conn = sqlite3.connect(str(path))
+    conn.executescript(
+        """
+        CREATE TABLE fuentes (
+            id TEXT PRIMARY KEY,
+            nombre TEXT NOT NULL,
+            tipo TEXT DEFAULT '',
+            url_base TEXT DEFAULT '',
+            activa INTEGER DEFAULT 1,
+            creation_date TEXT DEFAULT '',
+            last_edit_date TEXT DEFAULT ''
+        );
+        CREATE TABLE empresas (
+            id TEXT PRIMARY KEY,
+            nombre TEXT NOT NULL,
+            normalized_name TEXT DEFAULT '',
+            sitio_web TEXT DEFAULT '',
+            linkedin TEXT DEFAULT '',
+            sector TEXT DEFAULT '',
+            size TEXT DEFAULT '',
+            descripcion TEXT DEFAULT '',
+            creation_date TEXT DEFAULT '',
+            last_edit_date TEXT DEFAULT ''
+        );
+        CREATE TABLE ubicaciones (
+            id TEXT PRIMARY KEY,
+            ciudad TEXT DEFAULT '',
+            region TEXT DEFAULT '',
+            pais TEXT DEFAULT '',
+            modalidad TEXT DEFAULT '',
+            creation_date TEXT DEFAULT '',
+            last_edit_date TEXT DEFAULT ''
+        );
+        CREATE TABLE ofertas (
+            id TEXT PRIMARY KEY,
+            source_identifier TEXT DEFAULT '',
+            url TEXT NOT NULL,
+            titulo TEXT DEFAULT '',
+            descripcion_original TEXT DEFAULT '',
+            fecha_publicacion TEXT DEFAULT '',
+            discovery_date TEXT DEFAULT '',
+            estado TEXT DEFAULT 'discovered'
+                CHECK(estado IN ('discovered','prepared','evaluated',
+                'accepted','discarded','processed','finalized')),
+            observaciones TEXT DEFAULT '',
+            creation_date TEXT DEFAULT '',
+            last_edit_date TEXT DEFAULT '',
+            fuente_id TEXT DEFAULT '',
+            empresa_id TEXT DEFAULT '',
+            ubicacion_id TEXT DEFAULT '',
+            empresa_nombre TEXT DEFAULT '',
+            ubicacion_nombre TEXT DEFAULT '',
+            run_id TEXT DEFAULT '',
+            session_id TEXT DEFAULT '',
+            set_indice INTEGER DEFAULT '',
+            id_externo_url TEXT DEFAULT '',
+            timestamp_ultima_verificacion TEXT DEFAULT ''
+        );
+        CREATE TABLE corridas (
+            run_id TEXT PRIMARY KEY,
+            timestamp_inicio TEXT NOT NULL,
+            estado TEXT NOT NULL
+        );
+        CREATE TABLE eventos (
+            evento_id TEXT PRIMARY KEY,
+            run_id TEXT NOT NULL,
+            source_id TEXT DEFAULT '',
+            session_id TEXT DEFAULT '',
+            set_indice INTEGER DEFAULT '',
+            timestamp TEXT NOT NULL,
+            tipo TEXT NOT NULL CHECK(tipo IN ('error','suceso')),
+            codigo TEXT NOT NULL,
+            evidencia TEXT DEFAULT '',
+            offer_id TEXT DEFAULT ''
+        );
+        CREATE TABLE sesiones (
+            session_id TEXT PRIMARY KEY,
+            run_id TEXT NOT NULL,
+            source_id TEXT NOT NULL,
+            set_indice INTEGER DEFAULT '',
+            timestamp TEXT NOT NULL,
+            total_declarado INTEGER DEFAULT '',
+            conteo INTEGER DEFAULT '',
+            estado TEXT NOT NULL
+        );
+        CREATE TABLE bloqueo (
+            run_id TEXT PRIMARY KEY,
+            timestamp TEXT NOT NULL
+        );
+        CREATE TABLE secuencia_ids (
+            tabla_nombre TEXT PRIMARY KEY,
+            prefijo TEXT NOT NULL,
+            ultimo_numero INTEGER NOT NULL DEFAULT 0
+        );
+        """
+    )
+    conn.execute(
+        "INSERT INTO fuentes (id, nombre, tipo, url_base, activa, creation_date, "
+        "last_edit_date) VALUES ('FNT-0001', 'LinkedIn', 'red_social', "
+        "'https://www.linkedin.com/jobs', 1, '2026-01-01 10:00:00', "
+        "'2026-01-01 10:00:00')"
+    )
+    conn.execute(
+        "INSERT INTO empresas (id, nombre, normalized_name, sitio_web, linkedin, "
+        "sector, size, creation_date, last_edit_date) VALUES "
+        "('EMP-0001', 'TechCorp', 'techcorp', 'https://techcorp.com', "
+        "'https://www.linkedin.com/company/techcorp', 'tecnologia', '500-1000', "
+        "'2026-01-01 10:00:00', '2026-01-01 10:00:00')"
+    )
+    conn.execute(
+        "INSERT INTO ofertas (id, source_identifier, url, titulo, "
+        "descripcion_original, discovery_date, estado, run_id, session_id, "
+        "set_indice, id_externo_url, timestamp_ultima_verificacion) VALUES "
+        "('OFE-0001', 'LI-1', 'https://www.linkedin.com/jobs/view/4439280106', "
+        "'Data Engineer', 'Desc.', '2026-08-10 16:38:02', 'discovered', "
+        "'COR-1839', 'SES-0218', 0, '4439280106', '2026-08-10 16:38:02')"
+    )
+    conn.execute(
+        "INSERT INTO corridas (run_id, timestamp_inicio, estado) VALUES "
+        "('COR-1839', '2026-08-10 16:37:00', 'en_ejecucion')"
+    )
+    conn.execute(
+        "INSERT INTO eventos (evento_id, run_id, source_id, session_id, "
+        "set_indice, timestamp, tipo, codigo, evidencia, offer_id) VALUES "
+        "('EVT-0001', 'COR-1839', 'linkedin', 'SES-0218', 0, "
+        "'2026-08-10 16:38:00', 'suceso', 'ofertas_registradas', '7', 'OFE-0001')"
+    )
+    conn.execute(
+        "INSERT INTO sesiones (session_id, run_id, source_id, set_indice, "
+        "timestamp, total_declarado, conteo, estado) VALUES "
+        "('SES-0218', 'COR-1839', 'linkedin', 0, '2026-08-10 16:38:00', 7, 7, "
+        "'completa')"
+    )
+    conn.execute(
+        "INSERT INTO bloqueo (run_id, timestamp) VALUES "
+        "('COR-1839', '2026-08-10 16:37:00')"
+    )
+    conn.commit()
+    conn.close()
+
+
+def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
+    import sqlite3
+
+    from shared.persistence import change_path, init_db, read_table, reset_path
+
+    path = tmp_path / "ingles.db"
+    _crear_esquema_ingles(path)
+
+    change_path(path)
+    try:
+        init_db()
+        conn = sqlite3.connect(str(path))
+        try:
+            columnas_ofertas = {
+                fila[1] for fila in conn.execute(
+                    "PRAGMA table_info(ofertas)"
+                ).fetchall()
+            }
+            esperadas_ofertas = {
+                "identificador_origen", "enlace", "fecha_descubrimiento",
+                "id_corrida", "id_sesion", "indice_set", "id_externo",
+                "fecha_ultima_verificacion", "fecha_creacion",
+                "fecha_ultima_edicion",
+            }
+            assert esperadas_ofertas.issubset(columnas_ofertas)
+            sql_ofertas = conn.execute(
+                "SELECT sql FROM sqlite_master WHERE type='table' "
+                "AND name='ofertas'"
+            ).fetchone()[0]
+            assert "descubierta" in sql_ofertas
+            assert "discovered" not in sql_ofertas
+            for tabla, esperadas in {
+                "fuentes": {"enlace_base", "fecha_creacion", "fecha_ultima_edicion"},
+                "empresas": {"nombre_normalizado", "perfil_linkedin", "tamano"},
+                "corridas": {"id_corrida", "fecha_inicio"},
+                "eventos": {"id_corrida", "fuente_id", "marca_temporal", "id_oferta"},
+                "sesiones": {"id", "id_sesion", "id_corrida", "fuente_id"},
+                "bloqueo": {"id_corrida", "marca_temporal"},
+            }.items():
+                columnas = {
+                    fila[1] for fila in conn.execute(
+                        f"PRAGMA table_info({tabla})"
+                    ).fetchall()
+                }
+                assert esperadas.issubset(columnas), f"{tabla}: {esperadas - columnas}"
+        finally:
+            conn.close()
+
+        ofertas = read_table("ofertas")
+        assert len(ofertas) == 1
+        oferta = ofertas[0]
+        assert oferta["id"] == "OFE-0001"
+        assert oferta["enlace"] == "https://www.linkedin.com/jobs/view/4439280106"
+        assert oferta["id_externo"] == "4439280106"
+        assert oferta["id_corrida"] == "COR-1839"
+        assert oferta["id_sesion"] == "SES-0218"
+        assert oferta["indice_set"] == 0
+        assert oferta["fecha_descubrimiento"] == "2026-08-10 16:38:02"
+        assert oferta["fecha_ultima_verificacion"] == "2026-08-10 16:38:02"
+        assert oferta["estado"] == "descubierta"
+        assert oferta["identificador_origen"] == "LI-1"
+
+        fuentes = read_table("fuentes")
+        assert fuentes[0]["enlace_base"] == "https://www.linkedin.com/jobs"
+        empresas = read_table("empresas")
+        assert empresas[0]["nombre_normalizado"] == "techcorp"
+        assert empresas[0]["perfil_linkedin"] == "https://www.linkedin.com/company/techcorp"
+        assert empresas[0]["tamano"] == "500-1000"
+        eventos = read_table("eventos")
+        assert eventos[0]["id_corrida"] == "COR-1839"
+        assert eventos[0]["fuente_id"] == "linkedin"
+        assert eventos[0]["id_oferta"] == "OFE-0001"
+        sesiones = read_table("sesiones")
+        assert len(sesiones) == 1
+        assert sesiones[0]["id"] == "SES-0218"
+        assert sesiones[0]["id_sesion"] == "SES-0218"
+        bloqueo = read_table("bloqueo")
+        assert bloqueo[0]["id_corrida"] == "COR-1839"
+    finally:
+        reset_path()
+
+
+def test_migracion_espanol_total_idempotente(tmp_path: Path) -> None:
+    import sqlite3
+
+    from shared.persistence import change_path, init_db, read_table, reset_path
+
+    path = tmp_path / "ingles2.db"
+    _crear_esquema_ingles(path)
+
+    change_path(path)
+    try:
+        init_db()
+        init_db()
+        conn = sqlite3.connect(str(path))
+        try:
+            columnas = {
+                fila[1] for fila in conn.execute(
+                    "PRAGMA table_info(ofertas)"
+                ).fetchall()
+            }
+        finally:
+            conn.close()
+        assert "identificador_origen" in columnas
+        rows = read_table("ofertas")
+        assert len(rows) == 1
+        assert rows[0]["id"] == "OFE-0001"
+        assert rows[0]["enlace"] == "https://www.linkedin.com/jobs/view/4439280106"
+    finally:
+        reset_path()
+
+
+def test_migracion_espanol_total_base_nueva_no_reconstruye(tmp_path: Path) -> None:
+    import sqlite3
+
+    from shared.persistence import change_path, init_db, reset_path
+
+    path = tmp_path / "nueva_espanol.db"
+    change_path(path)
+    try:
+        init_db()
+        init_db()
+        conn = sqlite3.connect(str(path))
+        try:
+            columnas = {
+                fila[1] for fila in conn.execute(
+                    "PRAGMA table_info(ofertas)"
+                ).fetchall()
+            }
+        finally:
+            conn.close()
+        assert "identificador_origen" in columnas
+        assert "enlace" in columnas
+        assert "fecha_descubrimiento" in columnas
+    finally:
+        reset_path()

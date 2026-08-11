@@ -29,7 +29,7 @@ def ejecutar_ingreso(contexto: RunContext) -> ResultadoIngreso:
     """
     ficha = contexto.fuente_corriente
     if ficha is None:
-        logger.error(f"ERR-01: fuente_corriente ausente en corrida {contexto.run_id}")
+        logger.error(f"ERR-01: fuente_corriente ausente en corrida {contexto.id_corrida}")
         return ResultadoIngreso(
             estado="error", codigo="ERR-01", descripcion="Fuente corriente ausente"
         )
@@ -112,7 +112,7 @@ def _ejecutar_ingreso_loop(
                 )
 
                 # Éxito
-                contexto.session_id = generate_id("sesiones")
+                contexto.id_sesion = generate_id("sesiones")
                 contexto.handle_sesion = page
                 contexto.entry_result = res
                 playwright_activo = False  # se conserva la sesión para los nodos siguientes
@@ -138,7 +138,7 @@ def _ejecutar_ingreso_loop(
                         evidencia_acotada=acotar_evidencia(fe.mensaje),
                         numero_de_intentos=attempt,
                     )
-                    contexto.session_id = None
+                    contexto.id_sesion = None
                     contexto.handle_sesion = None
                     return ResultadoIngreso(estado="ok", contexto=contexto)
             except Exception as e:
@@ -152,7 +152,7 @@ def _ejecutar_ingreso_loop(
     finally:
         # El flag local es la fuente de verdad: si esta invocación arrancó
         # un playwright y no estamos en éxito, lo cerramos. Esto evita leaks
-        # cuando llegan valores stale de session_id/handle_sesion desde una
+        # cuando llegan valores stale de id_sesion/handle_sesion desde una
         # fuente previa (multi-fuente).
         if playwright_activo:
             if playwright_instance:
@@ -187,20 +187,24 @@ def ingreso_exitoso(contexto: RunContext) -> ResultadoIngreso:
     """
     res = contexto.entry_result
     if res is None:
-        logger.error(f"ERR-01: entry_result ausente en corrida {contexto.run_id}")
+        logger.error(f"ERR-01: entry_result ausente en corrida {contexto.id_corrida}")
         return ResultadoIngreso(estado="error", codigo="ERR-01", descripcion="entry_result ausente")
 
     # Validación de consistencia
     attrs = ["estado", "codigo_motivo", "evidencia_acotada", "numero_de_intentos"]
     if not all(hasattr(res, attr) for attr in attrs):
-        logger.error(f"ERR-02: estructura de entry_result inválida en corrida {contexto.run_id}")
+        logger.error(
+            f"ERR-02: estructura de entry_result inválida en corrida {contexto.id_corrida}"
+        )
         return ResultadoIngreso(
             estado="error", codigo="ERR-02", descripcion="Estructura EntryResult inválida"
         )
 
     if res.estado == "exito":
-        if contexto.session_id is None or contexto.handle_sesion is None:
-            logger.error(f"ERR-02: Éxito de ingreso sin sesión activa en corrida {contexto.run_id}")
+        if contexto.id_sesion is None or contexto.handle_sesion is None:
+            logger.error(
+                f"ERR-02: Éxito de ingreso sin sesión activa en corrida {contexto.id_corrida}"
+            )
             return ResultadoIngreso(
                 estado="error", codigo="ERR-02", descripcion="Éxito sin sesión activa"
             )

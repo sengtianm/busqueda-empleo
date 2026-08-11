@@ -13,18 +13,18 @@ from shared.persistence import actualizar_corrida, read_table, write_corrida
 def _contexto() -> RunContext:
     config_fuentes = [
         {
-            "source_id": "LI-01",
+            "fuente_id": "LI-01",
             "nombre": "LinkedIn",
             "ficha_acceso": {
-                "url": "https://www.linkedin.com/jobs",
+                "enlace": "https://www.linkedin.com/jobs",
                 "tipo_acceso": "publico",
                 "criterio_exito": "global-nav",
                 "timeout_segundos": 10,
             },
-            "sets_de_filtros": [{"set_indice": 0, "filtros": []}],
+            "sets_de_filtros": [{"indice_set": 0, "filtros": []}],
         }
     ]
-    return RunContext(config_fuentes=config_fuentes, run_id="COR-0001")
+    return RunContext(config_fuentes=config_fuentes, id_corrida="COR-0001")
 
 
 def test_finalizar_corrida_completada_estado_completada() -> None:
@@ -67,9 +67,9 @@ def test_finalizar_aborto_estado_abortada() -> None:
 def test_finalizar_metricas_consultadas_de_bd() -> None:
     contexto = _contexto()
     eventos = [
-        {"run_id": "COR-0001", "tipo": "error", "source_id": "LI-01"},
-        {"run_id": "COR-0001", "tipo": "suceso", "source_id": "LI-01"},
-        {"run_id": "COR-0001", "tipo": "suceso", "source_id": "OTRA"},
+        {"id_corrida": "COR-0001", "tipo": "error", "fuente_id": "LI-01"},
+        {"id_corrida": "COR-0001", "tipo": "suceso", "fuente_id": "LI-01"},
+        {"id_corrida": "COR-0001", "tipo": "suceso", "fuente_id": "OTRA"},
     ]
 
     def _read_table_side(
@@ -107,14 +107,14 @@ def test_finalizar_actualizar_corrida_campos_correctos() -> None:
     campos = args[1]
     assert set(campos.keys()) == {
         "estado",
-        "timestamp_fin",
+        "fecha_fin",
         "motivo_terminacion",
         "total_ofertas",
         "total_errores",
         "total_sucesos",
         "fuentes_procesadas",
     }
-    assert isinstance(campos["timestamp_fin"], str) and campos["timestamp_fin"]
+    assert isinstance(campos["fecha_fin"], str) and campos["fecha_fin"]
 
 
 def test_finalizar_actualizar_corrida_fallo_reintenta_y_continua() -> None:
@@ -251,8 +251,8 @@ def test_actualizar_corrida_bd_real(temp_db_file: Path) -> None:
     """End-to-end: write_corrida + actualizar_corrida persist closure data."""
     write_corrida(
         {
-            "run_id": "COR-0001",
-            "timestamp_inicio": "2026-08-10 10:00:00",
+            "id_corrida": "COR-0001",
+            "fecha_inicio": "2026-08-10 10:00:00",
             "estado": "en_ejecucion",
         }
     )
@@ -260,7 +260,7 @@ def test_actualizar_corrida_bd_real(temp_db_file: Path) -> None:
         "COR-0001",
         {
             "estado": "completada",
-            "timestamp_fin": "2026-08-10 10:05:00",
+            "fecha_fin": "2026-08-10 10:05:00",
             "motivo_terminacion": "corrida_completada",
             "total_ofertas": 3,
             "total_errores": 1,

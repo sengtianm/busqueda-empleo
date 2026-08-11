@@ -28,9 +28,9 @@ class FakePage:
         self.cerrada = False
         self.keyboard = FakeKeyboard()
 
-    def goto(self, url: str) -> None:
-        self.gotos.append(url)
-        self._actual = self.por_url.get(url, "")
+    def goto(self, enlace: str) -> None:
+        self.gotos.append(enlace)
+        self._actual = self.por_url.get(enlace, "")
 
     def content(self) -> str:
         return self._actual
@@ -66,9 +66,9 @@ class FakeKeyboard:
 @pytest.fixture
 def ficha_publica() -> FichaFuente:
     return FichaFuente(
-        source_id="linkedin",
+        fuente_id="linkedin",
         nombre="LinkedIn",
-        url="https://www.linkedin.com/jobs/search",
+        enlace="https://www.linkedin.com/jobs/search",
         tipo_acceso="publico",
         criterio_exito="global-nav",
         timeout_segundos=5,
@@ -78,9 +78,9 @@ def ficha_publica() -> FichaFuente:
 @pytest.fixture
 def ficha_autenticada() -> FichaFuente:
     return FichaFuente(
-        source_id="linkedin",
+        fuente_id="linkedin",
         nombre="LinkedIn",
-        url="https://www.linkedin.com/jobs/search",
+        enlace="https://www.linkedin.com/jobs/search",
         tipo_acceso="con_autenticacion",
         credenciales_referencia=["LINKEDIN_EMAIL", "LINKEDIN_PASSWORD"],
         criterio_exito="global-nav",
@@ -91,7 +91,7 @@ def ficha_autenticada() -> FichaFuente:
 @pytest.fixture
 def set_filtros() -> SetFiltros:
     return SetFiltros(
-        source_id="linkedin",
+        fuente_id="linkedin",
         indice=0,
         filtros=[
             {"tipo": "keywords", "valor": ["Data Engineer"]},
@@ -111,7 +111,7 @@ def politicas() -> PoliticasCaptura:
 
 
 def test_enter_source_exito(ficha_publica: FichaFuente) -> None:
-    pagina = FakePage({ficha_publica.url: _leer("lista_linkedin.html")})
+    pagina = FakePage({ficha_publica.enlace: _leer("lista_linkedin.html")})
     resultado = LinkedInAdapter().enter_source(pagina, ficha_publica)
     assert resultado.estado == "exito"
 
@@ -119,7 +119,7 @@ def test_enter_source_exito(ficha_publica: FichaFuente) -> None:
 def test_enter_source_autenticada_sin_credenciales(
     ficha_autenticada: FichaFuente,
 ) -> None:
-    pagina = FakePage({ficha_autenticada.url: _leer("lista_linkedin.html")})
+    pagina = FakePage({ficha_autenticada.enlace: _leer("lista_linkedin.html")})
     with pytest.raises(FlowError) as exc:
         LinkedInAdapter().enter_source(pagina, ficha_autenticada)
     assert exc.value.codigo_motivo == "credenciales_no_disponibles"
@@ -146,9 +146,9 @@ def test_enter_source_autenticada_con_credenciales(
 def test_enter_source_criterio_no_cumplido() -> None:
     pagina = FakePage({"https://x.com": "<html><body>sin nav</body></html>"})
     ficha = FichaFuente(
-        source_id="x",
+        fuente_id="x",
         nombre="X",
-        url="https://x.com",
+        enlace="https://x.com",
         tipo_acceso="publico",
         criterio_exito="global-nav",
     )
@@ -160,9 +160,9 @@ def test_enter_source_criterio_no_cumplido() -> None:
 def test_enter_source_bloqueo_captcha() -> None:
     pagina = FakePage({"https://www.linkedin.com/jobs/search": _leer("challenge_linkedin.html")})
     ficha_fuente = FichaFuente(
-        source_id="linkedin",
+        fuente_id="linkedin",
         nombre="LinkedIn",
-        url="https://www.linkedin.com/jobs/search",
+        enlace="https://www.linkedin.com/jobs/search",
         tipo_acceso="publico",
         criterio_exito="global-nav",
     )
@@ -182,8 +182,8 @@ def test_apply_filters_parsea_resultados(
     assert len(resultado.ofertas_primera_pagina) == 2
     oferta = resultado.ofertas_primera_pagina[0]
     assert oferta.titulo == "Data Engineer"
-    assert oferta.id_externo_url == "12345"
-    assert oferta.url == "https://www.linkedin.com/jobs/view/12345"
+    assert oferta.id_externo == "12345"
+    assert oferta.enlace == "https://www.linkedin.com/jobs/view/12345"
     assert resultado.total_declarado == 2
     assert pagina.gotos[-1] == URL_CON_FILTROS
 
@@ -208,8 +208,8 @@ def test_apply_filters_parsea_resultados_ssr_2026(
     assert len(resultado.ofertas_primera_pagina) == 2
     oferta = resultado.ofertas_primera_pagina[0]
     assert oferta.titulo == "Oferta Uno"
-    assert oferta.id_externo_url == "77701"
-    assert oferta.url == "https://www.linkedin.com/jobs/view/77701/?refId=abc"
+    assert oferta.id_externo == "77701"
+    assert oferta.enlace == "https://www.linkedin.com/jobs/view/77701/?refId=abc"
     assert resultado.total_declarado is None
 
 
@@ -247,7 +247,7 @@ def test_capture_batch_detalle_ssr_2026(
     assert estado.estado == "ok"
     assert len(lote.ofertas) == 2
     assert lote.ofertas[0].titulo == "Oferta Uno"
-    assert lote.ofertas[0].id_externo_url == "77701"
+    assert lote.ofertas[0].id_externo == "77701"
     assert "analítica" in lote.ofertas[0].descripcion_original
 
 
@@ -255,7 +255,7 @@ def test_apply_filters_filtro_tipo_no_soportado(
     ficha_publica: FichaFuente, politicas: PoliticasCaptura
 ) -> None:
     set_no_soportado = SetFiltros(
-        source_id=ficha_publica.source_id,
+        fuente_id=ficha_publica.fuente_id,
         indice=0,
         filtros=[{"tipo": "salario", "valor": "50000"}],
     )
@@ -269,7 +269,7 @@ def test_apply_filters_filtro_valor_vacio_se_ignora(
     ficha_publica: FichaFuente, politicas: PoliticasCaptura
 ) -> None:
     set_valor_vacio = SetFiltros(
-        source_id=ficha_publica.source_id,
+        fuente_id=ficha_publica.fuente_id,
         indice=0,
         filtros=[
             {"tipo": "keywords", "valor": ""},
@@ -303,7 +303,7 @@ def test_capture_batch_captura_dos_ofertas(
     assert len(lote.ofertas) == 2
     assert lote.ofertas[0].titulo == "Data Engineer"
     assert lote.ofertas[0].descripcion_original != ""
-    assert lote.ofertas[0].id_externo_url == "12345"
+    assert lote.ofertas[0].id_externo == "12345"
     assert lote.paginas_consumidas == 1
 
 

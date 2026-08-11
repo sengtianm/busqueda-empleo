@@ -58,7 +58,7 @@ def example_source() -> Source:
         id="FNT-0001",
         nombre="LinkedIn",
         tipo="red_social",
-        url_base="https://www.linkedin.com",
+        enlace_base="https://www.linkedin.com",
     )
 
 
@@ -67,7 +67,7 @@ def example_company() -> Company:
     return Company(
         id="EMP-0001",
         nombre="TechCorp",
-        normalized_name="techcorp",
+        nombre_normalizado="techcorp",
         sector="tecnologia",
     )
 
@@ -86,11 +86,11 @@ def example_offer(
         fuente_id=example_source.id,
         empresa_id=example_company.id,
         ubicacion_id=example_location.id,
-        url="https://www.linkedin.com/jobs/view/12345",
+        enlace="https://www.linkedin.com/jobs/view/12345",
         titulo="Data Engineer",
         descripcion_original="Descripcion de prueba",
-        source_identifier="12345",
-        estado=OfferState.DISCOVERED,
+        identificador_origen="12345",
+        estado=OfferState.DESCUBIERTA,
     )
 
 
@@ -98,8 +98,8 @@ def example_offer(
 def example_processed_offer(example_offer: Offer) -> ProcessedOffer:
     return ProcessedOffer(
         id="OFP-0001",
-        offer_id=example_offer.id,
-        clean_title="Data Engineer",
+        id_oferta=example_offer.id,
+        titulo_limpio="Data Engineer",
         tecnologias=["Python", "SQL", "Spark"],
         requisitos=["Experiencia en ETL"],
     )
@@ -111,11 +111,11 @@ def example_evaluation(
 ) -> Evaluation:
     return Evaluation(
         id="EVL-0001",
-        processed_offer_id=example_processed_offer.id,
+        id_oferta_procesada=example_processed_offer.id,
         resultado=EvaluationResult.HIGH,
         score=85.0,
         decision=DecisionEvaluation.CONTINUE,
-        justification="Buena coincidencia con perfil",
+        justificacion="Buena coincidencia con perfil",
     )
 
 
@@ -123,7 +123,7 @@ def example_evaluation(
 def example_profile() -> Profile:
     return Profile(
         tecnologias={"Python": 5, "SQL": 4, "Spark": 3},
-        experience_years=8,
+        anos_experiencia=8,
         seniority="senior",
         idiomas={"Ingles": "C1", "Espanol": "Nativo"},
         ubicaciones_preferidas=["Madrid", "Remoto"],
@@ -138,9 +138,9 @@ def example_profile() -> Profile:
 @pytest.fixture
 def example_ficha_fuente() -> FichaFuente:
     return FichaFuente(
-        source_id="linkedin",
+        fuente_id="linkedin",
         nombre="LinkedIn",
-        url="https://www.linkedin.com/jobs/search",
+        enlace="https://www.linkedin.com/jobs/search",
         tipo_acceso="con_autenticacion",
         credenciales_referencia=["LINKEDIN_EMAIL", "LINKEDIN_PASSWORD"],
         criterio_exito="global-nav",
@@ -151,7 +151,7 @@ def example_ficha_fuente() -> FichaFuente:
 @pytest.fixture
 def example_set_filtros(example_ficha_fuente: FichaFuente) -> SetFiltros:
     return SetFiltros(
-        source_id=example_ficha_fuente.source_id,
+        fuente_id=example_ficha_fuente.fuente_id,
         indice=0,
         filtros=[
             {"tipo": "keywords", "valor": ["Data Engineer", "Analista de Datos"]},
@@ -175,10 +175,10 @@ def example_politicas_captura() -> PoliticasCaptura:
 def example_run_context() -> RunContext:
     config_fuentes = [
         {
-            "source_id": "linkedin",
+            "fuente_id": "linkedin",
             "nombre": "LinkedIn",
             "ficha_acceso": {
-                "url": "https://www.linkedin.com/jobs/search",
+                "enlace": "https://www.linkedin.com/jobs/search",
                 "tipo_acceso": "con_autenticacion",
                 "credenciales_referencia": ["LINKEDIN_EMAIL", "LINKEDIN_PASSWORD"],
                 "criterio_exito": "global-nav",
@@ -186,7 +186,7 @@ def example_run_context() -> RunContext:
             },
             "sets_de_filtros": [
                 {
-                    "set_indice": 0,
+                    "indice_set": 0,
                     "filtros": [
                         {"tipo": "keywords", "valor": ["Data Engineer"]},
                     ],
@@ -200,7 +200,7 @@ def example_run_context() -> RunContext:
             },
         }
     ]
-    return RunContext(config_fuentes=config_fuentes, run_id="COR-0001")
+    return RunContext(config_fuentes=config_fuentes, id_corrida="COR-0001")
 
 
 @pytest.fixture
@@ -221,20 +221,20 @@ def example_entry_result_fallo() -> EntryResult:
 def example_search_result() -> SearchResult:
     ofertas = [
         Offer(
-            url="https://www.linkedin.com/jobs/view/12345",
+            enlace="https://www.linkedin.com/jobs/view/12345",
             titulo="Data Engineer",
             descripcion_original="",
             fuente_id="linkedin",
-            set_indice=0,
-            id_externo_url="12345",
+            indice_set=0,
+            id_externo="12345",
         ),
         Offer(
-            url="https://www.linkedin.com/jobs/view/12346",
+            enlace="https://www.linkedin.com/jobs/view/12346",
             titulo="Analista de Datos",
             descripcion_original="",
             fuente_id="linkedin",
-            set_indice=0,
-            id_externo_url="12346",
+            indice_set=0,
+            id_externo="12346",
         ),
     ]
     return SearchResult(
@@ -242,7 +242,7 @@ def example_search_result() -> SearchResult:
         ofertas_primera_pagina=ofertas,
         estado_paginacion="hay_mas",
         total_declarado=42,
-        set_indice=0,
+        indice_set=0,
         numero_de_intentos=1,
     )
 
@@ -251,19 +251,19 @@ def example_search_result() -> SearchResult:
 def example_capture_batch() -> CaptureBatch:
     ofertas = [
         Offer(
-            url="https://www.linkedin.com/jobs/view/12345",
+            enlace="https://www.linkedin.com/jobs/view/12345",
             titulo="Data Engineer",
             descripcion_original="Descripcion de prueba",
             fuente_id="linkedin",
-            set_indice=0,
-            id_externo_url="12345",
+            indice_set=0,
+            id_externo="12345",
         )
     ]
     return CaptureBatch(
         ofertas=ofertas,
-        run_id="COR-0001",
-        source_id="linkedin",
-        session_id="SES-0001",
-        set_indice=0,
+        id_corrida="COR-0001",
+        fuente_id="linkedin",
+        id_sesion="SES-0001",
+        indice_set=0,
         paginas_consumidas=1,
     )

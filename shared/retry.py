@@ -24,9 +24,9 @@ F = TypeVar("F", bound=Callable[..., Any])
 # would not change on retry (e.g. autenticacion_rechazada).
 _CODIGOS_REINTENTABLES = (
     "fuente_inalcanzable",
-    "timeout_ingreso",
-    "timeout_consulta",
-    "timeout_captura",
+    "tiempo_agotado_ingreso",
+    "tiempo_agotado_consulta",
+    "tiempo_agotado_captura",
 )
 
 

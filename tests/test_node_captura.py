@@ -17,16 +17,16 @@ from shared.models import CaptureBatch, EstadoCaptura, Offer, SetFiltros
 def _run_context(sets: int = 1) -> RunContext:
     config_fuentes = [
         {
-            "source_id": "LI-01",
+            "fuente_id": "LI-01",
             "nombre": "LinkedIn",
             "ficha_acceso": {
-                "url": "https://www.linkedin.com/jobs",
+                "enlace": "https://www.linkedin.com/jobs",
                 "tipo_acceso": "publico",
                 "criterio_exito": "global-nav",
                 "timeout_segundos": 10,
             },
             "sets_de_filtros": [
-                {"set_indice": i, "filtros": []} for i in range(sets)
+                {"indice_set": i, "filtros": []} for i in range(sets)
             ],
         }
     ]
@@ -35,14 +35,14 @@ def _run_context(sets: int = 1) -> RunContext:
     return contexto
 
 
-def _oferta(url: str = "https://www.linkedin.com/jobs/view/123") -> Offer:
+def _oferta(enlace: str = "https://www.linkedin.com/jobs/view/123") -> Offer:
     return Offer(
-        url=url,
+        enlace=enlace,
         titulo="Desarrollador Python",
         descripcion_original="Descripcion de la vacante.",
         fuente_id="LI-01",
-        set_indice=0,
-        id_externo_url="123",
+        indice_set=0,
+        id_externo="123",
     )
 
 
@@ -61,13 +61,13 @@ def test_captura_exitosa_guarda_resultados(
     contexto: RunContext, adapter: MagicMock
 ) -> None:
     contexto.handle_sesion = MagicMock()
-    contexto.set_corriente = SetFiltros(source_id="LI-01", indice=0, filtros=[])
+    contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
     lote = CaptureBatch(
         ofertas=[_oferta()],
-        run_id=contexto.run_id,
-        source_id="LI-01",
-        session_id="SES-1",
-        set_indice=0,
+        id_corrida=contexto.id_corrida,
+        fuente_id="LI-01",
+        id_sesion="SES-1",
+        indice_set=0,
         paginas_consumidas=2,
     )
     estado = EstadoCaptura(
@@ -117,11 +117,11 @@ def test_captura_reintento_timeout_exito(
     contexto: RunContext, adapter: MagicMock
 ) -> None:
     contexto.handle_sesion = MagicMock()
-    contexto.set_corriente = SetFiltros(source_id="LI-01", indice=0, filtros=[])
-    lote = CaptureBatch(ofertas=[_oferta()], set_indice=0)
+    contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
+    lote = CaptureBatch(ofertas=[_oferta()], indice_set=0)
     estado = EstadoCaptura(estado="exito", capturadas_acumuladas_fuente=1)
     adapter.capture_batch.side_effect = [
-        FlowError("timeout_captura", "Page timeout"),
+        FlowError("tiempo_agotado_captura", "Page timeout"),
         (lote, estado),
     ]
 
@@ -136,8 +136,8 @@ def test_captura_reintento_timeout_exito(
 
 def test_captura_timeout_todos_intentos(contexto: RunContext, adapter: MagicMock) -> None:
     contexto.handle_sesion = MagicMock()
-    contexto.set_corriente = SetFiltros(source_id="LI-01", indice=0, filtros=[])
-    adapter.capture_batch.side_effect = FlowError("timeout_captura", "Timeout")
+    contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
+    adapter.capture_batch.side_effect = FlowError("tiempo_agotado_captura", "Timeout")
 
     with patch(
         "modules.discovery.nodes.captura.should_retry", return_value=True
@@ -149,14 +149,14 @@ def test_captura_timeout_todos_intentos(contexto: RunContext, adapter: MagicMock
     assert res.estado == "ok"
     assert contexto.estado_captura is not None
     assert contexto.estado_captura.estado == "fallo"
-    assert contexto.estado_captura.codigo_motivo == "timeout_captura"
+    assert contexto.estado_captura.codigo_motivo == "tiempo_agotado_captura"
     assert contexto.capture_batch is None
     assert adapter.capture_batch.call_count == 3
 
 
 def test_captura_bloqueo_inmediato(contexto: RunContext, adapter: MagicMock) -> None:
     contexto.handle_sesion = MagicMock()
-    contexto.set_corriente = SetFiltros(source_id="LI-01", indice=0, filtros=[])
+    contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
     adapter.capture_batch.side_effect = FlowError("bloqueo_plataforma", "Captcha")
 
     with patch("modules.discovery.nodes.captura.write_evento"):
@@ -173,7 +173,7 @@ def test_captura_sesion_expirada_inmediato(
     contexto: RunContext, adapter: MagicMock
 ) -> None:
     contexto.handle_sesion = MagicMock()
-    contexto.set_corriente = SetFiltros(source_id="LI-01", indice=0, filtros=[])
+    contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
     adapter.capture_batch.side_effect = FlowError("sesion_expirada", "Authwall")
 
     with patch("modules.discovery.nodes.captura.write_evento"):
@@ -190,10 +190,10 @@ def test_captura_auditoria_sesion_escrita(
     contexto: RunContext, adapter: MagicMock
 ) -> None:
     contexto.handle_sesion = MagicMock()
-    contexto.session_id = "SES-1"
-    contexto.set_corriente = SetFiltros(source_id="LI-01", indice=0, filtros=[])
+    contexto.id_sesion = "SES-1"
+    contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
     lote = CaptureBatch(
-        ofertas=[_oferta()], set_indice=0, source_id="LI-01"
+        ofertas=[_oferta()], indice_set=0, fuente_id="LI-01"
     )
     estado = EstadoCaptura(estado="exito")
     adapter.capture_batch.return_value = (lote, estado)
@@ -206,7 +206,7 @@ def test_captura_auditoria_sesion_escrita(
     args = mock_write_row.call_args.args
     assert args[0] == "sesiones"
     assert args[1]["id"] == "SES-1"
-    assert args[1]["session_id"] == "SES-1"
+    assert args[1]["id_sesion"] == "SES-1"
     assert args[1]["conteo"] == 1
     assert args[1]["estado"] == "completa"
 
@@ -215,8 +215,8 @@ def test_captura_auditoria_falla_no_aborta(
     contexto: RunContext, adapter: MagicMock
 ) -> None:
     contexto.handle_sesion = MagicMock()
-    contexto.set_corriente = SetFiltros(source_id="LI-01", indice=0, filtros=[])
-    lote = CaptureBatch(ofertas=[_oferta()], set_indice=0)
+    contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
+    lote = CaptureBatch(ofertas=[_oferta()], indice_set=0)
     estado = EstadoCaptura(estado="exito")
     adapter.capture_batch.return_value = (lote, estado)
 
@@ -234,8 +234,8 @@ def test_captura_auditoria_falla_no_aborta(
 def test_registrar_una_oferta_upsert(
     contexto: RunContext,
 ) -> None:
-    contexto.session_id = "SES-1"
-    contexto.capture_batch = CaptureBatch(ofertas=[_oferta()], set_indice=0)
+    contexto.id_sesion = "SES-1"
+    contexto.capture_batch = CaptureBatch(ofertas=[_oferta()], indice_set=0)
 
     with patch("modules.discovery.nodes.captura.upsert_oferta") as mock_upsert:
         with patch("modules.discovery.nodes.captura.write_evento"):
@@ -246,12 +246,12 @@ def test_registrar_una_oferta_upsert(
     fila = mock_upsert.call_args.args[0]
     assert fila["titulo"] == "Desarrollador Python"
     assert fila["fuente_id"] == "LI-01"
-    assert fila["id_externo_url"] == "123"
-    assert fila["run_id"] == contexto.run_id
+    assert fila["id_externo"] == "123"
+    assert fila["id_corrida"] == contexto.id_corrida
 
 
 def test_registrar_lote_vacio(contexto: RunContext) -> None:
-    contexto.capture_batch = CaptureBatch(ofertas=[], set_indice=0)
+    contexto.capture_batch = CaptureBatch(ofertas=[], indice_set=0)
 
     with patch("modules.discovery.nodes.captura.upsert_oferta") as mock_upsert:
         res = registrar_ofertas(contexto)
@@ -271,26 +271,26 @@ def test_registrar_sin_lote(contexto: RunContext) -> None:
 
 
 def test_registrar_dedup_id_externo(contexto: RunContext) -> None:
-    contexto.capture_batch = CaptureBatch(ofertas=[_oferta()], set_indice=0)
+    contexto.capture_batch = CaptureBatch(ofertas=[_oferta()], indice_set=0)
 
     with patch("modules.discovery.nodes.captura.upsert_oferta") as mock_upsert:
         registrar_ofertas(contexto)
 
     fila = mock_upsert.call_args.args[0]
-    assert fila["id_externo_url"] == "123"
+    assert fila["id_externo"] == "123"
 
 
 def test_registrar_ofertas_exito_registra_suceso(
     contexto: RunContext,
 ) -> None:
-    contexto.session_id = "SES-9"
+    contexto.id_sesion = "SES-9"
     contexto.fuente_corriente = _run_context().fuentes_filtradas[0]
     oferta_a = _oferta("https://www.linkedin.com/jobs/view/11")
     oferta_b = _oferta("https://www.linkedin.com/jobs/view/22")
     contexto.capture_batch = CaptureBatch(
-        ofertas=[oferta_a, oferta_b], set_indice=0
+        ofertas=[oferta_a, oferta_b], indice_set=0
     )
-    contexto.set_corriente = SetFiltros(source_id="LI-01", indice=0, filtros=[])
+    contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
 
     with patch("modules.discovery.nodes.captura.upsert_oferta") as mock_upsert:
         with patch("modules.discovery.nodes.captura.write_evento") as mock_evento:
@@ -303,15 +303,15 @@ def test_registrar_ofertas_exito_registra_suceso(
     assert evento["tipo"] == "suceso"
     assert evento["codigo"] == "ofertas_registradas"
     assert evento["evidencia"] == "ofertas registradas: 2 | total: 2"
-    assert evento["run_id"] == contexto.run_id
-    assert evento["session_id"] == "SES-9"
-    assert evento["source_id"] == "LI-01"
+    assert evento["id_corrida"] == contexto.id_corrida
+    assert evento["id_sesion"] == "SES-9"
+    assert evento["fuente_id"] == "LI-01"
 
 
 def test_registrar_fallo_parcial(contexto: RunContext) -> None:
     oferta_a = _oferta("https://www.linkedin.com/jobs/view/1")
     oferta_b = _oferta("https://www.linkedin.com/jobs/view/2")
-    contexto.capture_batch = CaptureBatch(ofertas=[oferta_a, oferta_b], set_indice=0)
+    contexto.capture_batch = CaptureBatch(ofertas=[oferta_a, oferta_b], indice_set=0)
 
     with patch(
         "modules.discovery.nodes.captura.upsert_oferta",
@@ -331,7 +331,7 @@ def test_registrar_fallo_parcial(contexto: RunContext) -> None:
 def test_registrar_fallo_total(contexto: RunContext) -> None:
     oferta_a = _oferta("https://www.linkedin.com/jobs/view/1")
     oferta_b = _oferta("https://www.linkedin.com/jobs/view/2")
-    contexto.capture_batch = CaptureBatch(ofertas=[oferta_a, oferta_b], set_indice=0)
+    contexto.capture_batch = CaptureBatch(ofertas=[oferta_a, oferta_b], indice_set=0)
 
     with patch(
         "modules.discovery.nodes.captura.upsert_oferta",

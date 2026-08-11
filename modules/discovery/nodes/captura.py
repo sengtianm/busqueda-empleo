@@ -4,7 +4,7 @@ Cubre los nodos "Capturar ofertas", "Registrar ofertas en Ofertas Totales",
 "¿Quedan ofertas por capturar?" y "¿Quedan sets de filtros por aplicar?"
 (DOC-04 Section 15). El adaptador resuelve toda la paginación internamente
 (RN-10), por lo que el bucle interno de captura se ejecuta una sola vez por
-set; la deduplicación se hace por `id_externo_url`.
+set; la deduplicación se hace por `id_externo`.
 """
 
 import time
@@ -51,19 +51,19 @@ def _registrar_evento(
     try:
         write_evento(
             {
-                "run_id": contexto.run_id,
-                "source_id": (
-                    contexto.fuente_corriente.source_id
+                "id_corrida": contexto.id_corrida,
+                "fuente_id": (
+                    contexto.fuente_corriente.fuente_id
                     if contexto.fuente_corriente
                     else ""
                 ),
-                "session_id": contexto.session_id,
-                "set_indice": (
+                "id_sesion": contexto.id_sesion,
+                "indice_set": (
                     contexto.set_corriente.indice
                     if contexto.set_corriente
                     else None
                 ),
-                "timestamp": _ahora(),
+                "marca_temporal": _ahora(),
                 "tipo": tipo,
                 "codigo": codigo,
                 "evidencia": evidencia,
@@ -71,7 +71,7 @@ def _registrar_evento(
         )
     except Exception as exc:
         logger.error(
-            f"[{contexto.run_id}] Failed to write event to DB: {exc} | "
+            f"[{contexto.id_corrida}] Failed to write event to DB: {exc} | "
             f"codigo={codigo}"
         )
 
@@ -81,25 +81,25 @@ def capturar_ofertas(contexto: RunContext) -> ResultadoCaptura:
 
     Invoca al adaptador UNA SOLA VEZ con reintento condicional
     (máximo 3 intentos totales, solo códigos reintentables como
-    `timeout_captura`). En éxito guarda los resultados en el contexto y
+    `tiempo_agotado_captura`). En éxito guarda los resultados en el contexto y
     escribe la auditoría de sesión; en fallo descarta el set completo
     (las ofertas parciales) y continúa con el siguiente set.
     """
     # Paso 1: verificar insumos
     if contexto.handle_sesion is None:
-        logger.error(f"ERR-01: handle_sesion ausente en corrida {contexto.run_id}")
+        logger.error(f"ERR-01: handle_sesion ausente en corrida {contexto.id_corrida}")
         return ResultadoCaptura(
             estado="error", codigo="ERR-01", descripcion="Insumos ausentes"
         )
     fuente = contexto.fuente_corriente
     if fuente is None:
-        logger.error(f"ERR-01: fuente_corriente ausente en corrida {contexto.run_id}")
+        logger.error(f"ERR-01: fuente_corriente ausente en corrida {contexto.id_corrida}")
         return ResultadoCaptura(
             estado="error", codigo="ERR-01", descripcion="Fuente ausente"
         )
     set_actual = contexto.set_corriente
     if set_actual is None:
-        logger.error(f"ERR-01: set_corriente ausente en corrida {contexto.run_id}")
+        logger.error(f"ERR-01: set_corriente ausente en corrida {contexto.id_corrida}")
         return ResultadoCaptura(
             estado="error", codigo="ERR-01", descripcion="Set ausente"
         )
@@ -124,7 +124,7 @@ def capturar_ofertas(contexto: RunContext) -> ResultadoCaptura:
         except FlowError as fe:
             if should_retry(fe.codigo_motivo) and attempt < max_attempts:
                 logger.warning(
-                    f"[{contexto.run_id}] Captura reintentable "
+                    f"[{contexto.id_corrida}] Captura reintentable "
                     f"({fe.codigo_motivo}), intento {attempt}/{max_attempts}"
                 )
                 wait_time = min(
@@ -177,24 +177,24 @@ def capturar_ofertas(contexto: RunContext) -> ResultadoCaptura:
 
 def _escribir_auditoria_sesion(contexto: RunContext, lote: CaptureBatch) -> None:
     """Escribe la auditoría en la tabla `sesiones`; reintenta una vez."""
-    session_id = contexto.session_id or ""
+    id_sesion = contexto.id_sesion or ""
     total_declarado = (
         contexto.search_result.total_declarado
         if contexto.search_result is not None
         else None
     )
-    set_indice = lote.set_indice
+    indice_set = lote.indice_set
     datos = {
-        "id": session_id,
-        "session_id": session_id,
-        "run_id": contexto.run_id,
-        "source_id": (
-            contexto.fuente_corriente.source_id
+        "id": id_sesion,
+        "id_sesion": id_sesion,
+        "id_corrida": contexto.id_corrida,
+        "fuente_id": (
+            contexto.fuente_corriente.fuente_id
             if contexto.fuente_corriente
             else ""
         ),
-        "set_indice": set_indice if set_indice is not None else None,
-        "timestamp": _ahora(),
+        "indice_set": indice_set if indice_set is not None else None,
+        "marca_temporal": _ahora(),
         "total_declarado": total_declarado,
         "conteo": len(lote.ofertas),
         "estado": "completa",
@@ -206,16 +206,16 @@ def _escribir_auditoria_sesion(contexto: RunContext, lote: CaptureBatch) -> None
             return
         except Exception as exc:
             logger.error(
-                f"[{contexto.run_id}] Auditoría de sesión fallida "
+                f"[{contexto.id_corrida}] Auditoría de sesión fallida "
                 f"(intento {intento}/{intentos}): {exc}"
             )
-    logger.error(f"[{contexto.run_id}] Auditoría de sesión no persistida.")
+    logger.error(f"[{contexto.id_corrida}] Auditoría de sesión no persistida.")
 
 
 def registrar_ofertas(contexto: RunContext) -> ResultadoCaptura:
     """Nodo: Registrar ofertas en Ofertas Totales (v1.0).
 
-    Deduplica por `id_externo_url` vía `upsert_oferta` (reintento único por
+    Deduplica por `id_externo` vía `upsert_oferta` (reintento único por
     oferta). Si todas fallan, registra un evento crítico de lote degradado;
     el flujo siempre continúa.
     """
@@ -272,7 +272,7 @@ def _oferta_a_dict(oferta: Offer, contexto: RunContext) -> dict[str, Any]:
 
     `empresa_id`/`ubicacion_id` se guardan como NULL (los catálogos aún no
     existen en el MVP); el string del adaptador se conserva en las columnas
-    `empresa_nombre`/`ubicacion_nombre` y `fuente_id` conserva su source_id.
+    `empresa_nombre`/`ubicacion_nombre` y `fuente_id` conserva su fuente_id.
     """
     return {
         "titulo": oferta.titulo,
@@ -281,13 +281,13 @@ def _oferta_a_dict(oferta: Offer, contexto: RunContext) -> dict[str, Any]:
         "ubicacion_id": None,
         "empresa_nombre": oferta.empresa_id,
         "ubicacion_nombre": oferta.ubicacion_id,
-        "url": oferta.url,
+        "enlace": oferta.enlace,
         "fuente_id": oferta.fuente_id,
-        "set_indice": oferta.set_indice,
-        "id_externo_url": oferta.id_externo_url,
-        "run_id": contexto.run_id,
-        "session_id": contexto.session_id,
-        "discovery_date": _ahora(),
+        "indice_set": oferta.indice_set,
+        "id_externo": oferta.id_externo,
+        "id_corrida": contexto.id_corrida,
+        "id_sesion": contexto.id_sesion,
+        "fecha_descubrimiento": _ahora(),
     }
 
 
@@ -311,7 +311,7 @@ def quedan_ofertas_por_capturar(contexto: RunContext) -> ResultadoCaptura:
     por lo que siempre responde `no` (tras captura exitosa o fallida).
     """
     if contexto.estado_captura is None:
-        logger.error(f"ERR-01: estado_captura ausente en corrida {contexto.run_id}")
+        logger.error(f"ERR-01: estado_captura ausente en corrida {contexto.id_corrida}")
         return ResultadoCaptura(
             estado="error",
             codigo="ERR-01",
@@ -327,12 +327,12 @@ def quedan_sets_por_aplicar(contexto: RunContext) -> ResultadoCaptura:
     """
     fuente = contexto.fuente_corriente
     if fuente is None:
-        logger.error(f"ERR-01: fuente_corriente ausente en corrida {contexto.run_id}")
+        logger.error(f"ERR-01: fuente_corriente ausente en corrida {contexto.id_corrida}")
         return ResultadoCaptura(
             estado="error", codigo="ERR-01", descripcion="Fuente ausente"
         )
     total_sets = len(contexto.sets_validos(fuente))
-    iterador_actual = contexto.iterador_sets.get(fuente.source_id, -1)
+    iterador_actual = contexto.iterador_sets.get(fuente.fuente_id, -1)
     sets_pendientes = total_sets - (iterador_actual + 1)
     decision = "si" if sets_pendientes > 0 else "no"
     return ResultadoCaptura(estado="ok", decision=decision, contexto=contexto)

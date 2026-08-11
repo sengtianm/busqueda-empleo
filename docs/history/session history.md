@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 19 | 11/08/2026 | `ses_00f57a514ffeUyBVloqdH07g2W` | Spanish naming catalog (D7/D8): English→Spanish rename in code, config, tests; DB migrated with backup; docs aligned (decision log v1.1, DOC-13A v1.5, ficha, plan, tracker 4.7) |
 | 18 | 11/08/2026 | `ses_011dd31a8ffe0sUJfx0l66OpUJ` | Documentation depuration: only primary docs kept, all non-primary deleted physically; docs-reviewer optimized (single skill, git-diff scope, primary-only checks, conditional output) |
 | 17 | 10/08/2026 | `ses_0133020ecffeN4R4bi4Y7MXDAF` | LinkedIn 2026 SSR login fixed (direct login, `voyager` criterion, multi-variant parsing) + `sesiones` schema migration + closure-metrics success event (240 tests) |
 | 16 | 10/08/2026 | `ses_0133020ecffeN4R4bi4Y7MXDAF` | Sub-fase 4.5: terminal closure node + full-flow orchestrator implemented, validated, and audited CONFORME (229 tests) |
@@ -19,6 +20,28 @@ Unless noted, decisions from previous sessions remain in effect.
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+## Session 19 — 11/08/2026
+`ses_00f57a514ffeUyBVloqdH07g2W` · `fase-4`
+
+**Topics**
+- Spanish naming catalog (D7/D8): word-boundary English→Spanish rename of persistence fields, config keys, and discovery identifiers across models, persistence, state machine, retry, decision engine, config, discovery nodes/adapters/orchestrator/run context, and tests
+- Exceptions: error-context attributes keep English names; `linkedin`→`perfil_linkedin` and `size`→`tamano` applied manually only (unsafe for blind replacement)
+- DB migrated with total Spanish migration: per-table rebuild with explicit column map, estado CASE translation, sesiones id backfill, idempotent; backup preserved, 7 offers intact
+- Offer states in Spanish (`descubierta`…`finalizada`) including DB CHECK constraint; timeout codes renamed to `tiempo_agotado_*`
+- Docs aligned: D7/D8 registered (decision log v1.1), data model DOC-13A v1.5 with Actual-name annotations, module ficha as-built note, MVP plan profile YAML and criteria table, tracker 4.7, AGENTS status
+- Docs-reviewer approved; 4 minor findings fixed (annotations, plan YAML, errors.py exception list, C5 header)
+
+**Decisions**
+- D7: Spanish naming catalog applied mechanically (word boundary) to code, config, and tests, with documented exceptions
+- D8: offer states and timeout codes use Spanish vocabulary, superseding the C5 `discovered` value
+- DB migrated via total Spanish migration (idempotent, explicit mapping, CASE), backup kept
+- Decisions from previous sessions remain in effect
+
+**Status**
+- Spanish naming migration D7/D8 ✅ (code + DB + docs)
+- Ruff 0 · mypy 0 · pytest 243/243
+- Branch: `fase-4` · /save single commit + push, no merge
 
 ## Session 18 — 11/08/2026
 `ses_011dd31a8ffe0sUJfx0l66OpUJ` · `fase-4`

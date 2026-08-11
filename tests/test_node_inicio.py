@@ -26,18 +26,18 @@ CONFIG_BASE = {
 }
 
 FUENTE_VALIDA: dict[str, Any] = {
-    "source_id": "linkedin",
+    "fuente_id": "linkedin",
     "nombre": "LinkedIn",
     "ficha_acceso": {
-        "url": "https://www.linkedin.com/jobs/search",
+        "enlace": "https://www.linkedin.com/jobs/search",
         "tipo_acceso": "con_autenticacion",
         "credenciales_referencia": ["LINKEDIN_EMAIL", "LINKEDIN_PASSWORD"],
         "criterio_exito": "global-nav",
         "timeout_segundos": 30,
     },
     "sets_de_filtros": [
-        {"set_indice": 0, "filtros": [{"tipo": "keywords", "valor": ["Data Engineer"]}]},
-        {"set_indice": 1, "filtros": []},
+        {"indice_set": 0, "filtros": [{"tipo": "keywords", "valor": ["Data Engineer"]}]},
+        {"indice_set": 1, "filtros": []},
     ],
     "politicas_de_captura": {
         "max_paginas": 2,
@@ -59,18 +59,18 @@ def _marca(momento: datetime.datetime) -> str:
 def test_inicio_ok_corrida_registrada_y_bloqueo(temp_db_file: Path) -> None:
     res = ejecutar_inicio(dict(CONFIG_UNA_FUENTE))
     assert res.estado == "ok"
-    assert res.run_id.startswith("COR-")
+    assert res.id_corrida.startswith("COR-")
     assert isinstance(res.contexto, RunContext)
-    assert res.contexto.run_id == res.run_id
+    assert res.contexto.id_corrida == res.id_corrida
     assert res.contexto.bloqueo_adquirido is True
     corridas = read_table("corridas")
     assert any(
-        c["run_id"] == res.run_id and c["estado"] == "en_ejecucion"
+        c["id_corrida"] == res.id_corrida and c["estado"] == "en_ejecucion"
         for c in corridas
     )
     bloqueo = check_lock()
     assert bloqueo is not None
-    assert bloqueo["run_id"] == res.run_id
+    assert bloqueo["id_corrida"] == res.id_corrida
 
 
 def test_inicio_config_sin_fuentes_no_es_error(temp_db_file: Path) -> None:
@@ -82,7 +82,7 @@ def test_inicio_config_sin_fuentes_no_es_error(temp_db_file: Path) -> None:
 
 def test_inicio_descarta_fuente_incompleta_con_evento(temp_db_file: Path) -> None:
     incompleta: dict[str, Any] = {
-        "source_id": "rotosource",
+        "fuente_id": "rotosource",
         "nombre": "Roto",
         "ficha_acceso": {"tipo_acceso": "publico"},
     }
@@ -93,10 +93,10 @@ def test_inicio_descarta_fuente_incompleta_con_evento(temp_db_file: Path) -> Non
     res = ejecutar_inicio(config)
     assert res.estado == "ok"
     assert res.contexto is not None
-    assert [f.source_id for f in res.contexto.fuentes_filtradas] == ["linkedin"]
+    assert [f.fuente_id for f in res.contexto.fuentes_filtradas] == ["linkedin"]
     eventos = read_table("eventos")
     assert any(
-        e["codigo"] == "ERR-12" and e["source_id"] == "rotosource"
+        e["codigo"] == "ERR-12" and e["fuente_id"] == "rotosource"
         for e in eventos
     )
 
@@ -133,11 +133,11 @@ def test_inicio_bloqueo_obsoleto_se_sobrescribe(temp_db_file: Path) -> None:
         assert res.estado == "ok"
         bloqueo = check_lock()
         assert bloqueo is not None
-        assert bloqueo["run_id"] == res.run_id
+        assert bloqueo["id_corrida"] == res.id_corrida
         eventos = read_table("eventos")
         assert any(e["codigo"] == "ERR-07" for e in eventos)
     finally:
-        release_lock(res.run_id)
+        release_lock(res.id_corrida)
 
 
 def test_inicio_bd_indisponible_aborta(temp_db_file: Path, monkeypatch: Any) -> None:
@@ -186,7 +186,7 @@ def test_inicio_timestamp_bloqueo_invalido_aborta(
     temp_db_file: Path, monkeypatch: Any
 ) -> None:
     def _bloqueo_invalido() -> dict[str, Any] | None:
-        return {"run_id": "COR-ROTA", "timestamp": "no-es-fecha"}
+        return {"id_corrida": "COR-ROTA", "marca_temporal": "no-es-fecha"}
 
     monkeypatch.setattr("modules.discovery.nodes.inicio.check_lock", _bloqueo_invalido)
     res = ejecutar_inicio(dict(CONFIG_UNA_FUENTE))
@@ -198,7 +198,7 @@ def test_inicio_timestamp_bloqueo_invalido_aborta(
 def test_inicio_descarta_estrategia_anti_bloqueo_invalida(
     temp_db_file: Path,
 ) -> None:
-    con_estrategia_mala = {**FUENTE_VALIDA, "source_id": "fuente_maliciosa"}
+    con_estrategia_mala = {**FUENTE_VALIDA, "fuente_id": "fuente_maliciosa"}
     con_estrategia_mala["politicas_de_captura"] = {
         "max_paginas": 2,
         "max_ofertas_por_corrida": 10,
@@ -210,20 +210,20 @@ def test_inicio_descarta_estrategia_anti_bloqueo_invalida(
     )
     assert res.estado == "ok"
     assert res.contexto is not None
-    assert [f.source_id for f in res.contexto.fuentes_filtradas] == ["linkedin"]
+    assert [f.fuente_id for f in res.contexto.fuentes_filtradas] == ["linkedin"]
     eventos = read_table("eventos")
     assert any(e["codigo"] == "ERR-12" for e in eventos)
 
 
 def test_inicio_descarta_fuente_sin_source_id(temp_db_file: Path) -> None:
-    sin_id = {**FUENTE_VALIDA, "source_id": None}
+    sin_id = {**FUENTE_VALIDA, "fuente_id": None}
     res = ejecutar_inicio({**CONFIG_BASE, "fuentes": [FUENTE_VALIDA, sin_id]})
     assert res.estado == "ok"
     assert res.contexto is not None
-    assert [f.source_id for f in res.contexto.fuentes_filtradas] == ["linkedin"]
+    assert [f.fuente_id for f in res.contexto.fuentes_filtradas] == ["linkedin"]
     eventos = read_table("eventos")
     assert any(
-        e["codigo"] == "ERR-12" and "source_id" in e["evidencia"] for e in eventos
+        e["codigo"] == "ERR-12" and "fuente_id" in e["evidencia"] for e in eventos
     )
 
 

@@ -44,11 +44,11 @@ def _cerrar_sesion_anterior(contexto: RunContext) -> None:
         pagina.close()
     except Exception as exc:
         logger.warning(
-            f"Fallo al cerrar sesion anterior | run={contexto.run_id} | {exc}"
+            f"Fallo al cerrar sesion anterior | run={contexto.id_corrida} | {exc}"
         )
     finally:
         contexto.handle_sesion = None
-        contexto.session_id = None
+        contexto.id_sesion = None
 
 
 def _terminar(contexto: RunContext, motivo: str) -> None:
@@ -61,13 +61,13 @@ def _terminar(contexto: RunContext, motivo: str) -> None:
             f"{campo}={metricas.get(campo, 0)}" for campo in metricas
         )
         logger.info(
-            f"Corrida finalizada | run={contexto.run_id} | motivo={motivo} | "
+            f"Corrida finalizada | run={contexto.id_corrida} | motivo={motivo} | "
             f"{resumen}"
         )
 def _fallo_nodo(
     contexto: RunContext, nodo: str, resultado: Any, descripcion_texto: str
 ) -> None:
-    logger.error(f"{nodo} fallo | run={contexto.run_id} | {descripcion_texto}")
+    logger.error(f"{nodo} fallo | run={contexto.id_corrida} | {descripcion_texto}")
     _terminar(contexto, _MOTIVO_ABORTO)
 
 
@@ -86,7 +86,7 @@ def ejecutar_flujo() -> None:
     assert contexto is not None
 
     logger.info(
-        f"Corrida {contexto.run_id} iniciada | "
+        f"Corrida {contexto.id_corrida} iniciada | "
         f"{len(contexto.fuentes_filtradas)} fuentes configuradas"
     )
 
@@ -130,7 +130,7 @@ def ejecutar_flujo() -> None:
             return
         fuente = contexto.fuente_corriente
         assert fuente is not None
-        logger.info(f"Procesando fuente {fuente.source_id}")
+        logger.info(f"Procesando fuente {fuente.fuente_id}")
 
         res_ingreso = ejecutar_ingreso(contexto)
         if res_ingreso.estado == "error":
@@ -152,8 +152,8 @@ def ejecutar_flujo() -> None:
             continue
 
         logger.info(
-            f"Ingreso exitoso | fuente={fuente.source_id} | "
-            f"session={contexto.session_id}"
+            f"Ingreso exitoso | fuente={fuente.fuente_id} | "
+            f"session={contexto.id_sesion}"
         )
 
         while True:
@@ -219,7 +219,7 @@ def ejecutar_flujo() -> None:
                 else "desconocido"
             )
             logger.info(
-                f"Capturadas {capturadas} ofertas | fuente={fuente.source_id} | "
+                f"Capturadas {capturadas} ofertas | fuente={fuente.fuente_id} | "
                 f"set={indicador_set}"
             )
             res_sets = quedan_sets_por_aplicar(contexto)

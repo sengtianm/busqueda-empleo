@@ -9,7 +9,7 @@ from shared.models import FichaFuente, Offer, SearchResult, SetFiltros
 
 
 def _oferta() -> Offer:
-    return Offer(url="https://jobs/view/1", titulo="Oferta", descripcion_original="")
+    return Offer(enlace="https://jobs/view/1", titulo="Oferta", descripcion_original="")
 
 
 def _resultado_ok(indice: int = 0, con_ofertas: bool = False) -> SearchResult:
@@ -18,7 +18,7 @@ def _resultado_ok(indice: int = 0, con_ofertas: bool = False) -> SearchResult:
         estado="exito",
         ofertas_primera_pagina=ofertas,
         estado_paginacion="fin",
-        set_indice=indice,
+        indice_set=indice,
         numero_de_intentos=1,
     )
 
@@ -40,17 +40,17 @@ def mock_context() -> RunContext:
     ctx = RunContext(
         config_fuentes=[
             {
-                "source_id": "LI-01",
+                "fuente_id": "LI-01",
                 "nombre": "LinkedIn",
                 "ficha_acceso": {
-                    "url": "https://linkedin.com",
+                    "enlace": "https://linkedin.com",
                     "tipo_acceso": "publico",
                     "criterio_exito": "jobs",
                     "timeout_segundos": 30,
                 },
                 "sets_de_filtros": [
-                    {"set_indice": 0, "filtros": [{"tipo": "keywords", "valor": "Python"}]},
-                    {"set_indice": 1, "filtros": [{"tipo": "keywords", "valor": "Java"}]},
+                    {"indice_set": 0, "filtros": [{"tipo": "keywords", "valor": "Python"}]},
+                    {"indice_set": 1, "filtros": [{"tipo": "keywords", "valor": "Java"}]},
                 ],
             }
         ]
@@ -67,7 +67,7 @@ def test_aplicar_filtros_success_with_results(mock_context: RunContext) -> None:
             ofertas_primera_pagina=[_oferta()],
             estado_paginacion="hay_mas",
             total_declarado=10,
-            set_indice=0,
+            indice_set=0,
             numero_de_intentos=1,
         )
         res = aplicar_filtros(mock_context)
@@ -86,16 +86,16 @@ def test_aplicar_filtros_success_no_results(mock_context: RunContext) -> None:
 
 def test_aplicar_filtros_empty_set_base_search(mock_context: RunContext) -> None:
     ficha_base = FichaFuente(
-        source_id="BASE",
+        fuente_id="BASE",
         nombre="B",
-        url="U",
+        enlace="U",
         tipo_acceso="publico",
         credenciales_referencia=[],
         criterio_exito="C",
         timeout_segundos=30,
     )
     mock_context.fuente_corriente = ficha_base
-    mock_context._sets_validos["BASE"] = [SetFiltros(source_id="BASE", indice=0, filtros=[])]
+    mock_context._sets_validos["BASE"] = [SetFiltros(fuente_id="BASE", indice=0, filtros=[])]
     mock_context.iterador_sets["BASE"] = -1
     with patch.object(LinkedInAdapter, "apply_filters", return_value=_resultado_ok(indice=0)):
         res = aplicar_filtros(mock_context)
@@ -162,20 +162,20 @@ def test_aplicar_filtros_source_change_resets_iterator(mock_context: RunContext)
         aplicar_filtros(mock_context)
         fuente_corriente = mock_context.fuente_corriente
         assert fuente_corriente is not None
-        source_id = fuente_corriente.source_id
-        assert mock_context.iterador_sets[source_id] == 0
+        fuente_id = fuente_corriente.fuente_id
+        assert mock_context.iterador_sets[fuente_id] == 0
 
     ficha_nueva = FichaFuente(
-        source_id="LI-02",
+        fuente_id="LI-02",
         nombre="L2",
-        url="U",
+        enlace="U",
         tipo_acceso="publico",
         credenciales_referencia=[],
         criterio_exito="C",
         timeout_segundos=30,
     )
     mock_context.fuente_corriente = ficha_nueva
-    mock_context._sets_validos["LI-02"] = [SetFiltros(source_id="LI-02", indice=0, filtros=[])]
+    mock_context._sets_validos["LI-02"] = [SetFiltros(fuente_id="LI-02", indice=0, filtros=[])]
     mock_context.iterador_sets["LI-02"] = 5
 
     with patch.object(LinkedInAdapter, "apply_filters", return_value=_resultado_ok(indice=0)):
@@ -214,7 +214,7 @@ def test_se_encontraron_ofertas_no_fallo(mock_context: RunContext) -> None:
         estado="fallo",
         ofertas_primera_pagina=[],
         estado_paginacion="fin",
-        set_indice=0,
+        indice_set=0,
         numero_de_intentos=1,
     )
     res = se_encontraron_ofertas(mock_context)

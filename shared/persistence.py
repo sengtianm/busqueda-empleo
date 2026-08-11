@@ -40,24 +40,24 @@ ESQUEMAS: dict[str, str] = {
         "id TEXT PRIMARY KEY,"
         "nombre TEXT NOT NULL,"
         "tipo TEXT DEFAULT '',"
-        "url_base TEXT DEFAULT '',"
+        "enlace_base TEXT DEFAULT '',"
         "activa INTEGER DEFAULT 1,"
-        "creation_date TEXT DEFAULT '',"
-        "last_edit_date TEXT DEFAULT ''"
+        "fecha_creacion TEXT DEFAULT '',"
+        "fecha_ultima_edicion TEXT DEFAULT ''"
         ")"
     ),
     "empresas": (
         "CREATE TABLE IF NOT EXISTS empresas ("
         "id TEXT PRIMARY KEY,"
         "nombre TEXT NOT NULL,"
-        "normalized_name TEXT DEFAULT '',"
+        "nombre_normalizado TEXT DEFAULT '',"
         "sitio_web TEXT DEFAULT '',"
-        "linkedin TEXT DEFAULT '',"
+        "perfil_linkedin TEXT DEFAULT '',"
         "sector TEXT DEFAULT '',"
-        "size TEXT DEFAULT '',"
+        "tamano TEXT DEFAULT '',"
         "descripcion TEXT DEFAULT '',"
-        "creation_date TEXT DEFAULT '',"
-        "last_edit_date TEXT DEFAULT ''"
+        "fecha_creacion TEXT DEFAULT '',"
+        "fecha_ultima_edicion TEXT DEFAULT ''"
         ")"
     ),
     "ubicaciones": (
@@ -67,43 +67,43 @@ ESQUEMAS: dict[str, str] = {
         "region TEXT DEFAULT '',"
         "pais TEXT DEFAULT '',"
         "modalidad TEXT DEFAULT '',"
-        "creation_date TEXT DEFAULT '',"
-        "last_edit_date TEXT DEFAULT ''"
+        "fecha_creacion TEXT DEFAULT '',"
+        "fecha_ultima_edicion TEXT DEFAULT ''"
         ")"
     ),
     "ofertas": (
         "CREATE TABLE IF NOT EXISTS ofertas ("
         "id TEXT PRIMARY KEY,"
-        "source_identifier TEXT DEFAULT '',"
-        "url TEXT NOT NULL,"
+        "identificador_origen TEXT DEFAULT '',"
+        "enlace TEXT NOT NULL,"
         "titulo TEXT DEFAULT '',"
         "descripcion_original TEXT DEFAULT '',"
         "fecha_publicacion TEXT DEFAULT '',"
-        "discovery_date TEXT DEFAULT '',"
-        "estado TEXT DEFAULT 'discovered' "
-        "CHECK(estado IN ('discovered','prepared','evaluated',"
-        "'accepted','discarded','processed','finalized')),"
+        "fecha_descubrimiento TEXT DEFAULT '',"
+        "estado TEXT DEFAULT 'descubierta' "
+        "CHECK(estado IN ('descubierta','preparada','evaluada',"
+        "'aceptada','descartada','procesada','finalizada')),"
         "observaciones TEXT DEFAULT '',"
-        "creation_date TEXT DEFAULT '',"
-        "last_edit_date TEXT DEFAULT '',"
+        "fecha_creacion TEXT DEFAULT '',"
+        "fecha_ultima_edicion TEXT DEFAULT '',"
         "fuente_id TEXT DEFAULT '',"
         "empresa_id TEXT DEFAULT '',"
         "ubicacion_id TEXT DEFAULT '',"
         "empresa_nombre TEXT DEFAULT '',"
         "ubicacion_nombre TEXT DEFAULT '',"
-        "run_id TEXT DEFAULT '',"
-        "session_id TEXT DEFAULT '',"
-        "set_indice INTEGER DEFAULT '',"
-        "id_externo_url TEXT DEFAULT '',"
-        "timestamp_ultima_verificacion TEXT DEFAULT ''"
+        "id_corrida TEXT DEFAULT '',"
+        "id_sesion TEXT DEFAULT '',"
+        "indice_set INTEGER DEFAULT '',"
+        "id_externo TEXT DEFAULT '',"
+        "fecha_ultima_verificacion TEXT DEFAULT ''"
         ")"
     ),
     "corridas": (
         "CREATE TABLE IF NOT EXISTS corridas ("
-        "run_id TEXT PRIMARY KEY,"
-        "timestamp_inicio TEXT NOT NULL,"
+        "id_corrida TEXT PRIMARY KEY,"
+        "fecha_inicio TEXT NOT NULL,"
         "estado TEXT NOT NULL,"
-        "timestamp_fin TEXT DEFAULT '',"
+        "fecha_fin TEXT DEFAULT '',"
         "motivo_terminacion TEXT DEFAULT '',"
         "total_ofertas INTEGER DEFAULT 0,"
         "total_errores INTEGER DEFAULT 0,"
@@ -114,36 +114,36 @@ ESQUEMAS: dict[str, str] = {
     "eventos": (
         "CREATE TABLE IF NOT EXISTS eventos ("
         "evento_id TEXT PRIMARY KEY,"
-        "run_id TEXT NOT NULL,"
-        "source_id TEXT DEFAULT '',"
-        "session_id TEXT DEFAULT '',"
-        "set_indice INTEGER DEFAULT '',"
-        "timestamp TEXT NOT NULL,"
+        "id_corrida TEXT NOT NULL,"
+        "fuente_id TEXT DEFAULT '',"
+        "id_sesion TEXT DEFAULT '',"
+        "indice_set INTEGER DEFAULT '',"
+        "marca_temporal TEXT NOT NULL,"
         "tipo TEXT NOT NULL CHECK(tipo IN ('error','suceso')),"
         "codigo TEXT NOT NULL,"
         "evidencia TEXT DEFAULT '',"
-        "offer_id TEXT DEFAULT ''"
+        "id_oferta TEXT DEFAULT ''"
         ")"
     ),
     "sesiones": (
         "CREATE TABLE IF NOT EXISTS sesiones ("
         "id TEXT PRIMARY KEY,"
-        "session_id TEXT NOT NULL,"
-        "run_id TEXT NOT NULL,"
-        "source_id TEXT NOT NULL,"
-        "set_indice INTEGER DEFAULT '',"
-        "timestamp TEXT NOT NULL,"
+        "id_sesion TEXT NOT NULL,"
+        "id_corrida TEXT NOT NULL,"
+        "fuente_id TEXT NOT NULL,"
+        "indice_set INTEGER DEFAULT '',"
+        "marca_temporal TEXT NOT NULL,"
         "total_declarado INTEGER DEFAULT '',"
         "conteo INTEGER DEFAULT '',"
         "estado TEXT NOT NULL,"
-        "creation_date TEXT DEFAULT '',"
-        "last_edit_date TEXT DEFAULT ''"
+        "fecha_creacion TEXT DEFAULT '',"
+        "fecha_ultima_edicion TEXT DEFAULT ''"
         ")"
     ),
     "bloqueo": (
         "CREATE TABLE IF NOT EXISTS bloqueo ("
-        "run_id TEXT PRIMARY KEY,"
-        "timestamp TEXT NOT NULL"
+        "id_corrida TEXT PRIMARY KEY,"
+        "marca_temporal TEXT NOT NULL"
         ")"
     ),
 }
@@ -214,6 +214,7 @@ def init_db() -> None:
                   "ofertas", "corridas", "eventos", "sesiones", "bloqueo")
         for nombre_tabla in tablas:
             conn.execute(ESQUEMAS[nombre_tabla])
+        _migrar_espanol_total(conn)
         _migrate_ofertas(conn)
         _migrate_ofertas_timestamp_ultima_verificacion(conn)
         _migrate_ofertas_empresa_nombre(conn)
@@ -224,14 +225,147 @@ def init_db() -> None:
         conn.close()
 
 
+MAPA_COLUMNAS_ESPANOL: dict[str, dict[str, str]] = {
+    "fuentes": {
+        "url_base": "enlace_base",
+        "creation_date": "fecha_creacion",
+        "last_edit_date": "fecha_ultima_edicion",
+    },
+    "empresas": {
+        "normalized_name": "nombre_normalizado",
+        "linkedin": "perfil_linkedin",
+        "size": "tamano",
+        "creation_date": "fecha_creacion",
+        "last_edit_date": "fecha_ultima_edicion",
+    },
+    "ubicaciones": {
+        "creation_date": "fecha_creacion",
+        "last_edit_date": "fecha_ultima_edicion",
+    },
+    "ofertas": {
+        "source_identifier": "identificador_origen",
+        "url": "enlace",
+        "discovery_date": "fecha_descubrimiento",
+        "creation_date": "fecha_creacion",
+        "last_edit_date": "fecha_ultima_edicion",
+        "run_id": "id_corrida",
+        "session_id": "id_sesion",
+        "set_indice": "indice_set",
+        "id_externo_url": "id_externo",
+        "timestamp_ultima_verificacion": "fecha_ultima_verificacion",
+    },
+    "corridas": {
+        "run_id": "id_corrida",
+        "timestamp_inicio": "fecha_inicio",
+        "timestamp_fin": "fecha_fin",
+    },
+    "eventos": {
+        "run_id": "id_corrida",
+        "source_id": "fuente_id",
+        "session_id": "id_sesion",
+        "set_indice": "indice_set",
+        "timestamp": "marca_temporal",
+        "offer_id": "id_oferta",
+    },
+    "sesiones": {
+        "session_id": "id_sesion",
+        "run_id": "id_corrida",
+        "source_id": "fuente_id",
+        "set_indice": "indice_set",
+        "timestamp": "marca_temporal",
+        "creation_date": "fecha_creacion",
+        "last_edit_date": "fecha_ultima_edicion",
+    },
+    "bloqueo": {
+        "run_id": "id_corrida",
+        "timestamp": "marca_temporal",
+    },
+}
+
+_TABLAS_ESQUEMA: tuple[str, ...] = (
+    "fuentes", "empresas", "ubicaciones", "ofertas",
+    "corridas", "eventos", "sesiones", "bloqueo",
+)
+
+
+def _migrar_espanol_total(conn: sqlite3.Connection) -> None:
+    """D7/D8 migration: full Spanish schema (columns + `ofertas.estado` CHECK).
+
+    Rebuilds each tracked table from the Spanish ESQUEMAS when its current
+    schema still uses English column names, mapping old columns to their
+    Spanish equivalents (MAPA_COLUMNAS_ESPANOL) so no data is lost and the
+    `estado` CHECK constraint is recreated with Spanish values. Runs before
+    the legacy migrations so they operate on the Spanish schema. Idempotent:
+    a table is rebuilt only when it lacks some expected Spanish column.
+    """
+    for nombre_tabla in _TABLAS_ESQUEMA:
+        filas = conn.execute(
+            f"PRAGMA table_info({nombre_tabla})"
+        ).fetchall()
+        columnas_actuales = {fila["name"] for fila in filas}
+        if not columnas_actuales:
+            conn.execute(ESQUEMAS[nombre_tabla])
+            continue
+        conn.execute(
+            ESQUEMAS[nombre_tabla].replace(
+                f"TABLE IF NOT EXISTS {nombre_tabla}",
+                f"TABLE {nombre_tabla}_nueva",
+            )
+        )
+        esperadas = {
+            fila["name"]
+            for fila in conn.execute(
+                f"PRAGMA table_info({nombre_tabla}_nueva)"
+            ).fetchall()
+        }
+        if esperadas.issubset(columnas_actuales):
+            conn.execute(f"DROP TABLE {nombre_tabla}_nueva")
+            continue
+        seleccion = []
+        destinos = []
+        for columna in columnas_actuales:
+            if columna in MAPA_COLUMNAS_ESPANOL[nombre_tabla]:
+                nuevo = MAPA_COLUMNAS_ESPANOL[nombre_tabla][columna]
+                if nuevo in esperadas:
+                    seleccion.append(f"{columna} AS {nuevo}")
+                    destinos.append(nuevo)
+            elif columna in esperadas:
+                if nombre_tabla == "ofertas" and columna == "estado":
+                    seleccion.append(
+                        "CASE estado WHEN 'discovered' THEN 'descubierta' "
+                        "WHEN 'prepared' THEN 'preparada' "
+                        "WHEN 'evaluated' THEN 'evaluada' "
+                        "WHEN 'accepted' THEN 'aceptada' "
+                        "WHEN 'discarded' THEN 'descartada' "
+                        "WHEN 'processed' THEN 'procesada' "
+                        "WHEN 'finalized' THEN 'finalizada' "
+                        "ELSE estado END AS estado"
+                    )
+                    destinos.append("estado")
+                else:
+                    seleccion.append(columna)
+                    destinos.append(columna)
+        conn.execute(
+            f"INSERT INTO {nombre_tabla}_nueva ({', '.join(destinos)}) "
+            f"SELECT {', '.join(seleccion)} FROM {nombre_tabla}"
+        )
+        conn.execute(f"DROP TABLE {nombre_tabla}")
+        conn.execute(
+            f"ALTER TABLE {nombre_tabla}_nueva RENAME TO {nombre_tabla}"
+        )
+    conn.execute(
+        "UPDATE sesiones SET id = id_sesion WHERE id IS NULL OR id = ''"
+    )
+
+
 def _migrate_sesiones_id(conn: sqlite3.Connection) -> None:
     """Sesiones migration: align the table with `write_row` generic inserts.
 
-    `write_row` inserts an `id` (and `creation_date`/`last_edit_date`) column
+    `write_row` inserts an `id` (and `fecha_creacion`/`fecha_ultima_edicion`) column
     by default, but the legacy `sesiones` table was declared with
-    `session_id TEXT PRIMARY KEY` and no `id` column, so every session audit
+    `id_sesion TEXT PRIMARY KEY` and no `id` column, so every session audit
     insert failed with "table sesiones has no column named id". The table is
-    rebuilt with `id TEXT PRIMARY KEY` carrying the session_id value.
+    rebuilt with `id TEXT PRIMARY KEY` carrying the id_sesion value.
     Migration is idempotent: it only runs when the `id` column is missing.
     """
     columnas = {
@@ -255,7 +389,7 @@ def _migrate_sesiones_id(conn: sqlite3.Connection) -> None:
         f"INSERT INTO sesiones ({lista}) SELECT {lista} FROM sesiones_legacy"
     )
     conn.execute(
-        "UPDATE sesiones SET id = session_id WHERE id IS NULL OR id = ''"
+        "UPDATE sesiones SET id = id_sesion WHERE id IS NULL OR id = ''"
     )
     conn.execute("DROP TABLE sesiones_legacy")
 
@@ -266,7 +400,7 @@ def _migrate_ofertas(conn: sqlite3.Connection) -> None:
     SQLite cannot drop a NOT NULL constraint in place, so the `ofertas` table
     is rebuilt without NOT NULL on `titulo` and `descripcion_original`, allowing
     capturing raw listings that lack those fields. The columns of traceability
-    (`run_id`, `session_id`, `set_indice`, `id_externo_url`) are included in the
+    (`id_corrida`, `id_sesion`, `indice_set`, `id_externo`) are included in the
     new schema. Migration is idempotent: it only runs when the current schema
     still declares `titulo NOT NULL`.
     """
@@ -331,7 +465,7 @@ def _migrate_ofertas_empresa_nombre(conn: sqlite3.Connection) -> None:
 
 
 def _migrate_ofertas_timestamp_ultima_verificacion(conn: sqlite3.Connection) -> None:
-    """4.4 migration: ensure `ofertas.timestamp_ultima_verificacion` exists.
+    """4.4 migration: ensure `ofertas.fecha_ultima_verificacion` exists.
 
     The capture upsert refreshes this column for re-seen listings. The column
     is added on first init if absent; subsequent inits are no-ops.
@@ -340,15 +474,15 @@ def _migrate_ofertas_timestamp_ultima_verificacion(conn: sqlite3.Connection) -> 
         fila["name"]
         for fila in conn.execute("PRAGMA table_info(ofertas)").fetchall()
     }
-    if "timestamp_ultima_verificacion" not in columnas:
+    if "fecha_ultima_verificacion" not in columnas:
         conn.execute(
             "ALTER TABLE ofertas ADD COLUMN "
-            "timestamp_ultima_verificacion TEXT DEFAULT ''"
+            "fecha_ultima_verificacion TEXT DEFAULT ''"
         )
 
 
 _COLUMNAS_FINALIZACION_CORRIDAS: tuple[str, ...] = (
-    "timestamp_fin TEXT DEFAULT ''",
+    "fecha_fin TEXT DEFAULT ''",
     "motivo_terminacion TEXT DEFAULT ''",
     "total_ofertas INTEGER DEFAULT 0",
     "total_errores INTEGER DEFAULT 0",
@@ -360,7 +494,7 @@ _COLUMNAS_FINALIZACION_CORRIDAS: tuple[str, ...] = (
 def _migrate_corridas_finalizacion(conn: sqlite3.Connection) -> None:
     """4.5 migration: add closure metrics columns to `corridas`.
 
-    The Finalizar Proceso node persists closure metrics (timestamp_fin,
+    The Finalizar Proceso node persists closure metrics (fecha_fin,
     motivo_terminacion, total_ofertas, total_errores, total_sucesos,
     fuentes_procesadas) via `actualizar_corrida`. Columns are added one by
     one on first init if absent; subsequent inits are no-ops (idempotent,
@@ -426,9 +560,9 @@ def write_row(tabla: str, datos: dict[str, Any]) -> str:
     if "id" not in d or not d["id"]:
         d["id"] = generate_id(tabla)
     ahora = _now()
-    if not d.get("creation_date"):
-        d["creation_date"] = ahora
-    d["last_edit_date"] = ahora
+    if not d.get("fecha_creacion"):
+        d["fecha_creacion"] = ahora
+    d["fecha_ultima_edicion"] = ahora
 
     columnas = [k for k in d.keys()]
     placeholders = [":" + k for k in d.keys()]
@@ -453,7 +587,7 @@ def find_by_id(tabla: str, id_valor: str) -> dict[str, Any] | None:
 
 def update(tabla: str, id_valor: str, datos: dict[str, Any]) -> bool:
     d = _serialize(datos)
-    d["last_edit_date"] = _now()
+    d["fecha_ultima_edicion"] = _now()
     if "id" in d:
         del d["id"]
     asignaciones = ", ".join(f"{k} = :{k}" for k in d.keys())
@@ -477,9 +611,9 @@ def write_batch(tabla: str, filas: list[dict[str, Any]]) -> None:
         d = _serialize(datos)
         if "id" not in d or not d["id"]:
             d["id"] = generate_id(tabla)
-        if not d.get("creation_date"):
-            d["creation_date"] = now
-        d["last_edit_date"] = now
+        if not d.get("fecha_creacion"):
+            d["fecha_creacion"] = now
+        d["fecha_ultima_edicion"] = now
         preparadas.append(d)
 
     columnas = sorted({k for d in preparadas for k in d.keys()})
@@ -509,8 +643,8 @@ def umbral_obsolescencia_minutos(config: dict[str, Any] | None = None) -> int:
 
 
 def acquire_lock(
-    run_id: str,
-    timestamp: str,
+    id_corrida: str,
+    marca_temporal: str,
     forzar: bool = False,
     umbral_minutos: int | None = None,
 ) -> bool:
@@ -518,13 +652,13 @@ def acquire_lock(
     try:
         conn.execute("BEGIN IMMEDIATE")
         fila = conn.execute(
-            "SELECT * FROM bloqueo ORDER BY timestamp DESC LIMIT 1"
+            "SELECT * FROM bloqueo ORDER BY marca_temporal DESC LIMIT 1"
         ).fetchone()
         if fila is None:
             try:
                 conn.execute(
-                    "INSERT INTO bloqueo (run_id, timestamp) VALUES (?, ?)",
-                    (run_id, timestamp),
+                    "INSERT INTO bloqueo (id_corrida, marca_temporal) VALUES (?, ?)",
+                    (id_corrida, marca_temporal),
                 )
             except sqlite3.IntegrityError:
                 conn.rollback()
@@ -533,15 +667,15 @@ def acquire_lock(
             return True
         if forzar:
             cursor = conn.execute(
-                "UPDATE bloqueo SET run_id = ?, timestamp = ? WHERE run_id = ?",
-                (run_id, timestamp, fila["run_id"]),
+                "UPDATE bloqueo SET id_corrida = ?, marca_temporal = ? WHERE id_corrida = ?",
+                (id_corrida, marca_temporal, fila["id_corrida"]),
             )
             if cursor.rowcount == 0:
                 conn.rollback()
                 return False
             conn.commit()
             return True
-        actual = datetime.strptime(fila["timestamp"], "%Y-%m-%d %H:%M:%S")
+        actual = datetime.strptime(fila["marca_temporal"], "%Y-%m-%d %H:%M:%S")
         if umbral_minutos is None:
             umbral_minutos = umbral_obsolescencia_minutos()
         vigente = (
@@ -551,8 +685,8 @@ def acquire_lock(
             conn.rollback()
             return False
         cursor = conn.execute(
-            "UPDATE bloqueo SET run_id = ?, timestamp = ? WHERE run_id = ?",
-            (run_id, timestamp, fila["run_id"]),
+            "UPDATE bloqueo SET id_corrida = ?, marca_temporal = ? WHERE id_corrida = ?",
+            (id_corrida, marca_temporal, fila["id_corrida"]),
         )
         if cursor.rowcount == 0:
             conn.rollback()
@@ -563,25 +697,25 @@ def acquire_lock(
         conn.close()
 
 
-def release_lock(run_id: str) -> None:
+def release_lock(id_corrida: str) -> None:
     conn = _connection()
     try:
-        conn.execute("DELETE FROM bloqueo WHERE run_id = ?", (run_id,))
+        conn.execute("DELETE FROM bloqueo WHERE id_corrida = ?", (id_corrida,))
         conn.commit()
     finally:
         conn.close()
 
 
-def liberar_bloqueo(run_id: str) -> None:
+def liberar_bloqueo(id_corrida: str) -> None:
     """Spanish alias of `release_lock` for the discovery nodes (Finalizar)."""
-    release_lock(run_id)
+    release_lock(id_corrida)
 
 
 def check_lock() -> dict[str, Any] | None:
     conn = _connection()
     try:
         fila = conn.execute(
-            "SELECT * FROM bloqueo ORDER BY timestamp DESC LIMIT 1"
+            "SELECT * FROM bloqueo ORDER BY marca_temporal DESC LIMIT 1"
         ).fetchone()
         return dict(fila) if fila is not None else None
     finally:
@@ -596,7 +730,7 @@ def probe_write() -> None:
         raise PersistenceError("01", f"Connection failed: {exc}") from exc
     try:
         conn.execute(
-            "INSERT INTO bloqueo (run_id, timestamp) VALUES (?, ?)",
+            "INSERT INTO bloqueo (id_corrida, marca_temporal) VALUES (?, ?)",
             (f"PROBE-{uuid.uuid4().hex[:8]}", _now()),
         )
         conn.rollback()
@@ -607,17 +741,17 @@ def probe_write() -> None:
 
 
 def write_corrida(datos: dict[str, Any]) -> None:
-    """Registers a run row in `corridas`, idempotent per run_id."""
+    """Registers a run row in `corridas`, idempotent per id_corrida."""
     d = _serialize(datos)
     conn = _connection()
     try:
         conn.execute(
-            "INSERT INTO corridas (run_id, timestamp_inicio, estado) "
-            "VALUES (:run_id, :timestamp_inicio, :estado) "
-            "ON CONFLICT (run_id) DO NOTHING",
+            "INSERT INTO corridas (id_corrida, fecha_inicio, estado) "
+            "VALUES (:id_corrida, :fecha_inicio, :estado) "
+            "ON CONFLICT (id_corrida) DO NOTHING",
             {
-                "run_id": d["run_id"],
-                "timestamp_inicio": d.get("timestamp_inicio") or _now(),
+                "id_corrida": d["id_corrida"],
+                "fecha_inicio": d.get("fecha_inicio") or _now(),
                 "estado": d.get("estado") or "",
             },
         )
@@ -626,18 +760,18 @@ def write_corrida(datos: dict[str, Any]) -> None:
         conn.close()
 
 
-def actualizar_corrida(run_id: str, campos: dict[str, Any]) -> bool:
+def actualizar_corrida(id_corrida: str, campos: dict[str, Any]) -> bool:
     """Updates the `corridas` row of a run; returns whether a row matched.
 
     Closes a run (Finalizar Proceso node): persists the final state and the
-    closure metrics (`timestamp_fin`, `motivo_terminacion`, `total_ofertas`,
+    closure metrics (`fecha_fin`, `motivo_terminacion`, `total_ofertas`,
     `total_errores`, `total_sucesos`, `fuentes_procesadas`). Follows the
-    `update` pattern; `corridas` is keyed by `run_id` instead of `id`.
+    `update` pattern; `corridas` is keyed by `id_corrida` instead of `id`.
     """
     d = _serialize(campos)
     asignaciones = ", ".join(f"{k} = :{k}" for k in d.keys())
-    d["_run_id"] = run_id
-    sql = f"UPDATE corridas SET {asignaciones} WHERE run_id = :_run_id"
+    d["_run_id"] = id_corrida
+    sql = f"UPDATE corridas SET {asignaciones} WHERE id_corrida = :_run_id"
     conn = _connection()
     try:
         cursor = conn.execute(sql, d)
@@ -648,24 +782,24 @@ def actualizar_corrida(run_id: str, campos: dict[str, Any]) -> bool:
 
 
 def upsert_oferta(oferta: dict[str, Any]) -> str:
-    """Inserts or updates an offer by `id_externo_url`.
+    """Inserts or updates an offer by `id_externo`.
 
-    If a row with the same `id_externo_url` already exists, only its
-    `timestamp_ultima_verificacion` is refreshed and its `id` is returned.
+    If a row with the same `id_externo` already exists, only its
+    `fecha_ultima_verificacion` is refreshed and its `id` is returned.
     Otherwise a new `id` is generated and the row is inserted.
 
     Returns:
         The offer `id` (str).
     """
     d = dict(oferta)
-    id_externo = d.get("id_externo_url")
+    id_externo = d.get("id_externo")
     if id_externo:
-        existentes = read_table("ofertas", {"id_externo_url": id_externo})
+        existentes = read_table("ofertas", {"id_externo": id_externo})
         if existentes:
             update(
                 "ofertas",
                 cast(str, existentes[0]["id"]),
-                {"timestamp_ultima_verificacion": _now()},
+                {"fecha_ultima_verificacion": _now()},
             )
             return cast(str, existentes[0]["id"])
     if "id" not in d or not d["id"]:
@@ -678,8 +812,8 @@ def write_evento(datos: dict[str, Any]) -> str:
     d = _serialize(datos)
     evento_id = str(d.get("evento_id") or generate_id("eventos"))
     d["evento_id"] = evento_id
-    if not d.get("timestamp"):
-        d["timestamp"] = _now()
+    if not d.get("marca_temporal"):
+        d["marca_temporal"] = _now()
     columnas = ", ".join(d.keys())
     placeholders = ", ".join(f":{k}" for k in d.keys())
     conn = _connection()

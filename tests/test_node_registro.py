@@ -12,10 +12,10 @@ def mock_context() -> RunContext:
     ctx = RunContext(
         config_fuentes=[
             {
-                "source_id": "LI-01",
+                "fuente_id": "LI-01",
                 "nombre": "LinkedIn",
                 "ficha_acceso": {
-                    "url": "https://linkedin.com",
+                    "enlace": "https://linkedin.com",
                     "tipo_acceso": "publico",
                     "criterio_exito": "jobs",
                     "timeout_segundos": 30,
@@ -28,14 +28,14 @@ def mock_context() -> RunContext:
 
 
 def test_registrar_evento_search_fallo(mock_context: RunContext) -> None:
-    mock_context.set_corriente = SetFiltros(source_id="LI-01", indice=2, filtros=[])
+    mock_context.set_corriente = SetFiltros(fuente_id="LI-01", indice=2, filtros=[])
     mock_context.search_result = SearchResult(
         estado="fallo",
         codigo_motivo="ERR-03",
         evidencia_acotada="Down",
         ofertas_primera_pagina=[],
         estado_paginacion="fin",
-        set_indice=2,
+        indice_set=2,
         numero_de_intentos=3,
     )
     with patch("modules.discovery.nodes.registro.write_evento") as mock_write:
@@ -44,19 +44,19 @@ def test_registrar_evento_search_fallo(mock_context: RunContext) -> None:
         mock_write.assert_called_once()
         args = mock_write.call_args[0][0]
         assert args["tipo"] == "error"
-        assert args["set_indice"] == 2
+        assert args["indice_set"] == 2
         assert "intentos: 3" in args["evidencia"]
 
 
 def test_registrar_evento_search_exito_empty(mock_context: RunContext) -> None:
-    mock_context.set_corriente = SetFiltros(source_id="LI-01", indice=1, filtros=[])
+    mock_context.set_corriente = SetFiltros(fuente_id="LI-01", indice=1, filtros=[])
     mock_context.search_result = SearchResult(
         estado="exito",
         codigo_motivo="",
         evidencia_acotada="No offers",
         ofertas_primera_pagina=[],
         estado_paginacion="fin",
-        set_indice=1,
+        indice_set=1,
         numero_de_intentos=1,
     )
     with patch("modules.discovery.nodes.registro.write_evento") as mock_write:
@@ -64,7 +64,7 @@ def test_registrar_evento_search_exito_empty(mock_context: RunContext) -> None:
         assert res.estado == "ok"
         args = mock_write.call_args[0][0]
         assert args["tipo"] == "suceso"
-        assert args["set_indice"] == 1
+        assert args["indice_set"] == 1
 
 
 def test_registrar_evento_entry_fallo(mock_context: RunContext) -> None:
@@ -80,7 +80,7 @@ def test_registrar_evento_entry_fallo(mock_context: RunContext) -> None:
         assert res.estado == "ok"
         args = mock_write.call_args[0][0]
         assert args["tipo"] == "error"
-        assert args["set_indice"] is None
+        assert args["indice_set"] is None
 
 
 def test_registrar_evento_entry_priorizado_si_search_es_de_otra_fuente(
@@ -88,18 +88,18 @@ def test_registrar_evento_entry_priorizado_si_search_es_de_otra_fuente(
 ) -> None:
     # Source switch: LI-02 entry failed but the previous source LI-01
     # still has a populated search_result in the context.
-    mock_context.set_corriente = SetFiltros(source_id="LI-01", indice=2, filtros=[])
+    mock_context.set_corriente = SetFiltros(fuente_id="LI-01", indice=2, filtros=[])
     mock_context.search_result = SearchResult(
         estado="exito",
         ofertas_primera_pagina=[],
         estado_paginacion="fin",
-        set_indice=2,
+        indice_set=2,
         numero_de_intentos=1,
     )
     mock_context.fuente_corriente = FichaFuente(
-        source_id="LI-02",
+        fuente_id="LI-02",
         nombre="LinkedIn2",
-        url="https://linkedin.com",
+        enlace="https://linkedin.com",
         tipo_acceso="publico",
         criterio_exito="jobs",
         timeout_segundos=30,
@@ -114,21 +114,21 @@ def test_registrar_evento_entry_priorizado_si_search_es_de_otra_fuente(
         res = registrar_evento(mock_context)
         assert res.estado == "ok"
         args = mock_write.call_args[0][0]
-        assert args["source_id"] == "LI-02"
+        assert args["fuente_id"] == "LI-02"
         assert args["tipo"] == "error"
         assert args["codigo"] == "fuente_inalcanzable"
-        assert args["set_indice"] is None
+        assert args["indice_set"] is None
 
 
 def test_registrar_evento_write_fail_continues(mock_context: RunContext) -> None:
-    mock_context.set_corriente = SetFiltros(source_id="LI-01", indice=0, filtros=[])
+    mock_context.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
     mock_context.search_result = SearchResult(
         estado="fallo",
         codigo_motivo="ERR",
         evidencia_acotada="E",
         ofertas_primera_pagina=[],
         estado_paginacion="fin",
-        set_indice=0,
+        indice_set=0,
         numero_de_intentos=1,
     )
     with patch(
