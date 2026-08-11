@@ -263,3 +263,18 @@ def test_ingreso_exitoso_inconsistente(mock_context: RunContext) -> None:
     res = ingreso_exitoso(mock_context)
     assert res.estado == "error"
     assert res.codigo == "ERR-02"
+
+def test_ejecutar_ingreso_headless_override(
+    mock_context: RunContext,
+    mock_adapter: MagicMock,
+    mock_playwright: MagicMock,
+) -> None:
+    \"\"\"Verifica que el parámetro headless se respete desde BROWSER_HEADLESS env var.\"\"\"
+    with patch(\"modules.discovery.nodes.ingresso.load\") as mock_load, \
+            patch(\"modules.discovery.nodes.ingresso.playwright_instance\") as mock_playwright:
+        # Simulamos que .env indica BROWSER_HEADLESS=false
+        mock_load.return_value = {
+            \"_env\": {\
+                \"BROWSER_HEADLESS\": \"false\",\          # fuerza headless=false
+            }\
+        }\n        # Mantener los mocks existentes de jugador de juego\n        # (mock_playwright ya viene configurado por el fixture)\n        # El mock de juego ya mockeó chromedriver y dxfs\n        # No más cambios necesarios; al ejecutar ejecutar_ingreso mock_context\n        # la llamada a Chromium.launch se realizará con headless=False.\n        \n        # Ejecutamos la función de ingreso\n        res = ejecutar_ingreso(mock_context)\n        \n        # Verificamos que la función launch se mockeó con headless=False\n        mock_playwright.chromium.launch.assert_called_once_with(headless=False)\n        \n        # El resultado debe ser éxito y crear sesión activa\n        assert res.estado == \"ok\"\n        assert mock_context.id_sesion is not None\n        assert mock_context.handle_sesion is not None\
