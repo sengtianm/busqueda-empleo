@@ -1,11 +1,23 @@
+from collections.abc import Generator
+from contextlib import contextmanager
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from modules.discovery.adapters.linkedin import FlowError, LinkedInAdapter
+from modules.discovery.adapters.linkedin import FlowError
 from modules.discovery.nodes.busqueda import aplicar_filtros, se_encontraron_ofertas
 from modules.discovery.run_context import RunContext
 from shared.models import FichaFuente, Offer, SearchResult, SetFiltros
+
+
+@contextmanager
+def _adaptador_con_apply_filters(**kwargs: Any) -> Generator[MagicMock, None, None]:
+    with patch("modules.discovery.nodes.busqueda.obtener_adaptador") as mock_obtener:
+        child = mock_obtener.return_value.apply_filters
+        for clave, valor in kwargs.items():
+            setattr(child, clave, valor)
+        yield child
 
 
 def _oferta() -> Offer:
@@ -61,7 +73,7 @@ def mock_context() -> RunContext:
 
 
 def test_aplicar_filtros_success_with_results(mock_context: RunContext) -> None:
-    with patch.object(LinkedInAdapter, "apply_filters") as mock_apply:
+    with _adaptador_con_apply_filters() as mock_apply:
         mock_apply.return_value = SearchResult(
             estado="exito",
             ofertas_primera_pagina=[_oferta()],
@@ -77,7 +89,7 @@ def test_aplicar_filtros_success_with_results(mock_context: RunContext) -> None:
 
 
 def test_aplicar_filtros_success_no_results(mock_context: RunContext) -> None:
-    with patch.object(LinkedInAdapter, "apply_filters") as mock_apply:
+    with _adaptador_con_apply_filters() as mock_apply:
         mock_apply.return_value = _resultado_ok(indice=0)
         res = aplicar_filtros(mock_context)
         assert res.estado == "ok"
@@ -97,13 +109,13 @@ def test_aplicar_filtros_empty_set_base_search(mock_context: RunContext) -> None
     mock_context.fuente_corriente = ficha_base
     mock_context._sets_validos["BASE"] = [SetFiltros(fuente_id="BASE", indice=0, filtros=[])]
     mock_context.iterador_sets["BASE"] = -1
-    with patch.object(LinkedInAdapter, "apply_filters", return_value=_resultado_ok(indice=0)):
+    with _adaptador_con_apply_filters(return_value=_resultado_ok(indice=0)):
         res = aplicar_filtros(mock_context)
         assert res.estado == "ok"
 
 
 def test_aplicar_filtros_not_applicable(mock_context: RunContext) -> None:
-    with patch.object(LinkedInAdapter, "apply_filters") as mock_apply:
+    with _adaptador_con_apply_filters() as mock_apply:
         mock_apply.side_effect = FlowError("filtros_no_aplicables", "Not supported")
         res = aplicar_filtros(mock_context)
         assert res.estado == "ok"
@@ -112,7 +124,7 @@ def test_aplicar_filtros_not_applicable(mock_context: RunContext) -> None:
 
 
 def test_aplicar_filtros_retry_success(mock_context: RunContext) -> None:
-    with patch.object(LinkedInAdapter, "apply_filters") as mock_apply:
+    with _adaptador_con_apply_filters() as mock_apply:
         mock_apply.side_effect = [
             FlowError("fuente_inalcanzable", "Down"),
             _resultado_ok(indice=0),
@@ -123,7 +135,7 @@ def test_aplicar_filtros_retry_success(mock_context: RunContext) -> None:
 
 
 def test_aplicar_filtros_retry_exhausted(mock_context: RunContext) -> None:
-    with patch.object(LinkedInAdapter, "apply_filters") as mock_apply:
+    with _adaptador_con_apply_filters() as mock_apply:
         mock_apply.side_effect = FlowError("fuente_inalcanzable", "Down")
         res = aplicar_filtros(mock_context)
         assert res.estado == "ok"
@@ -132,7 +144,7 @@ def test_aplicar_filtros_retry_exhausted(mock_context: RunContext) -> None:
 
 
 def test_aplicar_filtros_session_expired(mock_context: RunContext) -> None:
-    with patch.object(LinkedInAdapter, "apply_filters") as mock_apply:
+    with _adaptador_con_apply_filters() as mock_apply:
         mock_apply.side_effect = FlowError("sesion_expirada", "Expired")
         res = aplicar_filtros(mock_context)
         assert res.estado == "ok"
@@ -141,7 +153,7 @@ def test_aplicar_filtros_session_expired(mock_context: RunContext) -> None:
 
 
 def test_aplicar_filtros_respuesta_invalida_sin_reintento(mock_context: RunContext) -> None:
-    with patch.object(LinkedInAdapter, "apply_filters") as mock_apply:
+    with _adaptador_con_apply_filters() as mock_apply:
         mock_apply.side_effect = FlowError("respuesta_invalida", "Bad payload")
         res = aplicar_filtros(mock_context)
         assert res.estado == "ok"
@@ -158,7 +170,7 @@ def test_aplicar_filtros_handle_missing(mock_context: RunContext) -> None:
 
 
 def test_aplicar_filtros_source_change_resets_iterator(mock_context: RunContext) -> None:
-    with patch.object(LinkedInAdapter, "apply_filters", return_value=_resultado_ok(indice=0)):
+    with _adaptador_con_apply_filters(return_value=_resultado_ok(indice=0)):
         aplicar_filtros(mock_context)
         fuente_corriente = mock_context.fuente_corriente
         assert fuente_corriente is not None
@@ -178,19 +190,19 @@ def test_aplicar_filtros_source_change_resets_iterator(mock_context: RunContext)
     mock_context._sets_validos["LI-02"] = [SetFiltros(fuente_id="LI-02", indice=0, filtros=[])]
     mock_context.iterador_sets["LI-02"] = 5
 
-    with patch.object(LinkedInAdapter, "apply_filters", return_value=_resultado_ok(indice=0)):
+    with _adaptador_con_apply_filters(return_value=_resultado_ok(indice=0)):
         aplicar_filtros(mock_context)
         assert mock_context.iterador_sets["LI-02"] == 0
 
 
 def test_aplicar_filtros_set_marcado_como_procesado(mock_context: RunContext) -> None:
-    with patch.object(LinkedInAdapter, "apply_filters", return_value=_resultado_ok(indice=0)):
+    with _adaptador_con_apply_filters(return_value=_resultado_ok(indice=0)):
         res = aplicar_filtros(mock_context)
         assert res.estado == "ok"
         assert _set_corriente(mock_context).indice == 0
         assert mock_context.iterador_sets["LI-01"] == 0
 
-    with patch.object(LinkedInAdapter, "apply_filters", return_value=_resultado_ok(indice=1)):
+    with _adaptador_con_apply_filters(return_value=_resultado_ok(indice=1)):
         res = aplicar_filtros(mock_context)
         assert res.estado == "ok"
         assert _set_corriente(mock_context).indice == 1

@@ -129,6 +129,7 @@ class PoliticasCaptura(BaseModel):
     max_paginas: int = 5
     max_ofertas_por_corrida: int = 25
     pausa_entre_lotes_segundos: int = 10
+    tope_espera_paginas_sucesivas_segundos: int = 10
     estrategia_anti_bloqueo: str = "pausa_aleatoria"
 
 

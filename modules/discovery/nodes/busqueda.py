@@ -7,7 +7,8 @@ from dataclasses import dataclass
 
 from loguru import logger
 
-from modules.discovery.adapters.linkedin import FlowError, LinkedInAdapter
+from modules.discovery.adapters.linkedin import FlowError
+from modules.discovery.adapters.registry import obtener_adaptador
 from modules.discovery.run_context import RunContext
 from shared.config import load
 from shared.models import SearchResult
@@ -60,7 +61,7 @@ def aplicar_filtros(contexto: RunContext) -> ResultadoBusqueda:
 
     # Paso 3: Aplicar filtros con reintento condicional
     politicas = contexto.politicas(fuente)
-    adapter = LinkedInAdapter()
+    adapter = obtener_adaptador(fuente.fuente_id)
     cfg_retries = load().get("retries", {})
     max_attempts = cfg_retries.get("max_attempts", 3)
     base_wait = cfg_retries.get("base_wait_seconds", 2)

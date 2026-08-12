@@ -8,28 +8,32 @@ fuentes:
       credenciales_referencia:
         - "LINKEDIN_EMAIL"
         - "LINKEDIN_PASSWORD"
-      criterio_exito: "voyager"
+      criterio_exito: "MainFeed"
       timeout_segundos: 30
     sets_de_filtros:
       - indice_set: 0
         filtros:
           - tipo: "keywords"
-            valor: ["Data Engineer", "Analista de Datos", "Ingeniero de Datos"]
+            valor: ["Data Engineer"]
           - tipo: "ubicacion"
-            valor: ""
+            valor: "Colombia"
           - tipo: "modalidad"
-            valor: ""
+            valor: "remoto"
+          - tipo: "fecha_publicacion"
+            valor: "r86400"
     politicas_de_captura:
-      max_paginas: 5
-      max_ofertas_por_corrida: 25
-      pausa_entre_lotes_segundos: 10
+      max_paginas: 100
+      max_ofertas_por_corrida: 1000
+      pausa_entre_lotes_segundos: 5
+      tope_espera_paginas_sucesivas_segundos: 10
       estrategia_anti_bloqueo: "pausa_aleatoria"
 
 # --- Capture defaults (Module 1, global) ---
 captura:
-  max_paginas: 5
-  max_ofertas_por_corrida: 25
-  pausa_entre_lotes_segundos: 10
+  max_paginas: 100
+  max_ofertas_por_corrida: 1000
+  pausa_entre_lotes_segundos: 5
+  tope_espera_paginas_sucesivas_segundos: 10
   estrategia_anti_bloqueo: "pausa_aleatoria"
 
 # --- Concurrency (Module 1, lock) ---

@@ -53,7 +53,7 @@ def contexto() -> RunContext:
 
 @pytest.fixture
 def adapter() -> Generator[MagicMock, None, None]:
-    with patch("modules.discovery.nodes.captura.LinkedInAdapter") as mock:
+    with patch("modules.discovery.nodes.captura.obtener_adaptador") as mock:
         yield mock.return_value
 
 

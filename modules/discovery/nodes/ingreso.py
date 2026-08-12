@@ -1,10 +1,12 @@
 import time
 from dataclasses import dataclass
+from typing import Any
 
 from loguru import logger
 from playwright.sync_api import sync_playwright
 
-from modules.discovery.adapters.linkedin import FlowError, LinkedInAdapter
+from modules.discovery.adapters.linkedin import FlowError
+from modules.discovery.adapters.registry import AdaptadorPlataforma, obtener_adaptador
 from modules.discovery.run_context import RunContext
 from shared.config import load
 from shared.models import EntryResult, FichaFuente
@@ -58,15 +60,29 @@ def ejecutar_ingreso(contexto: RunContext) -> ResultadoIngreso:
     multiplier = cfg_retries.get("multiplier", 2)
     max_wait = cfg_retries.get("max_wait_seconds", 30)
 
-    adapter = LinkedInAdapter()
+    adapter = obtener_adaptador(ficha.fuente_id)
 
     return _ejecutar_ingreso_loop(
         contexto, adapter, max_attempts, base_wait, multiplier, max_wait
     )
 
+def _resolver_headless() -> bool:
+    """Resuelve el modo headless: BROWSER_HEADLESS en .env gana sobre config.yaml."""
+    cfg = load()
+    env_raw = cfg.get("_env", {})
+    env: dict[str, Any] = env_raw if isinstance(env_raw, dict) else {}
+    override = env.get("BROWSER_HEADLESS")
+    if isinstance(override, str):
+        return override.strip().lower() != "false"
+    cfg_browser = cfg.get("browser", {})
+    if not isinstance(cfg_browser, dict):
+        return True
+    return cfg_browser.get("headless", True) is not False
+
+
 def _ejecutar_ingreso_loop(
     contexto: RunContext,
-    adapter: LinkedInAdapter,
+    adapter: AdaptadorPlataforma,
     max_attempts: int,
     base_wait: float,
     multiplier: float,
@@ -90,7 +106,7 @@ def _ejecutar_ingreso_loop(
                     playwright_instance = sync_playwright().start()
                     playwright_activo = True
 
-                headless = load().get("browser", {}).get("headless", True)
+                headless = _resolver_headless()
                 browser = playwright_instance.chromium.launch(headless=headless)
                 page = browser.new_page()
 

@@ -189,6 +189,12 @@ class RunContext:
                     config_captura.get("pausa_entre_lotes_segundos", 10),
                 )
             ),
+            tope_espera_paginas_sucesivas_segundos=int(
+                politicas_raw.get(
+                    "tope_espera_paginas_sucesivas_segundos",
+                    config_captura.get("tope_espera_paginas_sucesivas_segundos", 10),
+                )
+            ),
             estrategia_anti_bloqueo=str(
                 politicas_raw.get(
                     "estrategia_anti_bloqueo",
@@ -207,6 +213,9 @@ class RunContext:
             ),
             pausa_entre_lotes_segundos=int(
                 config_captura.get("pausa_entre_lotes_segundos", 10)
+            ),
+            tope_espera_paginas_sucesivas_segundos=int(
+                config_captura.get("tope_espera_paginas_sucesivas_segundos", 10)
             ),
             estrategia_anti_bloqueo=str(
                 config_captura.get("estrategia_anti_bloqueo", "pausa_aleatoria")

@@ -14,6 +14,7 @@ All official documentation is located in `docs/`:
 | [Decision log](docs/history/decision%20log.md) | Approved decisions and deviations |
 | [MVP Execution Plan](docs/plans/MVP%20Execution%20Plan.md) | Build order and acceptance criteria |
 | [tracker.md](docs/history/tracker.md) | Current status of each phase and task |
+| [Adding a new source](docs/adding-a-new-source.md) | Step-by-step guide to integrate a new platform (config, adapter, registry, tests) |
 
 ## Status
 

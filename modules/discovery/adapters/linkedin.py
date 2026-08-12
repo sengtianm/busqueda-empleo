@@ -34,7 +34,6 @@ from shared.models import (
     PoliticasCaptura,
     SearchResult,
     SetFiltros,
-    TipoEvento,
 )
 from shared.utilidades import acotar_evidencia
 
@@ -55,18 +54,25 @@ _MODALIDAD_F_WT: dict[str, str] = {
 _SEL_ENLACE_TARJETA = "a.base-search-card__link"
 _SEL_ENLACE_TARJETA_2026 = "div.job-card-container a.job-card-container__link"
 _SEL_ENLACE_TARJETA_GENERICO = "a[href*='/jobs/view/']"
+_SEL_TARJETA_SDUI = "div[componentkey^='job-card-component-ref-']"
 _SEL_TITULO_TARJETA = ".base-search-card__title"
 _SEL_EMPRESA_TARJETA = ".base-search-card__subtitle"
 _SEL_UBICACION_TARJETA = ".base-search-card__location"
 _SEL_TOTAL_RESULTADOS = "span.jobs-search-results__total-count"
-_SEL_SIGUIENTE = ("button[aria-label='Next']", "a[aria-label='Next']")
-_SEL_TITULO_DETALLE = "h1.jobs-unified-top-card__title"
-_SEL_DESCRIPCION_DETALLE = "div.jobs-description__content"
-_SEL_ENCABEZADOS_DESCRIPCION = ("Acerca del empleo", "About the job")
+_SEL_SIGUIENTE = (
+    "button[aria-label='Next']",
+    "a[aria-label='Next']",
+    "button[aria-label='Siguiente']",
+    "a[aria-label='Siguiente']",
+    "button[aria-label^='Página ']",
+    "a[aria-label^='Página ']",
+)
 
 _RE_ID_EXTERNO = re.compile(r"/jobs/view/(\d+)")
+_RE_ID_COMPONENTE = re.compile(r"job-card-component-ref-(\d+)")
 
 _URL_LOGIN = "https://www.linkedin.com/login/es/?fromSignIn=true"
+_URL_JOBS_VIEW = "https://www.linkedin.com/jobs/view"
 
 
 class FlowError(Exception):
@@ -123,6 +129,23 @@ class LinkedInAdapter:
             numero_de_intentos=1,
         )
 
+    def _esperar_resultados(self, page: Any, timeout_segundos: int) -> None:
+        """Espera a que el listado de tarjetas se renderice antes de parsear.
+
+        LinkedIn 2026 renderiza el SERP de forma asincrona (SDUi): al navegar,
+        el DOM inicial es el cascaron sin tarjetas; el listado (tarjetas
+        ``componentkey``) aparece ~3-6s despues. Sin esta espera el parseo
+        devolveria 0 ofertas reales. Si expira el timeout (pagina
+        verdaderamente vacia), se continua y el resultado sera 0 ofertas
+        legitimo.
+        """
+        try:
+            page.wait_for_selector(
+                _SEL_TARJETA_SDUI, state="attached", timeout=timeout_segundos * 1000
+            )
+        except Exception:
+            pass
+
     def apply_filters(
         self,
         page: Any,
@@ -137,6 +160,7 @@ class LinkedInAdapter:
             page.goto(enlace)
         except Exception as exc:
             raise FlowError("fuente_inalcanzable", f"Search navigation failed: {exc}") from exc
+        self._esperar_resultados(page, ficha.timeout_segundos)
         html = self._contenido(page)
         self._revisar_estado_pagina(html, "tiempo_agotado_consulta")
         return self._parsear_resultados(html, ficha, set_filtros)
@@ -148,40 +172,83 @@ class LinkedInAdapter:
         set_filtros: SetFiltros,
         politicas: PoliticasCaptura,
     ) -> tuple[CaptureBatch, EstadoCaptura]:
-        """Incremental capture of the set (RN-10) applying capture policies."""
+        """Captura por listado sin entrar al detalle de cada oferta (v1.2, D11).
+
+        Recorre todas las páginas de la búsqueda (``?start=N``) navegando
+        directo al listado SDUi (``/jobs/search-results``, sin el salto por
+        ``/jobs/search`` que causaba doble carga) con ``wait_until=commit``.
+        La página 1 reutiliza el DOM ya cargado por ``apply_filters``. Fin
+        real de la búsqueda: ausencia del botón de paginación ("Siguiente")
+        o página sin tarjetas. Redes de seguridad: ``max_paginas`` y
+        ``max_ofertas_por_corrida``. Las ofertas se registran con la
+        descripción vacía (estado 'descubierta'); el enriquecimiento con la
+        descripción es una tarea posterior de Preparación.
+        """
         self.eventos_declarados.clear()
         ofertas_capturadas: list[Offer] = []
         paginas_consumidas = 0
-        url_actual = self._construir_url_busqueda(ficha.enlace, set_filtros)
-        hay_siguiente = True
+        url_resultados = self._construir_url_resultados(ficha.enlace, set_filtros)
+        desplazamiento = 0
+        enlaces_vistos: set[str] = set()
         while (
-            hay_siguiente
-            and paginas_consumidas < politicas.max_paginas
+            paginas_consumidas < politicas.max_paginas
             and len(ofertas_capturadas) < politicas.max_ofertas_por_corrida
         ):
-            try:
-                page.goto(url_actual)
-            except Exception as exc:
-                raise FlowError(
-                    "fuente_inalcanzable", f"Batch navigation failed: {exc}"
-                ) from exc
+            if desplazamiento == 0 and "jobs/search-results" in page.url:
+                pass
+            else:
+                url_actual = (
+                    url_resultados
+                    if desplazamiento == 0
+                    else self._construir_pagina_siguiente(
+                        url_resultados, desplazamiento
+                    )
+                )
+                try:
+                    page.goto(url_actual, wait_until="commit")
+                except Exception as exc:
+                    raise FlowError(
+                        "fuente_inalcanzable", f"Batch navigation failed: {exc}"
+                    ) from exc
+            timeout_espera = (
+                ficha.timeout_segundos
+                if paginas_consumidas == 0
+                else min(
+                    ficha.timeout_segundos,
+                    politicas.tope_espera_paginas_sucesivas_segundos,
+                )
+            )
+            self._esperar_resultados(page, timeout_espera)
             html = self._contenido(page)
             self._revisar_estado_captura(html, "tiempo_agotado_captura")
-            referencias = self._extraer_referencias(html, ficha.enlace)
-            if not referencias:
+            tarjetas = _tarjetas_resultado(BeautifulSoup(html, "lxml"))
+            if not tarjetas:
                 break
             restantes = politicas.max_ofertas_por_corrida - len(ofertas_capturadas)
-            for url_referencia in referencias[:restantes]:
-                oferta = self._capturar_oferta(page, url_referencia, ficha, set_filtros)
-                if oferta is not None:
-                    ofertas_capturadas.append(oferta)
-            paginas_consumidas += 1
-            hay_siguiente = self._hay_pagina_siguiente(html)
-            if hay_siguiente:
-                self._pausa_entre_lotes(politicas)
-                url_actual = self._construir_pagina_siguiente(
-                    url_actual, len(referencias)
+            for enlace, titulo in tarjetas[:restantes]:
+                enlace = _url_absoluta(enlace, ficha.enlace)
+                if enlace in enlaces_vistos:
+                    continue
+                enlaces_vistos.add(enlace)
+                ofertas_capturadas.append(
+                    Offer(
+                        enlace=enlace,
+                        titulo=titulo,
+                        descripcion_original="",
+                        fuente_id=ficha.fuente_id,
+                        indice_set=set_filtros.indice,
+                        id_externo=_extraer_id_externo(enlace),
+                    )
                 )
+            paginas_consumidas += 1
+            desplazamiento += len(tarjetas)
+            if not self._hay_pagina_siguiente(html):
+                break
+            if (
+                paginas_consumidas < politicas.max_paginas
+                and len(ofertas_capturadas) < politicas.max_ofertas_por_corrida
+            ):
+                self._pausa_entre_lotes(politicas)
         capturas_acumuladas = len(ofertas_capturadas)
         estado = EstadoCaptura(
             estado="ok",
@@ -288,10 +355,34 @@ class LinkedInAdapter:
             raise FlowError(codigo_timeout, "Empty capture page content.")
 
     def _revisar_bloqueo_html(self, html: str) -> None:
-        html_bajo = html.lower()
-        if "challenge" in html_bajo or "show captcha" in html_bajo:
+        """Detect real anti-bot evidence in visible content only.
+
+        The words 'challenge'/'authwall' appear routinely inside JS bundles
+        of normal pages (false positives), so script/style content is
+        ignored; only concrete visible signals (captcha, identity
+        verification, authwall) trigger the block.
+        """
+        visible = re.sub(
+            r"<script.*?</script>|<style.*?</style>",
+            " ",
+            html,
+            flags=re.S | re.I,
+        ).lower()
+        senales_bloqueo = (
+            "show captcha",
+            "complete the captcha",
+            "verify your identity",
+            "verifica tu identidad",
+            "verificacion de identidad",
+            "introduce el codigo",
+            "challenge-login",
+            'id="challenge"',
+            "no soy un robot",
+            "i'm not a robot",
+        )
+        if any(s in visible for s in senales_bloqueo):
             raise FlowError("bloqueo_plataforma", "Captcha/challenge evidence.")
-        if "authwall" in html_bajo:
+        if "authwall" in visible:
             raise FlowError("sesion_expirada", "Authwall detected.")
 
     def _contenido(self, page: Any) -> str:
@@ -326,91 +417,9 @@ class LinkedInAdapter:
             numero_de_intentos=1,
         )
 
-    def _extraer_referencias(self, html: str, base: str) -> list[str]:
-        soup = BeautifulSoup(html, "lxml")
-        return [_url_absoluta(href, base) for href, _ in _tarjetas_resultado(soup)]
-
     def _hay_pagina_siguiente(self, html: str) -> bool:
         soup = BeautifulSoup(html, "lxml")
         return any(soup.select(sel) for sel in _SEL_SIGUIENTE)
-
-    def _capturar_oferta(
-        self,
-        page: Any,
-        url_referencia: str,
-        ficha: FichaFuente,
-        set_filtros: SetFiltros,
-    ) -> Offer | None:
-        try:
-            page.goto(url_referencia)
-        except Exception as exc:
-            raise FlowError("error_interno_captura", f"Detail navigation failed: {exc}") from exc
-        html = self._contenido(page)
-        self._revisar_estado_captura(html, "tiempo_agotado_captura")
-        soup = BeautifulSoup(html, "lxml")
-        titulo = self._titulo_detalle(soup)
-        if titulo is None:
-            self._declarar_evento("EVT-01", "Detalle sin titulo (excluida del lote).")
-            return None
-        return Offer(
-            enlace=url_referencia,
-            titulo=titulo,
-            descripcion_original=self._descripcion_detalle(soup),
-            fuente_id=ficha.fuente_id,
-            indice_set=set_filtros.indice,
-            id_externo=_extraer_id_externo(url_referencia),
-        )
-
-    def _titulo_detalle(self, soup: BeautifulSoup) -> str | None:
-        """Job title from the classic heading or the stable <title> tab."""
-        titulo_el = soup.select_one(_SEL_TITULO_DETALLE)
-        if titulo_el is not None:
-            return titulo_el.get_text(strip=True)
-        tag_title = soup.select_one("title")
-        if tag_title is None:
-            return None
-        candidato = tag_title.get_text(strip=True).split(" | ")[0].strip()
-        return candidato or None
-
-    def _descripcion_detalle(self, soup: BeautifulSoup) -> str:
-        """Full description following the section heading, classic fallback."""
-        for encabezado in _SEL_ENCABEZADOS_DESCRIPCION:
-            h2 = next(
-                (
-                    h
-                    for h in soup.find_all("h2")
-                    if h.get_text(" ", strip=True).startswith(encabezado)
-                ),
-                None,
-            )
-            if h2 is None:
-                continue
-            contenedor = h2.parent
-            if contenedor is None:
-                break
-            hermano = contenedor.find_next_sibling()
-            while hermano is not None and not hermano.get_text(strip=True):
-                hermano = hermano.find_next_sibling()
-            if hermano is not None:
-                return hermano.get_text(separator=" ", strip=True)
-            break
-        descripcion_el = soup.select_one(_SEL_DESCRIPCION_DETALLE)
-        return (
-            descripcion_el.get_text(separator=" ", strip=True)
-            if descripcion_el
-            else ""
-        )
-
-    def _declarar_evento(self, codigo: str, evidencia: str) -> None:
-        self.eventos_declarados.append(
-            EventoAlmacen(
-                id_corrida="",
-                fuente_id="",
-                tipo=TipoEvento.SUCESO,
-                codigo=codigo,
-                evidencia=evidencia,
-            )
-        )
 
     def _pausa_entre_lotes(self, politicas: PoliticasCaptura) -> None:
         base = politicas.pausa_entre_lotes_segundos
@@ -449,6 +458,20 @@ class LinkedInAdapter:
         separador = "&" if "?" in base else "?"
         return f"{base}{separador}{urlencode(parametros)}"
 
+    def _construir_url_resultados(
+        self, base: str, set_filtros: SetFiltros
+    ) -> str:
+        """URL canonica del listado SDUi (sin el salto por /jobs/search).
+
+        Navegar directo a /jobs/search-results evita la doble carga
+        (search -> redirect -> search-results) observada al paginar (D11).
+        """
+        base_resultados = base.replace(
+            "https://www.linkedin.com/jobs/search",
+            "https://www.linkedin.com/jobs/search-results/",
+        )
+        return self._construir_url_busqueda(base_resultados, set_filtros)
+
     def _construir_pagina_siguiente(self, enlace: str, desplazamiento: int) -> str:
         partes = urlparse(enlace)
         qs = parse_qs(partes.query)
@@ -466,32 +489,49 @@ def _url_absoluta(href: str, base: str) -> str:
 def _tarjetas_resultado(soup: BeautifulSoup) -> list[tuple[str, str]]:
     """(href, title) pairs of job cards across the known SSR variants.
 
-    Priority: session SSR 2026 cards, classic logged-out cards, then any
-    canonical ``/jobs/view/`` link. Variants are exclusive per page and each
-    href is returned once.
+    Priority: session SDUi cards (2026, ``componentkey`` divs without links),
+    session SSR 2026 cards, classic logged-out cards, then any canonical
+    ``/jobs/view/`` link. Variants are exclusive per page and each href is
+    returned once. ``/apply/`` links are never cards.
     """
-    for selector in (_SEL_ENLACE_TARJETA_2026, _SEL_ENLACE_TARJETA, _SEL_ENLACE_TARJETA_GENERICO):
+    for selector in (
+        _SEL_TARJETA_SDUI,
+        _SEL_ENLACE_TARJETA_2026,
+        _SEL_ENLACE_TARJETA,
+        _SEL_ENLACE_TARJETA_GENERICO,
+    ):
         enlaces = soup.select(selector)
         if enlaces:
             break
     tarjetas: list[tuple[str, str]] = []
     vistos: set[str] = set()
     for enlace in enlaces:
-        href = str(enlace.get("href") or "")
-        if "/jobs/view/" not in href or href in vistos:
+        if selector == _SEL_TARJETA_SDUI:
+            componente = str(enlace.get("componentkey") or "")
+            id_oferta = _RE_ID_COMPONENTE.search(componente)
+            if id_oferta is None:
+                continue
+            href = f"{_URL_JOBS_VIEW}/{id_oferta.group(1)}"
+            span_titulo = enlace.select_one("span[aria-hidden='true']")
+            titulo = span_titulo.get_text(strip=True) if span_titulo else ""
+        else:
+            href = str(enlace.get("href") or "")
+            if "/jobs/view/" not in href or "/apply/" in href:
+                continue
+            if selector == _SEL_ENLACE_TARJETA_2026:
+                lineas = [
+                    linea.strip()
+                    for linea in enlace.get_text("\n", strip=True).split("\n")
+                    if linea.strip()
+                ]
+                titulo = lineas[0] if lineas else ""
+            elif selector == _SEL_ENLACE_TARJETA:
+                titulo = _texto_de(enlace.parent, _SEL_TITULO_TARJETA)
+            else:
+                titulo = enlace.get_text(strip=True)
+        if not titulo or href in vistos:
             continue
         vistos.add(href)
-        if selector == _SEL_ENLACE_TARJETA_2026:
-            lineas = [
-                linea.strip()
-                for linea in enlace.get_text("\n", strip=True).split("\n")
-                if linea.strip()
-            ]
-            titulo = lineas[0] if lineas else ""
-        elif selector == _SEL_ENLACE_TARJETA:
-            titulo = _texto_de(enlace.parent, _SEL_TITULO_TARJETA)
-        else:
-            titulo = enlace.get_text(strip=True)
         tarjetas.append((href, titulo))
     return tarjetas
 

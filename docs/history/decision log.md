@@ -76,6 +76,46 @@ Format: `D<n>` — module/business decisions; `C<n>` — prompt/design alignment
 - **Decision:** `OfferState` members and DB values are now Spanish lowercase: `descubierta`, `preparada`, `evaluada`, `aceptada`, `descartada`, `procesada`, `finalizada` (supersedes the C5 `discovered` value); timeout codes renamed to `tiempo_agotado_ingreso`, `tiempo_agotado_consulta`, `tiempo_agotado_captura` in retry policies and tests.
 - **Impact:** `ofertas.estado` CHECK constraint in Spanish; existing rows migrated via `CASE`; DOC-13A §3.1 catalog values in Spanish; ficha técnica error tables updated.
 
+### D9. Entry criterion is the `MainFeed` string in visible HTML
+
+- **Date:** 2026-08-12 (verified live on the 2026-08-12 session; implementation had already switched)
+- **Status:** In effect (supersedes the `voyager` polling wording of DE-LI-010)
+- **Context:** `config/config.yaml` defines `criterio_exito: "MainFeed"` and the adapter checks the criterion as a plain text substring of the page HTML. The older `voyager` feed criterion (DE-LI-010, 2026-08-10) no longer matches the live page. Note: "MainFeed" also appears in login-page bundles, so the criterion is evaluated only after the username field is detached (successful login flow).
+- **Decision:** Keep `criterio_exito: "MainFeed"` as the official entry criterion; adapter checks `ficha.criterio_exito in html` on the authenticated feed.
+- **Impact:** DE-LI-010 updated; criterion stays config-driven (config `criterio_exito`), so a future platform change only adjusts the config value.
+
+### D10. Blocked-detection heuristics only on visible content
+
+- **Date:** 2026-08-12
+- **Status:** In effect
+- **Context:** A false positive occurred: `_revisar_bloqueo_html` flagged login pages as blocked because "challenge"/"authwall" appeared inside inline scripts, and the global-nav criterion made feeds fail.
+- **Decision:** The detector analyzes only visible content signals (`show captcha`, `complete the captcha`, `verify your identity`, `verifica tu identidad`, `verificacion de identidad`, `introduce el codigo`, `challenge-login`, `id="challenge"`, `no soy un robot`, `i'm not a robot`, authwall only in visible content); script/JSON payloads are ignored.
+- **Impact:** 5 regression tests added; blocked detection triggers only on real visible signals.
+
+### D11. List-based capture without detail navigation
+
+- **Date:** 2026-08-12
+- **Status:** In effect
+- **Context:** Detail-per-offer navigation was slow (double page load via `/jobs/search` → `/jobs/search-results` redirect) and unnecessary at capture time: the list card already carries title + canonical link (`id_externo`); description enrichment belongs to the Preparation module.
+- **Decision:** `capture_batch` traverses the search-results list via `?start=N` without opening each offer; ends when the pagination button ("Siguiente"/"Página N" in Spanish and English) is absent or a page yields no cards; navigates directly to `/jobs/search-results/` with `goto(wait_until="commit")` and reuses page 1 already loaded after `apply_filters`; successive-page waits capped by new policy `tope_espera_paginas_sucesivas_segundos` (min with ficha timeout); `pausa_entre_lotes_segundos` reduced 10→5; new success event `captura_completada` with evidence "páginas=N | ofertas=M" replaces `captura_exitosa` in the node's code contract.
+- **Impact:** Capture time 1m51s → 58s (COR-0864: 5 pages, 98 offers, 10 new, 0 errors); ficha técnica "Capturar ofertas" re-edited to v1.2 (as-built); descriptions stay empty at discovery (enrichment in Preparation).
+
+### D12. LinkedIn search filters narrowed to 24-hour window
+
+- **Date:** 2026-08-12
+- **Status:** In effect
+- **Context:** Initial config was too broad (no location, no modality, 3 keywords) and repeated re-discovery flooded the run.
+- **Decision:** LinkedIn filters set to `keywords: ["Data Engineer"]`, `ubicacion: "Colombia"`, `modalidad: "remoto"` (`f_WT=2`), `fecha_publicacion: "r86400"` (last 24 h, `f_TPR`).
+- **Impact:** COR-0792: 97 results → 93 new (4 dupes) in 1m51s; COR-0864: 98 offers, 10 new. Verified URL: `?keywords=Data+Engineer&location=Colombia&f_WT=2&f_TPR=r86400`.
+
+### D13. Adapter registry per `fuente_id` with `fuente_no_soportada`
+
+- **Date:** 2026-08-12
+- **Status:** In effect
+- **Context:** The three flow nodes instantiated `LinkedInAdapter()` directly, coupling the flow to a concrete class; adding a source would require editing the nodes.
+- **Decision:** New `modules/discovery/adapters/registry.py` defines the `AdaptadorPlataforma` Protocol (enter_source, apply_filters, capture_batch, close_session — structurally checked by mypy strict), `REGISTRO_ADAPTADORES = {"linkedin": LinkedInAdapter}` and `obtener_adaptador(fuente_id)`; nodes resolve the adapter by `fuente_id`. Unknown sources raise `FlowError("fuente_no_soportada")` (never retried, `should_retry` only retries `fuente_inalcanzable`/`tiempo_agotado_*`) — new official DOC-06-style code documented in the ficha.
+- **Impact:** A new source = adapter file + one registry line + config block, no node changes; unknown sources fail cleanly without pointless retries; operational guide `docs/adding-a-new-source.md` created and linked from README.
+
 ---
 
 ## Prompt/design alignment decisions
@@ -133,7 +173,7 @@ Source: DOC-APPENDIX 9A — archived 2026-08-11; content consolidated here uncha
 | DE-LI-007 | Main risk is account restriction by automated-behavior detection; risk mitigation is a design criterion. |
 | DE-LI-008 | Moderate query frequency balancing coverage, freshness, and safety; never continuous runs or excessively short intervals. |
 | DE-LI-009 | Query strategy maximizes compatible opportunities via LinkedIn filters; prioritization never delegated to LinkedIn's recommendation algorithm. |
-| DE-LI-010 | Module 1 implementation criteria per DOC-09 §6: verifiable entry criterion, config-defined filter mapping, capture policies, `bloqueo_plataforma` (Group A, no retry), `sesion_expirada` with controlled re-entry. **Updated 2026-08-10:** entry criterion for authenticated sources is HTML polling for `voyager` on the feed (global-nav no longer renders); direct login URL flow; selectors use prefix match + `:visible` with Enter submit and click fallback; per-page parsing variants resolved by exclusivity. |
+| DE-LI-010 | Module 1 implementation criteria per DOC-09 §6: verifiable entry criterion, config-defined filter mapping, capture policies, `bloqueo_plataforma` (Group A, no retry), `sesion_expirada` with controlled re-entry. **Updated 2026-08-10:** entry criterion for authenticated sources is HTML polling for `voyager` on the feed (global-nav no longer renders); direct login URL flow; selectors use prefix match + `:visible` with Enter submit and click fallback; per-page parsing variants resolved by exclusivity. **Updated 2026-08-12 (D9):** entry criterion is HTML polling for the `MainFeed` string (config `criterio_exito`), superseding `voyager`; evaluated only after the username field is detached; login flow unchanged. |
 
 ---
 
@@ -141,5 +181,6 @@ Source: DOC-APPENDIX 9A — archived 2026-08-11; content consolidated here uncha
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2 | 2026-08-12 | Added D9 (MainFeed entry criterion), D10 (visible-only blocked detection), D11 (list-based capture), D12 (24h filters) and D13 (adapter registry + `fuente_no_soportada`); DE-LI-010 updated to D9. |
 | 1.1 | 2026-08-11 | Added D7 (Spanish naming catalog) and D8 (Spanish state/timeout vocabulary); identifier references in prior decisions updated to the current catalog. |
 | 1.0 | 2026-08-11 | Initial unified log: consolidated D1–D6, C2, C5, PMD-020/021, DE-LI-001..010 (9A archived). |

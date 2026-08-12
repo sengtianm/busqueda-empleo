@@ -455,6 +455,7 @@ En éxito crea `id_sesion` único y guarda handle + `id_sesion`. En fallo cierra
 
 ### Notas de implementación
 - Canal puede ser navegador o API; contrato funcional idéntico.
+- El adaptador se resuelve por `fuente_id` vía registro (`obtener_adaptador`, D13); fuente sin adaptador → `fuente_no_soportada` (sin reintentos).
 - Intentos totales = 1 + máx. reintentos.
 - Cada reintento parte de canal cerrado y reejecuta acceso.
 - Nunca reintentar códigos no reintentables.
@@ -656,6 +657,7 @@ No decide si hay ofertas; no decide si quedan sets; no captura información comp
 
 ### Notas de implementación
 - Adaptador por fuente encapsula filtros e interpretación.
+- El adaptador se resuelve por `fuente_id` vía registro (`obtener_adaptador`, D13); fuente sin adaptador → `fuente_no_soportada` (sin reintentos).
 - Iterador vinculado a `fuente_id`; reiniciar si cambió fuente; marcar al seleccionar.
 - Referencias = identificador/URL en orden de plataforma.
 - `total_declarado` solo si la plataforma lo expone; si no, indeterminado.
@@ -762,8 +764,8 @@ Contexto: `search_result`, `id_corrida`, `fuente_id`, `id_sesion`.
 ---
 
 ## Nodo proceso: “Capturar ofertas”  
-**Versión**: 1.1 (aprobada)  
-**Nota de implementación aprobada**: reedición 2026-08-11 — `estado_captura` incorpora `indice_set`; la implementación de la sub-fase 4.4 ya lo produce (desde 2026-08-09).
+**Versión**: 1.2 (aprobada)  
+**Nota de implementación aprobada**: reedición 2026-08-12 — captura por listado (D11): el adaptador recorre páginas `?start=N` del listado sin entrar al detalle de cada oferta (descripciones vacías en MVP; enriquecimiento en Módulo de Preparación); fin del recorrido por ausencia del botón de paginación ("Siguiente"/"Página N") o página vacía; navegación directa a `/jobs/search-results/` con `wait_until="commit"` reutilizando la página 1 ya cargada tras aplicar filtros (elimina la doble carga por redirect); `tope_espera_paginas_sucesivas_segundos` en políticas efectivas; el suceso `captura_completada` (evidencia "páginas=N | ofertas=M") reemplaza a `captura_exitosa` en el contrato de códigos. También: reedición 2026-08-11 — `estado_captura` incorpora `indice_set` (implementado desde 2026-08-09).
 
 ### Posición
 Entre:
@@ -784,12 +786,12 @@ Verifica límites antes de capturar:
 - `max_paginas` por búsqueda/set;
 - `max_ofertas_por_corrida` con alcance `(corrida, fuente)`.
 
-Captura información original de cada oferta del lote. Falla individual excluye la oferta con evento `oferta_no_capturada`; el lote continúa. Evalúa resultado del lote, actualiza progreso y guarda `capture_batch` + `estado_captura`.
+Captura información original de las ofertas del lote recorriendo el listado de la plataforma (paginación `?start=N`, scroll infinito o detalle según mecanismo del adaptador; actual: listado sin acceso a detalle). Falla individual excluye la oferta con evento `oferta_no_capturada`; el lote continúa. El recorrido termina por ausencia del botón de paginación o página sin tarjetas, o por límites. Evalúa resultado del lote, actualiza progreso y guarda `capture_batch` + `estado_captura`; registra `captura_completada` con evidencia "páginas=N | ofertas=M".
 
 ### Entradas
 - `search_result`: `ofertas_primera_pagina`, `estado_paginacion`, `indice_set`, `total_declarado`.
 - Sesión activa: `id_sesion` + handle.
-- Políticas efectivas: `max_paginas`, `max_ofertas_por_corrida`, `pausa_entre_lotes`, `estrategia_anti_bloqueo`.
+- Políticas efectivas: `max_paginas`, `max_ofertas_por_corrida`, `pausa_entre_lotes`, `estrategia_anti_bloqueo`, `tope_espera_paginas_sucesivas_segundos`.
 - Progreso: `paginas_consumidas`, `capturadas_acumuladas_fuente`.
 - `id_corrida`, `fuente_id`.
 - Reintentos/backoff globales.
@@ -803,7 +805,7 @@ Captura información original de cada oferta del lote. Falla individual excluye 
 
 ### Reglas de negocio
 - **RN-01**: solo contexto; no releer almacén.
-- **RN-02**: granularidad del lote definida por adaptador: masivo o incremental; configuración solo acota límites.
+- **RN-02**: granularidad del lote y mecanismo de recorrido definidos por adaptador: masivo/incremental, paginación, scroll infinito o detalle uno a uno (RN-10); configuración solo acota límites. Mecanismo actual (LinkedIn): listado `?start=N` sin acceso a detalle.
 - **RN-03**: capturar toda la información original disponible; prohibido interpretar/clasificar/evaluar.
 - **RN-04**: falla por oferta = exclusión + evento `oferta_no_capturada`; lote continúa.
 - **RN-05**: límites verificados antes de capturar. Límite alcanzado → lote vacío + `limite_alcanzado = true`.
@@ -851,11 +853,12 @@ Captura información original de cada oferta del lote. Falla individual excluye 
 | ERR-08 | `error_interno_captura` | No | 3–5 | Fallo de lote con parcial | fallo de lote |
 | ERR-09 | Corrupción del contexto al guardar | No | 6 | Evento crítico; aborto | `error` |
 | EVT-01 | `oferta_no_capturada` | No | 4 | Evento con referencia; excluir oferta; lote continúa | continúa |
+| EVT-02 | `captura_completada` | No | 5 | Suceso con evidencia "páginas=N \| ofertas=M"; cierre del recorrido | continúa |
 
-**Contrato de códigos**: `captura_exitosa`, `fuente_inalcanzable`, `tiempo_agotado_captura`, `sesion_expirada`, `bloqueo_plataforma`, `respuesta_invalida`, `error_interno_captura`; evento por oferta: `oferta_no_capturada`.
+**Contrato de códigos**: `captura_completada` (suceso de cierre; reemplaza a `captura_exitosa`), `fuente_inalcanzable`, `fuente_no_soportada`, `tiempo_agotado_captura`, `sesion_expirada`, `bloqueo_plataforma`, `respuesta_invalida`, `error_interno_captura`; evento por oferta: `oferta_no_capturada`. `fuente_no_soportada` (adaptador no registrado para la fuente, D13) se emite en la resolución del adaptador y nunca se reintenta.
 
 ### Escenarios límite
-- Mecanismo masivo vs incremental.
+- Mecanismo masivo vs incremental; fin de recorrido por ausencia del botón de paginación o página vacía.
 - Límite de páginas u ofertas alcanzado → lote vacío + `limite_alcanzado`.
 - Oferta individual defectuosa → EVT-01.
 - Caída transitoria de página → ERR-03/ERR-04 con reintento.
@@ -874,8 +877,11 @@ Captura información original de cada oferta del lote. Falla individual excluye 
   - `"¿Quedan sets…?"` trata `limite_alcanzado` como cierre de fuente.
 
 ### Notas de implementación
-- Adaptador encapsula mecanismo masivo/incremental y acceso a detalle.
+- Adaptador encapsula el mecanismo de recorrido (RN-10): listado con paginación, scroll infinito o detalle uno a uno; actual (LinkedIn) = listado `?start=N` sin acceso a detalle.
+- Navegación directa a `/jobs/search-results/` con `wait_until="commit"`; reutilizar página 1 ya cargada tras aplicar filtros; fin por ausencia del botón de paginación o página vacía.
+- En páginas sucesivas, el tope de espera de tarjetas se acota con `tope_espera_paginas_sucesivas_segundos` (mín con el timeout de la ficha).
 - Aplicar `pausa_entre_lotes` y `estrategia_anti_bloqueo` en incremental.
+- El adaptador se resuelve por `fuente_id` vía registro (`obtener_adaptador`, D13); fuente sin adaptador → `fuente_no_soportada` (sin reintentos).
 - Progreso persiste en contexto entre pasadas.
 - Conservar lote parcial ante fallo.
 - Auditoría única por `(id_sesion, indice_set)`; idempotencia ante reentradas.
@@ -885,7 +891,7 @@ Captura información original de cada oferta del lote. Falla individual excluye 
 1. **Leer insumos**. Entrada: `search_result`, sesión, políticas, progreso, IDs. Proceso: acceder desde contexto. Salida: insumos. Val: VAL-01. Err: ERR-01.
 2. **Auditoría de sesión**. Entrada: `id_sesion`, `indice_set`, `search_result`. Proceso: si primer lote, escribir registro completo; fallo → reintento único y degradado. Salida: registro o marca degradada. Val: VAL-06. Err: ERR-02.
 3. **Determinar lote y límites**. Entrada: progreso, políticas, `estado_paginacion`. Proceso: primera pasada usa referencias; siguientes, página siguiente con pausas/anti-bloqueo; verificar límites; límite → lote vacío + `limite_alcanzado`. Salida: alcance del lote o lote vacío. Val: VAL-02, VAL-03. Err: ERR-03, ERR-04, ERR-08.
-4. **Capturar por oferta**. Entrada: referencias, sesión, adaptador. Proceso: capturar información disponible; fallas individuales excluyen con evento. Salida: ofertas capturadas. Val: VAL-04. Err: EVT-01; ERR-05, ERR-06, ERR-07, ERR-08.
+4. **Capturar lote recorriendo el listado**. Entrada: referencias, sesión, adaptador, políticas. Proceso: recorrer páginas por el mecanismo del adaptador (actual: paginación `?start=N` sin detalle); fin por ausencia del botón de paginación o página vacía; fallas individuales excluyen con evento; registrar `captura_completada` al cerrar el recorrido. Salida: ofertas capturadas. Val: VAL-04. Err: EVT-01, EVT-02; ERR-05, ERR-06, ERR-07, ERR-08.
 5. **Evaluar lote y progreso**. Entrada: capturas, progreso, intentos. Proceso: éxito/fallo; actualizar `paginas_consumidas`, `capturadas_acumuladas_fuente`; calcular `limite_alcanzado`. Salida: `estado_captura` + lote. Err: ERR-03 a ERR-08.
 6. **Guardar en contexto**. Entrada: lote, `estado_captura`. Proceso: persistir con trazabilidad por oferta. Salida: contexto actualizado. Val: VAL-05. Err: ERR-09.
 7. **Entregar control**. Entrada: contexto. Proceso: cerrar nodo. Salida: flujo a `"Registrar ofertas capturadas en 'Ofertas Totales'"`. Err: ninguna.

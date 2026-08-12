@@ -13,7 +13,8 @@ from typing import Any
 
 from loguru import logger
 
-from modules.discovery.adapters.linkedin import FlowError, LinkedInAdapter
+from modules.discovery.adapters.linkedin import FlowError
+from modules.discovery.adapters.registry import obtener_adaptador
 from modules.discovery.run_context import RunContext, _ahora
 from shared.config import load
 from shared.models import CaptureBatch, EstadoCaptura, Offer
@@ -108,7 +109,7 @@ def capturar_ofertas(contexto: RunContext) -> ResultadoCaptura:
     politicas = contexto.politicas(fuente)
 
     # Paso 3: ejecutar captura con reintento condicional
-    adapter = LinkedInAdapter()
+    adapter = obtener_adaptador(fuente.fuente_id)
     max_attempts, base_wait, multiplier, max_wait = _config_reintentos()
 
     attempt = 0
@@ -164,6 +165,15 @@ def capturar_ofertas(contexto: RunContext) -> ResultadoCaptura:
         contexto.paginas_consumidas = estado.paginas_consumidas
         contexto.capturadas_acumuladas_fuente = estado.capturadas_acumuladas_fuente
         contexto.limite_alcanzado = estado.limite_alcanzado
+        _registrar_evento(
+            contexto,
+            tipo="suceso",
+            codigo="captura_completada",
+            evidencia=(
+                f"páginas={estado.paginas_consumidas} | "
+                f"ofertas={len(lote.ofertas)}"
+            ),
+        )
 
         # Paso 5: auditoría de sesión (no aborta si falla la escritura)
         _escribir_auditoria_sesion(contexto, lote)
