@@ -1,28 +1,28 @@
 from pathlib import Path
 
 from shared.persistence import (
-    find_by_id,
-    generate_id,
-    read_table,
-    update,
-    write_batch,
-    write_row,
+    actualizar_fila,
+    buscar_por_id,
+    escribir_fila,
+    escribir_lote,
+    generar_id,
+    leer_tabla,
 )
 
 
 def test_generate_id_sequence(temp_db_file: Path) -> None:
-    id_1 = generate_id("empresas")
-    id_2 = generate_id("empresas")
-    id_3 = generate_id("empresas")
+    id_1 = generar_id("empresas")
+    id_2 = generar_id("empresas")
+    id_3 = generar_id("empresas")
     assert id_1 == "EMP-0001"
     assert id_2 == "EMP-0002"
     assert id_3 == "EMP-0003"
 
 
 def test_generate_id_per_table(temp_db_file: Path) -> None:
-    company_id = generate_id("empresas")
-    id_oferta = generate_id("ofertas")
-    fuente_id = generate_id("fuentes")
+    company_id = generar_id("empresas")
+    id_oferta = generar_id("ofertas")
+    fuente_id = generar_id("fuentes")
     assert company_id.startswith("EMP-")
     assert id_oferta.startswith("OFE-")
     assert fuente_id.startswith("FNT-")
@@ -30,55 +30,55 @@ def test_generate_id_per_table(temp_db_file: Path) -> None:
 
 def test_write_and_read(temp_db_file: Path) -> None:
     data = {"nombre": "Test", "sector": "tecnologia"}
-    generated_id = write_row("empresas", data)
+    generated_id = escribir_fila("empresas", data)
     assert generated_id.startswith("EMP-")
-    rows = read_table("empresas")
+    rows = leer_tabla("empresas")
     assert len(rows) == 1
     assert rows[0]["nombre"] == "Test"
     assert rows[0]["id"] == generated_id
 
 
 def test_find_by_id_existing(temp_db_file: Path) -> None:
-    id_1 = write_row("empresas", {"nombre": "Uno", "sector": "tech"})
-    write_row("empresas", {"nombre": "Dos", "sector": "fintech"})
-    result = find_by_id("empresas", id_1)
+    id_1 = escribir_fila("empresas", {"nombre": "Uno", "sector": "tech"})
+    escribir_fila("empresas", {"nombre": "Dos", "sector": "fintech"})
+    result = buscar_por_id("empresas", id_1)
     assert result is not None
     assert result["nombre"] == "Uno"
 
 
 def test_find_by_id_missing(temp_db_file: Path) -> None:
-    result = find_by_id("empresas", "EMP-9999")
+    result = buscar_por_id("empresas", "EMP-9999")
     assert result is None
 
 
 def test_update(temp_db_file: Path) -> None:
-    id_1 = write_row("empresas", {"nombre": "Viejo", "sector": "tech"})
-    ok = update("empresas", id_1, {"nombre": "Nuevo"})
+    id_1 = escribir_fila("empresas", {"nombre": "Viejo", "sector": "tech"})
+    ok = actualizar_fila("empresas", id_1, {"nombre": "Nuevo"})
     assert ok is True
-    rows = read_table("empresas")
+    rows = leer_tabla("empresas")
     assert rows[0]["nombre"] == "Nuevo"
 
 
 def test_update_missing(temp_db_file: Path) -> None:
-    ok = update("empresas", "EMP-9999", {"nombre": "Nuevo"})
+    ok = actualizar_fila("empresas", "EMP-9999", {"nombre": "Nuevo"})
     assert ok is False
 
 
 def test_write_with_explicit_id(temp_db_file: Path) -> None:
-    returned_id = write_row("empresas", {"id": "EMP-0100", "nombre": "Custom"})
+    returned_id = escribir_fila("empresas", {"id": "EMP-0100", "nombre": "Custom"})
     assert returned_id == "EMP-0100"
-    result = find_by_id("empresas", "EMP-0100")
+    result = buscar_por_id("empresas", "EMP-0100")
     assert result is not None
     assert result["nombre"] == "Custom"
 
 
 def test_json_lists(temp_db_file: Path) -> None:
-    id_oferta = write_row("ofertas", {
+    id_oferta = escribir_fila("ofertas", {
         "enlace": "https://example.com/job",
         "titulo": "Data Engineer",
         "descripcion_original": "Test",
     })
-    result = find_by_id("ofertas", id_oferta)
+    result = buscar_por_id("ofertas", id_oferta)
     assert result is not None
     assert result["enlace"] == "https://example.com/job"
     assert result["titulo"] == "Data Engineer"
@@ -106,8 +106,8 @@ def test_write_batch_ok(temp_db_file: Path) -> None:
         {"enlace": f"https://x.com/{i}", "titulo": f"Titulo {i}",
          "descripcion_original": "d"} for i in range(3)
     ]
-    write_batch("ofertas", filas)
-    rows = read_table("ofertas")
+    escribir_lote("ofertas", filas)
+    rows = leer_tabla("ofertas")
     assert len(rows) == 3
     assert all(r["titulo"].startswith("Titulo") for r in rows)
 
@@ -115,10 +115,10 @@ def test_write_batch_ok(temp_db_file: Path) -> None:
 def test_write_batch_rollback_parcial(temp_db_file: Path) -> None:
     import sqlite3
 
-    from shared.persistence import write_batch
+    from shared.persistence import escribir_lote
 
     try:
-        write_batch("ofertas", [
+        escribir_lote("ofertas", [
             {"enlace": "https://x.com/ok", "titulo": "Ok",
              "descripcion_original": "d"},
             {"enlace": None},
@@ -126,30 +126,33 @@ def test_write_batch_rollback_parcial(temp_db_file: Path) -> None:
     except sqlite3.IntegrityError:
         pass
     else:
-        raise AssertionError("write_batch deberia fallar con enlace NULL")
-    rows = read_table("ofertas")
+        raise AssertionError("escribir_lote deberia fallar con enlace NULL")
+    rows = leer_tabla("ofertas")
     assert rows == []
 
 
 def test_acquire_and_release_lock(temp_db_file: Path) -> None:
-    from shared.persistence import acquire_lock, check_lock, release_lock
+    from shared.persistence import adquirir_bloqueo, consultar_bloqueo, liberar_bloqueo
 
-    assert acquire_lock("COR-0001", "2026-08-07 10:00:00") is True
-    assert check_lock() == {"id_corrida": "COR-0001", "marca_temporal": "2026-08-07 10:00:00"}
-    release_lock("COR-0001")
-    assert check_lock() is None
+    assert adquirir_bloqueo("COR-0001", "2026-08-07 10:00:00") is True
+    assert consultar_bloqueo() == {
+        "id_corrida": "COR-0001",
+        "marca_temporal": "2026-08-07 10:00:00",
+    }
+    liberar_bloqueo("COR-0001")
+    assert consultar_bloqueo() is None
 
 
 def test_lock_obsoleto_se_sobrescribe(temp_db_file: Path) -> None:
     import datetime
 
-    from shared.persistence import acquire_lock, check_lock
+    from shared.persistence import adquirir_bloqueo, consultar_bloqueo
 
     viejo = datetime.datetime.now() - datetime.timedelta(minutes=300)
-    assert acquire_lock("COR-0001", viejo.strftime("%Y-%m-%d %H:%M:%S")) is True
-    assert acquire_lock("COR-0002", datetime.datetime.now().strftime(
+    assert adquirir_bloqueo("COR-0001", viejo.strftime("%Y-%m-%d %H:%M:%S")) is True
+    assert adquirir_bloqueo("COR-0002", datetime.datetime.now().strftime(
         "%Y-%m-%d %H:%M:%S")) is True
-    lock = check_lock()
+    lock = consultar_bloqueo()
     assert lock is not None
     assert lock["id_corrida"] == "COR-0002"
 
@@ -157,20 +160,20 @@ def test_lock_obsoleto_se_sobrescribe(temp_db_file: Path) -> None:
 def test_lock_vigente_rechaza(temp_db_file: Path) -> None:
     import datetime
 
-    from shared.persistence import acquire_lock
+    from shared.persistence import adquirir_bloqueo
 
     ahora = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    assert acquire_lock("COR-0001", ahora) is True
-    assert acquire_lock("COR-0002", ahora) is False
+    assert adquirir_bloqueo("COR-0001", ahora) is True
+    assert adquirir_bloqueo("COR-0002", ahora) is False
 
 
 def test_generate_id_prefijos_nuevos(temp_db_file: Path) -> None:
-    from shared.persistence import generate_id
+    from shared.persistence import generar_id
 
-    assert generate_id("corridas").startswith("COR-")
-    assert generate_id("sesiones").startswith("SES-")
-    assert generate_id("eventos").startswith("EVT-")
-    assert generate_id("bloqueo").startswith("BLO-")
+    assert generar_id("corridas").startswith("COR-")
+    assert generar_id("sesiones").startswith("SES-")
+    assert generar_id("eventos").startswith("EVT-")
+    assert generar_id("bloqueo").startswith("BLO-")
 
 
 def test_esquema_ofertas_sin_not_null(temp_db_file: Path) -> None:
@@ -192,7 +195,7 @@ def test_esquema_ofertas_sin_not_null(temp_db_file: Path) -> None:
 def test_migracion_c2_desde_esquema_antiguo(tmp_path: Path) -> None:
     import sqlite3
 
-    from shared.persistence import change_path, init_db, read_table, reset_path
+    from shared.persistence import change_path, init_db, leer_tabla, reset_path
 
     path = tmp_path / "vieja.db"
     conn = sqlite3.connect(str(path))
@@ -221,7 +224,7 @@ def test_migracion_c2_desde_esquema_antiguo(tmp_path: Path) -> None:
         }
         assert columnas["titulo"] == 0
         assert columnas["descripcion_original"] == 0
-        rows = read_table("ofertas")
+        rows = leer_tabla("ofertas")
         assert len(rows) == 1
         assert rows[0]["id"] == "OFE-0001"
         assert rows[0]["titulo"] == "Titulo Antiguo"
@@ -263,32 +266,32 @@ def test_migracion_c2_idempotente(tmp_path: Path) -> None:
 
 
 def test_probe_write_no_deja_filas(temp_db_file: Path) -> None:
-    from shared.persistence import probe_write, read_table
+    from shared.persistence import leer_tabla, sondear_escritura
 
-    probe_write()
-    assert read_table("bloqueo") == []
+    sondear_escritura()
+    assert leer_tabla("bloqueo") == []
 
 
 def test_write_corrida_idempotente(temp_db_file: Path) -> None:
-    from shared.persistence import read_table, write_corrida
+    from shared.persistence import leer_tabla, registrar_corrida
 
     datos = {
         "id_corrida": "COR-0009",
         "fecha_inicio": "2026-08-07 10:00:00",
         "estado": "en_ejecucion",
     }
-    write_corrida(datos)
-    write_corrida(datos)
-    filas = read_table("corridas")
+    registrar_corrida(datos)
+    registrar_corrida(datos)
+    filas = leer_tabla("corridas")
     assert len(filas) == 1
     assert filas[0]["id_corrida"] == "COR-0009"
     assert filas[0]["estado"] == "en_ejecucion"
 
 
 def test_write_evento_genera_evento_id(temp_db_file: Path) -> None:
-    from shared.persistence import read_table, write_evento
+    from shared.persistence import escribir_evento, leer_tabla
 
-    evt_id = write_evento(
+    evt_id = escribir_evento(
         {
             "id_corrida": "RUN-0001",
             "fuente_id": "linkedin",
@@ -299,7 +302,7 @@ def test_write_evento_genera_evento_id(temp_db_file: Path) -> None:
         }
     )
     assert evt_id.startswith("EVT-")
-    filas = read_table("eventos")
+    filas = leer_tabla("eventos")
     assert len(filas) == 1
     assert filas[0]["evento_id"] == evt_id
 
@@ -307,18 +310,18 @@ def test_write_evento_genera_evento_id(temp_db_file: Path) -> None:
 def test_lock_forzar_sobrescribe_y_contienda_mantiene(temp_db_file: Path) -> None:
     import datetime
 
-    from shared.persistence import acquire_lock, check_lock
+    from shared.persistence import adquirir_bloqueo, consultar_bloqueo
 
     ahora = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    assert acquire_lock("COR-0001", ahora) is True
-    assert acquire_lock("COR-0002", ahora, forzar=True) is True
-    lock = check_lock()
+    assert adquirir_bloqueo("COR-0001", ahora) is True
+    assert adquirir_bloqueo("COR-0002", ahora, forzar=True) is True
+    lock = consultar_bloqueo()
     assert lock is not None
     assert lock["id_corrida"] == "COR-0002"
 
 
 def test_upsert_oferta_inserta_nueva(temp_db_file: Path) -> None:
-    from shared.persistence import read_table, upsert_oferta
+    from shared.persistence import leer_tabla, upsert_oferta
 
     oferta = {
         "titulo": "Desarrollador Python",
@@ -339,7 +342,7 @@ def test_upsert_oferta_inserta_nueva(temp_db_file: Path) -> None:
     id_oferta = upsert_oferta(oferta)
     assert id_oferta.startswith("OFE-")
 
-    filas = read_table("ofertas", {"id": id_oferta})
+    filas = leer_tabla("ofertas", {"id": id_oferta})
     assert len(filas) == 1
     assert filas[0]["titulo"] == "Desarrollador Python"
     assert filas[0]["fuente_id"] == "LI-01"
@@ -348,7 +351,7 @@ def test_upsert_oferta_inserta_nueva(temp_db_file: Path) -> None:
 
 
 def test_upsert_oferta_ids_nulos_sin_fk_error(temp_db_file: Path) -> None:
-    from shared.persistence import read_table, upsert_oferta
+    from shared.persistence import leer_tabla, upsert_oferta
 
     id_oferta = upsert_oferta(
         {
@@ -368,7 +371,7 @@ def test_upsert_oferta_ids_nulos_sin_fk_error(temp_db_file: Path) -> None:
         }
     )
     assert id_oferta.startswith("OFE-")
-    filas = read_table("ofertas", {"id_externo": "456"})
+    filas = leer_tabla("ofertas", {"id_externo": "456"})
     assert len(filas) == 1
     assert filas[0]["empresa_nombre"] == ""
     assert filas[0]["ubicacion_nombre"] == "Remoto"
@@ -377,7 +380,7 @@ def test_upsert_oferta_ids_nulos_sin_fk_error(temp_db_file: Path) -> None:
 def test_upsert_oferta_mismo_id_externo_no_duplica_y_actualiza_timestamp(
     temp_db_file: Path,
 ) -> None:
-    from shared.persistence import read_table, upsert_oferta
+    from shared.persistence import leer_tabla, upsert_oferta
 
     base = {
         "titulo": "Ingeniero DevOps",
@@ -398,14 +401,14 @@ def test_upsert_oferta_mismo_id_externo_no_duplica_y_actualiza_timestamp(
     segundo = upsert_oferta(dict(base))
 
     assert primero == segundo
-    filas = read_table("ofertas", {"id_externo": "789"})
+    filas = leer_tabla("ofertas", {"id_externo": "789"})
     assert len(filas) == 1
     assert filas[0]["fecha_ultima_verificacion"] != ""
     assert filas[0]["id"] == primero
 
 
 def test_upsert_oferta_con_empresa_nombre_persistido(temp_db_file: Path) -> None:
-    from shared.persistence import read_table, upsert_oferta
+    from shared.persistence import leer_tabla, upsert_oferta
 
     id_oferta = upsert_oferta(
         {
@@ -425,7 +428,7 @@ def test_upsert_oferta_con_empresa_nombre_persistido(temp_db_file: Path) -> None
         }
     )
     assert id_oferta.startswith("OFE-")
-    filas = read_table("ofertas", {"id": id_oferta})
+    filas = leer_tabla("ofertas", {"id": id_oferta})
     assert filas[0]["empresa_nombre"] == "OpenAI"
     assert filas[0]["ubicacion_nombre"] == "Barcelona"
 
@@ -433,7 +436,7 @@ def test_upsert_oferta_con_empresa_nombre_persistido(temp_db_file: Path) -> None
 def test_migracion_4_4_fks_anulables_idempotente(tmp_path: Path) -> None:
     import sqlite3
 
-    from shared.persistence import change_path, init_db, read_table, reset_path
+    from shared.persistence import change_path, init_db, leer_tabla, reset_path
 
     path = tmp_path / "fk.db"
     conn = sqlite3.connect(str(path))
@@ -471,7 +474,7 @@ def test_migracion_4_4_fks_anulables_idempotente(tmp_path: Path) -> None:
             "PRAGMA foreign_key_list(ofertas)"
         ).fetchall()
         assert fks == []
-        rows = read_table("ofertas")
+        rows = leer_tabla("ofertas")
         assert len(rows) == 1
         assert rows[0]["id"] == "OFE-0001"
         assert rows[0]["titulo"] == "Vieja"
@@ -519,7 +522,7 @@ def test_migracion_sesiones_desde_esquema_antiguo(tmp_path: Path) -> None:
         assert "id" in columnas
         assert "fecha_creacion" in columnas
         assert "fecha_ultima_edicion" in columnas
-        rows = read_table("sesiones")
+        rows = leer_tabla("sesiones")
         assert len(rows) == 1
         assert rows[0]["id"] == "SES-0100"
         assert rows[0]["id_sesion"] == "SES-0100"
@@ -561,7 +564,7 @@ def test_migracion_sesiones_idempotente(tmp_path: Path) -> None:
             ).fetchall()
         }
         assert "id" in columnas
-        assert len(read_table("sesiones")) == 0
+        assert len(leer_tabla("sesiones")) == 0
     finally:
         reset_path()
 
@@ -569,7 +572,7 @@ def test_migracion_sesiones_idempotente(tmp_path: Path) -> None:
 def test_write_row_sesiones_auditoria(temp_db_file: Path) -> None:
     import sqlite3
 
-    from shared.persistence import write_row
+    from shared.persistence import escribir_fila
 
     fila = {
         "id": "SES-0201",
@@ -582,7 +585,7 @@ def test_write_row_sesiones_auditoria(temp_db_file: Path) -> None:
         "conteo": 7,
         "estado": "completa",
     }
-    returned_id = write_row("sesiones", fila)
+    returned_id = escribir_fila("sesiones", fila)
     assert returned_id == "SES-0201"
 
     conn = sqlite3.connect(str(temp_db_file))
@@ -751,7 +754,7 @@ def _crear_esquema_ingles(path: Path) -> None:
 def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
     import sqlite3
 
-    from shared.persistence import change_path, init_db, read_table, reset_path
+    from shared.persistence import change_path, init_db, leer_tabla, reset_path
 
     path = tmp_path / "ingles.db"
     _crear_esquema_ingles(path)
@@ -796,7 +799,7 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
         finally:
             conn.close()
 
-        ofertas = read_table("ofertas")
+        ofertas = leer_tabla("ofertas")
         assert len(ofertas) == 1
         oferta = ofertas[0]
         assert oferta["id"] == "OFE-0001"
@@ -810,21 +813,21 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
         assert oferta["estado"] == "descubierta"
         assert oferta["identificador_origen"] == "LI-1"
 
-        fuentes = read_table("fuentes")
+        fuentes = leer_tabla("fuentes")
         assert fuentes[0]["enlace_base"] == "https://www.linkedin.com/jobs"
-        empresas = read_table("empresas")
+        empresas = leer_tabla("empresas")
         assert empresas[0]["nombre_normalizado"] == "techcorp"
         assert empresas[0]["perfil_linkedin"] == "https://www.linkedin.com/company/techcorp"
         assert empresas[0]["tamano"] == "500-1000"
-        eventos = read_table("eventos")
+        eventos = leer_tabla("eventos")
         assert eventos[0]["id_corrida"] == "COR-1839"
         assert eventos[0]["fuente_id"] == "linkedin"
         assert eventos[0]["id_oferta"] == "OFE-0001"
-        sesiones = read_table("sesiones")
+        sesiones = leer_tabla("sesiones")
         assert len(sesiones) == 1
         assert sesiones[0]["id"] == "SES-0218"
         assert sesiones[0]["id_sesion"] == "SES-0218"
-        bloqueo = read_table("bloqueo")
+        bloqueo = leer_tabla("bloqueo")
         assert bloqueo[0]["id_corrida"] == "COR-1839"
     finally:
         reset_path()
@@ -833,7 +836,7 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
 def test_migracion_espanol_total_idempotente(tmp_path: Path) -> None:
     import sqlite3
 
-    from shared.persistence import change_path, init_db, read_table, reset_path
+    from shared.persistence import change_path, init_db, leer_tabla, reset_path
 
     path = tmp_path / "ingles2.db"
     _crear_esquema_ingles(path)
@@ -852,7 +855,7 @@ def test_migracion_espanol_total_idempotente(tmp_path: Path) -> None:
         finally:
             conn.close()
         assert "identificador_origen" in columnas
-        rows = read_table("ofertas")
+        rows = leer_tabla("ofertas")
         assert len(rows) == 1
         assert rows[0]["id"] == "OFE-0001"
         assert rows[0]["enlace"] == "https://www.linkedin.com/jobs/view/4439280106"

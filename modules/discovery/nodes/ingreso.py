@@ -10,7 +10,7 @@ from modules.discovery.adapters.registry import AdaptadorPlataforma, obtener_ada
 from modules.discovery.run_context import RunContext
 from shared.config import load
 from shared.models import EntryResult, FichaFuente
-from shared.persistence import generate_id
+from shared.persistence import generar_id
 from shared.retry import should_retry
 from shared.utilidades import acotar_evidencia
 
@@ -128,7 +128,7 @@ def _ejecutar_ingreso_loop(
                 )
 
                 # Éxito
-                contexto.id_sesion = generate_id("sesiones")
+                contexto.id_sesion = generar_id("sesiones")
                 contexto.handle_sesion = page
                 contexto.entry_result = res
                 playwright_activo = False  # se conserva la sesión para los nodos siguientes

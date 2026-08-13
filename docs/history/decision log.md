@@ -124,6 +124,14 @@ Format: `D<n>` — module/business decisions; `C<n>` — prompt/design alignment
 - **Decision:** Remove the six write-only fields (capture progress lives only in `estado_captura`; the termination reason is passed to Finalizar Proceso by the orchestrator parameter, `motivo_terminacion` DB column unchanged); remove `ResultadoInicio.motivo`, `eventos_declarados` and `_fallo_nodo(resultado=...)`; single `consultar_metricas` call reused for the termination event and run closure; retry sleeps neutralized in tests (`patch("time.sleep")`, tenacity binds sleep at import); dead fixtures deleted (kept `example_offer`, `example_profile` and their dependencies).
 - **Impact:** No behavior or DB-schema change; suite 273 tests in ~3.4 s (was ~35 s); tracker sub-phase 4.10; ficha técnica as-built note (no node re-edition, contract intact).
 
+### D15. Spanish catalog completed for `shared/persistence.py` function names (Lote 2)
+
+- **Date:** 2026-08-12
+- **Status:** In effect
+- **Context:** Decisions D7/D8 (2026-08-11) set Spanish for persistence fields, config keys, and discovery identifiers, but `shared/persistence.py` kept 11 English function names with a duplicated alias pair (`release_lock`/`liberar_bloqueo`); the catalog was half-applied. Also found: `indice_set INTEGER DEFAULT ''` (text default in an INTEGER column) in `ofertas`, `eventos` and `sesiones` — inert (SQLite tolerates it; code always writes the column explicitly).
+- **Decision:** Rename the 11 functions to Spanish and drop the English aliases: `generate_id`→`generar_id`, `read_table`→`leer_tabla`, `write_row`→`escribir_fila`, `write_batch`→`escribir_lote`, `find_by_id`→`buscar_por_id`, `update`→`actualizar_fila`, `acquire_lock`→`adquirir_bloqueo`, `release_lock` merged into `liberar_bloqueo` (single implementation), `check_lock`→`consultar_bloqueo`, `probe_write`→`sondear_escritura`, `write_corrida`→`registrar_corrida`, `write_evento`→`escribir_evento` (~210 references across persistence, discovery nodes and tests). `indice_set DEFAULT ''` is NOT migrated: SQLite cannot alter a column default (table rebuild required) and the wart is inert — documented here as a known issue for any future schema migration.
+- **Impact:** No behavior or DB-schema change (column `motivo_terminacion` and all tables untouched); 273 tests in ~3.4 s; consistency with D7/D8 completed; operational doc `docs/reports/database-tables.md` updated to the new names; tracker sub-phase 4.11; ficha técnica as-built note. Historical mentions in tracker Phase 1 and MVP Execution Plan kept as record of the time.
+
 ---
 
 ## Prompt/design alignment decisions
@@ -189,6 +197,7 @@ Source: DOC-APPENDIX 9A — archived 2026-08-11; content consolidated here uncha
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4 | 2026-08-12 | Added D15 (Spanish catalog completed for persistence function names; `indice_set DEFAULT ''` known inert issue, not migrated). |
 | 1.3 | 2026-08-12 | Added D14 (Lote 1 quick-win cleanup: write-only context state removed, dead params/fixtures, single metrics query, fast suite). |
 | 1.2 | 2026-08-12 | Added D9 (MainFeed entry criterion), D10 (visible-only blocked detection), D11 (list-based capture), D12 (24h filters) and D13 (adapter registry + `fuente_no_soportada`); DE-LI-010 updated to D9. |
 | 1.1 | 2026-08-11 | Added D7 (Spanish naming catalog) and D8 (Spanish state/timeout vocabulary); identifier references in prior decisions updated to the current catalog. |

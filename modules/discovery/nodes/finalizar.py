@@ -18,9 +18,9 @@ from loguru import logger
 from modules.discovery.run_context import RunContext
 from shared.persistence import (
     actualizar_corrida,
+    escribir_evento,
+    leer_tabla,
     liberar_bloqueo,
-    read_table,
-    write_evento,
 )
 
 _FORMATO_TIMESTAMP = "%Y-%m-%d %H:%M:%S"
@@ -65,8 +65,8 @@ def consultar_metricas(contexto: RunContext | None) -> dict[str, int]:
         return {campo: 0 for campo in _CAMPOS_METRICAS}
     id_corrida = contexto.id_corrida
     try:
-        ofertas = read_table("ofertas", {"id_corrida": id_corrida})
-        eventos = read_table("eventos", {"id_corrida": id_corrida})
+        ofertas = leer_tabla("ofertas", {"id_corrida": id_corrida})
+        eventos = leer_tabla("eventos", {"id_corrida": id_corrida})
     except Exception as exc:
         logger.error(
             f"Metricas no consultables | run={id_corrida} | {exc} | "
@@ -114,7 +114,7 @@ def _escribir_evento_terminacion(
         f"{campo}={metricas.get(campo, 0)}" for campo in _CAMPOS_METRICAS
     )
     try:
-        write_evento(
+        escribir_evento(
             {
                 "id_corrida": id_corrida,
                 "tipo": "suceso" if estado == "completada" else "error",

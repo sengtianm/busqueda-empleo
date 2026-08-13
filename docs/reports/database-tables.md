@@ -6,7 +6,7 @@ Fuente de verdad: `shared/persistence.py` (esquemas y funciones de escritura) y 
 
 ## 1. Resumen
 
-La BD tiene 9 tablas. Se habilita con `init_db()` (crea tablas y aplica migraciones idempotentes, incluida la migración al catálogo español D7/D8). Fechas en formato `YYYY-MM-DD HH:MM:SS` (hora local). IDs secuenciales con prefijo por tabla (`FNT`, `EMP`, `UBI`, `OFE`, `COR`, `SES`, `EVT`, `BLO`) generados por `generate_id()`.
+La BD tiene 9 tablas. Se habilita con `init_db()` (crea tablas y aplica migraciones idempotentes, incluida la migración al catálogo español D7/D8). Fechas en formato `YYYY-MM-DD HH:MM:SS` (hora local). IDs secuenciales con prefijo por tabla (`FNT`, `EMP`, `UBI`, `OFE`, `COR`, `SES`, `EVT`, `BLO`) generados por `generar_id()`.
 
 Estado actual (conteos al momento del reporte):
 
@@ -17,14 +17,14 @@ Estado actual (conteos al momento del reporte):
 | `empresas` | 0 | — (catálogo reservado; sin escritura en Módulo 1) |
 | `ubicaciones` | 0 | — (catálogo reservado; sin escritura en Módulo 1) |
 | `ofertas` | 7 | Nodo Captura → `upsert_oferta()` |
-| `corridas` | 9 | Nodo INICIO → `write_corrida()`; Nodo Finalizar → `actualizar_corrida()` |
-| `eventos` | 35 | Nodos del flujo → `write_evento()` |
-| `sesiones` | 7 | Nodo Captura → `write_row("sesiones")` |
-| `bloqueo` | 0 | Nodo INICIO → `acquire_lock()`; Nodo Finalizar → `liberar_bloqueo()` |
+| `corridas` | 9 | Nodo INICIO → `registrar_corrida()`; Nodo Finalizar → `actualizar_corrida()` |
+| `eventos` | 35 | Nodos del flujo → `escribir_evento()` |
+| `sesiones` | 7 | Nodo Captura → `escribir_fila("sesiones")` |
+| `bloqueo` | 0 | Nodo INICIO → `adquirir_bloqueo()`; Nodo Finalizar → `liberar_bloqueo()` |
 
 ### Momentos del flujo que diligencian las tablas
 
-1. **INICIO**: prueba de escritura (`probe_write()`, insert+rollback en `bloqueo`), adquisición del bloqueo (`acquire_lock()` → `bloqueo`) y registro de la corrida (`write_corrida()` → `corridas` con estado `en_ejecucion`). Ante fallos escribe eventos de error (`eventos`).
+1. **INICIO**: prueba de escritura (`sondear_escritura()`, insert+rollback en `bloqueo`), adquisición del bloqueo (`adquirir_bloqueo()` → `bloqueo`) y registro de la corrida (`registrar_corrida()` → `corridas` con estado `en_ejecucion`). Ante fallos escribe eventos de error (`eventos`).
 2. **Control de fuentes / Ingreso / Búsqueda**: no escriben en BD; en caso de aborto o error crítico registran eventos de error (`eventos`).
 3. **Registro**: registra el resultado del registro de la fuente como evento de éxito o fallo (`eventos`).
 4. **Captura**: audita cada lote capturado escribiendo la sesión de plataforma (`sesiones`) y registra las ofertas (`upsert_oferta()` → `ofertas`); emite eventos de éxito/registro parcial (`eventos`).
@@ -34,13 +34,13 @@ Estado actual (conteos al momento del reporte):
 
 ### 2.1. `secuencia_ids`
 
-Control interno del generador de IDs secuenciales (`PREFIJO-NNNN`). No se escribe manualmente: `generate_id()` la inserta (`ultimo_numero = 1`) o incrementa (`ultimo_numero + 1`) al crear cualquier ID de otra tabla.
+Control interno del generador de IDs secuenciales (`PREFIJO-NNNN`). No se escribe manualmente: `generar_id()` la inserta (`ultimo_numero = 1`) o incrementa (`ultimo_numero + 1`) al crear cualquier ID de otra tabla.
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
-| `tabla_nombre` | TEXT (PK) | Nombre de la tabla para la que se lleva la secuencia | En el primer `generate_id()` de esa tabla (automático) |
-| `prefijo` | TEXT NOT NULL | Prefijo del ID de esa tabla (`FNT`, `EMP`, `UBI`, `OFE`, `COR`, `SES`, `EVT`, `BLO`) | En el primer `generate_id()` de esa tabla (automático) |
-| `ultimo_numero` | INTEGER NOT NULL DEFAULT 0 | Último número asignado (se incrementa en 1 por cada ID) | En cada `generate_id()` (automático) |
+| `tabla_nombre` | TEXT (PK) | Nombre de la tabla para la que se lleva la secuencia | En el primer `generar_id()` de esa tabla (automático) |
+| `prefijo` | TEXT NOT NULL | Prefijo del ID de esa tabla (`FNT`, `EMP`, `UBI`, `OFE`, `COR`, `SES`, `EVT`, `BLO`) | En el primer `generar_id()` de esa tabla (automático) |
+| `ultimo_numero` | INTEGER NOT NULL DEFAULT 0 | Último número asignado (se incrementa en 1 por cada ID) | En cada `generar_id()` (automático) |
 
 ### 2.2. `fuentes`
 
@@ -53,7 +53,7 @@ Catálogo de fuentes de origen (plataformas, portales, sitios corporativos). **E
 | `tipo` | TEXT DEFAULT '' | Tipo de fuente (portal, sitio corporativo, etc.) | No se diligencia en el Módulo 1 |
 | `enlace_base` | TEXT DEFAULT '' | URL base de la fuente | No se diligencia en el Módulo 1 |
 | `activa` | INTEGER DEFAULT 1 | Indica si la fuente está habilitada (1/0) | No se diligencia en el Módulo 1 |
-| `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática al insertar con `write_row`/`write_batch` |
+| `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática al insertar con `escribir_fila`/`escribir_lote` |
 | `fecha_ultima_edicion` | TEXT DEFAULT '' | Fecha/hora de la última actualización | Automática en cada insert/update |
 
 ### 2.3. `empresas`
@@ -117,7 +117,7 @@ Oportunidades (vacantes) descubiertas. La escribe el **nodo Captura** mediante `
 
 ### 2.6. `corridas`
 
-Registro de cada corrida (ejecución completa del flujo). Se crea en el **nodo INICIO** con `write_corrida()` (insert idempotente por `id_corrida`) y se cierra en el **nodo Finalizar** con `actualizar_corrida()`.
+Registro de cada corrida (ejecución completa del flujo). Se crea en el **nodo INICIO** con `registrar_corrida()` (insert idempotente por `id_corrida`) y se cierra en el **nodo Finalizar** con `actualizar_corrida()`.
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
@@ -133,24 +133,24 @@ Registro de cada corrida (ejecución completa del flujo). Se crea en el **nodo I
 
 ### 2.7. `eventos`
 
-Bitácora de eventos (errores y sucesos) de las corridas, con `tipo` `error` o `suceso` y código de negocio. La escribe `write_evento()` desde los nodos: INICIO (fallos de inicialización, p. ej. ERR-10), Control de fuentes (abortos, ERR-01), Registro (resultado del registro), Captura (éxito `ofertas_registradas`, `registro_parcial`), Finalizar (terminación: `corrida_completada` como suceso o el motivo como error). Nunca se eliminan (auditoría).
+Bitácora de eventos (errores y sucesos) de las corridas, con `tipo` `error` o `suceso` y código de negocio. La escribe `escribir_evento()` desde los nodos: INICIO (fallos de inicialización, p. ej. ERR-10), Control de fuentes (abortos, ERR-01), Registro (resultado del registro), Captura (éxito `ofertas_registradas`, `registro_parcial`), Finalizar (terminación: `corrida_completada` como suceso o el motivo como error). Nunca se eliminan (auditoría).
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
-| `evento_id` | TEXT (PK) | ID único del evento (prefijo `EVT`) | Automático en cada `write_evento()` |
-| `id_corrida` | TEXT NOT NULL | Corrida a la que pertenece el evento (obligatorio) | En cada `write_evento()`, desde el contexto de la corrida |
+| `evento_id` | TEXT (PK) | ID único del evento (prefijo `EVT`) | Automático en cada `escribir_evento()` |
+| `id_corrida` | TEXT NOT NULL | Corrida a la que pertenece el evento (obligatorio) | En cada `escribir_evento()`, desde el contexto de la corrida |
 | `fuente_id` | TEXT DEFAULT '' | Fuente sobre la que ocurrió el evento | Solo en eventos con contexto de fuente (Captura, Registro); vacío en eventos de corrida (INICIO, Finalizar) |
 | `id_sesion` | TEXT DEFAULT '' | Sesión de plataforma del evento | Solo en eventos de Captura/Registro con sesión activa |
 | `indice_set` | INTEGER DEFAULT '' | Índice del set de filtros donde ocurrió | Solo en eventos de Captura/Registro con set activo |
-| `marca_temporal` | TEXT NOT NULL | Fecha/hora exacta del evento | En cada `write_evento()` (o automática si no se provee) |
-| `tipo` | TEXT NOT NULL | Clasificación: `error` o `suceso` | En cada `write_evento()`, según el resultado del nodo |
-| `codigo` | TEXT NOT NULL | Código de negocio (`ERR-01`, `ERR-10`, `ofertas_registradas`, `registro_parcial`, motivo de terminación, etc.) | En cada `write_evento()` |
-| `evidencia` | TEXT DEFAULT '' | Evidencia: trazas, fragmentos, métricas asociadas | En cada `write_evento()` (nunca credenciales) |
+| `marca_temporal` | TEXT NOT NULL | Fecha/hora exacta del evento | En cada `escribir_evento()` (o automática si no se provee) |
+| `tipo` | TEXT NOT NULL | Clasificación: `error` o `suceso` | En cada `escribir_evento()`, según el resultado del nodo |
+| `codigo` | TEXT NOT NULL | Código de negocio (`ERR-01`, `ERR-10`, `ofertas_registradas`, `registro_parcial`, motivo de terminación, etc.) | En cada `escribir_evento()` |
+| `evidencia` | TEXT DEFAULT '' | Evidencia: trazas, fragmentos, métricas asociadas | En cada `escribir_evento()` (nunca credenciales) |
 | `id_oferta` | TEXT DEFAULT '' | Oferta relacionada al evento (definida en el modelo; no se escribe aún) | Sin escritura en el Módulo 1 (reservada) |
 
 ### 2.8. `sesiones`
 
-Auditoría de las sesiones de plataforma por lote capturado. La escribe el **nodo Captura** con `write_row("sesiones")` tras procesar cada lote (con reintento si falla).
+Auditoría de las sesiones de plataforma por lote capturado. La escribe el **nodo Captura** con `escribir_fila("sesiones")` tras procesar cada lote (con reintento si falla).
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
@@ -168,7 +168,7 @@ Auditoría de las sesiones de plataforma por lote capturado. La escribe el **nod
 
 ### 2.9. `bloqueo`
 
-Bloqueo de concurrencia de corridas (una sola corrida activa a la vez). Máximo una fila. La escribe el **nodo INICIO** con `acquire_lock()` (insert, o update por obsolescencia o con `forzar`) y la elimina el **nodo Finalizar** con `liberar_bloqueo()`. El INICIO también hace una prueba de escritura con `probe_write()` (insert + rollback, sin dejar datos).
+Bloqueo de concurrencia de corridas (una sola corrida activa a la vez). Máximo una fila. La escribe el **nodo INICIO** con `adquirir_bloqueo()` (insert, o update por obsolescencia o con `forzar`) y la elimina el **nodo Finalizar** con `liberar_bloqueo()`. El INICIO también hace una prueba de escritura con `sondear_escritura()` (insert + rollback, sin dejar datos).
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|

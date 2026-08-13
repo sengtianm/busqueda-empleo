@@ -23,7 +23,7 @@ from datetime import datetime
 from loguru import logger
 
 from modules.discovery.run_context import RunContext
-from shared.persistence import write_evento
+from shared.persistence import escribir_evento
 
 _FORMATO_TIMESTAMP = "%Y-%m-%d %H:%M:%S"
 
@@ -50,7 +50,7 @@ def _registrar_evento(contexto: RunContext | None, codigo: str, evidencia: str) 
         logger.error(f"{codigo} | sin id_corrida | {evidencia}")
         return
     try:
-        write_evento(
+        escribir_evento(
             {
                 "id_corrida": id_corrida,
                 "tipo": "error",

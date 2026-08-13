@@ -10,10 +10,10 @@ from modules.discovery.nodes.inicio import ejecutar_inicio
 from modules.discovery.run_context import RunContext
 from shared.errors import PersistenceError
 from shared.persistence import (
-    acquire_lock,
-    check_lock,
-    read_table,
-    release_lock,
+    adquirir_bloqueo,
+    consultar_bloqueo,
+    leer_tabla,
+    liberar_bloqueo,
 )
 
 CONFIG_BASE = {
@@ -63,12 +63,12 @@ def test_inicio_ok_corrida_registrada_y_bloqueo(temp_db_file: Path) -> None:
     assert isinstance(res.contexto, RunContext)
     assert res.contexto.id_corrida == res.id_corrida
     assert res.contexto.bloqueo_adquirido is True
-    corridas = read_table("corridas")
+    corridas = leer_tabla("corridas")
     assert any(
         c["id_corrida"] == res.id_corrida and c["estado"] == "en_ejecucion"
         for c in corridas
     )
-    bloqueo = check_lock()
+    bloqueo = consultar_bloqueo()
     assert bloqueo is not None
     assert bloqueo["id_corrida"] == res.id_corrida
 
@@ -94,7 +94,7 @@ def test_inicio_descarta_fuente_incompleta_con_evento(temp_db_file: Path) -> Non
     assert res.estado == "ok"
     assert res.contexto is not None
     assert [f.fuente_id for f in res.contexto.fuentes_filtradas] == ["linkedin"]
-    eventos = read_table("eventos")
+    eventos = leer_tabla("eventos")
     assert any(
         e["codigo"] == "ERR-12" and e["fuente_id"] == "rotosource"
         for e in eventos
@@ -106,37 +106,37 @@ def test_inicio_aborta_source_id_duplicados(temp_db_file: Path) -> None:
     res = ejecutar_inicio({**CONFIG_BASE, "fuentes": [FUENTE_VALIDA, duplicada]})
     assert res.estado == "error"
     assert res.codigo == "ERR-11"
-    assert read_table("corridas") == []
+    assert leer_tabla("corridas") == []
 
 
 def test_inicio_concurrencia_activa_terminacion_controlada(
     temp_db_file: Path,
 ) -> None:
-    acquire_lock("COR-OTRO", _marca(datetime.datetime.now()))
+    adquirir_bloqueo("COR-OTRO", _marca(datetime.datetime.now()))
     try:
         res = ejecutar_inicio(dict(CONFIG_UNA_FUENTE))
     finally:
-        release_lock("COR-OTRO")
+        liberar_bloqueo("COR-OTRO")
     assert res.estado == "concurrencia"
     assert res.codigo == "ERR-06"
-    assert read_table("corridas") == []
-    eventos = read_table("eventos")
+    assert leer_tabla("corridas") == []
+    eventos = leer_tabla("eventos")
     assert any(e["codigo"] == "ERR-06" for e in eventos)
 
 
 def test_inicio_bloqueo_obsoleto_se_sobrescribe(temp_db_file: Path) -> None:
     viejo = datetime.datetime.now() - datetime.timedelta(minutes=300)
-    acquire_lock("COR-VIEJA", _marca(viejo))
+    adquirir_bloqueo("COR-VIEJA", _marca(viejo))
     try:
         res = ejecutar_inicio(dict(CONFIG_UNA_FUENTE))
         assert res.estado == "ok"
-        bloqueo = check_lock()
+        bloqueo = consultar_bloqueo()
         assert bloqueo is not None
         assert bloqueo["id_corrida"] == res.id_corrida
-        eventos = read_table("eventos")
+        eventos = leer_tabla("eventos")
         assert any(e["codigo"] == "ERR-07" for e in eventos)
     finally:
-        release_lock(res.id_corrida)
+        liberar_bloqueo(res.id_corrida)
 
 
 def test_inicio_bd_indisponible_aborta(temp_db_file: Path, monkeypatch: Any) -> None:
@@ -175,7 +175,7 @@ def test_inicio_run_id_falla_dos_veces_aborta(
     def _falla() -> str:
         raise PersistenceError("01", "id generation down")
 
-    monkeypatch.setattr("modules.discovery.nodes.inicio.generate_id", _falla)
+    monkeypatch.setattr("modules.discovery.nodes.inicio.generar_id", _falla)
     res = ejecutar_inicio(dict(CONFIG_UNA_FUENTE))
     assert res.estado == "error"
     assert res.codigo == "ERR-01"
@@ -187,11 +187,11 @@ def test_inicio_timestamp_bloqueo_invalido_aborta(
     def _bloqueo_invalido() -> dict[str, Any] | None:
         return {"id_corrida": "COR-ROTA", "marca_temporal": "no-es-fecha"}
 
-    monkeypatch.setattr("modules.discovery.nodes.inicio.check_lock", _bloqueo_invalido)
+    monkeypatch.setattr("modules.discovery.nodes.inicio.consultar_bloqueo", _bloqueo_invalido)
     res = ejecutar_inicio(dict(CONFIG_UNA_FUENTE))
     assert res.estado == "error"
     assert res.codigo == "ERR-08"
-    assert read_table("corridas") == []
+    assert leer_tabla("corridas") == []
 
 
 def test_inicio_descarta_estrategia_anti_bloqueo_invalida(
@@ -210,7 +210,7 @@ def test_inicio_descarta_estrategia_anti_bloqueo_invalida(
     assert res.estado == "ok"
     assert res.contexto is not None
     assert [f.fuente_id for f in res.contexto.fuentes_filtradas] == ["linkedin"]
-    eventos = read_table("eventos")
+    eventos = leer_tabla("eventos")
     assert any(e["codigo"] == "ERR-12" for e in eventos)
 
 
@@ -220,7 +220,7 @@ def test_inicio_descarta_fuente_sin_source_id(temp_db_file: Path) -> None:
     assert res.estado == "ok"
     assert res.contexto is not None
     assert [f.fuente_id for f in res.contexto.fuentes_filtradas] == ["linkedin"]
-    eventos = read_table("eventos")
+    eventos = leer_tabla("eventos")
     assert any(
         e["codigo"] == "ERR-12" and "fuente_id" in e["evidencia"] for e in eventos
     )
@@ -242,7 +242,7 @@ def test_inicio_estado_interno_falla_aborta(
     def _estalla(_: dict[str, Any]) -> None:
         raise RuntimeError("boom")
 
-    monkeypatch.setattr("modules.discovery.nodes.inicio.write_corrida", _estalla)
+    monkeypatch.setattr("modules.discovery.nodes.inicio.registrar_corrida", _estalla)
     res = ejecutar_inicio(dict(CONFIG_UNA_FUENTE))
     assert res.estado == "error"
     assert res.codigo == "ERR-10"
@@ -255,13 +255,13 @@ def test_inicio_contienda_normal_err06_de_concurrencia(
         return False
 
     monkeypatch.setattr(
-        "modules.discovery.nodes.inicio.acquire_lock",
+        "modules.discovery.nodes.inicio.adquirir_bloqueo",
         lambda _run_id, _ts, forzar=False: False,
     )
     res = ejecutar_inicio(dict(CONFIG_UNA_FUENTE))
     assert res.estado == "concurrencia"
     assert res.codigo == "ERR-06"
-    eventos = read_table("eventos")
+    eventos = leer_tabla("eventos")
     assert any(e["codigo"] == "ERR-06" for e in eventos)
 
 
@@ -269,14 +269,14 @@ def test_inicio_contienda_sobrescritura_err06(
     temp_db_file: Path, monkeypatch: Any
 ) -> None:
     viejo = datetime.datetime.now() - datetime.timedelta(minutes=300)
-    acquire_lock("COR-VIEJA", _marca(viejo))
+    adquirir_bloqueo("COR-VIEJA", _marca(viejo))
     try:
         monkeypatch.setattr(
-            "modules.discovery.nodes.inicio.acquire_lock",
+            "modules.discovery.nodes.inicio.adquirir_bloqueo",
             lambda _run_id, _ts, forzar=False: False,
         )
         res = ejecutar_inicio(dict(CONFIG_UNA_FUENTE))
         assert res.estado == "concurrencia"
         assert res.codigo == "ERR-06"
     finally:
-        release_lock("COR-VIEJA")
+        liberar_bloqueo("COR-VIEJA")

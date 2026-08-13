@@ -8,7 +8,7 @@ from loguru import logger
 
 from modules.discovery.run_context import RunContext, _ahora
 from shared.models import EntryResult, SearchResult, TipoEvento
-from shared.persistence import write_evento
+from shared.persistence import escribir_evento
 
 
 @dataclass
@@ -57,7 +57,7 @@ def registrar_evento(contexto: RunContext) -> ResultadoRegistro:
         f"intentos: {resultado.numero_de_intentos}"
     )
     try:
-        write_evento(
+        escribir_evento(
             {
                 "id_corrida": contexto.id_corrida,
                 "fuente_id": (

@@ -21,7 +21,7 @@ from shared.models import (
     SearchResult,
     SetFiltros,
 )
-from shared.persistence import generate_id
+from shared.persistence import generar_id
 
 _TIPOS_ACCESO = ("publico", "con_autenticacion")
 
@@ -46,7 +46,7 @@ class RunContext:
             )
         if config_captura is None:
             config_captura = load().get("captura", {})
-        self.id_corrida = id_corrida or generate_id("corridas")
+        self.id_corrida = id_corrida or generar_id("corridas")
         self.fecha_inicio: str = _ahora()
         self.fuentes_filtradas: list[FichaFuente] = []
         self._sets_validos: dict[str, list[SetFiltros]] = {}

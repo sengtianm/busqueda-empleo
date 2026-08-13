@@ -18,7 +18,7 @@ from modules.discovery.adapters.registry import obtener_adaptador
 from modules.discovery.run_context import RunContext, _ahora
 from shared.config import load
 from shared.models import CaptureBatch, EstadoCaptura, Offer
-from shared.persistence import upsert_oferta, write_evento, write_row
+from shared.persistence import escribir_evento, escribir_fila, upsert_oferta
 from shared.retry import should_retry
 from shared.utilidades import acotar_evidencia
 
@@ -50,7 +50,7 @@ def _registrar_evento(
 ) -> None:
     """Escribe un evento en la tabla `eventos` sin abortar el flujo."""
     try:
-        write_evento(
+        escribir_evento(
             {
                 "id_corrida": contexto.id_corrida,
                 "fuente_id": (
@@ -209,7 +209,7 @@ def _escribir_auditoria_sesion(contexto: RunContext, lote: CaptureBatch) -> None
     intentos = 2
     for intento in range(1, intentos + 1):
         try:
-            write_row("sesiones", datos)
+            escribir_fila("sesiones", datos)
             return
         except Exception as exc:
             logger.error(

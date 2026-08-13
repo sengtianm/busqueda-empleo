@@ -359,9 +359,9 @@ def _migrar_espanol_total(conn: sqlite3.Connection) -> None:
 
 
 def _migrate_sesiones_id(conn: sqlite3.Connection) -> None:
-    """Sesiones migration: align the table with `write_row` generic inserts.
+    """Sesiones migration: align the table with `escribir_fila` generic inserts.
 
-    `write_row` inserts an `id` (and `fecha_creacion`/`fecha_ultima_edicion`) column
+    `escribir_fila` inserts an `id` (and `fecha_creacion`/`fecha_ultima_edicion`) column
     by default, but the legacy `sesiones` table was declared with
     `id_sesion TEXT PRIMARY KEY` and no `id` column, so every session audit
     insert failed with "table sesiones has no column named id". The table is
@@ -510,7 +510,7 @@ def _migrate_corridas_finalizacion(conn: sqlite3.Connection) -> None:
             conn.execute(f"ALTER TABLE corridas ADD COLUMN {definicion}")
 
 
-def generate_id(tabla: str) -> str:
+def generar_id(tabla: str) -> str:
     prefijo = PREFIXES.get(tabla)
     if prefijo is None:
         disponibles = list(PREFIXES.keys())
@@ -534,7 +534,7 @@ def generate_id(tabla: str) -> str:
         conn.close()
 
 
-def read_table(
+def leer_tabla(
     tabla: str, filtros: dict[str, Any] | None = None
 ) -> list[dict[str, Any]]:
     conn = _connection()
@@ -555,10 +555,10 @@ def read_table(
         conn.close()
 
 
-def write_row(tabla: str, datos: dict[str, Any]) -> str:
+def escribir_fila(tabla: str, datos: dict[str, Any]) -> str:
     d = _serialize(datos)
     if "id" not in d or not d["id"]:
-        d["id"] = generate_id(tabla)
+        d["id"] = generar_id(tabla)
     ahora = _now()
     if not d.get("fecha_creacion"):
         d["fecha_creacion"] = ahora
@@ -576,7 +576,7 @@ def write_row(tabla: str, datos: dict[str, Any]) -> str:
         conn.close()
 
 
-def find_by_id(tabla: str, id_valor: str) -> dict[str, Any] | None:
+def buscar_por_id(tabla: str, id_valor: str) -> dict[str, Any] | None:
     conn = _connection()
     try:
         cursor = conn.execute(f"SELECT * FROM {tabla} WHERE id = ?", (id_valor,))
@@ -585,7 +585,7 @@ def find_by_id(tabla: str, id_valor: str) -> dict[str, Any] | None:
         conn.close()
 
 
-def update(tabla: str, id_valor: str, datos: dict[str, Any]) -> bool:
+def actualizar_fila(tabla: str, id_valor: str, datos: dict[str, Any]) -> bool:
     d = _serialize(datos)
     d["fecha_ultima_edicion"] = _now()
     if "id" in d:
@@ -602,7 +602,7 @@ def update(tabla: str, id_valor: str, datos: dict[str, Any]) -> bool:
         conn.close()
 
 
-def write_batch(tabla: str, filas: list[dict[str, Any]]) -> None:
+def escribir_lote(tabla: str, filas: list[dict[str, Any]]) -> None:
     if not filas:
         return
     now = _now()
@@ -610,7 +610,7 @@ def write_batch(tabla: str, filas: list[dict[str, Any]]) -> None:
     for datos in filas:
         d = _serialize(datos)
         if "id" not in d or not d["id"]:
-            d["id"] = generate_id(tabla)
+            d["id"] = generar_id(tabla)
         if not d.get("fecha_creacion"):
             d["fecha_creacion"] = now
         d["fecha_ultima_edicion"] = now
@@ -642,7 +642,7 @@ def umbral_obsolescencia_minutos(config: dict[str, Any] | None = None) -> int:
         return 120
 
 
-def acquire_lock(
+def adquirir_bloqueo(
     id_corrida: str,
     marca_temporal: str,
     forzar: bool = False,
@@ -697,7 +697,8 @@ def acquire_lock(
         conn.close()
 
 
-def release_lock(id_corrida: str) -> None:
+def liberar_bloqueo(id_corrida: str) -> None:
+    """Releases the concurrency lock for a run (Finalizar node)."""
     conn = _connection()
     try:
         conn.execute("DELETE FROM bloqueo WHERE id_corrida = ?", (id_corrida,))
@@ -706,12 +707,7 @@ def release_lock(id_corrida: str) -> None:
         conn.close()
 
 
-def liberar_bloqueo(id_corrida: str) -> None:
-    """Spanish alias of `release_lock` for the discovery nodes (Finalizar)."""
-    release_lock(id_corrida)
-
-
-def check_lock() -> dict[str, Any] | None:
+def consultar_bloqueo() -> dict[str, Any] | None:
     conn = _connection()
     try:
         fila = conn.execute(
@@ -722,7 +718,7 @@ def check_lock() -> dict[str, Any] | None:
         conn.close()
 
 
-def probe_write() -> None:
+def sondear_escritura() -> None:
     """VAL-03 probe: INSERT with immediate rollback on the bloqueo table."""
     try:
         conn = _connection()
@@ -740,7 +736,7 @@ def probe_write() -> None:
         conn.close()
 
 
-def write_corrida(datos: dict[str, Any]) -> None:
+def registrar_corrida(datos: dict[str, Any]) -> None:
     """Registers a run row in `corridas`, idempotent per id_corrida."""
     d = _serialize(datos)
     conn = _connection()
@@ -766,7 +762,7 @@ def actualizar_corrida(id_corrida: str, campos: dict[str, Any]) -> bool:
     Closes a run (Finalizar Proceso node): persists the final state and the
     closure metrics (`fecha_fin`, `motivo_terminacion`, `total_ofertas`,
     `total_errores`, `total_sucesos`, `fuentes_procesadas`). Follows the
-    `update` pattern; `corridas` is keyed by `id_corrida` instead of `id`.
+    `actualizar_fila` pattern; `corridas` is keyed by `id_corrida` instead of `id`.
     """
     d = _serialize(campos)
     asignaciones = ", ".join(f"{k} = :{k}" for k in d.keys())
@@ -794,23 +790,23 @@ def upsert_oferta(oferta: dict[str, Any]) -> str:
     d = dict(oferta)
     id_externo = d.get("id_externo")
     if id_externo:
-        existentes = read_table("ofertas", {"id_externo": id_externo})
+        existentes = leer_tabla("ofertas", {"id_externo": id_externo})
         if existentes:
-            update(
+            actualizar_fila(
                 "ofertas",
                 cast(str, existentes[0]["id"]),
                 {"fecha_ultima_verificacion": _now()},
             )
             return cast(str, existentes[0]["id"])
     if "id" not in d or not d["id"]:
-        d["id"] = generate_id("ofertas")
-    return write_row("ofertas", d)
+        d["id"] = generar_id("ofertas")
+    return escribir_fila("ofertas", d)
 
 
-def write_evento(datos: dict[str, Any]) -> str:
+def escribir_evento(datos: dict[str, Any]) -> str:
     """Registers an event/success row in `eventos`; returns its evento_id."""
     d = _serialize(datos)
-    evento_id = str(d.get("evento_id") or generate_id("eventos"))
+    evento_id = str(d.get("evento_id") or generar_id("eventos"))
     d["evento_id"] = evento_id
     if not d.get("marca_temporal"):
         d["marca_temporal"] = _now()

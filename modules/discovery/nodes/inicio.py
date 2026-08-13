@@ -26,14 +26,14 @@ from loguru import logger
 from modules.discovery.run_context import RunContext
 from shared.config import load
 from shared.persistence import (
-    acquire_lock,
-    check_lock,
-    generate_id,
+    adquirir_bloqueo,
+    consultar_bloqueo,
+    escribir_evento,
+    generar_id,
     init_db,
-    probe_write,
+    registrar_corrida,
+    sondear_escritura,
     umbral_obsolescencia_minutos,
-    write_corrida,
-    write_evento,
 )
 
 _FORMATO_TIMESTAMP = "%Y-%m-%d %H:%M:%S"
@@ -64,7 +64,7 @@ def _ahora() -> str:
 def _generar_id_corrida() -> str:
     for intento in (1, 2):
         try:
-            return generate_id("corridas")
+            return generar_id("corridas")
         except Exception:
             if intento == 2:
                 raise
@@ -72,7 +72,7 @@ def _generar_id_corrida() -> str:
 
 
 def _es_obsoleto(marca_temporal: datetime, umbral_minutos: int) -> bool:
-    """Mirrors `shared.persistence.acquire_lock` staleness semantics."""
+    """Mirrors `shared.persistence.adquirir_bloqueo` staleness semantics."""
     if umbral_minutos <= 0:
         return False
     antiguedad = (datetime.now() - marca_temporal).total_seconds() / 60
@@ -87,7 +87,7 @@ def _registrar_evento(
     fuente_id: str = "",
 ) -> None:
     try:
-        write_evento(
+        escribir_evento(
             {
                 "id_corrida": id_corrida,
                 "fuente_id": fuente_id,
@@ -215,7 +215,7 @@ def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
 
     try:
         init_db()
-        probe_write()
+        sondear_escritura()
     except Exception as error:
         _registrar_evento(id_corrida, "error", "ERR-05", f"base de datos no disponible: {error}")
         logger.error(f"ERR-05 | run={id_corrida} | database unavailable | {error}")
@@ -227,7 +227,7 @@ def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
         )
 
     try:
-        bloqueo_actual = check_lock()
+        bloqueo_actual = consultar_bloqueo()
     except Exception as error:
         _registrar_evento(id_corrida, "error", "ERR-08", f"estado de bloqueo no decidible: {error}")
         logger.error(f"ERR-08 | run={id_corrida} | lock state undecidable | {error}")
@@ -267,7 +267,7 @@ def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
                 descripcion="another run is active (lock not stale)",
             )
         try:
-            adquirido = acquire_lock(id_corrida, marca_temporal, forzar=True)
+            adquirido = adquirir_bloqueo(id_corrida, marca_temporal, forzar=True)
         except Exception as error:
             _registrar_evento(id_corrida, "error", "ERR-08", f"fallo al sobrescribir: {error}")
             return ResultadoInicio(
@@ -297,7 +297,7 @@ def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
         )
     else:
         try:
-            adquirido = acquire_lock(id_corrida, marca_temporal)
+            adquirido = adquirir_bloqueo(id_corrida, marca_temporal)
         except Exception as error:
             _registrar_evento(id_corrida, "error", "ERR-08", f"fallo al adquirir: {error}")
             return ResultadoInicio(
@@ -346,7 +346,7 @@ def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
             permitir_vacio=True,
         )
         contexto.bloqueo_adquirido = True
-        write_corrida(
+        registrar_corrida(
             {
                 "id_corrida": id_corrida,
                 "fecha_inicio": contexto.fecha_inicio,

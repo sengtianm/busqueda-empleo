@@ -140,7 +140,7 @@ def test_captura_timeout_todos_intentos(contexto: RunContext, adapter: MagicMock
         "modules.discovery.nodes.captura.should_retry", return_value=True
     ):
         with patch("modules.discovery.nodes.captura.time.sleep"):
-            with patch("modules.discovery.nodes.captura.write_evento"):
+            with patch("modules.discovery.nodes.captura.escribir_evento"):
                 res = capturar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -156,7 +156,7 @@ def test_captura_bloqueo_inmediato(contexto: RunContext, adapter: MagicMock) -> 
     contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
     adapter.capture_batch.side_effect = FlowError("bloqueo_plataforma", "Captcha")
 
-    with patch("modules.discovery.nodes.captura.write_evento"):
+    with patch("modules.discovery.nodes.captura.escribir_evento"):
         res = capturar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -173,7 +173,7 @@ def test_captura_sesion_expirada_inmediato(
     contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
     adapter.capture_batch.side_effect = FlowError("sesion_expirada", "Authwall")
 
-    with patch("modules.discovery.nodes.captura.write_evento"):
+    with patch("modules.discovery.nodes.captura.escribir_evento"):
         res = capturar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -195,7 +195,7 @@ def test_captura_auditoria_sesion_escrita(
     estado = EstadoCaptura(estado="exito")
     adapter.capture_batch.return_value = (lote, estado)
 
-    with patch("modules.discovery.nodes.captura.write_row") as mock_write_row:
+    with patch("modules.discovery.nodes.captura.escribir_fila") as mock_write_row:
         res = capturar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -218,7 +218,7 @@ def test_captura_auditoria_falla_no_aborta(
     adapter.capture_batch.return_value = (lote, estado)
 
     with patch(
-        "modules.discovery.nodes.captura.write_row", side_effect=RuntimeError("db")
+        "modules.discovery.nodes.captura.escribir_fila", side_effect=RuntimeError("db")
     ) as mock_write_row:
         with patch("modules.discovery.nodes.captura.logger"):
             res = capturar_ofertas(contexto)
@@ -235,7 +235,7 @@ def test_registrar_una_oferta_upsert(
     contexto.capture_batch = CaptureBatch(ofertas=[_oferta()], indice_set=0)
 
     with patch("modules.discovery.nodes.captura.upsert_oferta") as mock_upsert:
-        with patch("modules.discovery.nodes.captura.write_evento"):
+        with patch("modules.discovery.nodes.captura.escribir_evento"):
             res = registrar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -290,7 +290,7 @@ def test_registrar_ofertas_exito_registra_suceso(
     contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
 
     with patch("modules.discovery.nodes.captura.upsert_oferta") as mock_upsert:
-        with patch("modules.discovery.nodes.captura.write_evento") as mock_evento:
+        with patch("modules.discovery.nodes.captura.escribir_evento") as mock_evento:
             res = registrar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -314,7 +314,7 @@ def test_registrar_fallo_parcial(contexto: RunContext) -> None:
         "modules.discovery.nodes.captura.upsert_oferta",
         side_effect=[None, RuntimeError("db"), RuntimeError("db")],
     ) as mock_upsert:
-        with patch("modules.discovery.nodes.captura.write_evento") as mock_evento:
+        with patch("modules.discovery.nodes.captura.escribir_evento") as mock_evento:
             with patch("modules.discovery.nodes.captura.logger"):
                 res = registrar_ofertas(contexto)
 
@@ -334,7 +334,7 @@ def test_registrar_fallo_total(contexto: RunContext) -> None:
         "modules.discovery.nodes.captura.upsert_oferta",
         side_effect=RuntimeError("db"),
     ) as mock_upsert:
-        with patch("modules.discovery.nodes.captura.write_evento") as mock_evento:
+        with patch("modules.discovery.nodes.captura.escribir_evento") as mock_evento:
             with patch("modules.discovery.nodes.captura.logger"):
                 res = registrar_ofertas(contexto)
 

@@ -7,7 +7,7 @@ from modules.discovery.nodes.finalizar import (
     finalizar_proceso,
 )
 from modules.discovery.run_context import RunContext
-from shared.persistence import actualizar_corrida, read_table, write_corrida
+from shared.persistence import actualizar_corrida, leer_tabla, registrar_corrida
 
 
 def _contexto() -> RunContext:
@@ -30,7 +30,7 @@ def _contexto() -> RunContext:
 def test_finalizar_corrida_completada_estado_completada() -> None:
     contexto = _contexto()
     with patch("modules.discovery.nodes.finalizar.actualizar_corrida") as mock_update:
-        with patch("modules.discovery.nodes.finalizar.write_evento"):
+        with patch("modules.discovery.nodes.finalizar.escribir_evento"):
             with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
                 res = finalizar_proceso(contexto, "corrida_completada")
 
@@ -43,7 +43,7 @@ def test_finalizar_corrida_completada_estado_completada() -> None:
 def test_finalizar_sin_fuentes_estado_sin_fuentes() -> None:
     contexto = _contexto()
     with patch("modules.discovery.nodes.finalizar.actualizar_corrida") as mock_update:
-        with patch("modules.discovery.nodes.finalizar.write_evento"):
+        with patch("modules.discovery.nodes.finalizar.escribir_evento"):
             with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
                 res = finalizar_proceso(contexto, "sin_fuentes")
 
@@ -55,7 +55,7 @@ def test_finalizar_sin_fuentes_estado_sin_fuentes() -> None:
 def test_finalizar_aborto_estado_abortada() -> None:
     contexto = _contexto()
     with patch("modules.discovery.nodes.finalizar.actualizar_corrida") as mock_update:
-        with patch("modules.discovery.nodes.finalizar.write_evento"):
+        with patch("modules.discovery.nodes.finalizar.escribir_evento"):
             with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
                 res = finalizar_proceso(contexto, "aborto")
 
@@ -80,10 +80,10 @@ def test_finalizar_metricas_consultadas_de_bd() -> None:
         return eventos
 
     with patch(
-        "modules.discovery.nodes.finalizar.read_table", side_effect=_read_table_side
+        "modules.discovery.nodes.finalizar.leer_tabla", side_effect=_read_table_side
     ) as mock_read:
         with patch("modules.discovery.nodes.finalizar.actualizar_corrida") as mock_update:
-            with patch("modules.discovery.nodes.finalizar.write_evento"):
+            with patch("modules.discovery.nodes.finalizar.escribir_evento"):
                 with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
                     finalizar_proceso(contexto, "corrida_completada")
 
@@ -98,7 +98,7 @@ def test_finalizar_metricas_consultadas_de_bd() -> None:
 def test_finalizar_actualizar_corrida_campos_correctos() -> None:
     contexto = _contexto()
     with patch("modules.discovery.nodes.finalizar.actualizar_corrida") as mock_update:
-        with patch("modules.discovery.nodes.finalizar.write_evento"):
+        with patch("modules.discovery.nodes.finalizar.escribir_evento"):
             with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
                 finalizar_proceso(contexto, "corrida_completada")
 
@@ -123,7 +123,7 @@ def test_finalizar_actualizar_corrida_fallo_reintenta_y_continua() -> None:
         "modules.discovery.nodes.finalizar.actualizar_corrida",
         side_effect=RuntimeError("db"),
     ) as mock_update:
-        with patch("modules.discovery.nodes.finalizar.write_evento") as mock_evento:
+        with patch("modules.discovery.nodes.finalizar.escribir_evento") as mock_evento:
             with patch("modules.discovery.nodes.finalizar.liberar_bloqueo") as mock_lock:
                 with patch("modules.discovery.nodes.finalizar.logger"):
                     res = finalizar_proceso(contexto, "aborto")
@@ -138,7 +138,7 @@ def test_finalizar_playwright_sin_sesion_no_cierra() -> None:
     contexto = _contexto()
     contexto.handle_sesion = None
     with patch("modules.discovery.nodes.finalizar.actualizar_corrida"):
-        with patch("modules.discovery.nodes.finalizar.write_evento"):
+        with patch("modules.discovery.nodes.finalizar.escribir_evento"):
             with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
                 res = finalizar_proceso(contexto, "motivo_no_definido")
 
@@ -150,7 +150,7 @@ def test_finalizar_playwright_sesion_abierta_cierra() -> None:
     pagina = MagicMock()
     contexto.handle_sesion = pagina
     with patch("modules.discovery.nodes.finalizar.actualizar_corrida"):
-        with patch("modules.discovery.nodes.finalizar.write_evento"):
+        with patch("modules.discovery.nodes.finalizar.escribir_evento"):
             with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
                 res = finalizar_proceso(contexto, "corrida_completada")
 
@@ -165,7 +165,7 @@ def test_finalizar_playwright_browser_y_instance_cerrados() -> None:
     setattr(contexto, "browser", browser)
     setattr(contexto, "playwright_instance", playwright_instance)
     with patch("modules.discovery.nodes.finalizar.actualizar_corrida"):
-        with patch("modules.discovery.nodes.finalizar.write_evento"):
+        with patch("modules.discovery.nodes.finalizar.escribir_evento"):
             with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
                 finalizar_proceso(contexto, "corrida_completada")
 
@@ -176,7 +176,7 @@ def test_finalizar_playwright_browser_y_instance_cerrados() -> None:
 def test_finalizar_liberar_bloqueo_siempre() -> None:
     contexto = _contexto()
     with patch("modules.discovery.nodes.finalizar.actualizar_corrida"):
-        with patch("modules.discovery.nodes.finalizar.write_evento"):
+        with patch("modules.discovery.nodes.finalizar.escribir_evento"):
             with patch("modules.discovery.nodes.finalizar.liberar_bloqueo") as mock_lock:
                 finalizar_proceso(contexto, "corrida_completada")
 
@@ -186,7 +186,7 @@ def test_finalizar_liberar_bloqueo_siempre() -> None:
 def test_finalizar_evento_tipo_suceso_completada() -> None:
     contexto = _contexto()
     with patch("modules.discovery.nodes.finalizar.actualizar_corrida"):
-        with patch("modules.discovery.nodes.finalizar.write_evento") as mock_evento:
+        with patch("modules.discovery.nodes.finalizar.escribir_evento") as mock_evento:
             with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
                 finalizar_proceso(contexto, "corrida_completada")
 
@@ -200,7 +200,7 @@ def test_finalizar_evento_tipo_error_para_no_completada() -> None:
     contexto = _contexto()
     for motivo, esperado in (("sin_fuentes", "error"), ("aborto", "error")):
         with patch("modules.discovery.nodes.finalizar.actualizar_corrida"):
-            with patch("modules.discovery.nodes.finalizar.write_evento") as mock_evento:
+            with patch("modules.discovery.nodes.finalizar.escribir_evento") as mock_evento:
                 with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
                     finalizar_proceso(contexto, motivo)
         datos = mock_evento.call_args.args[0]
@@ -211,11 +211,11 @@ def test_finalizar_evento_tipo_error_para_no_completada() -> None:
 def test_finalizar_metricas_fallan_a_ceros() -> None:
     contexto = _contexto()
     with patch(
-        "modules.discovery.nodes.finalizar.read_table",
+        "modules.discovery.nodes.finalizar.leer_tabla",
         side_effect=RuntimeError("db"),
     ):
         with patch("modules.discovery.nodes.finalizar.actualizar_corrida") as mock_update:
-            with patch("modules.discovery.nodes.finalizar.write_evento"):
+            with patch("modules.discovery.nodes.finalizar.escribir_evento"):
                 with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
                     with patch("modules.discovery.nodes.finalizar.logger"):
                         res = finalizar_proceso(contexto, "corrida_completada")
@@ -248,8 +248,8 @@ def test_consultar_metricas_contexto_none() -> None:
 
 
 def test_actualizar_corrida_bd_real(temp_db_file: Path) -> None:
-    """End-to-end: write_corrida + actualizar_corrida persist closure data."""
-    write_corrida(
+    """End-to-end: registrar_corrida + actualizar_corrida persist closure data."""
+    registrar_corrida(
         {
             "id_corrida": "COR-0001",
             "fecha_inicio": "2026-08-10 10:00:00",
@@ -268,7 +268,7 @@ def test_actualizar_corrida_bd_real(temp_db_file: Path) -> None:
             "fuentes_procesadas": 1,
         },
     )
-    fila = read_table("corridas")[0]
+    fila = leer_tabla("corridas")[0]
     assert ok is True
     assert fila["estado"] == "completada"
     assert fila["motivo_terminacion"] == "corrida_completada"
