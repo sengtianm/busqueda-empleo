@@ -6,7 +6,6 @@ import pytest
 from modules.discovery.adapters.linkedin import FlowError
 from modules.discovery.nodes.captura import (
     capturar_ofertas,
-    quedan_ofertas_por_capturar,
     quedan_sets_por_aplicar,
     registrar_ofertas,
 )
@@ -342,27 +341,6 @@ def test_registrar_fallo_total(contexto: RunContext) -> None:
     assert mock_upsert.call_count == 4
     mock_evento.assert_called_once()
     assert mock_evento.call_args.args[0]["codigo"] == "lote_degradado"
-
-
-def test_quedan_ofertas_exito(contexto: RunContext) -> None:
-    contexto.estado_captura = EstadoCaptura(estado="exito")
-    res = quedan_ofertas_por_capturar(contexto)
-    assert res.estado == "ok"
-    assert res.decision == "no"
-
-
-def test_quedan_ofertas_fallo(contexto: RunContext) -> None:
-    contexto.estado_captura = EstadoCaptura(estado="fallo", codigo_motivo="x")
-    res = quedan_ofertas_por_capturar(contexto)
-    assert res.estado == "ok"
-    assert res.decision == "no"
-
-
-def test_quedan_ofertas_estado_ausente(contexto: RunContext) -> None:
-    contexto.estado_captura = None
-    res = quedan_ofertas_por_capturar(contexto)
-    assert res.estado == "error"
-    assert res.codigo == "ERR-01"
 
 
 def test_quedan_sets_si() -> None:

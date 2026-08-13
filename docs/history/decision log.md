@@ -140,6 +140,14 @@ Format: `D<n>` — module/business decisions; `C<n>` — prompt/design alignment
 - **Decision:** (1) Rewrite `upsert_oferta` internals to a single connection (SELECT → UPDATE or INSERT → one commit); same signature, same behavior; the refresh path now touches only `fecha_ultima_verificacion` (the previous implementation also updated `fecha_ultima_edicion` as a side effect — the new behavior matches D4 literally: "an existing row only refreshes `fecha_ultima_verificacion`"). (2) Create three non-unique indexes, idempotently via `CREATE INDEX IF NOT EXISTS` in `init_db` (applies to existing DBs on next run, no table rebuild, no backup): `idx_ofertas_id_externo`, `idx_ofertas_id_corrida`, `idx_eventos_id_corrida`. Indexes are intentionally NOT UNIQUE: a unique `id_externo` would enforce integrity but could fail on pre-existing duplicates and changes behavior; strict two-layer dedup belongs to Module 2 (D4).
 - **Impact:** No behavior, data, or schema change (indexes are additive and reversible with `DROP INDEX`); 274 tests in ~3.4 s; capture and closure queries faster as `ofertas`/`eventos` grow; tracker sub-phase 4.12; `docs/reports/database-tables.md` index note.
 
+### D17. Test quality and last cleanups (Lote 4): vestigial node retired, session close via contract, config and integration tests
+
+- **Date:** 2026-08-12
+- **Status:** In effect
+- **Context:** Project-wide review findings E1/E2 and D1/D2: `close_session` (contract D13, documented in `adding-a-new-source.md`) was never called — the orchestrator and Finalizar Proceso closed the page with `page.close()` directly; the decision node "¿Quedan ofertas por capturar…?" always answered `no` since list-based capture (D11) — a constant decision with no flow impact, still documented in the ficha; `shared/config.py` (used by every module) had zero dedicated tests; the orchestrator was tested only with all nodes mocked (143 patches), with no end-to-end guarantee.
+- **Decision:** (1) Retire the "¿Quedan ofertas por capturar…?" node from `captura.py`, the orchestrator flow, its tests, and the ficha técnica (node section replaced by an as-built removal note; successors re-wired: "Registrar ofertas…" delivers control directly to "¿Quedan sets…?"). (2) Session close goes through the adapter contract: `obtener_adaptador(fuente_id).close_session(pagina)` in `_cerrar_sesion_anterior` (orchestrator) and `_cerrar_recursos` (Finalizar Proceso), with `page.close()` fallback when no source is set — no behavior change. (3) New dedicated tests: `tests/test_config.py` (5 tests: YAML+env load, cache, reload, empty YAML, invalid YAML) and `tests/test_orquestador_integracion.py` (2 integration tests running the full flow with real nodes — only the adapter, config data and the Chromium launch are simulated — asserting corrida/ofertas/sesiones/eventos persisted, lock released, `close_session` called, and dedup on a second run).
+- **Impact:** No behavior or data change; the flow now has 12 nodes (was 13); code aligns with the documented Protocol contract (D13); 278 tests in ~3.6 s; ficha as-built note; tracker sub-phase 4.13; AGENTS.md test count 278.
+
 ---
 
 ## Prompt/design alignment decisions
@@ -205,6 +213,7 @@ Source: DOC-APPENDIX 9A — archived 2026-08-11; content consolidated here uncha
 
 | Version | Date | Change |
 |---|---|---|
+| 1.6 | 2026-08-12 | Added D17 (Lote 4 test quality + cleanups: vestigial "¿Quedan ofertas…?" node retired, session close via `close_session` contract, config tests, orchestrator integration tests). |
 | 1.5 | 2026-08-12 | Added D16 (persistence performance: single-connection upsert, 3 non-unique indexes). |
 | 1.4 | 2026-08-12 | Added D15 (Spanish catalog completed for persistence function names; `indice_set DEFAULT ''` known inert issue, not migrated). |
 | 1.3 | 2026-08-12 | Added D14 (Lote 1 quick-win cleanup: write-only context state removed, dead params/fixtures, single metrics query, fast suite). |

@@ -115,10 +115,6 @@ def test_flujo_completo_exitoso_finaliza_completada() -> None:
             return_value=_res_capt(),
         ),
         patch(
-            "modules.discovery.orchestrator.quedan_ofertas_por_capturar",
-            return_value=_res_capt("no"),
-        ),
-        patch(
             "modules.discovery.orchestrator.quedan_sets_por_aplicar",
             return_value=_res_capt("no"),
         ),
@@ -278,10 +274,6 @@ def test_busqueda_sin_ofertas_registra_evento_y_sigue_set() -> None:
             return_value=_res_capt(),
         ),
         patch(
-            "modules.discovery.orchestrator.quedan_ofertas_por_capturar",
-            return_value=_res_capt("no"),
-        ),
-        patch(
             "modules.discovery.orchestrator.quedan_sets_por_aplicar",
             side_effect=[_res_capt("si"), _res_capt("no")],
         ),
@@ -347,10 +339,6 @@ def test_error_nodo_aborta_con_aborto() -> None:
             return_value=_res_capt(),
         ),
         patch(
-            "modules.discovery.orchestrator.quedan_ofertas_por_capturar",
-            return_value=_res_capt("no"),
-        ),
-        patch(
             "modules.discovery.orchestrator.quedan_sets_por_aplicar",
             return_value=_res_capt("no"),
         ),
@@ -408,10 +396,6 @@ def test_bucle_fuentes_dos_fuentes_secuenciales() -> None:
         patch(
             "modules.discovery.orchestrator.registrar_ofertas",
             return_value=_res_capt(),
-        ),
-        patch(
-            "modules.discovery.orchestrator.quedan_ofertas_por_capturar",
-            return_value=_res_capt("no"),
         ),
         patch(
             "modules.discovery.orchestrator.quedan_sets_por_aplicar",
@@ -474,10 +458,6 @@ def test_bucle_sets_dos_sets_para_una_fuente() -> None:
             return_value=_res_capt(),
         ),
         patch(
-            "modules.discovery.orchestrator.quedan_ofertas_por_capturar",
-            return_value=_res_capt("no"),
-        ),
-        patch(
             "modules.discovery.orchestrator.quedan_sets_por_aplicar",
             side_effect=[_res_capt("si"), _res_capt("no")],
         ) as mock_sets,
@@ -499,7 +479,12 @@ def test_sesion_anterior_cerrada_al_cambiar_fuente() -> None:
     pagina = MagicMock()
     contexto.handle_sesion = pagina
     contexto.id_sesion = "SES-0001"
+    adaptador = MagicMock()
     with (
+        patch(
+            "modules.discovery.orchestrator.obtener_adaptador",
+            return_value=adaptador,
+        ),
         patch(
             "modules.discovery.orchestrator.ejecutar_inicio",
             return_value=ResultadoInicio(
@@ -543,10 +528,6 @@ def test_sesion_anterior_cerrada_al_cambiar_fuente() -> None:
             return_value=_res_capt(),
         ),
         patch(
-            "modules.discovery.orchestrator.quedan_ofertas_por_capturar",
-            return_value=_res_capt("no"),
-        ),
-        patch(
             "modules.discovery.orchestrator.quedan_sets_por_aplicar",
             return_value=_res_capt("no"),
         ),
@@ -558,7 +539,7 @@ def test_sesion_anterior_cerrada_al_cambiar_fuente() -> None:
     ):
         ejecutar_flujo()
 
-    pagina.close.assert_called_once()
+    adaptador.close_session.assert_called_once_with(pagina)
     assert contexto.handle_sesion is None
     assert contexto.id_sesion is None
 
@@ -610,10 +591,6 @@ def test_logging_informativo_en_hitos() -> None:
         patch(
             "modules.discovery.orchestrator.registrar_ofertas",
             return_value=_res_capt(),
-        ),
-        patch(
-            "modules.discovery.orchestrator.quedan_ofertas_por_capturar",
-            return_value=_res_capt("no"),
         ),
         patch(
             "modules.discovery.orchestrator.quedan_sets_por_aplicar",
@@ -681,10 +658,6 @@ def test_metricas_en_mensaje_final() -> None:
         patch(
             "modules.discovery.orchestrator.registrar_ofertas",
             return_value=_res_capt(),
-        ),
-        patch(
-            "modules.discovery.orchestrator.quedan_ofertas_por_capturar",
-            return_value=_res_capt("no"),
         ),
         patch(
             "modules.discovery.orchestrator.quedan_sets_por_aplicar",
@@ -759,10 +732,6 @@ def test_orden_llamadas_nodos() -> None:
             side_effect=_rastrear(orden, "registrar_ofertas", _res_capt()),
         ),
         patch(
-            "modules.discovery.orchestrator.quedan_ofertas_por_capturar",
-            side_effect=_rastrear(orden, "quedan_ofertas", _res_capt("no")),
-        ),
-        patch(
             "modules.discovery.orchestrator.quedan_sets_por_aplicar",
             side_effect=_rastrear(orden, "quedan_sets", _res_capt("no")),
         ),
@@ -785,7 +754,6 @@ def test_orden_llamadas_nodos() -> None:
         "se_encontraron",
         "capturar",
         "registrar_ofertas",
-        "quedan_ofertas",
         "quedan_sets",
         "quedan_fuentes",
         "finalizar",

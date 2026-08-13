@@ -174,7 +174,7 @@ Criteria: 0 ruff errors, 0 mypy errors, all tests green.
 - Test each prompt manually with Ollama + real offer; adjust and approve version 1.
 
 ## Phase 4. Module 1 — Opportunity Discovery
-Build strategy: functional sub-phases grouping nodes by testable unit, per canonical spec in `docs/diagrams/Ficha técnica - Diagrama de flujo (Descubrimiento de oportunidades).md` (technical sheet + flow diagram = authoritative source). Each sub-phase has full work cycle (analysis → plan → implementation → validation → close, per AGENTS.md) and approval before next. Six decision nodes act as contract validators of immediate predecessor. Nodes implemented in flow order; decision nodes grouped with preceding process node (pure in-memory evaluations requiring contract input).
+Build strategy: functional sub-phases grouping nodes by testable unit, per canonical spec in `docs/diagrams/Ficha técnica - Diagrama de flujo (Descubrimiento de oportunidades).md` (technical sheet + flow diagram = authoritative source). Each sub-phase has full work cycle (analysis → plan → implementation → validation → close, per AGENTS.md) and approval before next. Six decision nodes act as contract validators of immediate predecessor (five after D17 retired the "¿Quedan ofertas por capturar…?" decision in Lote 4 — see as-built notes in the ficha and decision log v1.6). Nodes implemented in flow order; decision nodes grouped with preceding process node (pure in-memory evaluations requiring contract input).
 
 | Sub-phase | Nodes included | Type |
 |---|---|---|
@@ -183,6 +183,8 @@ Build strategy: functional sub-phases grouping nodes by testable unit, per canon
 | 4.3 — Filter search | Aplicar los filtros básicos (v1.1) + ¿Se encontraron ofertas? (v1.1) | 1 process + 1 decision |
 | 4.4 — Capture and registration | Capturar ofertas (v1.0) + Registrar ofertas en "Ofertas Totales" (v1.0) + ¿Quedan ofertas por capturar? (v1.0) + ¿Quedan sets de filtros por aplicar? (v1.0) | 2 processes + 2 decisions |
 | 4.5 — Closure and orchestrator | Finalizar Proceso (spec draft) + orquestador del flujo completo (conectar todos los nodos) | 1 terminal + 1 integration |
+
+> **As-built 2026-08-12 (D17, Lote 4):** el nodo "¿Quedan ofertas por capturar? (v1.0)" se retiró del flujo (decisión constante desde la captura por listado D11); la fila 4.4 queda como 2 processes + 1 decision y el flujo total tiene 12 nodos (5 decisiones). Las versiones de la tabla (v1.0/v1.1) son las originales de construcción; las vigentes están en la ficha técnica (as-built).
 
 ## Phase 5. Module 2 — Offer Preparation
 - Create `modules/preparation/`.

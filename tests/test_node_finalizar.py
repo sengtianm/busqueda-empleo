@@ -149,13 +149,19 @@ def test_finalizar_playwright_sesion_abierta_cierra() -> None:
     contexto = _contexto()
     pagina = MagicMock()
     contexto.handle_sesion = pagina
-    with patch("modules.discovery.nodes.finalizar.actualizar_corrida"):
-        with patch("modules.discovery.nodes.finalizar.escribir_evento"):
-            with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
-                res = finalizar_proceso(contexto, "corrida_completada")
+    contexto.fuente_corriente = contexto.fuentes_filtradas[0]
+    adaptador = MagicMock()
+    with patch(
+        "modules.discovery.nodes.finalizar.obtener_adaptador",
+        return_value=adaptador,
+    ):
+        with patch("modules.discovery.nodes.finalizar.actualizar_corrida"):
+            with patch("modules.discovery.nodes.finalizar.escribir_evento"):
+                with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
+                    res = finalizar_proceso(contexto, "corrida_completada")
 
     assert res.estado == "ok"
-    pagina.close.assert_called_once()
+    adaptador.close_session.assert_called_once_with(pagina)
 
 
 def test_finalizar_playwright_browser_y_instance_cerrados() -> None:

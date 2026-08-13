@@ -311,22 +311,6 @@ def _registrar_oferta_con_reintento(fila: dict[str, Any]) -> bool:
     return False
 
 
-def quedan_ofertas_por_capturar(contexto: RunContext) -> ResultadoCaptura:
-    """Nodo de decisión: ¿Quedan ofertas por capturar? (v1.0).
-
-    Con la arquitectura actual el adaptador ya resolvió toda la paginación,
-    por lo que siempre responde `no` (tras captura exitosa o fallida).
-    """
-    if contexto.estado_captura is None:
-        logger.error(f"ERR-01: estado_captura ausente en corrida {contexto.id_corrida}")
-        return ResultadoCaptura(
-            estado="error",
-            codigo="ERR-01",
-            descripcion="estado_captura ausente",
-        )
-    return ResultadoCaptura(estado="ok", decision="no", contexto=contexto)
-
-
 def quedan_sets_por_aplicar(contexto: RunContext) -> ResultadoCaptura:
     """Decisión: ¿Quedan sets de filtros por aplicar? (v1.0).
 

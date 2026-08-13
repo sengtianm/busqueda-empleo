@@ -209,7 +209,7 @@ Punto único de control del bucle de fuentes. Recibe:
 - rama Sí de `"¿Existe al menos una fuente/plataforma de empleo configurada?"`;
 - retorno desde registro de ingreso fallido;
 - retorno desde registro de búsqueda sin ofertas;
-- rama No de `"¿Quedan ofertas por capturar en la búsqueda actual (según políticas)?"`.
+- rama No de `"¿Quedan sets de filtros por aplicar en esta fuente?"`.
 
 ### Objetivo
 Determinar si quedan fuentes pendientes. Sí → selección de fuente. No → terminación normal `corrida_completada`.
@@ -746,7 +746,7 @@ Contexto: `search_result`, `id_corrida`, `fuente_id`, `id_sesion`.
 - **Impactos aprobados**:
   - registro consume `search_result`, tipifica error/suceso, incluye `indice_set`, enruta a sets;
   - `"Capturar ofertas"` consume primera página/paginación, aplica políticas y escribe auditoría;
-  - `"¿Quedan ofertas…?"` cierra bucle de captura; sets cierra fuente o reentra.
+  - `"¿Quedan sets…?"` cierra fuente o reentra.
 
 ### Notas de implementación
 - Evaluación pura; sin I/O externo salvo evento crítico de aborto.
@@ -769,10 +769,9 @@ Contexto: `search_result`, `id_corrida`, `fuente_id`, `id_sesion`.
 
 ### Posición
 Entre:
-- rama Sí de `"¿Se encontraron ofertas?"` para primer lote del set;
-- rama Sí de `"¿Quedan ofertas por capturar en la búsqueda actual (según políticas)?"` para lotes siguientes.
+- rama Sí de `"¿Se encontraron ofertas?"`.
 
-Sucesor: `"Registrar ofertas capturadas en 'Ofertas Totales'"`. Nodo re-entrante por lote.
+Sucesor: `"Registrar ofertas capturadas en 'Ofertas Totales'"`.
 
 ### Objetivo
 Capturar información completa disponible de las ofertas del lote corriente, aplicar `politicas_de_captura` efectivas mediante adaptador, actualizar progreso y escribir auditoría de sesión en `"control de sesiones"` en el primer lote del set. No registra ofertas en `"Ofertas Totales"`.
@@ -819,7 +818,7 @@ Captura información original de las ofertas del lote recorriendo el listado de 
   Fallo de escritura: reintento único; si persiste, evento crítico y continuación degradada.
 - **RN-08**: no escribe en `"Ofertas Totales"`; registro pertenece al nodo siguiente.
 - **RN-09**: evidencia acotada; trazabilidad completa en eventos y ofertas.
-- **RN-10**: `limite_alcanzado` es señal de cierre: excluye Sí en `"¿Quedan ofertas…?"` y `"¿Quedan sets…?"` lo trata como cierre de fuente.
+- **RN-10**: `limite_alcanzado` es señal de cierre: `"¿Quedan sets…?"` lo trata como cierre de fuente.
 
 ### Validaciones
 - **VAL-01**: insumos presentes.
@@ -837,7 +836,6 @@ Captura información original de las ofertas del lote recorriendo el listado de 
 ### Ramas
 - Normal única → `"Registrar ofertas capturadas en 'Ofertas Totales'"`.
 - Aborto → `"Finalizar Proceso"` con `error`.
-- Re-entrada desde `"¿Quedan ofertas…?"`.
 
 ### Errores y eventos
 
@@ -866,14 +864,13 @@ Captura información original de las ofertas del lote recorriendo el listado de 
 - Lote vacío por límites entregado al registro como no-op.
 
 ### Dependencias y contratos
-- **Antecesores**: `"¿Se encontraron ofertas?"`; `"¿Quedan ofertas…?"`.
+- **Antecesores**: `"¿Se encontraron ofertas?"`.
 - **Sucesor normal**: `"Registrar ofertas capturadas en 'Ofertas Totales'"`.
 - **Sucesor de aborto**: `"Finalizar Proceso"`.
 - **Contratos consumidos**: `search_result`, sesión, políticas efectivas, progreso.
 - **Contratos entregados**: `capture_batch`, `estado_captura`, auditoría por `(id_sesion, indice_set)`.
 - **Impactos aprobados**:
   - registro consume `capture_batch`; lote vacío = no-op; deduplicación se define allí;
-  - `"¿Quedan ofertas…?"` usa `estado_captura`, `estado_paginacion`, `max_paginas`, `limite_alcanzado`;
   - `"¿Quedan sets…?"` trata `limite_alcanzado` como cierre de fuente.
 
 ### Notas de implementación
@@ -903,7 +900,7 @@ Captura información original de las ofertas del lote recorriendo el listado de 
 **Nota de implementación aprobada**: Sub-fase 4.4, 2026-08-09.
 
 ### Posición
-Entre `"Capturar ofertas"` v1.0 y `"¿Quedan ofertas por capturar en la búsqueda actual (según políticas)?"`. Posición definitiva.
+Entre `"Capturar ofertas"` v1.0 y `"¿Quedan sets de filtros por aplicar en esta fuente?"`. Posición definitiva.
 
 ### Objetivo
 Persistir `capture_batch` en `"Ofertas Totales"` conservando información original, trazabilidad e `id_externo` crudo cuando exista, y liberar el lote. No normaliza ni verifica identidad más allá de `id_externo`. La deduplicación avanzada en dos capas pertenece al Módulo 2.
@@ -935,7 +932,7 @@ Contexto: `capture_batch` con información original, `id_externo` best-effort, m
 ### Salidas
 - Lote persistido o ninguna escritura si vacío.
 - Contexto con `capture_batch` liberado.
-- Control único a `"¿Quedan ofertas por capturar en la búsqueda actual (según políticas)?"`.
+- Control único a `"¿Quedan sets de filtros por aplicar en esta fuente?"`.
 - Aborto → `"Finalizar Proceso"` con `error`.
 
 ### Reglas de negocio
@@ -959,7 +956,7 @@ Contexto: `capture_batch` con información original, `id_externo` best-effort, m
 - **Aborto**: `capture_batch` ausente/corrupto; fallo de escritura tras reintento.
 
 ### Ramas
-- Normal única → `"¿Quedan ofertas por capturar en la búsqueda actual (según políticas)?"`.
+- Normal única → `"¿Quedan sets de filtros por aplicar en esta fuente?"`.
 - Aborto → `"Finalizar Proceso"` con `error`.
 
 ### Errores
@@ -977,7 +974,7 @@ Contexto: `capture_batch` con información original, `id_externo` best-effort, m
 
 ### Dependencias y contratos
 - **Antecesor**: `"Capturar ofertas"` v1.0.
-- **Sucesor normal**: `"¿Quedan ofertas por capturar…?"`.
+- **Sucesor normal**: `"¿Quedan sets de filtros por aplicar en esta fuente?"`.
 - **Sucesor de aborto**: `"Finalizar Proceso"`.
 - **Contrato entregado**: `"Ofertas Totales"` como almacén crudo con trazabilidad e `id_externo`; lote liberado.
 - **Impactos aprobados**:
@@ -996,92 +993,12 @@ Contexto: `capture_batch` con información original, `id_externo` best-effort, m
 1. **Leer lote**. Entrada: contexto, conexión. Proceso: acceder a `capture_batch`. Salida: lote. Val: VAL-01. Err: ERR-01.
 2. **Evaluar lote vacío**. Entrada: lote. Proceso: si vacío, no-op y salto a liberación. Salida: señal de continuación. Err: ninguna.
 3. **Persistir**. Entrada: lote. Proceso: upsert por oferta según NOTA: existente refresca `fecha_ultima_verificacion`; nuevo inserta con información original, crudos y trazabilidad. Fallo → reintento único; si persiste, aborto. Salida: lote persistido. Val: VAL-02, VAL-03. Err: ERR-02.
-4. **Liberar y entregar**. Entrada: contexto. Proceso: liberar `capture_batch`; cerrar nodo. Salida: flujo a `"¿Quedan ofertas por capturar…?"`. Val: VAL-04. Err: ninguna.
+4. **Liberar y entregar**. Entrada: contexto. Proceso: liberar `capture_batch`; cerrar nodo. Salida: flujo a `"¿Quedan sets…?"`. Val: VAL-04. Err: ninguna.
 
 ---
 
-## Nodo decisión: “¿Quedan ofertas por capturar en la búsqueda actual (según políticas)?”  
-**Versión**: 1.0 (aprobada)
-
-### Posición
-Entre `"Registrar ofertas capturadas en 'Ofertas Totales'"` y:
-- Sí → `"Capturar ofertas"`;
-- No → `"¿Quedan sets de filtros por aplicar en esta fuente?"`.
-
-Punto único de control del bucle de lotes del set corriente.
-
-### Objetivo
-Evaluar si quedan ofertas capturables dentro de límites de política; Sí reentra a captura; No cierra búsqueda y pasa a sets.
-
-### Descripción funcional
-Lee `estado_captura`, `estado_paginacion` y políticas. Valida consistencia. Evalúa condición compuesta:
-```text
-estado_captura.estado == exito
-y estado_paginacion reporta pendientes
-y paginas_consumidas < max_paginas
-y limite_alcanzado == false
-```
-Decisión pura: no consulta plataforma, no registra, no reintenta, no muta estado.
-
-### Entradas
-Contexto: `estado_captura`, `estado_paginacion`, políticas efectivas, `id_corrida`, `fuente_id`, `id_sesion`, `indice_set`.
-
-### Salidas
-- **Sí** → `"Capturar ofertas"` para siguiente lote.
-- **No** → `"¿Quedan sets de filtros por aplicar en esta fuente?"`.
-- **Aborto** → `"Finalizar Proceso"` con `error`.
-
-### Reglas de negocio
-- **RN-01**: evaluación pura sobre contexto; prohibido consultar plataforma.
-- **RN-02**: condición Sí = conjunción completa indicada.
-- **RN-03**: `estado_captura.estado == fallo` cierra búsqueda; reintentos transitorios son responsabilidad de captura.
-- **RN-04**: lote vacío con páginas restantes continúa; bucle acotado por `paginas_consumidas`.
-- **RN-05**: validar consistencia de insumos; violación = aborto visible.
-- **RN-06**: no registra, no reintenta, no muta estado.
-
-### Validaciones
-- **VAL-01**: insumos presentes.
-- **VAL-02**: `estado_captura` completo; `max_paginas` y `max_ofertas_por_corrida` presentes.
-- **VAL-03**: Sí solo con condición compuesta completa.
-
-### Condiciones y ramas
-- **Sí**: los cuatro conjuntos verdaderos.
-- **No**: cualquiera falso, incluido fallo de captura.
-- **Aborto**: insumos ausentes/corruptos o estructura inválida/políticas ausentes.
-
-### Errores
-
-| Código | Error / excepción | Detección | Registro | Acción | Estado |
-|---|---|---:|---|---|---|
-| ERR-01 | Insumos ausentes/corruptos | 1 | Evento crítico con IDs | Aborto | `error` |
-| ERR-02 | `estado_captura` inválido o políticas ausentes | 2 | Evento crítico con IDs | Aborto | `error` |
-
-### Escenarios límite
-- Lote fallido no reintentable → No.
-- Límite alcanzado → No.
-- Paginación sin pendientes → No.
-- Página intermedia vacía con pendientes y límites holgados → Sí.
-- Violación de contrato → aborto.
-
-### Dependencias y contratos
-- **Antecesor**: `"Registrar ofertas capturadas en 'Ofertas Totales'"`.
-- **Sucesor Sí**: `"Capturar ofertas"`.
-- **Sucesor No**: `"¿Quedan sets de filtros por aplicar en esta fuente?"`.
-- **Impactos aprobados**:
-  - sets tratará `limite_alcanzado == true` como cierre de fuente;
-  - reentrada con progreso actualizado.
-
-### Notas de implementación
-- Evaluación pura; sin I/O, sin escrituras, sin reintentos, sin mutación.
-- Evaluar en orden definido para diagnóstico.
-- No interpretar `codigo_motivo` ni contenido.
-
-### Pasos funcionales
-1. **Leer insumos**. Entrada: `estado_captura`, paginación, políticas, IDs. Proceso: acceder desde contexto. Salida: insumos. Val: VAL-01. Err: ERR-01.
-2. **Validar consistencia**. Entrada: insumos. Proceso: estructura y políticas. Salida: validados. Val: VAL-02. Err: ERR-02.
-3. **Evaluar condición**. Entrada: validados. Proceso: conjunción RN-02. Salida: Sí/No. Err: ninguna.
-4. **Rama Sí**. Entrada: Sí. Proceso: entregar control. Salida: flujo a `"Capturar ofertas"`. Val: VAL-03. Err: ninguna.
-5. **Rama No**. Entrada: No. Proceso: entregar control. Salida: flujo a `"¿Quedan sets…?"`. Err: ninguna.
+## NOTA — Nodo retirado: “¿Quedan ofertas por capturar en la búsqueda actual (según políticas)?”  
+**As-built 2026-08-12 (D17)**: con la captura por listado (D11, v1.2) el adaptador resuelve toda la paginación en una sola pasada por set; este nodo decisión siempre respondía `no` (decisión constante), por lo que se retiró del flujo, del orquestador y de sus pruebas. `"Registrar ofertas capturadas en 'Ofertas Totales'"` entrega control directamente a `"¿Quedan sets de filtros por aplicar en esta fuente?"`. Historial completo del nodo v1.0 en el commit que lo retira (2026-08-12).
 
 ---
 
@@ -1089,7 +1006,7 @@ Contexto: `estado_captura`, `estado_paginacion`, políticas efectivas, `id_corri
 **Versión**: 1.0 (aprobada)
 
 ### Posición
-Entre rama No de `"¿Quedan ofertas por capturar…?"` y:
+Entre `"Registrar ofertas capturadas en 'Ofertas Totales'"` y:
 - Sí → `"Aplicar los filtros básicos…"`;
 - No → `"¿Quedan fuentes por procesar en esta corrida?"`.
 
@@ -1151,7 +1068,7 @@ Contexto: iterador de sets, `search_result`, `estado_captura`, `limite_alcanzado
 - Búsqueda exitosa sin captura posterior → fuente no comprometida por eso.
 
 ### Dependencias y contratos
-- **Antecesor**: rama No de `"¿Quedan ofertas…?"`.
+- **Antecesor**: `"Registrar ofertas capturadas en 'Ofertas Totales'"`.
 - **Sucesor Sí**: `"Aplicar los filtros básicos…"`.
 - **Sucesor No**: `"¿Quedan fuentes por procesar…?"`.
 - **Impactos aprobados**:
@@ -1243,3 +1160,5 @@ Con este nodo queda completo el conjunto de nodos del Módulo 1. Pendientes de i
 **Nota as-built 2026-08-12 (decisión D14, limpieza Lote 1):** sin cambio de contrato ni de nodos: (a) el progreso de captura vive exclusivamente en `estado_captura` — se eliminaron los espejos de contexto `paginas_consumidas`/`capturadas_acumuladas_fuente`/`limite_alcanzado` (no documentados); (b) las ramas No de "¿Existe…?" y "¿Quedan fuentes…?" ya no fijan `motivo_terminacion`/`fecha_terminacion` en el contexto; el motivo oficial se entrega a "Finalizar Proceso" por parámetro del orquestador (mismo resultado final: evento de terminación con `sin_fuentes`/`corrida_completada`); (c) "Finalizar Proceso" consulta métricas una sola vez y las reutiliza para el evento de terminación y el cierre de corrida.
 
 **Nota as-built 2026-08-12 (decisión D15, Lote 2):** los nombres de función de `shared/persistence.py` usados por los nodos se alinearon al catálogo español D7/D8 (`generar_id`, `leer_tabla`, `escribir_fila`, `adquirir_bloqueo`, `liberar_bloqueo`, `consultar_bloqueo`, `sondear_escritura`, `registrar_corrida`, `escribir_evento`, `actualizar_corrida`); los alias ingleses se eliminaron. Sin cambio de esquema ni de comportamiento; defecto cosmético conocido y no migrado: `indice_set INTEGER DEFAULT ''` en `ofertas`, `eventos` y `sesiones` (inerte).
+
+**Nota as-built 2026-08-12 (decisión D17, Lote 4):** (a) el nodo decisión "¿Quedan ofertas por capturar…?" se retiró del flujo, del orquestador y de sus pruebas (decisión constante `no` desde la captura por listado D11; ver nota en su sección); "Registrar ofertas…" entrega control directamente a "¿Quedan sets…?"; (b) el cierre de sesión se delega al contrato `close_session` del adaptador (D13) en el orquestador y en "Finalizar Proceso" en lugar de `page.close()` directo; (c) se añadieron pruebas de integración del flujo completo con nodos reales (adaptador y arranque de Chromium simulados) y pruebas dedicadas de `shared/config.py`.

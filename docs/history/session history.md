@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 20 | 12/08/2026 | `ses_00927e803ffeXTR04EkYYKzmTV` | Project-wide review lots executed: Lote 1 quick-win cleanup (fast suite, dead state/fixtures, D14), Lote 2 Spanish catalog completed (D15), Lote 3 persistence performance (single-connection upsert + indexes, D16), Lote 4 test quality + last cleanups (vestigial node retired, contract session close, config + integration tests, D17) |
 | 19 | 11/08/2026 | `ses_00f57a514ffeUyBVloqdH07g2W` | Spanish naming catalog (D7/D8): English→Spanish rename in code, config, tests; DB migrated with backup; docs aligned (decision log v1.1, DOC-13A v1.5, ficha, plan, tracker 4.7) |
 | 18 | 11/08/2026 | `ses_011dd31a8ffe0sUJfx0l66OpUJ` | Documentation depuration: only primary docs kept, all non-primary deleted physically; docs-reviewer optimized (single skill, git-diff scope, primary-only checks, conditional output) |
 | 17 | 10/08/2026 | `ses_0133020ecffeN4R4bi4Y7MXDAF` | LinkedIn 2026 SSR login fixed (direct login, `voyager` criterion, multi-variant parsing) + `sesiones` schema migration + closure-metrics success event (240 tests) |
@@ -20,6 +21,33 @@ Unless noted, decisions from previous sessions remain in effect.
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+## Session 20 — 12/08/2026
+`ses_00927e803ffeXTR04EkYYKzmTV` · `fase-4`
+
+**Topics**
+- Project-wide review lots, approved and executed one by one with plan + impact first: Lote 1 (quick wins), Lote 2 (Spanish catalog), Lote 3 (persistence performance), Lote 4 (test quality + last cleanups)
+- Lote 1: test suite made ~10× faster by neutralizing retry sleeps; write-only run-context state removed; dead fixtures deleted; closure node queries metrics once; dead params/fields removed
+- Lote 2: every persistence function renamed to Spanish with English aliases dropped (catalog D7/D8 complete); known inert column default documented, not migrated
+- Lote 3: offer upsert rewritten to a single connection (was up to 3 per offer); 3 non-unique lookup indexes created idempotently in DB init (dedup + closure metrics)
+- Lote 4: vestigial decision node retired from code, orchestrator, tests and ficha (constant answer since list-based capture) — flow now 12 nodes
+- Lote 4: session close delegated to the documented adapter contract instead of direct page close; tests verify the contract
+- Lote 4: dedicated config tests added (configuration layer was untested); full-flow integration tests added running real nodes with only adapter/config/Chromium launch simulated
+- Docs updated per lot: decision log through v1.6 (D14–D17), tracker 4.10–4.13, ficha as-built notes, MVP plan as-built annotations, AGENTS.md test counts
+
+**Decisions**
+- D14: Lote 1 quick-win cleanup — write-only context state removed, dead params/fixtures, single metrics query, fast suite
+- D15: Spanish catalog completed for persistence function names; known inert column default documented, not migrated
+- D16: persistence performance — single-connection offer upsert, 3 non-unique indexes in DB init
+- D17: Lote 4 — vestigial "¿Quedan ofertas…?" node retired (option a: code + ficha re-edited), session close via `close_session` contract, config + integration tests added
+- Review findings D3/D4 (private-coupling and weak assertions) not executed by recommendation
+- Decisions from previous sessions remain in effect
+
+**Status**
+- Lotes 1–4 ✅ (tracker 4.10–4.13); all executed review findings A1–C2 and E1/E2 closed
+- Ruff 0 · mypy 0 · pytest 278/278 (~3.3 s)
+- Lote 3 committed + pushed; Lote 4 + session history committed in this /save
+- Branch: `fase-4` · single commit + push, no merge
 
 ## Session 19 — 11/08/2026
 `ses_00f57a514ffeUyBVloqdH07g2W` · `fase-4`

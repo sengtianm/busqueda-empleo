@@ -1,6 +1,6 @@
 """Orchestrator of the full Discovery flow (Sub-fase 4.5).
 
-Connects all thirteen nodes in flow order (ficha técnica): INICIO, source
+Connects all twelve nodes in flow order (ficha técnica): INICIO, source
 control decisions, platform entry, filter search, capture/registration and
 Finalizar Proceso. Every node failure in a process node or decision-validator
 error leads to a controlled termination with motivo `aborto`; the run always
@@ -10,10 +10,10 @@ to close, no lock owned). Informative milestones are logged with Loguru.
 
 from loguru import logger
 
+from modules.discovery.adapters.registry import obtener_adaptador
 from modules.discovery.nodes.busqueda import aplicar_filtros, se_encontraron_ofertas
 from modules.discovery.nodes.captura import (
     capturar_ofertas,
-    quedan_ofertas_por_capturar,
     quedan_sets_por_aplicar,
     registrar_ofertas,
 )
@@ -39,7 +39,11 @@ def _cerrar_sesion_anterior(contexto: RunContext) -> None:
     if pagina is None:
         return
     try:
-        pagina.close()
+        fuente = contexto.fuente_corriente
+        if fuente is not None:
+            obtener_adaptador(fuente.fuente_id).close_session(pagina)
+        else:
+            pagina.close()
     except Exception as exc:
         logger.warning(
             f"Fallo al cerrar sesion anterior | run={contexto.id_corrida} | {exc}"
@@ -190,14 +194,6 @@ def ejecutar_flujo() -> None:
                     contexto,
                     "registrar_ofertas",
                                         res_registro.descripcion,
-                )
-                return
-            res_quedan_ofertas = quedan_ofertas_por_capturar(contexto)
-            if res_quedan_ofertas.estado == "error":
-                _fallo_nodo(
-                    contexto,
-                    "quedan_ofertas_por_capturar",
-                                        res_quedan_ofertas.descripcion,
                 )
                 return
             lote = contexto.capture_batch

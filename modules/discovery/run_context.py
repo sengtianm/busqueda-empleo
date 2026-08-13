@@ -1,6 +1,6 @@
 """Execution context of a discovery run (nodo INICIO, DOC-04 Section 15).
 
-RunContext is the single object passed between the thirteen nodes of the
+RunContext is the single object passed between the twelve nodes of the
 official Discovery flow. It holds the validated configuration, the filtered
 source list, the iterators (sources and filter sets), the run lock reference
 and the result slots of each node. It is created by the INICIO node and does

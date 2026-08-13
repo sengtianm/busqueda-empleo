@@ -15,6 +15,7 @@ from typing import Any
 
 from loguru import logger
 
+from modules.discovery.adapters.registry import obtener_adaptador
 from modules.discovery.run_context import RunContext
 from shared.persistence import (
     actualizar_corrida,
@@ -136,7 +137,13 @@ def _cerrar_recursos(contexto: RunContext | None) -> None:
         return
     if contexto.handle_sesion is not None:
         try:
-            contexto.handle_sesion.close()
+            fuente = contexto.fuente_corriente
+            if fuente is not None:
+                obtener_adaptador(fuente.fuente_id).close_session(
+                    contexto.handle_sesion
+                )
+            else:
+                contexto.handle_sesion.close()
         except Exception as exc:
             logger.error(
                 f"page.close() fallo | run={contexto.id_corrida} | {exc}"
