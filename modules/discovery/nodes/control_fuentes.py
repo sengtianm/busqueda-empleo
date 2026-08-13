@@ -8,10 +8,9 @@ Three nodes implemented here:
 
 All three operate exclusively on the execution context (RN-01): no config
 store I/O, no network access, no database writes (RN-05, decisions). The
-only admissible side effects are setting the termination reason on the
-context (branches No) and, in the selection node, mutating the iterator and
-current source. Abort protocol (ERR-01..ERR-03) registers a critical event
-and delivers control to "Finalizar Proceso" with state error.
+only admissible side effects are, in the selection node, mutating the
+iterator and current source. Abort protocol (ERR-01..ERR-03) registers a
+critical event and delivers control to "Finalizar Proceso" with state error.
 
 Note: the technical sheet lists "¿Es la primera ejecución del ciclo?" as
 sucesorcandidate of node 1 pending redefinition; per sub-phase 4.1
@@ -27,8 +26,6 @@ from modules.discovery.run_context import RunContext
 from shared.persistence import write_evento
 
 _FORMATO_TIMESTAMP = "%Y-%m-%d %H:%M:%S"
-_MOTIVO_SIN_FUENTES = "sin_fuentes"
-_MOTIVO_CORRIDA_COMPLETADA = "corrida_completada"
 
 
 @dataclass
@@ -103,8 +100,6 @@ def existen_fuentes_configuradas(
             estado="ok", decision="si", contexto=contexto
         )
 
-    contexto.motivo_terminacion = _MOTIVO_SIN_FUENTES
-    contexto.fecha_terminacion = _ahora()
     return ResultadoControlFuentes(
         estado="ok", decision="no", contexto=contexto
     )
@@ -148,8 +143,6 @@ def quedan_fuentes_por_procesar(
             estado="ok", decision="si", contexto=contexto
         )
 
-    contexto.motivo_terminacion = _MOTIVO_CORRIDA_COMPLETADA
-    contexto.fecha_terminacion = _ahora()
     return ResultadoControlFuentes(
         estado="ok", decision="no", contexto=contexto
     )
@@ -198,7 +191,6 @@ def seleccionar_fuente_pendiente(
     try:
         contexto.iterador_fuentes = posicion
         contexto.fuente_corriente = lista[posicion]
-        contexto.posicion_fuente_corriente = posicion
     except Exception as exc:
         return _abortar(
             contexto,

@@ -118,7 +118,6 @@ def test_inicio_concurrencia_activa_terminacion_controlada(
     finally:
         release_lock("COR-OTRO")
     assert res.estado == "concurrencia"
-    assert res.motivo == "concurrencia"
     assert res.codigo == "ERR-06"
     assert read_table("corridas") == []
     eventos = read_table("eventos")

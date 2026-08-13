@@ -87,7 +87,7 @@ def test_finalizar_metricas_consultadas_de_bd() -> None:
                 with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
                     finalizar_proceso(contexto, "corrida_completada")
 
-    assert mock_read.call_count == 4
+    assert mock_read.call_count == 2
     campos = mock_update.call_args.args[1]
     assert campos["total_ofertas"] == 2
     assert campos["total_errores"] == 1

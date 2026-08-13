@@ -1,4 +1,5 @@
 import json
+from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -15,6 +16,14 @@ from shared.ia_service import (
     load_prompt,
     render_prompt,
 )
+
+
+@pytest.fixture(autouse=True)
+def _sin_esperas_de_reintento() -> Generator[None, None, None]:
+    """Tenacity waits real time between retries; tests only exercise the
+    error-mapping logic, so the retry sleep is neutralized."""
+    with patch("time.sleep"):
+        yield
 
 
 def test_render_prompt_simple() -> None:

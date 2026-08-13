@@ -162,9 +162,6 @@ def capturar_ofertas(contexto: RunContext) -> ResultadoCaptura:
         # Paso 4: éxito de captura
         contexto.capture_batch = lote
         contexto.estado_captura = estado
-        contexto.paginas_consumidas = estado.paginas_consumidas
-        contexto.capturadas_acumuladas_fuente = estado.capturadas_acumuladas_fuente
-        contexto.limite_alcanzado = estado.limite_alcanzado
         _registrar_evento(
             contexto,
             tipo="suceso",

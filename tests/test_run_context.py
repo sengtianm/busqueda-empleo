@@ -89,7 +89,6 @@ def test_reset_iteradores() -> None:
     assert contexto.iterador_sets["linkedin"] == -1
     assert contexto.iterador_fuentes == -1
     assert not contexto.bloqueo_adquirido
-    assert contexto.capturadas_acumuladas_fuente == 0
 
 
 def test_run_context_politicas_desde_config() -> None:

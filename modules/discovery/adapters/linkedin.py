@@ -28,7 +28,6 @@ from shared.models import (
     CaptureBatch,
     EntryResult,
     EstadoCaptura,
-    EventoAlmacen,
     FichaFuente,
     Offer,
     PoliticasCaptura,
@@ -89,7 +88,6 @@ class LinkedInAdapter:
 
     def __init__(self, sleep_fn: Callable[[float], None] = time.sleep) -> None:
         self._sleep = sleep_fn
-        self.eventos_declarados: list[EventoAlmacen] = []
 
     # ----------------------------- entrance ----------------------------- #
 
@@ -100,7 +98,6 @@ class LinkedInAdapter:
         credenciales: dict[str, str] | None = None,
     ) -> EntryResult:
         """Enter the source and verify the DOC-09 Section 6.1 entry criteria."""
-        self.eventos_declarados.clear()
         if ficha.tipo_acceso == "con_autenticacion":
             if not credenciales:
                 raise FlowError(
@@ -154,7 +151,6 @@ class LinkedInAdapter:
         politicas: PoliticasCaptura,
     ) -> SearchResult:
         """Apply the official filter set and parse the first results page."""
-        self.eventos_declarados.clear()
         enlace = self._construir_url_busqueda(ficha.enlace, set_filtros)
         try:
             page.goto(enlace)
@@ -184,7 +180,6 @@ class LinkedInAdapter:
         descripción vacía (estado 'descubierta'); el enriquecimiento con la
         descripción es una tarea posterior de Preparación.
         """
-        self.eventos_declarados.clear()
         ofertas_capturadas: list[Offer] = []
         paginas_consumidas = 0
         url_resultados = self._construir_url_resultados(ficha.enlace, set_filtros)

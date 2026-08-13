@@ -83,9 +83,6 @@ def test_captura_exitosa_guarda_resultados(
     assert res.estado == "ok"
     assert contexto.capture_batch is lote
     assert contexto.estado_captura is estado
-    assert contexto.paginas_consumidas == 2
-    assert contexto.capturadas_acumuladas_fuente == 1
-    assert contexto.limite_alcanzado is False
 
 
 def test_captura_handle_ausente(contexto: RunContext) -> None:

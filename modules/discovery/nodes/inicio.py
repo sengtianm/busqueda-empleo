@@ -54,7 +54,6 @@ class ResultadoInicio:
     id_corrida: str = ""
     contexto: RunContext | None = None
     codigo: str = ""
-    motivo: str = ""
     descripcion: str = ""
 
 
@@ -265,7 +264,6 @@ def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
                 estado="concurrencia",
                 id_corrida=id_corrida,
                 codigo="ERR-06",
-                motivo="concurrencia",
                 descripcion="another run is active (lock not stale)",
             )
         try:
@@ -289,7 +287,6 @@ def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
                 estado="concurrencia",
                 id_corrida=id_corrida,
                 codigo="ERR-06",
-                motivo="concurrencia",
                 descripcion="lock contention at stale overwrite",
             )
         _registrar_evento(
@@ -320,7 +317,6 @@ def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
                 estado="concurrencia",
                 id_corrida=id_corrida,
                 codigo="ERR-06",
-                motivo="concurrencia",
                 descripcion="lock contention race at acquisition",
             )
 

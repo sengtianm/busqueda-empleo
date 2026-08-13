@@ -178,14 +178,10 @@ def finalizar_proceso(
     estado = _ESTADOS_POR_MOTIVO.get(motivo, "abortada")
     id_corrida = contexto.id_corrida if contexto is not None else ""
 
-    metricas_previas = consultar_metricas(contexto)
-
-    if id_corrida:
-        _escribir_evento_terminacion(id_corrida, estado, motivo, metricas_previas)
-
     metricas = consultar_metricas(contexto)
 
     if id_corrida:
+        _escribir_evento_terminacion(id_corrida, estado, motivo, metricas)
         _persistir_cierre_corrida(id_corrida, estado, motivo, metricas)
 
     _cerrar_recursos(contexto)

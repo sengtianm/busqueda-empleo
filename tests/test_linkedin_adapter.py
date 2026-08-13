@@ -317,7 +317,6 @@ def test_capture_batch_tarjeta_sin_titulo_se_excluye(
     lote, estado = adaptador.capture_batch(pagina, ficha_publica, set_filtros, politicas)
     assert estado.estado == "ok"
     assert len(lote.ofertas) == 0
-    assert adaptador.eventos_declarados == []
 
 
 def test_capture_batch_recorre_paginas_hasta_ultima(

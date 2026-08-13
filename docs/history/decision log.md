@@ -116,6 +116,14 @@ Format: `D<n>` — module/business decisions; `C<n>` — prompt/design alignment
 - **Decision:** New `modules/discovery/adapters/registry.py` defines the `AdaptadorPlataforma` Protocol (enter_source, apply_filters, capture_batch, close_session — structurally checked by mypy strict), `REGISTRO_ADAPTADORES = {"linkedin": LinkedInAdapter}` and `obtener_adaptador(fuente_id)`; nodes resolve the adapter by `fuente_id`. Unknown sources raise `FlowError("fuente_no_soportada")` (never retried, `should_retry` only retries `fuente_inalcanzable`/`tiempo_agotado_*`) — new official DOC-06-style code documented in the ficha.
 - **Impact:** A new source = adapter file + one registry line + config block, no node changes; unknown sources fail cleanly without pointless retries; operational guide `docs/adding-a-new-source.md` created and linked from README.
 
+### D14. Write-only context state removed (Lote 1 quick-win cleanup)
+
+- **Date:** 2026-08-12
+- **Status:** In effect
+- **Context:** Project-wide review (findings A1–A5) found dead state and slow tests in Module 1: `RunContext` carried six fields that were written but never read in production (`paginas_consumidas`, `capturadas_acumuladas_fuente`, `limite_alcanzado`, `motivo_terminacion`, `fecha_terminacion`, `posicion_fuente_corriente`); `ResultadoInicio.motivo`, `eventos_declarados` (LinkedInAdapter) and `_fallo_nodo`'s `resultado` param were unused; `finalizar_proceso` queried metrics twice; retry sleeps made the suite take ~35 s; 2 fixture HTMLs and 9 conftest fixtures were dead.
+- **Decision:** Remove the six write-only fields (capture progress lives only in `estado_captura`; the termination reason is passed to Finalizar Proceso by the orchestrator parameter, `motivo_terminacion` DB column unchanged); remove `ResultadoInicio.motivo`, `eventos_declarados` and `_fallo_nodo(resultado=...)`; single `consultar_metricas` call reused for the termination event and run closure; retry sleeps neutralized in tests (`patch("time.sleep")`, tenacity binds sleep at import); dead fixtures deleted (kept `example_offer`, `example_profile` and their dependencies).
+- **Impact:** No behavior or DB-schema change; suite 273 tests in ~3.4 s (was ~35 s); tracker sub-phase 4.10; ficha técnica as-built note (no node re-edition, contract intact).
+
 ---
 
 ## Prompt/design alignment decisions
@@ -181,6 +189,7 @@ Source: DOC-APPENDIX 9A — archived 2026-08-11; content consolidated here uncha
 
 | Version | Date | Change |
 |---|---|---|
+| 1.3 | 2026-08-12 | Added D14 (Lote 1 quick-win cleanup: write-only context state removed, dead params/fixtures, single metrics query, fast suite). |
 | 1.2 | 2026-08-12 | Added D9 (MainFeed entry criterion), D10 (visible-only blocked detection), D11 (list-based capture), D12 (24h filters) and D13 (adapter registry + `fuente_no_soportada`); DE-LI-010 updated to D9. |
 | 1.1 | 2026-08-11 | Added D7 (Spanish naming catalog) and D8 (Spanish state/timeout vocabulary); identifier references in prior decisions updated to the current catalog. |
 | 1.0 | 2026-08-11 | Initial unified log: consolidated D1–D6, C2, C5, PMD-020/021, DE-LI-001..010 (9A archived). |

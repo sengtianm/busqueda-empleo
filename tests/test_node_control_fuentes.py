@@ -81,8 +81,6 @@ def test_existen_fuentes_rama_no_motivo_sin_fuentes() -> None:
     res = existen_fuentes_configuradas(contexto)
     assert res.estado == "ok"
     assert res.decision == "no"
-    assert contexto.motivo_terminacion == "sin_fuentes"
-    assert contexto.fecha_terminacion != ""
 
 
 def test_existen_fuentes_contexto_corrupto_aborta(temp_db_file: Path) -> None:
@@ -108,8 +106,6 @@ def test_quedan_fuentes_todas_procesadas_rama_no() -> None:
     res = quedan_fuentes_por_procesar(contexto)
     assert res.estado == "ok"
     assert res.decision == "no"
-    assert contexto.motivo_terminacion == "corrida_completada"
-    assert contexto.fecha_terminacion != ""
 
 
 def test_quedan_fuentes_iterador_corrupto_aborta(temp_db_file: Path) -> None:
@@ -128,7 +124,6 @@ def test_seleccionar_primera_pendiente_y_marcar_procesada() -> None:
     res = seleccionar_fuente_pendiente(contexto)
     assert res.estado == "ok"
     assert contexto.iterador_fuentes == 0
-    assert contexto.posicion_fuente_corriente == 0
     assert contexto.fuente_corriente is not None
     assert contexto.fuente_corriente.fuente_id == "linkedin"
 

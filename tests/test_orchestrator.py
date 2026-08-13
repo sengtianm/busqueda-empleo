@@ -156,7 +156,7 @@ def test_inicio_concurrencia_no_ejecuta_finalizar() -> None:
         patch(
             "modules.discovery.orchestrator.ejecutar_inicio",
             return_value=ResultadoInicio(
-                estado="concurrencia", codigo="ERR-06", motivo="concurrencia"
+                estado="concurrencia", codigo="ERR-06"
             ),
         ),
         patch("modules.discovery.orchestrator.finalizar_proceso") as mock_final,

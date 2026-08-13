@@ -62,16 +62,10 @@ class RunContext:
         self.id_sesion: str | None = None
         self.handle_sesion: Any | None = None
         self.fuente_corriente: FichaFuente | None = None
-        self.posicion_fuente_corriente: int = -1
-        self.motivo_terminacion: str = ""
-        self.fecha_terminacion: str = ""
         self.entry_result: EntryResult | None = None
         self.search_result: SearchResult | None = None
         self.capture_batch: CaptureBatch | None = None
         self.estado_captura: EstadoCaptura | None = None
-        self.paginas_consumidas = 0
-        self.capturadas_acumuladas_fuente = 0
-        self.limite_alcanzado = False
         self.set_corriente: SetFiltros | None = None
         self._ultimo_fuente_id_sets: str | None = None
 
@@ -246,16 +240,10 @@ class RunContext:
         self.id_sesion = None
         self.handle_sesion = None
         self.fuente_corriente = None
-        self.posicion_fuente_corriente = -1
-        self.motivo_terminacion = ""
-        self.fecha_terminacion = ""
         self.entry_result = None
         self.search_result = None
         self.capture_batch = None
         self.estado_captura = None
-        self.paginas_consumidas = 0
-        self.capturadas_acumuladas_fuente = 0
-        self.limite_alcanzado = False
         self.set_corriente = None
         self._ultimo_fuente_id_sets = None
 

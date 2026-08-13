@@ -8,8 +8,6 @@ finishes in `finalizar_proceso` except when INICIO itself failed (no context
 to close, no lock owned). Informative milestones are logged with Loguru.
 """
 
-from typing import Any
-
 from loguru import logger
 
 from modules.discovery.nodes.busqueda import aplicar_filtros, se_encontraron_ofertas
@@ -53,7 +51,6 @@ def _cerrar_sesion_anterior(contexto: RunContext) -> None:
 
 def _terminar(contexto: RunContext, motivo: str) -> None:
     """Controlled termination: persist closure and log final metrics."""
-    contexto.motivo_terminacion = motivo
     resultado = finalizar_proceso(contexto, motivo)
     metricas = resultado.metricas
     if metricas:
@@ -65,7 +62,7 @@ def _terminar(contexto: RunContext, motivo: str) -> None:
             f"{resumen}"
         )
 def _fallo_nodo(
-    contexto: RunContext, nodo: str, resultado: Any, descripcion_texto: str
+    contexto: RunContext, nodo: str, descripcion_texto: str
 ) -> None:
     logger.error(f"{nodo} fallo | run={contexto.id_corrida} | {descripcion_texto}")
     _terminar(contexto, _MOTIVO_ABORTO)
@@ -95,8 +92,7 @@ def ejecutar_flujo() -> None:
         _fallo_nodo(
             contexto,
             "existen_fuentes_configuradas",
-            res_existencia,
-            res_existencia.descripcion,
+                        res_existencia.descripcion,
         )
         return
     if res_existencia.decision == "no":
@@ -109,8 +105,7 @@ def ejecutar_flujo() -> None:
             _fallo_nodo(
                 contexto,
                 "quedan_fuentes_por_procesar",
-                res_quedan,
-                res_quedan.descripcion,
+                                res_quedan.descripcion,
             )
             return
         if res_quedan.decision == "no":
@@ -124,8 +119,7 @@ def ejecutar_flujo() -> None:
             _fallo_nodo(
                 contexto,
                 "seleccionar_fuente_pendiente",
-                res_seleccion,
-                res_seleccion.descripcion,
+                                res_seleccion.descripcion,
             )
             return
         fuente = contexto.fuente_corriente
@@ -135,7 +129,7 @@ def ejecutar_flujo() -> None:
         res_ingreso = ejecutar_ingreso(contexto)
         if res_ingreso.estado == "error":
             _fallo_nodo(
-                contexto, "ejecutar_ingreso", res_ingreso, res_ingreso.descripcion
+                contexto, "ejecutar_ingreso", res_ingreso.descripcion
             )
             return
         res_ingreso_exitoso = ingreso_exitoso(contexto)
@@ -143,8 +137,7 @@ def ejecutar_flujo() -> None:
             _fallo_nodo(
                 contexto,
                 "ingreso_exitoso",
-                res_ingreso_exitoso,
-                res_ingreso_exitoso.descripcion,
+                                res_ingreso_exitoso.descripcion,
             )
             return
         if res_ingreso_exitoso.decision == "no":
@@ -160,7 +153,7 @@ def ejecutar_flujo() -> None:
             res_filtros = aplicar_filtros(contexto)
             if res_filtros.estado == "error":
                 _fallo_nodo(
-                    contexto, "aplicar_filtros", res_filtros, res_filtros.descripcion
+                    contexto, "aplicar_filtros", res_filtros.descripcion
                 )
                 return
             res_ofertas = se_encontraron_ofertas(contexto)
@@ -168,8 +161,7 @@ def ejecutar_flujo() -> None:
                 _fallo_nodo(
                     contexto,
                     "se_encontraron_ofertas",
-                    res_ofertas,
-                    res_ofertas.descripcion,
+                                        res_ofertas.descripcion,
                 )
                 return
             if res_ofertas.decision == "no":
@@ -179,8 +171,7 @@ def ejecutar_flujo() -> None:
                     _fallo_nodo(
                         contexto,
                         "quedan_sets_por_aplicar",
-                        res_sets_tras_vacio,
-                        res_sets_tras_vacio.descripcion,
+                                                res_sets_tras_vacio.descripcion,
                     )
                     return
                 if res_sets_tras_vacio.decision == "si":
@@ -190,7 +181,7 @@ def ejecutar_flujo() -> None:
             res_captura = capturar_ofertas(contexto)
             if res_captura.estado == "error":
                 _fallo_nodo(
-                    contexto, "capturar_ofertas", res_captura, res_captura.descripcion
+                    contexto, "capturar_ofertas", res_captura.descripcion
                 )
                 return
             res_registro = registrar_ofertas(contexto)
@@ -198,8 +189,7 @@ def ejecutar_flujo() -> None:
                 _fallo_nodo(
                     contexto,
                     "registrar_ofertas",
-                    res_registro,
-                    res_registro.descripcion,
+                                        res_registro.descripcion,
                 )
                 return
             res_quedan_ofertas = quedan_ofertas_por_capturar(contexto)
@@ -207,8 +197,7 @@ def ejecutar_flujo() -> None:
                 _fallo_nodo(
                     contexto,
                     "quedan_ofertas_por_capturar",
-                    res_quedan_ofertas,
-                    res_quedan_ofertas.descripcion,
+                                        res_quedan_ofertas.descripcion,
                 )
                 return
             lote = contexto.capture_batch
@@ -227,8 +216,7 @@ def ejecutar_flujo() -> None:
                 _fallo_nodo(
                     contexto,
                     "quedan_sets_por_aplicar",
-                    res_sets,
-                    res_sets.descripcion,
+                                        res_sets.descripcion,
                 )
                 return
             if res_sets.decision == "si":

@@ -155,7 +155,7 @@ Validations: transition matrix per DOC-01 §13 — only defined transitions, no 
 | File | Content |
 |---|---|
 | `tests/test_ia_service.py` | Tests with httpx mock (simulated Ollama response), prompt loading, error if prompt missing |
-| `tests/test_decision_engine.py` | Tests with `example_processed_offer` fixture + new `example_profile`; verify scores and classifications |
+| `tests/test_decision_engine.py` | Tests with `example_processed_offer` fixture + new `example_profile`; verify scores and classifications (fixture retired in Lote 1 cleanup 2026-08-12 — tests build models inline; criterion met at the time) |
 | `tests/test_persistence.py` | CRUD tests with `temp_db_file`: generate_id, read_table, write_row, find_by_id, update |
 | `tests/test_state_machine.py` | Tests for valid and invalid transitions |
 
