@@ -1,54 +1,11 @@
-# --- Virtual environment ---
-venv/
-.env
-.env.*
-!.env.template
-
-# --- Python caches ---
-__pycache__/
+```gitignore
+# Python compiled files
 *.pyc
-*.pyo
+__pycache__/
 
-# --- Tool caches ---
+# Database files
+*.db
+
+# Test cache files
 .pytest_cache/
-.mypy_cache/
-.ruff_cache/
-
-# --- Coverage ---
-.coverage
-htmlcov/
-
-# --- Logs ---
-logs/*
-*.log
-!logs/.gitkeep
-
-# --- Temporary and backup files ---
-*.tmp
-*.bak
-
-# --- Editor and OS ---
-.idea/
-.vscode/
-.DS_Store
-Thumbs.db
-*.db-shm
-*.db-wal
-*.db-journal
-
-# --- Execution data ---
-data/input/*
-data/processing/*
-data/output/*
-data/backup/*
-data/*.db
-!data/**/.gitkeep
-
-# --- Project temporary files ---
-temp/*
-!temp/.gitkeep
-
-# --- Packaging ---
-*.egg-info/
-dist/
-build/
+```
