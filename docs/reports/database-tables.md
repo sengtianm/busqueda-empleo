@@ -6,7 +6,9 @@ Fuente de verdad: `shared/persistence.py` (esquemas y funciones de escritura) y 
 
 ## 1. Resumen
 
-La BD tiene 9 tablas. Se habilita con `init_db()` (crea tablas y aplica migraciones idempotentes, incluida la migración al catálogo español D7/D8). Fechas en formato `YYYY-MM-DD HH:MM:SS` (hora local). IDs secuenciales con prefijo por tabla (`FNT`, `EMP`, `UBI`, `OFE`, `COR`, `SES`, `EVT`, `BLO`) generados por `generar_id()`.
+La BD tiene 9 tablas. Se habilita con `init_db()` (crea tablas y aplica migraciones idempotentes, incluida la migración al catálogo español D7/D8 y la creación de índices, decisión D16). Fechas en formato `YYYY-MM-DD HH:MM:SS` (hora local). IDs secuenciales con prefijo por tabla (`FNT`, `EMP`, `UBI`, `OFE`, `COR`, `SES`, `EVT`, `BLO`) generados por `generar_id()`.
+
+Índices (creados con `CREATE INDEX IF NOT EXISTS`, no únicos — la unicidad estricta es del Módulo 2, decisión D4): `idx_ofertas_id_externo` (deduplicación por oferta), `idx_ofertas_id_corrida` y `idx_eventos_id_corrida` (métricas de cierre y auditoría).
 
 Estado actual (conteos al momento del reporte):
 
@@ -99,7 +101,7 @@ Oportunidades (vacantes) descubiertas. La escribe el **nodo Captura** mediante `
 | `titulo` | TEXT DEFAULT '' | Título original de la oferta | En la inserción, desde la oferta capturada |
 | `descripcion_original` | TEXT DEFAULT '' | Contenido original obtenido en el descubrimiento (no se sobrescribe) | En la inserción, desde la oferta capturada |
 | `fecha_publicacion` | TEXT DEFAULT '' | Fecha de publicación indicada por la fuente | Sin escritura en el Módulo 1 (futuros módulos) |
-| `fecha_descubrimiento` | TEXT DEFAULT '' | Fecha/hora en que la automatización descubrió la oferta | En la inserción, con la hora actual (`_ahora()`) |
+| `fecha_descubrimiento` | TEXT DEFAULT '' | Fecha/hora en que la automatización descubrió la oferta | En la inserción, con la hora actual (`_now()`) |
 | `estado` | TEXT DEFAULT 'descubierta' | Estado en el flujo de procesamiento (7 valores: `descubierta`, `preparada`, `evaluada`, `aceptada`, `descartada`, `procesada`, `finalizada`) | En la inserción queda `descubierta` (valor por defecto); los demás estados los asumirán módulos posteriores |
 | `observaciones` | TEXT DEFAULT '' | Información adicional relevante | Sin escritura en el Módulo 1 |
 | `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática en la inserción |

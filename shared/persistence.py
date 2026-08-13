@@ -148,6 +148,12 @@ ESQUEMAS: dict[str, str] = {
     ),
 }
 
+_INDICES: tuple[str, ...] = (
+    "CREATE INDEX IF NOT EXISTS idx_ofertas_id_externo ON ofertas(id_externo)",
+    "CREATE INDEX IF NOT EXISTS idx_ofertas_id_corrida ON ofertas(id_corrida)",
+    "CREATE INDEX IF NOT EXISTS idx_eventos_id_corrida ON eventos(id_corrida)",
+)
+
 
 def _db_path() -> Path:
     if _DB_PATH is not None:
@@ -220,6 +226,8 @@ def init_db() -> None:
         _migrate_ofertas_empresa_nombre(conn)
         _migrate_corridas_finalizacion(conn)
         _migrate_sesiones_id(conn)
+        for sentencia in _INDICES:
+            conn.execute(sentencia)
         conn.commit()
     finally:
         conn.close()
@@ -778,7 +786,7 @@ def actualizar_corrida(id_corrida: str, campos: dict[str, Any]) -> bool:
 
 
 def upsert_oferta(oferta: dict[str, Any]) -> str:
-    """Inserts or updates an offer by `id_externo`.
+    """Inserts or updates an offer by `id_externo` in a single connection.
 
     If a row with the same `id_externo` already exists, only its
     `fecha_ultima_verificacion` is refreshed and its `id` is returned.
@@ -787,20 +795,38 @@ def upsert_oferta(oferta: dict[str, Any]) -> str:
     Returns:
         The offer `id` (str).
     """
-    d = dict(oferta)
+    d = _serialize(dict(oferta))
     id_externo = d.get("id_externo")
-    if id_externo:
-        existentes = leer_tabla("ofertas", {"id_externo": id_externo})
-        if existentes:
-            actualizar_fila(
-                "ofertas",
-                cast(str, existentes[0]["id"]),
-                {"fecha_ultima_verificacion": _now()},
-            )
-            return cast(str, existentes[0]["id"])
-    if "id" not in d or not d["id"]:
-        d["id"] = generar_id("ofertas")
-    return escribir_fila("ofertas", d)
+    conn = _connection()
+    try:
+        if id_externo:
+            fila = conn.execute(
+                "SELECT id FROM ofertas WHERE id_externo = ?", (id_externo,)
+            ).fetchone()
+            if fila is not None:
+                conn.execute(
+                    "UPDATE ofertas SET fecha_ultima_verificacion = ? WHERE id = ?",
+                    (_now(), str(fila[0])),
+                )
+                conn.commit()
+                return str(fila[0])
+        if not d.get("id"):
+            d["id"] = generar_id("ofertas")
+        ahora = _now()
+        if not d.get("fecha_creacion"):
+            d["fecha_creacion"] = ahora
+        d["fecha_ultima_edicion"] = ahora
+        columnas = list(d.keys())
+        placeholders = [":" + k for k in d.keys()]
+        conn.execute(
+            f"INSERT INTO ofertas ({', '.join(columnas)}) VALUES "
+            f"({', '.join(placeholders)})",
+            d,
+        )
+        conn.commit()
+        return cast(str, d["id"])
+    finally:
+        conn.close()
 
 
 def escribir_evento(datos: dict[str, Any]) -> str:

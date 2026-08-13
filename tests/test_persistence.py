@@ -377,6 +377,28 @@ def test_upsert_oferta_ids_nulos_sin_fk_error(temp_db_file: Path) -> None:
     assert filas[0]["ubicacion_nombre"] == "Remoto"
 
 
+def test_init_db_crea_indices_esperados(temp_db_file: Path) -> None:
+    import sqlite3
+
+    from shared.persistence import init_db
+
+    init_db()
+    conn = sqlite3.connect(temp_db_file)
+    try:
+        indices = {
+            fila[1]
+            for tabla in ("ofertas", "eventos")
+            for fila in conn.execute(f"PRAGMA index_list('{tabla}')")
+        }
+    finally:
+        conn.close()
+    assert {
+        "idx_ofertas_id_externo",
+        "idx_ofertas_id_corrida",
+        "idx_eventos_id_corrida",
+    } <= indices
+
+
 def test_upsert_oferta_mismo_id_externo_no_duplica_y_actualiza_timestamp(
     temp_db_file: Path,
 ) -> None:

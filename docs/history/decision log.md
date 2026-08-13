@@ -132,6 +132,14 @@ Format: `D<n>` — module/business decisions; `C<n>` — prompt/design alignment
 - **Decision:** Rename the 11 functions to Spanish and drop the English aliases: `generate_id`→`generar_id`, `read_table`→`leer_tabla`, `write_row`→`escribir_fila`, `write_batch`→`escribir_lote`, `find_by_id`→`buscar_por_id`, `update`→`actualizar_fila`, `acquire_lock`→`adquirir_bloqueo`, `release_lock` merged into `liberar_bloqueo` (single implementation), `check_lock`→`consultar_bloqueo`, `probe_write`→`sondear_escritura`, `write_corrida`→`registrar_corrida`, `write_evento`→`escribir_evento` (~210 references across persistence, discovery nodes and tests). `indice_set DEFAULT ''` is NOT migrated: SQLite cannot alter a column default (table rebuild required) and the wart is inert — documented here as a known issue for any future schema migration.
 - **Impact:** No behavior or DB-schema change (column `motivo_terminacion` and all tables untouched); 273 tests in ~3.4 s; consistency with D7/D8 completed; operational doc `docs/reports/database-tables.md` updated to the new names; tracker sub-phase 4.11; ficha técnica as-built note. Historical mentions in tracker Phase 1 and MVP Execution Plan kept as record of the time.
 
+### D16. Persistence performance: single-connection upsert and lookup indexes (Lote 3)
+
+- **Date:** 2026-08-12
+- **Status:** In effect
+- **Context:** Project-wide review findings C1/C2: `upsert_oferta` opened up to 3 connections per offer (SELECT via `leer_tabla`, UPDATE via `actualizar_fila`, INSERT via `escribir_fila`; plus `generar_id` in the insert path) — hundreds of connections per capture (~90–100 offers); the DB had no indexes, so the per-offer dedup lookup (`ofertas.id_externo`) and the closure-metrics queries (`ofertas.id_corrida`, `eventos.id_corrida`) did full table scans.
+- **Decision:** (1) Rewrite `upsert_oferta` internals to a single connection (SELECT → UPDATE or INSERT → one commit); same signature, same behavior; the refresh path now touches only `fecha_ultima_verificacion` (the previous implementation also updated `fecha_ultima_edicion` as a side effect — the new behavior matches D4 literally: "an existing row only refreshes `fecha_ultima_verificacion`"). (2) Create three non-unique indexes, idempotently via `CREATE INDEX IF NOT EXISTS` in `init_db` (applies to existing DBs on next run, no table rebuild, no backup): `idx_ofertas_id_externo`, `idx_ofertas_id_corrida`, `idx_eventos_id_corrida`. Indexes are intentionally NOT UNIQUE: a unique `id_externo` would enforce integrity but could fail on pre-existing duplicates and changes behavior; strict two-layer dedup belongs to Module 2 (D4).
+- **Impact:** No behavior, data, or schema change (indexes are additive and reversible with `DROP INDEX`); 274 tests in ~3.4 s; capture and closure queries faster as `ofertas`/`eventos` grow; tracker sub-phase 4.12; `docs/reports/database-tables.md` index note.
+
 ---
 
 ## Prompt/design alignment decisions
@@ -197,6 +205,7 @@ Source: DOC-APPENDIX 9A — archived 2026-08-11; content consolidated here uncha
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5 | 2026-08-12 | Added D16 (persistence performance: single-connection upsert, 3 non-unique indexes). |
 | 1.4 | 2026-08-12 | Added D15 (Spanish catalog completed for persistence function names; `indice_set DEFAULT ''` known inert issue, not migrated). |
 | 1.3 | 2026-08-12 | Added D14 (Lote 1 quick-win cleanup: write-only context state removed, dead params/fixtures, single metrics query, fast suite). |
 | 1.2 | 2026-08-12 | Added D9 (MainFeed entry criterion), D10 (visible-only blocked detection), D11 (list-based capture), D12 (24h filters) and D13 (adapter registry + `fuente_no_soportada`); DE-LI-010 updated to D9. |
