@@ -20,7 +20,7 @@ fuentes:
           - tipo: "modalidad"
             valor: "remoto"
           - tipo: "fecha_publicacion"
-            valor: "r86400"
+            valor: "r18000"
     politicas_de_captura:
       max_paginas: 100
       max_ofertas_por_corrida: 1000
