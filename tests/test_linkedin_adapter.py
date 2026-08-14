@@ -151,6 +151,41 @@ def test_enter_source_autenticada_con_credenciales(
     assert pagina.gotos == [_URL_LOGIN]
 
 
+def test_enter_source_detach_lento_fallback_no_falla(
+    ficha_autenticada: FichaFuente,
+) -> None:
+    class FakePageDetachLento(FakePage):
+        """FakePage where the username field never detaches within 15s and the
+        submit-button fallback click always fails (button already gone)."""
+
+        def __init__(self, por_url: dict[str, str]) -> None:
+            super().__init__(por_url)
+            self.clickes = 0
+
+        def wait_for_selector(
+            self,
+            selector: str,
+            timeout: int | None = None,
+            state: str | None = None,
+        ) -> None:
+            if state == "detached":
+                raise TimeoutError("detach lento")
+            self.esperas.append((selector, state, timeout))
+
+        def click(self, selector: str, timeout: int | None = None) -> None:
+            self.clickes += 1
+            raise TimeoutError("boton ausente")
+
+    pagina = FakePageDetachLento({_URL_LOGIN: "<html><body>global-nav login</body></html>"})
+    resultado = LinkedInAdapter().enter_source(
+        pagina,
+        ficha_autenticada,
+        {"username": "usuario", "password": "clave"},
+    )
+    assert resultado.estado == "exito"
+    assert pagina.clickes == 1
+
+
 def test_enter_source_criterio_no_cumplido() -> None:
     pagina = FakePage({"https://x.com": "<html><body>sin nav</body></html>"})
     ficha = FichaFuente(
@@ -262,6 +297,55 @@ def test_apply_filters_filtro_tipo_no_soportado(
     with pytest.raises(FlowError) as exc:
         LinkedInAdapter().apply_filters(pagina, ficha_publica, set_no_soportado, politicas)
     assert exc.value.codigo_motivo == "filtros_no_aplicables"
+
+
+def test_apply_filters_fecha_malformada_falla_set(
+    ficha_publica: FichaFuente, politicas: PoliticasCaptura
+) -> None:
+    set_fecha_malformada = SetFiltros(
+        fuente_id=ficha_publica.fuente_id,
+        indice=0,
+        filtros=[
+            {"tipo": "keywords", "valor": ["Data Engineer"]},
+            {"tipo": "fecha_publicacion", "valor": "24h"},
+        ],
+    )
+    pagina = FakePage({})
+    with pytest.raises(FlowError) as exc:
+        LinkedInAdapter().apply_filters(
+            pagina, ficha_publica, set_fecha_malformada, politicas
+        )
+    assert exc.value.codigo_motivo == "filtros_no_aplicables"
+
+
+def test_apply_filters_fecha_formato_rn_aceptado(
+    ficha_publica: FichaFuente, politicas: PoliticasCaptura
+) -> None:
+    set_fecha = SetFiltros(
+        fuente_id=ficha_publica.fuente_id,
+        indice=0,
+        filtros=[
+            {"tipo": "keywords", "valor": ["Data Engineer"]},
+            {"tipo": "fecha_publicacion", "valor": "r18000"},
+        ],
+    )
+    url_con_fecha = "https://www.linkedin.com/jobs/search?keywords=Data+Engineer&f_TPR=r18000"
+    pagina = FakePage({url_con_fecha: _leer("lista_linkedin.html")})
+    resultado = LinkedInAdapter().apply_filters(
+        pagina, ficha_publica, set_fecha, politicas
+    )
+    assert resultado.estado == "exito"
+    assert pagina.gotos[-1] == url_con_fecha
+
+
+def test_apply_filters_evidencia_incluye_url_y_total(
+    ficha_publica: FichaFuente,
+    set_filtros: SetFiltros,
+    politicas: PoliticasCaptura,
+) -> None:
+    pagina = FakePage({URL_CON_FILTROS: _leer("lista_linkedin.html")})
+    resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
+    assert resultado.evidencia_acotada == f"url: {URL_CON_FILTROS} | total: 2"
 
 
 def test_apply_filters_filtro_valor_vacio_se_ignora(

@@ -3,7 +3,7 @@
 ## Project
 Automated job search pipeline: discovers, collects, prepares, evaluates, processes, and manages opportunities to reduce search time/effort and support decision-making. Objective: from discovery to high-quality application inputs with full traceability and minimal manual intervention.
 
-**Status:** MVP in progress — Phases 0–3 done (infrastructure, shared services, prompts tested with `gemma4:31b-cloud`); Phase 4 (Module 1 — Opportunity Discovery, branch `fase-4`) complete & recorded as-built (INICIO + control nodes, platform entry, filter search + generic register, capture/registration with dedup by `id_externo`, closure node + full-flow orchestrator; ficha técnica closed v1.1, decision log v1.0 created); Spanish naming catalog implemented and documented (decisions D7/D8, 2026-08-11: DB fields, states, and timeout codes in Spanish; `job_search.db` migrated with backup; DOC-13A v1.5, decision log v1.1, tracker Phase 4.7); Phases 5–9 pending. Authoritative status: `docs/history/tracker.md`.
+**Status:** MVP in progress — Phases 0–3 done (infrastructure, shared services, prompts tested with `gemma4:31b-cloud`); Phase 4 (Module 1 — Opportunity Discovery, branch `fase-4`) complete & recorded as-built (INICIO + control nodes, platform entry, filter search + generic register, capture/registration with dedup by `id_externo`, closure node + full-flow orchestrator; ficha técnica closed v1.1, decision log v1.0 created); Spanish naming catalog implemented and documented (decisions D7/D8, 2026-08-11: DB fields, states, and timeout codes in Spanish; `job_search.db` migrated with backup; DOC-13A v1.5, decision log v1.1, tracker Phase 4.7); filter investigation + observability hardening closed (decisions D18–D21, 2026-08-14: LinkedIn `f_TPR`/`f_WT` verified working — UI labels cosmetic; search evidence URL+total; `fecha_publicacion` format validation `r<N>` in adapter; login fallback robust to slow detach; decision log v1.7, tracker 4.14, 282 tests); Phases 5–9 pending. Authoritative status: `docs/history/tracker.md`.
 
 ## Architecture
 Three layers: Functional modules → Shared services → Infrastructure.
@@ -76,7 +76,7 @@ Task rules:
 ## Validation & Commands
 - `ruff check .` — lint (E/F/I/N/W, line length 100)
 - `mypy .` — typecheck (strict)
-- `pytest tests/` — test suite (currently 278 passing)
+- `pytest tests/` — test suite (currently 282 passing)
 - Local venv runs Python 3.14.6 (3.12 unavailable).
 
 Definition of Done:

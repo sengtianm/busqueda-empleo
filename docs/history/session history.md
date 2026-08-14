@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 21 | 14/08/2026 | `ses_0002228fbffeOK2V1m5PaeYAiK` | Filter investigation + observability hardening (D18–D21): LinkedIn `f_TPR`/`f_WT` verified working (UI labels cosmetic), search evidence URL+total, `fecha_publicacion` format validation, robust login fallback (282 tests) |
 | 20 | 12/08/2026 | `ses_00927e803ffeXTR04EkYYKzmTV` | Project-wide review lots executed: Lote 1 quick-win cleanup (fast suite, dead state/fixtures, D14), Lote 2 Spanish catalog completed (D15), Lote 3 persistence performance (single-connection upsert + indexes, D16), Lote 4 test quality + last cleanups (vestigial node retired, contract session close, config + integration tests, D17) |
 | 19 | 11/08/2026 | `ses_00f57a514ffeUyBVloqdH07g2W` | Spanish naming catalog (D7/D8): English→Spanish rename in code, config, tests; DB migrated with backup; docs aligned (decision log v1.1, DOC-13A v1.5, ficha, plan, tracker 4.7) |
 | 18 | 11/08/2026 | `ses_011dd31a8ffe0sUJfx0l66OpUJ` | Documentation depuration: only primary docs kept, all non-primary deleted physically; docs-reviewer optimized (single skill, git-diff scope, primary-only checks, conditional output) |
@@ -21,6 +22,33 @@ Unless noted, decisions from previous sessions remain in effect.
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+## Session 21 — 14/08/2026
+`ses_0002228fbffeOK2V1m5PaeYAiK` · `fase-4`
+
+**Topics**
+- Session resumed with the LinkedIn filter investigation (user report: "Últimas 24 horas" label with 5 h config); user authorized executing the 4 pending items left open: clean temp artifacts, document the finding, observability hardening, robust login fallback
+- Empirical filter test conclusions: `f_TPR` windows (r18000=11, r43200=17, r86400=58, none=368) and `f_WT=2` (19→11 offers) DO filter correctly; LinkedIn labels any `r<N>` window as "Últimas 24 horas" and job cards embed hardcoded accessible text — cosmetic platform limitation; config `r18000` (5 h) kept unchanged
+- Observability: successful search results now carry `evidencia_acotada` with the applied URL + declared total (persisted by the generic event node) and `apply_filters` logs INFO "Busqueda aplicada"
+- Validation: `fecha_publicacion` format enforced as `r<N>` in the adapter, malformed values → official `filtros_no_aplicables` (adapter-level per filter-applicability rules, not a UI-bucket catalog which would reject working values)
+- Login fallback hardened: fallback submit click is best-effort (5 s, swallowed) followed by the 30 s detached wait — slow form detach no longer turns a real successful login into a false rejection
+- Fixed own shadowing bug caught by the new evidence test (loop variable reused the URL parameter); renamed to `enlace_oferta`
+- 4 new adapter tests (slow-detach login, malformed date rejected, `r<N>` accepted with exact URL, evidence url+total); temp artifacts deleted
+- Docs: decision log v1.7 (D18–D21), tracker sub-fase 4.14, AGENTS.md status + 282 tests; both reviewers approved, one doc attribution fixed (D20 test count)
+
+**Decisions**
+- D18: LinkedIn labels `f_TPR` windows with the nearest UI bucket; the filter itself works — label is cosmetic, config `r18000` confirmed and kept
+- D19: successful `SearchResult` carries the applied search URL + declared total as evidence (events + logs become diagnosable)
+- D20: `fecha_publicacion` format validation `r<N>` in the adapter (not a UI-bucket catalog); malformed values → `filtros_no_aplicables`
+- D21: login fallback tolerant to slow form detach (best-effort click + 30 s detached wait)
+- Decisions from previous sessions remain in effect
+
+**Status**
+- 4 pending items ✅ (tracker 4.14); filter investigation closed, observability + validation + login hardening done
+- Ruff 0 · mypy 0 · pytest 282/282 (278 + 4 new)
+- Session history + all session changes committed in this /save; single commit + push
+- Branch: `fase-4` · no merge
+- Next: Phase 5 (Module 2 — Preparation), task 1: `modules/preparation/` structure (pending)
 
 ## Session 20 — 12/08/2026
 `ses_00927e803ffeXTR04EkYYKzmTV` · `fase-4`

@@ -148,6 +148,38 @@ Format: `D<n>` — module/business decisions; `C<n>` — prompt/design alignment
 - **Decision:** (1) Retire the "¿Quedan ofertas por capturar…?" node from `captura.py`, the orchestrator flow, its tests, and the ficha técnica (node section replaced by an as-built removal note; successors re-wired: "Registrar ofertas…" delivers control directly to "¿Quedan sets…?"). (2) Session close goes through the adapter contract: `obtener_adaptador(fuente_id).close_session(pagina)` in `_cerrar_sesion_anterior` (orchestrator) and `_cerrar_recursos` (Finalizar Proceso), with `page.close()` fallback when no source is set — no behavior change. (3) New dedicated tests: `tests/test_config.py` (5 tests: YAML+env load, cache, reload, empty YAML, invalid YAML) and `tests/test_orquestador_integracion.py` (2 integration tests running the full flow with real nodes — only the adapter, config data and the Chromium launch are simulated — asserting corrida/ofertas/sesiones/eventos persisted, lock released, `close_session` called, and dedup on a second run).
 - **Impact:** No behavior or data change; the flow now has 12 nodes (was 13); code aligns with the documented Protocol contract (D13); 278 tests in ~3.6 s; ficha as-built note; tracker sub-phase 4.13; AGENTS.md test count 278.
 
+### D18. LinkedIn labels `f_TPR` windows with the nearest UI bucket; the filter itself works
+
+- **Date:** 2026-08-14
+- **Status:** In effect
+- **Context:** The user reported that the LinkedIn jobs search UI showed "Data Engineer · Últimas 24 horas" while `config.yaml` set `fecha_publicacion: "r18000"` (5 h), and the modality filter seemed unapplied. A controlled empirical test (2026-08-14, authenticated session, 5 URL variants, evidence in HTML/screenshots) established: totals 11 (r18000/5 h), 17 (r43200/12 h), 58 (r86400/24 h), 368 (no date) with `f_WT=2` — the date window and modality filters ARE applied by LinkedIn (cards all "Hace ≤4 h" for r18000; pill "En remoto" selected; 19→11 offers when `f_WT=2` is added). However the UI labels ANY non-named `f_TPR` window as "Últimas 24 horas" (`aria-label="...Se ha aplicado el filtro «Últimas 24 horas»..."`), even r43200 (12 h), and every job card embeds a hardcoded accessible text "En las últimas 24 horas" while showing "Hace N horas".
+- **Decision:** Keep arbitrary `r<N>` windows in `fecha_publicacion` (r18000 = 5 h filters correctly; the label is cosmetic and cannot be changed — platform limitation). The flow was verified correct end-to-end (URL construction, parameter mapping, effective filtering); no code change was required for the filters themselves.
+- **Impact:** Config remains `r18000` (5 h); the UI label stays "Últimas 24 horas" (cosmetic); future investigations must not treat the label as evidence of a broken filter — verify via result totals and card timestamps.
+
+### D19. Search observability: successful `SearchResult` carries the applied URL + declared total
+
+- **Date:** 2026-08-14
+- **Status:** In effect
+- **Context:** During the D18 investigation, no run logged the applied search URL or the declared total, so real runs could not be diagnosed (e.g., whether a run used a 5 h or 24 h window).
+- **Decision:** `LinkedInAdapter._parsear_resultados` sets `evidencia_acotada = "url: <search url>" (+ " | total: <declared total>" when present)` on successful results, and `apply_filters` logs INFO "Busqueda aplicada | url=... | total_declarado=... | ofertas_primera_pagina=N". The generic event node (`registrar_evento`) already persists `evidencia_acotada`, so each successful search event in `eventos` now records URL + total + attempts.
+- **Impact:** Real runs become diagnosable from `logs/execution_*.log` and the `eventos` table without re-investigation; no behavior change; 1 new adapter test (evidence url + total); 282 tests total.
+
+### D20. `fecha_publicacion` format validation in the adapter (`r<N>`), not a UI-bucket catalog
+
+- **Date:** 2026-08-14
+- **Status:** In effect
+- **Context:** The D18 test proved arbitrary `r<N>` windows (e.g. `r18000` = 5 h) filter correctly even though LinkedIn labels them with the nearest UI bucket (D18). A catalog of "UI-supported" values would therefore wrongly reject working configs (e.g. `r18000`).
+- **Decision:** `_construir_url_busqueda` validates the FORMAT of `fecha_publicacion` as `r<N>` (regex `^r\d+$`); malformed values (e.g. "24h", "5 horas") raise `FlowError("filtros_no_aplicables")` — the existing official mechanism (ficha ERR-02, set discarded, never retried). Validation lives in the adapter because the value format is platform-specific (RN-04/RN-09: filter applicability belongs to the search node/adapter, not INICIO).
+- **Impact:** Malformed date values fail fast with the official code instead of being silently discarded by LinkedIn; `r18000` (and any `r<N>`) keeps working; 2 new adapter tests (malformed format rejected, `r<N>` accepted).
+
+### D21. Login fallback tolerant to slow form detach
+
+- **Date:** 2026-08-14
+- **Status:** In effect
+- **Context:** During the D18 test run, `_autenticar`'s fallback failed a REAL successful login: after Enter, the username field detached slower than the 15 s wait; the fallback `page.click("button:visible:text-is('Iniciar sesión')", timeout=15000)` then raised because the submit button was already gone (form detached mid-login), turning a successful login into `autenticacion_rechazada`.
+- **Decision:** The fallback click becomes best-effort: `click(..., timeout=5000)` wrapped in try/except (button may already be gone), followed by the existing 30 s detached wait. A slow detach now ends in the 30 s wait instead of an exception; invalid credentials still fail downstream via the entry criterion (`criterio_no_cumplido`), as before.
+- **Impact:** Intermittent false `autenticacion_rechazada` failures on slow logins eliminated; behavior otherwise unchanged; 1 new adapter test (detach-lento fake page).
+
 ---
 
 ## Prompt/design alignment decisions
@@ -213,6 +245,7 @@ Source: DOC-APPENDIX 9A — archived 2026-08-11; content consolidated here uncha
 
 | Version | Date | Change |
 |---|---|---|
+| 1.7 | 2026-08-14 | Added D18 (LinkedIn labels any `f_TPR` window with the nearest UI bucket; filter itself verified working), D19 (search observability: successful `SearchResult` carries URL + declared total; INFO log in `apply_filters`), D20 (`fecha_publicacion` format validation `r<N>` in the adapter, not a UI-bucket catalog), D21 (login fallback tolerant to slow form detach). |
 | 1.6 | 2026-08-12 | Added D17 (Lote 4 test quality + cleanups: vestigial "¿Quedan ofertas…?" node retired, session close via `close_session` contract, config tests, orchestrator integration tests). |
 | 1.5 | 2026-08-12 | Added D16 (persistence performance: single-connection upsert, 3 non-unique indexes). |
 | 1.4 | 2026-08-12 | Added D15 (Spanish catalog completed for persistence function names; `indice_set DEFAULT ''` known inert issue, not migrated). |

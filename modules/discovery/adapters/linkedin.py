@@ -23,6 +23,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from bs4 import BeautifulSoup
+from loguru import logger
 
 from shared.models import (
     CaptureBatch,
@@ -72,6 +73,8 @@ _RE_ID_COMPONENTE = re.compile(r"job-card-component-ref-(\d+)")
 
 _URL_LOGIN = "https://www.linkedin.com/login/es/?fromSignIn=true"
 _URL_JOBS_VIEW = "https://www.linkedin.com/jobs/view"
+
+_RE_FECHA_PUBLICACION = re.compile(r"^r\d+$")
 
 
 class FlowError(Exception):
@@ -159,7 +162,13 @@ class LinkedInAdapter:
         self._esperar_resultados(page, ficha.timeout_segundos)
         html = self._contenido(page)
         self._revisar_estado_pagina(html, "tiempo_agotado_consulta")
-        return self._parsear_resultados(html, ficha, set_filtros)
+        resultado = self._parsear_resultados(html, ficha, set_filtros, enlace)
+        logger.info(
+            f"Busqueda aplicada | url={enlace} | "
+            f"total_declarado={resultado.total_declarado} | "
+            f"ofertas_primera_pagina={len(resultado.ofertas_primera_pagina)}"
+        )
+        return resultado
 
     def capture_batch(
         self,
@@ -289,7 +298,10 @@ class LinkedInAdapter:
                     timeout=15000,
                 )
             except Exception:
-                page.click("button:visible:text-is('Iniciar sesión')", timeout=15000)
+                try:
+                    page.click("button:visible:text-is('Iniciar sesión')", timeout=5000)
+                except Exception:
+                    pass
                 try:
                     page.wait_for_selector(
                         "input[autocomplete^='username']:visible",
@@ -384,25 +396,28 @@ class LinkedInAdapter:
         return str(page.content())
 
     def _parsear_resultados(
-        self, html: str, ficha: FichaFuente, set_filtros: SetFiltros
+        self, html: str, ficha: FichaFuente, set_filtros: SetFiltros, enlace: str
     ) -> SearchResult:
         soup = BeautifulSoup(html, "lxml")
         ofertas: list[Offer] = []
         for href, titulo in _tarjetas_resultado(soup):
-            enlace = _url_absoluta(href, ficha.enlace)
+            enlace_oferta = _url_absoluta(href, ficha.enlace)
             ofertas.append(
                 Offer(
-                    enlace=enlace,
+                    enlace=enlace_oferta,
                     titulo=titulo,
                     descripcion_original="",
                     fuente_id=ficha.fuente_id,
                     indice_set=set_filtros.indice,
-                    id_externo=_extraer_id_externo(enlace),
+                    id_externo=_extraer_id_externo(enlace_oferta),
                 )
             )
         total_el = soup.select_one(_SEL_TOTAL_RESULTADOS)
         total = _parsear_numero(total_el.get_text(strip=True)) if total_el else None
         hay_mas = self._hay_pagina_siguiente(html)
+        evidencia = f"url: {enlace}"
+        if total is not None:
+            evidencia += f" | total: {total}"
         return SearchResult(
             estado="exito",
             ofertas_primera_pagina=ofertas,
@@ -410,6 +425,7 @@ class LinkedInAdapter:
             total_declarado=total,
             indice_set=set_filtros.indice,
             numero_de_intentos=1,
+            evidencia_acotada=evidencia,
         )
 
     def _hay_pagina_siguiente(self, html: str) -> bool:
@@ -440,6 +456,14 @@ class LinkedInAdapter:
                 )
             if not valor:
                 continue
+            if tipo == "fecha_publicacion" and not _RE_FECHA_PUBLICACION.match(
+                str(valor)
+            ):
+                raise FlowError(
+                    "filtros_no_aplicables",
+                    f"Filter '{tipo}' value '{valor}' is not a "
+                    f"valid time window (expected 'r<N>', e.g. 'r86400').",
+                )
             if tipo == "modalidad":
                 valores: list[str] = valor if isinstance(valor, list) else [str(valor)]
                 codigos = [_MODALIDAD_F_WT.get(v.lower(), v) for v in valores]
