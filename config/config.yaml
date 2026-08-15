@@ -94,6 +94,7 @@ logging:
   level: "DEBUG"
   rotation: "10 MB"
   retention_days: 30
+  logs_path: "logs"
 
 # --- Retries (DOC-06) ---
 retries:

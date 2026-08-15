@@ -5,6 +5,7 @@ import pytest
 
 from modules.discovery.run_context import RunContext
 from shared.errors import ConfigurationError
+from shared.models import SearchResult
 
 CONFIG_FUENTES_VALIDAS = [
     {
@@ -106,6 +107,27 @@ def test_reset_iteradores_limpia_recursos_playwright() -> None:
     assert contexto.browser is None
     assert contexto.playwright_instance is None
     assert contexto.handle_sesion is None
+
+
+def test_marcar_cambio_de_fuente() -> None:
+    contexto = RunContext(CONFIG_FUENTES_VALIDAS, id_corrida="COR-TEST-11")
+    contexto.search_result = SearchResult()
+    contexto.marcar_cambio_de_fuente("linkedin")
+    assert contexto.search_result is None
+    assert contexto.iterador_sets["linkedin"] == -1
+    assert contexto._ultimo_fuente_id_sets == "linkedin"
+    otras = [f for f in contexto.iterador_sets if f != "linkedin"]
+    assert all(contexto.iterador_sets[f] == -1 for f in otras)
+
+
+def test_marcar_cambio_de_fuente_sin_cambio_no_resetea_iterador() -> None:
+    contexto = RunContext(CONFIG_FUENTES_VALIDAS, id_corrida="COR-TEST-12")
+    contexto.marcar_cambio_de_fuente("linkedin")
+    contexto.search_result = SearchResult()
+    contexto.iterador_sets["linkedin"] = 2
+    contexto.marcar_cambio_de_fuente("linkedin")
+    assert contexto.iterador_sets["linkedin"] == 2
+    assert contexto.search_result is not None
 
 
 def test_run_context_politicas_desde_config() -> None:

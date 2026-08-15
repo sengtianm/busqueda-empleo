@@ -54,11 +54,7 @@ def aplicar_filtros(contexto: RunContext) -> ResultadoBusqueda:
 
     # Paso 2: Detectar cambio de fuente y seleccionar siguiente set
     fuente_id = fuente.fuente_id
-    if contexto._ultimo_fuente_id_sets != fuente_id:
-        # Previous source results no longer belong to the current run segment
-        contexto.search_result = None
-        contexto.iterador_sets[fuente_id] = -1
-        contexto._ultimo_fuente_id_sets = fuente_id
+    contexto.marcar_cambio_de_fuente(fuente_id)
 
     try:
         indice = contexto.seleccionar_siguiente_set(fuente_id)
@@ -129,12 +125,9 @@ def se_encontraron_ofertas(contexto: RunContext) -> ResultadoBusqueda:
             estado="error", codigo="ERR-01", descripcion="search_result ausente"
         )
 
-    # Paso 2: Validar consistencia
-    attrs = [
-        "estado", "codigo_motivo", "evidencia_acotada", "ofertas_primera_pagina",
-        "estado_paginacion", "indice_set", "numero_de_intentos"
-    ]
-    if not all(hasattr(res, attr) for attr in attrs):
+    # Paso 2: Validar consistencia (valores reales, no estructura:
+    # SearchResult es un modelo Pydantic cuyos atributos siempre existen)
+    if res.estado not in ("exito", "fallo"):
         logger.error(f"ERR-02: Invalid search_result structure in run {contexto.id_corrida}")
         return ResultadoBusqueda(estado="error", codigo="ERR-02", descripcion="Estructura inválida")
 

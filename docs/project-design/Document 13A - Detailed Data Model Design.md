@@ -337,7 +337,7 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_i
 
 **Description/purpose:** Execution instance (run) of the Discovery module. Created at startup, acquires the persistent lock, processes sources, and ends with a termination motive. Every module record anchors to its `id_corrida`.
 
-**Attributes:** `id`, `id_corrida`, `fecha_inicio`, `fecha_fin`, `estado`.
+**Attributes:** `id`, `id_corrida`, `fecha_inicio`, `fecha_fin`, `estado`, `motivo_terminacion`, `total_ofertas`, `total_sucesos`, `total_errores`, `fuentes_procesadas`. (As-built 2026-08-14, decision D25: the closure attributes — `motivo_terminacion` and the four SQL-computed metrics — were already present in the physical table and are now enforced by the Pydantic model `Corrida` with `extra="forbid"`.)
 
 **Primary key:** `id`.  
 **Alternate keys:** `id_corrida` — unique.  
@@ -724,7 +724,12 @@ Any addition, modification, or deletion of attributes must update this dictionar
 - `id_corrida` — Public unique run identifier. UUID; required; AK. Constraint: referenced by every module record — RN-01. Internal; Permanent. Actual name: `id_corrida`.
 - `fecha_inicio` — Run start date/time. Date/Time; required. Internal; Permanent.
 - `fecha_fin` — Run end date/time. Date/Time; optional. Applies to normal, concurrency, or failure termination. Internal; Permanent.
-- `estado` — Run status. Catalog; required; FK Catalog. Default: `en_ejecucion`. Domain: `en_ejecucion`, `corrida_completada`, `sin_fuentes`, `error`, `concurrencia`. Constraint: follows Discovery technical sheet. Internal; Permanent. Actual name: `estado`.
+- `estado` — Run status. Catalog; required; FK Catalog. Default: `en_ejecucion`. Domain: `en_ejecucion`, `completada`, `sin_fuentes`, `abortada` (decision D4, 2026-08-10; as-built 2026-08-14, decision D25: `error`/`concurrencia` retired, domain enforced by the Pydantic model `EstadoCorrida`). Constraint: follows Discovery technical sheet. Internal; Permanent. Actual name: `estado`.
+- `motivo_terminacion` — Termination motive of the run. Text; optional. Values: `corrida_completada`, `sin_fuentes`, `aborto`. Internal; Permanent. Actual name: `motivo_terminacion`.
+- `total_ofertas` — Offers registered during the run. Integer; optional. Computed by SQL closure metrics (`contar_filas`). Internal; Permanent.
+- `total_sucesos` — Success events recorded during the run. Integer; optional. Computed by SQL closure metrics. Internal; Permanent.
+- `total_errores` — Error events recorded during the run. Integer; optional. Computed by SQL closure metrics. Internal; Permanent.
+- `fuentes_procesadas` — Distinct sources processed during the run. Integer; optional. Computed by SQL closure metrics (`contar_distintos`). Internal; Permanent.
 
 #### 5.5.15. Sesion
 

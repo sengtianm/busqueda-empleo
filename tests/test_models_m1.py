@@ -46,6 +46,10 @@ def test_corrida_estado_por_defecto() -> None:
     assert corrida.estado == EstadoCorrida.EN_EJECUCION
     corrida = Corrida(id_corrida="COR-0002", estado=EstadoCorrida.COMPLETADA)
     assert corrida.estado == EstadoCorrida.COMPLETADA
+    corrida = Corrida(id_corrida="COR-0003", estado=EstadoCorrida.SIN_FUENTES)
+    assert corrida.estado == EstadoCorrida.SIN_FUENTES
+    corrida = Corrida(id_corrida="COR-0004", estado=EstadoCorrida.ABORTADA)
+    assert corrida.estado == EstadoCorrida.ABORTADA
 
 
 def test_evento_almacen() -> None:
@@ -172,5 +176,5 @@ def test_enums() -> None:
     assert TipoEvento.SUCESO.value == "suceso"
     assert EstadoCorrida.EN_EJECUCION.value == "en_ejecucion"
     assert EstadoCorrida.COMPLETADA.value == "completada"
-    assert EstadoCorrida.ERROR.value == "error"
-    assert EstadoCorrida.CONCURRENCIA.value == "concurrencia"
+    assert EstadoCorrida.SIN_FUENTES.value == "sin_fuentes"
+    assert EstadoCorrida.ABORTADA.value == "abortada"

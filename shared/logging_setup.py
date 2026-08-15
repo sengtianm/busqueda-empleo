@@ -8,6 +8,9 @@ from shared.config import load
 
 def _logs_path() -> Path:
     config = load()
+    logs_path = config.get("logging", {}).get("logs_path")
+    if logs_path:
+        return Path(str(logs_path))
     return Path(config.get("persistence", {}).get("data_path", "data")).parent / "logs"
 
 

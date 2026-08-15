@@ -1,7 +1,9 @@
+import json
 from pathlib import Path
 from typing import Any
 
 import httpx
+from loguru import logger
 
 from shared.config import load
 from shared.errors import ConfigurationError, LLMError
@@ -140,8 +142,6 @@ def _send_cloud(prompt: str) -> str:
 
 
 def _validate_response(raw_response: str) -> dict[str, Any]:
-    import json
-
     if not raw_response.strip():
         raise LLMError(
             "003",
@@ -170,7 +170,6 @@ def analyze(
 ) -> dict[str, Any]:
     template = load_prompt(prompt_id)
     final_prompt = render_prompt(template, context)
-    from loguru import logger
 
     provider = _route_provider(purpose)
     logger.debug("Sending prompt to AI | prompt_id={} | provider={}", prompt_id, provider)

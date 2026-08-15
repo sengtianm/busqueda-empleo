@@ -791,7 +791,10 @@ def actualizar_corrida(id_corrida: str, campos: dict[str, Any]) -> bool:
     closure metrics (`fecha_fin`, `motivo_terminacion`, `total_ofertas`,
     `total_errores`, `total_sucesos`, `fuentes_procesadas`). Follows the
     `actualizar_fila` pattern; `corridas` is keyed by `id_corrida` instead of `id`.
+    Validates the closure fields against `Corrida` (Pydantic) before writing
+    so schema drift surfaces at runtime (P4-13; deferred from D23).
     """
+    Corrida(id_corrida=id_corrida, **campos)
     d = _serialize(campos)
     asignaciones = ", ".join(f"{k} = :{k}" for k in d.keys())
     d["_run_id"] = id_corrida

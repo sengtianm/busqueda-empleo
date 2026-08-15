@@ -18,6 +18,7 @@ class ResultadoRegistro:
     contexto: RunContext | None
     codigo: str = ""
     descripcion: str = ""
+    decision: str = ""
 
 
 def registrar_evento(contexto: RunContext) -> ResultadoRegistro:

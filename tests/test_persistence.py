@@ -340,6 +340,47 @@ def test_registrar_corrida_rechaza_estado_invalido(temp_db_file: Path) -> None:
     assert leer_tabla("corridas") == []
 
 
+def test_actualizar_corrida_rechaza_estado_invalido(temp_db_file: Path) -> None:
+    from pydantic import ValidationError
+
+    from shared.persistence import actualizar_corrida
+
+    try:
+        actualizar_corrida("COR-0099", {"estado": "estado_inventado"})
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("deberia rechazar estado fuera del catalogo")
+
+
+def test_actualizar_corrida_rechaza_metricas_con_tipo_incorrecto(
+    temp_db_file: Path,
+) -> None:
+    from pydantic import ValidationError
+
+    from shared.persistence import actualizar_corrida
+
+    try:
+        actualizar_corrida("COR-0099", {"total_ofertas": "tres"})
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("deberia rechazar metrica con tipo incorrecto")
+
+
+def test_actualizar_corrida_rechaza_campo_desconocido(temp_db_file: Path) -> None:
+    from pydantic import ValidationError
+
+    from shared.persistence import actualizar_corrida
+
+    try:
+        actualizar_corrida("COR-0099", {"campo_inventado": "x"})
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("deberia rechazar campo fuera del modelo Corrida")
+
+
 def test_lock_forzar_sobrescribe_y_contienda_mantiene(temp_db_file: Path) -> None:
     import datetime
 

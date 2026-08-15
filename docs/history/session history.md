@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 24 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Lote D (D25): P4 items 13–18 — `EstadoCorrida` aligned to D4 + `Corrida` closure fields validated, value checks replacing dead `hasattr`, `marcar_cambio_de_fuente`, orchestrator `_ejecutar_nodo` + Protocol, single credential resolution, `logging.logs_path` (307 tests) |
 | 23 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Lote C (D24): P3 duplication unifications — `ahora()`/`FORMATO_TIMESTAMP`/`TIPOS_ACCESO` in shared utilidades, `escribir_evento_seguro`, `_enviar`, merged capture policies, unified `_revisar_estado`, `_resultado_fallo` (302 tests) |
 | 22 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Lote A (D22): Playwright leak fix (resources tracked in context, public closure reused by orchestrator), batch persistence in one connection derogating ficha NOTA 4.4, SQL closure metrics, RETURNING ids · Lote B (D23): unified retry helper replacing the 3 node loops + test-only variant, dead `escribir_lote` removed, Pydantic validation on writes (300 tests) |
 | 21 | 14/08/2026 | `ses_0002228fbffeOK2V1m5PaeYAiK` | Filter investigation + observability hardening (D18–D21): LinkedIn `f_TPR`/`f_WT` verified working (UI labels cosmetic), search evidence URL+total, `fecha_publicacion` format validation, robust login fallback (282 tests) |
@@ -24,6 +25,29 @@ Unless noted, decisions from previous sessions remain in effect.
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+## Session 24 — 14/08/2026
+`ses_ffd4eef78ffeLdakkTRbtGuLdu` · `fase-4`
+
+**Topics**
+- Improvement plan shown again to the user (recovered from the local OpenCode DB); Lote D (P4 items 13–18) approved as the last lot with all recommendations, one pass
+- Lote D (P4): `EstadoCorrida` reduced to the D4 vocabulary (`en_ejecucion`/`completada`/`sin_fuentes`/`abortada`; `error`/`concurrencia` removed — test-only); `Corrida` extended with the 6 closure fields + `extra="forbid"`; `actualizar_corrida` now validates with the model before writing (D23 deferral closed); `registrar_corrida` callers unaffected
+- Value validation replacing dead `hasattr` checks (ingreso/busqueda; ERR-02 contract preserved); `RunContext.marcar_cambio_de_fuente` public + idempotent (busqueda no longer mutates privates; 2 new tests)
+- Orchestrator: `_ejecutar_nodo` helper + structural `_ResultadoNodo` Protocol (estado/descripcion/decision), 11 call sites unified; `ResultadoRegistro` gained `decision: str = ""`; flow order/motivos verified identical
+- Credentials resolved once via `_resolver_credenciales` (was 1 read per attempt; `_obtener_credenciales` deleted); inline imports (`json`/`loguru`) moved to top of ia_service; `logging.logs_path: "logs"` in config with fallback in `_logs_path`
+- Reviewers: code-reviewer approved (3 nits non-blocking), docs-reviewer compliant — enum now matches D4 exactly; F-001/F-002 drift corrected via as-built notes (ficha states, DOC-13A attributes + state domain), F-003 kept
+- Docs applied with user approval: D25 + decision log v1.11, tracker 4.18, AGENTS.md (status + 307), ficha técnica as-built note, DOC-13A §2.14/§5.5.14
+
+**Decisions**
+- D25: Lote D — 6 items (13–18); `_resolver_credenciales` `None` double meaning disambiguated by caller; `marcar_cambio_de_fuente` placement in RunContext approved despite module docstring wording
+- Decisions from previous sessions remain in effect
+
+**Status**
+- Lote A ✅ (tracker 4.15) · Lote B ✅ (4.16) · Lote C ✅ (4.17) · Lote D ✅ (tracker 4.18); 307 tests passing · ruff 0 · mypy 0
+- P4 improvement plan fully closed; Phase 4 complete & recorded as-built
+- Session history + all session changes committed in this /save; single commit + push
+- Branch: `fase-4` · no merge
+- Next: Phase 5 (Module 2 — Preparation), task 1: `modules/preparation/` structure (pending)
 
 ## Session 23 — 14/08/2026
 `ses_ffd4eef78ffeLdakkTRbtGuLdu` · `fase-4`

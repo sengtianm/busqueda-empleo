@@ -210,6 +210,15 @@ class RunContext:
         self.set_corriente = None
         self._ultimo_fuente_id_sets = None
 
+    def marcar_cambio_de_fuente(self, fuente_id: str) -> None:
+        """Resets the per-source set iterator when the flow switches sources:
+        previous results no longer belong to the current run segment. No-op
+        while iterating the same source (keeps set progression intact)."""
+        if self._ultimo_fuente_id_sets != fuente_id:
+            self.search_result = None
+            self.iterador_sets[fuente_id] = -1
+            self._ultimo_fuente_id_sets = fuente_id
+
     def seleccionar_siguiente_set(self, fuente_id: str) -> int:
         if fuente_id not in self.iterador_sets:
             raise ValueError(f"Unknown source in context: {fuente_id}")

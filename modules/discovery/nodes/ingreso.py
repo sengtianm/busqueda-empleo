@@ -35,27 +35,22 @@ def ejecutar_ingreso(contexto: RunContext) -> ResultadoIngreso:
             estado="error", codigo="ERR-01", descripcion="Fuente corriente ausente"
         )
 
-    # Paso 2: Resolver credenciales
-    if ficha.tipo_acceso == "con_autenticacion":
-        env_vars = load().get("_env", {})
-        valores: list[str] = []
-        for ref in ficha.credenciales_referencia:
-            val = env_vars.get(ref)
-            if not val:
-                # ERR-02: Credenciales no disponibles
-                contexto.entry_result = EntryResult(
-                    estado="fallo",
-                    codigo_motivo="credenciales_no_disponibles",
-                    evidencia_acotada="Credenciales ausentes en .env",
-                    numero_de_intentos=0,
-                )
-                return ResultadoIngreso(estado="ok", contexto=contexto)
-            valores.append(val)
+    # Paso 2: Resolver credenciales (una sola vez; el loop las recibe)
+    credenciales = _resolver_credenciales(ficha)
+    if ficha.tipo_acceso == "con_autenticacion" and credenciales is None:
+        # ERR-02: Credenciales no disponibles
+        contexto.entry_result = EntryResult(
+            estado="fallo",
+            codigo_motivo="credenciales_no_disponibles",
+            evidencia_acotada="Credenciales ausentes en .env",
+            numero_de_intentos=0,
+        )
+        return ResultadoIngreso(estado="ok", contexto=contexto)
 
     # Paso 3, 4, 5: Abrir canal y acceder con reintentos (config-driven)
     adapter = obtener_adaptador(ficha.fuente_id)
 
-    return _ejecutar_ingreso_loop(contexto, adapter, ficha)
+    return _ejecutar_ingreso_loop(contexto, adapter, ficha, credenciales)
 
 def _resolver_headless() -> bool:
     """Resuelve el modo headless: BROWSER_HEADLESS en .env gana sobre config.yaml."""
@@ -75,6 +70,7 @@ def _ejecutar_ingreso_loop(
     contexto: RunContext,
     adapter: AdaptadorPlataforma,
     ficha: FichaFuente,
+    credenciales: dict[str, str] | None,
 ) -> ResultadoIngreso:
     playwright_instance: Any = None
     browser: Any = None
@@ -125,8 +121,7 @@ def _ejecutar_ingreso_loop(
         return adapter.enter_source(
             page,
             ficha_actual,
-            None if ficha_actual.tipo_acceso == "publico"
-            else _obtener_credenciales(ficha_actual),
+            credenciales,
         )
 
     def _fallo_final(fe: BaseException, intentos: int) -> ResultadoIngreso:
@@ -174,18 +169,23 @@ def _ejecutar_ingreso_loop(
 
 
 
-def _obtener_credenciales(ficha: FichaFuente) -> dict[str, str]:
-    """Mapea las referencias declaradas en la ficha a las claves canónicas
-    que consume el adaptador (`username`, `password`).
+def _resolver_credenciales(ficha: FichaFuente) -> dict[str, str] | None:
+    """Resolves the source credentials in a single config read.
 
-    Convención (MVP): ``credenciales_referencia[0]`` → ``username``,
-    ``credenciales_referencia[1]`` → ``password``. El resto de refs (si
-    existieran) se ignoran para mantener el contrato con el adaptador.
+    Returns ``None`` for public sources (no credentials needed) or when any
+    declared reference is missing (the caller reports
+    ``credenciales_no_disponibles``). Maps ``credenciales_referencia[0]`` →
+    ``username``, ``[1]`` → ``password`` (MVP contract with the adapter);
+    remaining refs are ignored.
     """
+    if ficha.tipo_acceso != "con_autenticacion":
+        return None
     env_vars = load().get("_env", {})
-    valores = [env_vars.get(ref, "") for ref in ficha.credenciales_referencia]
+    valores = [env_vars.get(ref) for ref in ficha.credenciales_referencia]
+    if not valores or not all(valores):
+        return None
     return {
-        "username": valores[0] if len(valores) > 0 else "",
+        "username": valores[0],
         "password": valores[1] if len(valores) > 1 else "",
     }
 
@@ -200,9 +200,9 @@ def ingreso_exitoso(contexto: RunContext) -> ResultadoIngreso:
         logger.error(f"ERR-01: entry_result ausente en corrida {contexto.id_corrida}")
         return ResultadoIngreso(estado="error", codigo="ERR-01", descripcion="entry_result ausente")
 
-    # Validación de consistencia
-    attrs = ["estado", "codigo_motivo", "evidencia_acotada", "numero_de_intentos"]
-    if not all(hasattr(res, attr) for attr in attrs):
+    # Validación de consistencia (valores reales, no estructura: EntryResult
+    # es un modelo Pydantic cuyos atributos siempre existen)
+    if res.estado not in ("exito", "fallo"):
         logger.error(
             f"ERR-02: estructura de entry_result inválida en corrida {contexto.id_corrida}"
         )

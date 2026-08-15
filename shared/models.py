@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class OfferState(str, Enum):
@@ -91,14 +91,25 @@ class TipoEvento(str, Enum):
 class EstadoCorrida(str, Enum):
     EN_EJECUCION = "en_ejecucion"
     COMPLETADA = "completada"
-    ERROR = "error"
-    CONCURRENCIA = "concurrencia"
+    SIN_FUENTES = "sin_fuentes"
+    ABORTADA = "abortada"
 
 
 class Corrida(BaseModel):
+    """Run row model; validates both INICIO registration and the Finalizar
+    Proceso closure update (run vocabulary per decision D4)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     id_corrida: str
     fecha_inicio: datetime | None = None
     estado: EstadoCorrida = EstadoCorrida.EN_EJECUCION
+    fecha_fin: datetime | None = None
+    motivo_terminacion: str = ""
+    total_ofertas: int = 0
+    total_sucesos: int = 0
+    total_errores: int = 0
+    fuentes_procesadas: int = 0
 
 
 class EventoAlmacen(BaseModel):
