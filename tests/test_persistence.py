@@ -1,4 +1,7 @@
 from pathlib import Path
+from typing import Any
+
+import pytest
 
 from shared.persistence import (
     actualizar_fila,
@@ -453,6 +456,122 @@ def test_upsert_oferta_con_empresa_nombre_persistido(temp_db_file: Path) -> None
     filas = leer_tabla("ofertas", {"id": id_oferta})
     assert filas[0]["empresa_nombre"] == "OpenAI"
     assert filas[0]["ubicacion_nombre"] == "Barcelona"
+
+
+def _oferta_base(
+    id_externo: str, enlace: str | None, id_corrida: str = "RUN-0005"
+) -> dict[str, Any]:
+    return {
+        "titulo": "Oferta " + id_externo,
+        "descripcion_original": "Descripcion.",
+        "empresa_id": None,
+        "ubicacion_id": None,
+        "empresa_nombre": "",
+        "ubicacion_nombre": "",
+        "enlace": enlace,
+        "fuente_id": "LI-01",
+        "indice_set": 0,
+        "id_externo": id_externo,
+        "id_corrida": id_corrida,
+        "id_sesion": "SES-0005",
+        "fecha_descubrimiento": "2026-08-09 10:00:00",
+    }
+
+
+def test_upsert_lote_ofertas_inserta_nuevas(temp_db_file: Path) -> None:
+    from shared.persistence import leer_tabla, upsert_lote_ofertas
+
+    filas = [
+        _oferta_base("1", "https://www.linkedin.com/jobs/view/1"),
+        _oferta_base("2", "https://www.linkedin.com/jobs/view/2"),
+    ]
+    registradas, fallidas = upsert_lote_ofertas(filas)
+
+    assert registradas == 2
+    assert fallidas == 0
+    assert len(leer_tabla("ofertas", {"id_corrida": "RUN-0005"})) == 2
+
+
+def test_upsert_lote_ofertas_mismo_id_externo_no_duplica(
+    temp_db_file: Path,
+) -> None:
+    from shared.persistence import leer_tabla, upsert_lote_ofertas
+
+    base = _oferta_base("789", "https://www.linkedin.com/jobs/view/789")
+    registradas, fallidas = upsert_lote_ofertas([dict(base), dict(base)])
+
+    assert registradas == 2
+    assert fallidas == 0
+    filas = leer_tabla("ofertas", {"id_externo": "789"})
+    assert len(filas) == 1
+    assert filas[0]["fecha_ultima_verificacion"] != ""
+
+
+def test_upsert_lote_ofertas_fila_invalida_no_pierde_lote(temp_db_file: Path) -> None:
+    from shared.persistence import leer_tabla, upsert_lote_ofertas
+
+    invalida = _oferta_base("bad", None)
+    valida = _oferta_base("ok", "https://www.linkedin.com/jobs/view/ok")
+    registradas, fallidas = upsert_lote_ofertas([invalida, valida])
+
+    assert registradas == 1
+    assert fallidas == 1
+    filas = leer_tabla("ofertas", {"id_corrida": "RUN-0005"})
+    assert len(filas) == 1
+    assert filas[0]["id_externo"] == "ok"
+
+
+def test_upsert_lote_ofertas_vacio_no_op(temp_db_file: Path) -> None:
+    from shared.persistence import upsert_lote_ofertas
+
+    assert upsert_lote_ofertas([]) == (0, 0)
+
+
+def test_upsert_oferta_fila_invalida_error_descriptivo(temp_db_file: Path) -> None:
+    from shared.errors import PersistenceError
+    from shared.persistence import upsert_oferta
+
+    invalida = _oferta_base("bad", None)
+    with pytest.raises(PersistenceError) as exc:
+        upsert_oferta(invalida)
+    assert "id_externo=bad" in str(exc.value)
+
+
+def test_contar_filas_con_y_sin_filtros(temp_db_file: Path) -> None:
+    from shared.persistence import contar_filas, escribir_evento
+
+    escribir_evento(
+        {"id_corrida": "COR-0001", "tipo": "suceso", "codigo": "a", "fuente_id": "LI-01"}
+    )
+    escribir_evento(
+        {"id_corrida": "COR-0001", "tipo": "error", "codigo": "b", "fuente_id": "LI-01"}
+    )
+    escribir_evento(
+        {"id_corrida": "COR-0002", "tipo": "suceso", "codigo": "c", "fuente_id": ""}
+    )
+
+    assert contar_filas("eventos") == 3
+    assert contar_filas("eventos", {"id_corrida": "COR-0001"}) == 2
+    assert contar_filas("eventos", {"id_corrida": "COR-0001", "tipo": "error"}) == 1
+    assert contar_filas("eventos", {}) == 3
+
+
+def test_contar_distintos_excluye_vacios(temp_db_file: Path) -> None:
+    from shared.persistence import contar_distintos, escribir_evento
+
+    escribir_evento(
+        {"id_corrida": "COR-0001", "tipo": "suceso", "codigo": "a", "fuente_id": "LI-01"}
+    )
+    escribir_evento(
+        {"id_corrida": "COR-0001", "tipo": "error", "codigo": "b", "fuente_id": "LI-01"}
+    )
+    escribir_evento(
+        {"id_corrida": "COR-0002", "tipo": "suceso", "codigo": "c", "fuente_id": ""}
+    )
+
+    assert contar_distintos("eventos", "fuente_id", {"id_corrida": "COR-0001"}) == 1
+    assert contar_distintos("eventos", "fuente_id", {}) == 1
+    assert contar_distintos("eventos", "fuente_id") == 1
 
 
 def test_migracion_4_4_fks_anulables_idempotente(tmp_path: Path) -> None:

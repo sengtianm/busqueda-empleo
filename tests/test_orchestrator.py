@@ -476,15 +476,13 @@ def test_bucle_sets_dos_sets_para_una_fuente() -> None:
 def test_sesion_anterior_cerrada_al_cambiar_fuente() -> None:
     contexto = _contexto(n_fuentes=2)
     contexto.fuente_corriente = contexto.fuentes_filtradas[0]
-    pagina = MagicMock()
-    contexto.handle_sesion = pagina
+    contexto.handle_sesion = MagicMock()
     contexto.id_sesion = "SES-0001"
-    adaptador = MagicMock()
     with (
         patch(
-            "modules.discovery.orchestrator.obtener_adaptador",
-            return_value=adaptador,
-        ),
+            "modules.discovery.orchestrator.cerrar_recursos",
+            return_value=None,
+        ) as mock_cerrar,
         patch(
             "modules.discovery.orchestrator.ejecutar_inicio",
             return_value=ResultadoInicio(
@@ -539,8 +537,8 @@ def test_sesion_anterior_cerrada_al_cambiar_fuente() -> None:
     ):
         ejecutar_flujo()
 
-    adaptador.close_session.assert_called_once_with(pagina)
-    assert contexto.handle_sesion is None
+    assert mock_cerrar.call_count == 2
+    assert all(call.args[0] is contexto for call in mock_cerrar.call_args_list)
     assert contexto.id_sesion is None
 
 

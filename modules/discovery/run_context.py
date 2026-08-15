@@ -61,6 +61,8 @@ class RunContext:
         self.bloqueo_adquirido = False
         self.id_sesion: str | None = None
         self.handle_sesion: Any | None = None
+        self.browser: Any | None = None
+        self.playwright_instance: Any | None = None
         self.fuente_corriente: FichaFuente | None = None
         self.entry_result: EntryResult | None = None
         self.search_result: SearchResult | None = None
@@ -239,6 +241,8 @@ class RunContext:
         self.bloqueo_adquirido = False
         self.id_sesion = None
         self.handle_sesion = None
+        self.browser = None
+        self.playwright_instance = None
         self.fuente_corriente = None
         self.entry_result = None
         self.search_result = None

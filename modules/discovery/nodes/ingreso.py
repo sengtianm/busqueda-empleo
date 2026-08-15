@@ -130,6 +130,8 @@ def _ejecutar_ingreso_loop(
                 # Éxito
                 contexto.id_sesion = generar_id("sesiones")
                 contexto.handle_sesion = page
+                contexto.browser = browser
+                contexto.playwright_instance = playwright_instance
                 contexto.entry_result = res
                 playwright_activo = False  # se conserva la sesión para los nodos siguientes
                 return ResultadoIngreso(estado="ok", contexto=contexto)
@@ -156,6 +158,8 @@ def _ejecutar_ingreso_loop(
                     )
                     contexto.id_sesion = None
                     contexto.handle_sesion = None
+                    contexto.browser = None
+                    contexto.playwright_instance = None
                     return ResultadoIngreso(estado="ok", contexto=contexto)
             except Exception as e:
                 # Error no esperado (corrupción o sistema)
@@ -163,6 +167,8 @@ def _ejecutar_ingreso_loop(
                     page.close()
                 if browser:
                     browser.close()
+                contexto.browser = None
+                contexto.playwright_instance = None
                 logger.error(f"ERR-09: Error interno en nodo ingreso: {e}")
                 return ResultadoIngreso(estado="error", codigo="ERR-09", descripcion=str(e))
     finally:

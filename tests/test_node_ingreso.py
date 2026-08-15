@@ -64,6 +64,8 @@ def test_ejecutar_ingreso_publico_exito(
     assert _entry_result(mock_context).estado == "exito"
     assert mock_context.id_sesion is not None
     assert mock_context.handle_sesion is not None
+    assert mock_context.browser is mock_playwright.chromium.launch.return_value
+    assert mock_context.playwright_instance is mock_playwright
 
 
 def test_ejecutar_ingreso_autenticado_exito(
@@ -137,6 +139,8 @@ def test_ejecutar_ingreso_reintentos_agotados(
     assert res.estado == "ok"
     assert _entry_result(mock_context).estado == "fallo"
     assert _entry_result(mock_context).codigo_motivo == "fuente_inalcanzable"
+    assert mock_context.browser is None
+    assert mock_context.playwright_instance is None
 
 
 def test_ejecutar_ingreso_bloqueo_inmediato(

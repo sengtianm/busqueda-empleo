@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 22 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Lote A (D22): Playwright leak fix (resources tracked in context, public closure reused by orchestrator), batch persistence in one connection derogating ficha NOTA 4.4, SQL closure metrics, RETURNING ids (292 tests) |
 | 21 | 14/08/2026 | `ses_0002228fbffeOK2V1m5PaeYAiK` | Filter investigation + observability hardening (D18–D21): LinkedIn `f_TPR`/`f_WT` verified working (UI labels cosmetic), search evidence URL+total, `fecha_publicacion` format validation, robust login fallback (282 tests) |
 | 20 | 12/08/2026 | `ses_00927e803ffeXTR04EkYYKzmTV` | Project-wide review lots executed: Lote 1 quick-win cleanup (fast suite, dead state/fixtures, D14), Lote 2 Spanish catalog completed (D15), Lote 3 persistence performance (single-connection upsert + indexes, D16), Lote 4 test quality + last cleanups (vestigial node retired, contract session close, config + integration tests, D17) |
 | 19 | 11/08/2026 | `ses_00f57a514ffeUyBVloqdH07g2W` | Spanish naming catalog (D7/D8): English→Spanish rename in code, config, tests; DB migrated with backup; docs aligned (decision log v1.1, DOC-13A v1.5, ficha, plan, tracker 4.7) |
@@ -22,6 +23,31 @@ Unless noted, decisions from previous sessions remain in effect.
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+## Session 22 — 14/08/2026
+`ses_ffd4eef78ffeLdakkTRbtGuLdu` · `fase-4`
+
+**Topics**
+- Lote A plan presented and approved by the user (P0 leak fix + P1 performance improvements), including the 3 design decisions (whole-lot retry, public resource closure reused by the orchestrator, wrapper on the batch core)
+- Playwright resource leak fixed: context now carries the browser and Playwright instance, assigned on successful platform entry and cleared on definitive failure/reset; the closure node exposes a public resource-closing function (page → browser → instance, idempotent) reused by the orchestrator when switching sources — the previous browser context is no longer leaked
+- Batch persistence: whole lot upserted in one connection (dedup by external id incl. intra-lot duplicates, per-row failures logged with run/external ids and non-aborting); single-offer call became a thin wrapper that raises a descriptive persistence error on invalid rows (was a misleading index error)
+- Retry policy: 2 attempts of the whole lot, only on connection/transaction exceptions; per-row failures are data errors and are not retried
+- Generated ids captured via RETURNING without an extra select
+- Closure metrics computed by SQL counts (empty column values excluded) replacing full-table reads into Python
+- 10 new tests (batch upsert, empty lot, invalid single row, SQL counts with/without filters, resource assignment/reset, metrics with real DB, session closed on source switch); bugs fixed during implementation: mocked tuple unpacking, intra-batch dedup, call-args introspection, missing pytest import
+- Reviewers: code findings all fixed (descriptive error on invalid row, traceability in failure log, 2 missing tests); docs finding resolved: batch persistence derogates the ficha per-offer note, now registered as an approved decision
+- Docs applied with user approval: new decision entry, ficha as-built notes (capture node + global, rules/validations/step updated), tracker sub-phase 4.15, AGENTS.md test count 292
+
+**Decisions**
+- D22: batch persistence and retry in one connection (derogates ficha NOTA 4.4 "persistencia por oferta"); SQL closure metrics; RETURNING ids; Playwright resources tracked in context with public closure reused by the orchestrator on source switch
+- Decisions from previous sessions remain in effect
+
+**Status**
+- Lote A ✅ (tracker 4.15); 292 tests passing · ruff 0 · mypy 0
+- 17 files changed (13 code/tests + 4 docs), docs approved and applied
+- Session history + all session changes committed in this /save; single commit + push
+- Branch: `fase-4` · no merge
+- Next: Phase 5 (Module 2 — Preparation), task 1: `modules/preparation/` structure (pending)
 
 ## Session 21 — 14/08/2026
 `ses_0002228fbffeOK2V1m5PaeYAiK` · `fase-4`

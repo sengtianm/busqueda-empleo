@@ -5,6 +5,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
 
+from loguru import logger
+
 from shared.config import load
 from shared.errors import PersistenceError
 
@@ -518,26 +520,32 @@ def _migrate_corridas_finalizacion(conn: sqlite3.Connection) -> None:
             conn.execute(f"ALTER TABLE corridas ADD COLUMN {definicion}")
 
 
-def generar_id(tabla: str) -> str:
+def _generar_id_en(conn: sqlite3.Connection, tabla: str) -> str:
+    """Generates the next sequential id for `tabla` on an existing connection.
+
+    Reads the `RETURNING` value of the single upsert statement, so no extra
+    SELECT is needed. The caller decides when to commit.
+    """
     prefijo = PREFIXES.get(tabla)
     if prefijo is None:
         disponibles = list(PREFIXES.keys())
         raise ValueError(f"Unknown table: {tabla}. Available prefixes: {disponibles}")
+    fila = conn.execute(
+        "INSERT INTO secuencia_ids (tabla_nombre, prefijo, ultimo_numero) VALUES (?, ?, 1) "
+        "ON CONFLICT(tabla_nombre) DO UPDATE SET ultimo_numero = ultimo_numero + 1 "
+        "RETURNING ultimo_numero",
+        (tabla, prefijo),
+    ).fetchone()
+    assert fila is not None
+    return f"{prefijo}-{int(fila[0]):04d}"
+
+
+def generar_id(tabla: str) -> str:
     conn = _connection()
     try:
-        conn.execute(
-            "INSERT INTO secuencia_ids (tabla_nombre, prefijo, ultimo_numero) VALUES (?, ?, 1) "
-            "ON CONFLICT(tabla_nombre) DO UPDATE SET ultimo_numero = ultimo_numero + 1 "
-            "RETURNING ultimo_numero",
-            (tabla, prefijo),
-        )
-        fila = conn.execute(
-            "SELECT ultimo_numero FROM secuencia_ids WHERE tabla_nombre = ?", (tabla,)
-        ).fetchone()
-        assert fila is not None
-        num = fila["ultimo_numero"]
+        resultado = _generar_id_en(conn, tabla)
         conn.commit()
-        return f"{prefijo}-{num:04d}"
+        return resultado
     finally:
         conn.close()
 
@@ -559,6 +567,44 @@ def leer_tabla(
             if r is not None:
                 results.append(r)
         return results
+    finally:
+        conn.close()
+
+
+def contar_filas(tabla: str, filtros: dict[str, Any] | None = None) -> int:
+    """Counts rows of a table; optional equality filters."""
+    conn = _connection()
+    try:
+        if filtros:
+            condiciones = " AND ".join(f"{k} = :{k}" for k in filtros.keys())
+            cursor = conn.execute(
+                f"SELECT COUNT(*) FROM {tabla} WHERE {condiciones}", dict(filtros)
+            )
+        else:
+            cursor = conn.execute(f"SELECT COUNT(*) FROM {tabla}")
+        fila = cursor.fetchone()
+        return int(fila[0]) if fila is not None else 0
+    finally:
+        conn.close()
+
+
+def contar_distintos(
+    tabla: str, columna: str, filtros: dict[str, Any] | None = None
+) -> int:
+    """Counts distinct non-empty values of a column (equality filters)."""
+    conn = _connection()
+    try:
+        condiciones = f"{columna} IS NOT NULL AND {columna} != ''"
+        params: dict[str, Any] = {}
+        if filtros:
+            condiciones += " AND " + " AND ".join(f"{k} = :{k}" for k in filtros.keys())
+            params = dict(filtros)
+        cursor = conn.execute(
+            f"SELECT COUNT(DISTINCT {columna}) FROM {tabla} WHERE {condiciones}",
+            params,
+        )
+        fila = cursor.fetchone()
+        return int(fila[0]) if fila is not None else 0
     finally:
         conn.close()
 
@@ -785,46 +831,108 @@ def actualizar_corrida(id_corrida: str, campos: dict[str, Any]) -> bool:
         conn.close()
 
 
-def upsert_oferta(oferta: dict[str, Any]) -> str:
-    """Inserts or updates an offer by `id_externo` in a single connection.
+def _upsert_ofertas_en(
+    conn: sqlite3.Connection, filas: list[dict[str, Any]]
+) -> tuple[list[str], int]:
+    """Upserts offers on an existing connection, dedup by `id_externo`.
 
-    If a row with the same `id_externo` already exists, only its
-    `fecha_ultima_verificacion` is refreshed and its `id` is returned.
-    Otherwise a new `id` is generated and the row is inserted.
-
-    Returns:
-        The offer `id` (str).
+    Existing rows only refresh `fecha_ultima_verificacion`; new rows get a
+    generated `id` on the same connection. Row-level failures are logged and
+    counted without aborting the remaining rows; the caller commits.
+    Returns (ids_registradas, fallidas).
     """
-    d = _serialize(dict(oferta))
-    id_externo = d.get("id_externo")
-    conn = _connection()
-    try:
-        if id_externo:
-            fila = conn.execute(
-                "SELECT id FROM ofertas WHERE id_externo = ?", (id_externo,)
-            ).fetchone()
-            if fila is not None:
+    registradas: list[str] = []
+    fallidas = 0
+    if not filas:
+        return registradas, fallidas
+    preparadas = [_serialize(dict(f)) for f in filas]
+    id_externos = [d.get("id_externo") for d in preparadas if d.get("id_externo")]
+    ids_por_id_externo: dict[str, str] = {}
+    if id_externos:
+        marcas = ",".join("?" for _ in id_externos)
+        for fila in conn.execute(
+            f"SELECT id_externo, id FROM ofertas WHERE id_externo IN ({marcas})",
+            id_externos,
+        ).fetchall():
+            ids_por_id_externo[str(fila["id_externo"])] = str(fila["id"])
+    ahora = _now()
+    for d in preparadas:
+        try:
+            id_externo = d.get("id_externo")
+            if id_externo and id_externo in ids_por_id_externo:
                 conn.execute(
                     "UPDATE ofertas SET fecha_ultima_verificacion = ? WHERE id = ?",
-                    (_now(), str(fila[0])),
+                    (ahora, ids_por_id_externo[id_externo]),
                 )
-                conn.commit()
-                return str(fila[0])
-        if not d.get("id"):
-            d["id"] = generar_id("ofertas")
-        ahora = _now()
-        if not d.get("fecha_creacion"):
-            d["fecha_creacion"] = ahora
-        d["fecha_ultima_edicion"] = ahora
-        columnas = list(d.keys())
-        placeholders = [":" + k for k in d.keys()]
-        conn.execute(
-            f"INSERT INTO ofertas ({', '.join(columnas)}) VALUES "
-            f"({', '.join(placeholders)})",
-            d,
-        )
+                registradas.append(ids_por_id_externo[id_externo])
+                continue
+            if not d.get("id"):
+                d["id"] = _generar_id_en(conn, "ofertas")
+            if not d.get("fecha_creacion"):
+                d["fecha_creacion"] = ahora
+            d["fecha_ultima_edicion"] = ahora
+            columnas = list(d.keys())
+            placeholders = [":" + k for k in d.keys()]
+            conn.execute(
+                f"INSERT INTO ofertas ({', '.join(columnas)}) VALUES "
+                f"({', '.join(placeholders)})",
+                d,
+            )
+            registradas.append(cast(str, d["id"]))
+            if id_externo:
+                ids_por_id_externo[id_externo] = cast(str, d["id"])
+        except Exception as exc:
+            logger.error(
+                f"Oferta no registrada en lote | "
+                f"id_externo={d.get('id_externo')} | "
+                f"id_corrida={d.get('id_corrida')} | {exc}"
+            )
+            fallidas += 1
+    return registradas, fallidas
+
+
+def upsert_lote_ofertas(filas: list[dict[str, Any]]) -> tuple[int, int]:
+    """Inserts or updates a batch of offers in a single connection.
+
+    Deduplicates by `id_externo` like `upsert_oferta` but in one
+    transaction. Returns (registradas, fallidas); row-level failures never
+    abort the remaining rows. Connection failures raise.
+    """
+    if not filas:
+        return 0, 0
+    conn = _connection()
+    try:
+        ids, fallidas = _upsert_ofertas_en(conn, filas)
         conn.commit()
-        return cast(str, d["id"])
+        return len(ids), fallidas
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def upsert_oferta(oferta: dict[str, Any]) -> str:
+    """Inserts or updates a single offer by `id_externo` (public API).
+
+    Thin wrapper over the batch upsert; returns the offer `id` (str).
+    A row rejected at row level raises `PersistenceError` instead of the
+    misleading `IndexError` of an empty result list.
+    """
+    conn = _connection()
+    try:
+        ids, _ = _upsert_ofertas_en(conn, [oferta])
+        if not ids:
+            raise PersistenceError(
+                "09",
+                f"Oferta no registrada (fila inválida) | "
+                f"id_externo={oferta.get('id_externo')}",
+            )
+        conn.commit()
+        return ids[0]
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 

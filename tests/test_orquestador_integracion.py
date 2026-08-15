@@ -184,10 +184,6 @@ def _parches(adaptador: AdaptadorFalso) -> list[Any]:
             return_value=adaptador,
         ),
         patch(
-            "modules.discovery.orchestrator.obtener_adaptador",
-            return_value=adaptador,
-        ),
-        patch(
             "modules.discovery.nodes.finalizar.obtener_adaptador",
             return_value=adaptador,
         ),

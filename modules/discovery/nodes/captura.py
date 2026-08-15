@@ -18,7 +18,11 @@ from modules.discovery.adapters.registry import obtener_adaptador
 from modules.discovery.run_context import RunContext, _ahora
 from shared.config import load
 from shared.models import CaptureBatch, EstadoCaptura, Offer
-from shared.persistence import escribir_evento, escribir_fila, upsert_oferta
+from shared.persistence import (
+    escribir_evento,
+    escribir_fila,
+    upsert_lote_ofertas,
+)
 from shared.retry import should_retry
 from shared.utilidades import acotar_evidencia
 
@@ -222,22 +226,16 @@ def _escribir_auditoria_sesion(contexto: RunContext, lote: CaptureBatch) -> None
 def registrar_ofertas(contexto: RunContext) -> ResultadoCaptura:
     """Nodo: Registrar ofertas en Ofertas Totales (v1.0).
 
-    Deduplica por `id_externo` vía `upsert_oferta` (reintento único por
-    oferta). Si todas fallan, registra un evento crítico de lote degradado;
-    el flujo siempre continúa.
+    Deduplica por `id_externo` vía `upsert_lote_ofertas` (una conexión y un
+    reintento único para el lote completo). Si todas fallan, registra un
+    evento crítico de lote degradado; el flujo siempre continúa.
     """
     lote = contexto.capture_batch
     if lote is None or not lote.ofertas:
         return ResultadoCaptura(estado="ok", contexto=contexto)
 
-    registradas = 0
-    fallidas = 0
-    for oferta in lote.ofertas:
-        fila = _oferta_a_dict(oferta, contexto)
-        if _registrar_oferta_con_reintento(fila):
-            registradas += 1
-        else:
-            fallidas += 1
+    filas = [_oferta_a_dict(oferta, contexto) for oferta in lote.ofertas]
+    registradas, fallidas = _registrar_lote_con_reintento(filas)
 
     if registradas > 0:
         _registrar_evento(
@@ -298,17 +296,21 @@ def _oferta_a_dict(oferta: Offer, contexto: RunContext) -> dict[str, Any]:
     }
 
 
-def _registrar_oferta_con_reintento(fila: dict[str, Any]) -> bool:
-    """Inserta o actualiza una oferta; reintenta una vez si falla."""
+def _registrar_lote_con_reintento(
+    filas: list[dict[str, Any]],
+) -> tuple[int, int]:
+    """Registra el lote completo en una conexión; reintenta una vez si falla.
+
+    Returns (registradas, fallidas).
+    """
     for intento in range(1, 3):
         try:
-            upsert_oferta(fila)
-            return True
+            return upsert_lote_ofertas(filas)
         except Exception as exc:
             logger.error(
-                f"Fallo registrando oferta (intento {intento}/2): {exc}"
+                f"Fallo registrando lote de ofertas (intento {intento}/2): {exc}"
             )
-    return False
+    return 0, len(filas)
 
 
 def quedan_sets_por_aplicar(contexto: RunContext) -> ResultadoCaptura:

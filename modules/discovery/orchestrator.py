@@ -10,7 +10,6 @@ to close, no lock owned). Informative milestones are logged with Loguru.
 
 from loguru import logger
 
-from modules.discovery.adapters.registry import obtener_adaptador
 from modules.discovery.nodes.busqueda import aplicar_filtros, se_encontraron_ofertas
 from modules.discovery.nodes.captura import (
     capturar_ofertas,
@@ -22,7 +21,7 @@ from modules.discovery.nodes.control_fuentes import (
     quedan_fuentes_por_procesar,
     seleccionar_fuente_pendiente,
 )
-from modules.discovery.nodes.finalizar import finalizar_proceso
+from modules.discovery.nodes.finalizar import cerrar_recursos, finalizar_proceso
 from modules.discovery.nodes.ingreso import ejecutar_ingreso, ingreso_exitoso
 from modules.discovery.nodes.inicio import ejecutar_inicio
 from modules.discovery.nodes.registro import registrar_evento
@@ -35,22 +34,8 @@ _MOTIVO_CORRIDA_COMPLETADA = "corrida_completada"
 
 def _cerrar_sesion_anterior(contexto: RunContext) -> None:
     """Best-effort close of the previous source session before switching."""
-    pagina = contexto.handle_sesion
-    if pagina is None:
-        return
-    try:
-        fuente = contexto.fuente_corriente
-        if fuente is not None:
-            obtener_adaptador(fuente.fuente_id).close_session(pagina)
-        else:
-            pagina.close()
-    except Exception as exc:
-        logger.warning(
-            f"Fallo al cerrar sesion anterior | run={contexto.id_corrida} | {exc}"
-        )
-    finally:
-        contexto.handle_sesion = None
-        contexto.id_sesion = None
+    cerrar_recursos(contexto)
+    contexto.id_sesion = None
 
 
 def _terminar(contexto: RunContext, motivo: str) -> None:

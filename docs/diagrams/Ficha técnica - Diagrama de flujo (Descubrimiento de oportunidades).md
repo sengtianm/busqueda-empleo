@@ -916,13 +916,17 @@ Persistir `capture_batch` en `"Ofertas Totales"` conservando información origin
   - `fuente_id` guardado en `fuente_id` sin constraint FK.
 - Documentado en DOC-13/13-A y tracker, 2026-08-09.
 
+### NOTA as-built 2026-08-14 (decisión D22, Lote A)
+La persistencia por oferta (NOTA 4.4 anterior) queda **derogada**: el lote completo se persiste en **una sola conexión** mediante `upsert_lote_ofertas(filas) -> (registradas, fallidas)` (núcleo `_upsert_ofertas_en`; `upsert_oferta` pasa a ser wrapper fino que lanza `PersistenceError` descriptivo ante fila inválida). Semántica de dedup idéntica a la NOTA 4.4 (D4): existente refresca `fecha_ultima_verificacion` y conserva `id`; nuevo inserta; se detectan también duplicados intra-lote. Un fallo de fila se registra con `id_externo`/`id_corrida` y **no aborta el lote**; el reintento único (RN-07) aplica al **lote completo** y solo ante excepción de conexión/transacción (los errores de fila son de datos y no se reintentan). Los ids generados se capturan con `RETURNING` (`_generar_id_en`), sin SELECT extra. Actualizan esta nota: RN-06, VAL-03, paso 3 y "Notas de implementación".
+
 ### Descripción funcional
 Lee `capture_batch`:
 - lote vacío → no-op, sin escritura ni error;
 - lote no vacío → persistir ofertas.
 
 Base 1.0: persistencia como filas nuevas en única transacción.  
-Bajo NOTA aprobada: persistencia por oferta mediante upsert por `id_externo`.
+Bajo NOTA 4.4: persistencia por oferta mediante upsert por `id_externo`.  
+As-built D22 (vigente): lote completo en una sola conexión mediante `upsert_lote_ofertas`; dedup por `id_externo` idéntico; errores por fila no abortan el lote.
 
 Fallo de escritura: reintento único; si persiste, evento crítico y aborto. Tras persistir o no-op, libera lote.
 
@@ -941,14 +945,14 @@ Contexto: `capture_batch` con información original, `id_externo` best-effort, m
 - **RN-03**: cada fila conserva información original íntegra, `id_externo` nullable, `empresa_nombre`/`ubicacion_nombre` crudos, `empresa_id`/`ubicacion_id` NULL en MVP, y trazabilidad: `id_corrida`, `fuente_id`, `id_sesion`, `indice_set`, marcas temporales de captura y última verificación.
 - **RN-04**: prohibido transformar, normalizar o limpiar contenido o URLs; crudo se conserva crudo.
 - **RN-05**: lote vacío = no-op.
-- **RN-06**: base: transacción única por lote; bajo NOTA aprobada, persistencia por oferta.
+- **RN-06**: base: transacción única por lote; NOTA 4.4 (derogada por D22): persistencia por oferta; actual (D22): lote completo en una conexión (`upsert_lote_ofertas`), errores por fila registrados sin abortar el lote.
 - **RN-07**: fallo de escritura/transacción: reintento único; si persiste, evento crítico y aborto. `"Ofertas Totales"` es salida esencial.
 - **RN-08**: liberar lote tras persistir o no-op.
 
 ### Validaciones
 - **VAL-01**: `capture_batch` presente.
 - **VAL-02**: cada oferta tiene información original y metadatos; `id_externo` nullable.
-- **VAL-03**: base: transacción única; NOTA aprobada: persistencia por oferta.
+- **VAL-03**: base: transacción única; NOTA 4.4 (derogada por D22): persistencia por oferta; actual (D22): lote completo en una conexión; filas fallidas registradas sin abortar.
 - **VAL-04**: lote liberado y control entregado.
 
 ### Condiciones
@@ -983,7 +987,8 @@ Contexto: `capture_batch` con información original, `id_externo` best-effort, m
 
 ### Notas de implementación
 - Base 1.0: insertar filas nuevas, transacción única, rollback completo.
-- NOTA 4.4 aprobada: upsert por `id_externo` y persistencia por oferta.
+- NOTA 4.4 (derogada por D22): upsert por `id_externo` y persistencia por oferta.
+- D22 (vigente): lote completo en una conexión (`upsert_lote_ofertas`); dedup por `id_externo` incl. duplicados intra-lote; fallo de fila registrado con `id_externo`/`id_corrida` sin abortar; reintento único del lote solo ante excepción de conexión/transacción; ids por `RETURNING`.
 - No normalizar URLs ni contenido.
 - Reintento único; aborto si persiste.
 - Liberar lote inmediatamente.
@@ -992,7 +997,7 @@ Contexto: `capture_batch` con información original, `id_externo` best-effort, m
 ### Pasos funcionales
 1. **Leer lote**. Entrada: contexto, conexión. Proceso: acceder a `capture_batch`. Salida: lote. Val: VAL-01. Err: ERR-01.
 2. **Evaluar lote vacío**. Entrada: lote. Proceso: si vacío, no-op y salto a liberación. Salida: señal de continuación. Err: ninguna.
-3. **Persistir**. Entrada: lote. Proceso: upsert por oferta según NOTA: existente refresca `fecha_ultima_verificacion`; nuevo inserta con información original, crudos y trazabilidad. Fallo → reintento único; si persiste, aborto. Salida: lote persistido. Val: VAL-02, VAL-03. Err: ERR-02.
+3. **Persistir**. Entrada: lote. Proceso: upsert del lote completo en una conexión según D22: existente refresca `fecha_ultima_verificacion`; nuevo inserta con información original, crudos y trazabilidad; fila fallida se registra y no aborta. Fallo de conexión/transacción → reintento único del lote; si persiste, aborto. Salida: lote persistido. Val: VAL-02, VAL-03. Err: ERR-02.
 4. **Liberar y entregar**. Entrada: contexto. Proceso: liberar `capture_batch`; cerrar nodo. Salida: flujo a `"¿Quedan sets…?"`. Val: VAL-04. Err: ninguna.
 
 ---
@@ -1162,3 +1167,5 @@ Con este nodo queda completo el conjunto de nodos del Módulo 1. Pendientes de i
 **Nota as-built 2026-08-12 (decisión D15, Lote 2):** los nombres de función de `shared/persistence.py` usados por los nodos se alinearon al catálogo español D7/D8 (`generar_id`, `leer_tabla`, `escribir_fila`, `adquirir_bloqueo`, `liberar_bloqueo`, `consultar_bloqueo`, `sondear_escritura`, `registrar_corrida`, `escribir_evento`, `actualizar_corrida`); los alias ingleses se eliminaron. Sin cambio de esquema ni de comportamiento; defecto cosmético conocido y no migrado: `indice_set INTEGER DEFAULT ''` en `ofertas`, `eventos` y `sesiones` (inerte).
 
 **Nota as-built 2026-08-12 (decisión D17, Lote 4):** (a) el nodo decisión "¿Quedan ofertas por capturar…?" se retiró del flujo, del orquestador y de sus pruebas (decisión constante `no` desde la captura por listado D11; ver nota en su sección); "Registrar ofertas…" entrega control directamente a "¿Quedan sets…?"; (b) el cierre de sesión se delega al contrato `close_session` del adaptador (D13) en el orquestador y en "Finalizar Proceso" en lugar de `page.close()` directo; (c) se añadieron pruebas de integración del flujo completo con nodos reales (adaptador y arranque de Chromium simulados) y pruebas dedicadas de `shared/config.py`.
+
+**Nota as-built 2026-08-14 (decisión D22, Lote A):** (a) "Registrar ofertas capturadas" persiste el lote completo en una sola conexión (`upsert_lote_ofertas`); ver nota as-built D22 en su sección — deroga NOTA 4.4 y actualiza RN-06, VAL-03, paso 3 y notas de implementación. (b) `RunContext` incorpora los campos tipados `browser`/`playwright_instance`; "Ingresar a la plataforma" los asigna en éxito y los limpia en fallo definitivo; "Finalizar Proceso" expone `cerrar_recursos(contexto)` como función pública (página → browser → instancia, resetea los tres campos, idempotente) y el orquestador la reutiliza al cambiar de fuente (`_cerrar_sesion_anterior`), con lo que cambiar de fuente ya no fuga el contexto de navegador anterior; el contrato `close_session` del adaptador (D17) no cambia. (c) "Finalizar Proceso" computa las métricas de cierre por SQL (`contar_filas`/`contar_distintos`, valores vacíos excluidos) en lugar de leer tablas completas a Python (`leer_tabla`); `generar_id` captura ids con `RETURNING` sin SELECT extra.

@@ -91,6 +91,23 @@ def test_reset_iteradores() -> None:
     assert not contexto.bloqueo_adquirido
 
 
+def test_contexto_recursos_playwright_por_defecto_none() -> None:
+    contexto = RunContext(CONFIG_FUENTES_VALIDAS, id_corrida="COR-TEST-09")
+    assert contexto.browser is None
+    assert contexto.playwright_instance is None
+
+
+def test_reset_iteradores_limpia_recursos_playwright() -> None:
+    contexto = RunContext(CONFIG_FUENTES_VALIDAS, id_corrida="COR-TEST-10")
+    contexto.browser = object()
+    contexto.playwright_instance = object()
+    contexto.handle_sesion = object()
+    contexto.reset_iteradores()
+    assert contexto.browser is None
+    assert contexto.playwright_instance is None
+    assert contexto.handle_sesion is None
+
+
 def test_run_context_politicas_desde_config() -> None:
     contexto = RunContext(CONFIG_FUENTES_VALIDAS, id_corrida="COR-TEST-08")
     politicas = contexto.politicas(contexto.fuentes_filtradas[0])

@@ -66,28 +66,29 @@ def test_finalizar_aborto_estado_abortada() -> None:
 
 def test_finalizar_metricas_consultadas_de_bd() -> None:
     contexto = _contexto()
-    eventos = [
-        {"id_corrida": "COR-0001", "tipo": "error", "fuente_id": "LI-01"},
-        {"id_corrida": "COR-0001", "tipo": "suceso", "fuente_id": "LI-01"},
-        {"id_corrida": "COR-0001", "tipo": "suceso", "fuente_id": "OTRA"},
-    ]
 
-    def _read_table_side(
+    def _count_side(
         tabla: str, filtros: dict[str, Any] | None = None
-    ) -> list[dict[str, Any]]:
+    ) -> int:
         if tabla == "ofertas":
-            return [{"id": "OFE-1"}, {"id": "OFE-2"}]
-        return eventos
+            return 2
+        if filtros and filtros.get("tipo") == "error":
+            return 1
+        return 3
 
     with patch(
-        "modules.discovery.nodes.finalizar.leer_tabla", side_effect=_read_table_side
-    ) as mock_read:
-        with patch("modules.discovery.nodes.finalizar.actualizar_corrida") as mock_update:
-            with patch("modules.discovery.nodes.finalizar.escribir_evento"):
-                with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
-                    finalizar_proceso(contexto, "corrida_completada")
+        "modules.discovery.nodes.finalizar.contar_filas", side_effect=_count_side
+    ) as mock_count:
+        with patch(
+            "modules.discovery.nodes.finalizar.contar_distintos", return_value=2
+        ) as mock_distintos:
+            with patch("modules.discovery.nodes.finalizar.actualizar_corrida") as mock_update:
+                with patch("modules.discovery.nodes.finalizar.escribir_evento"):
+                    with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
+                        finalizar_proceso(contexto, "corrida_completada")
 
-    assert mock_read.call_count == 2
+    assert mock_count.call_count == 3
+    mock_distintos.assert_called_once()
     campos = mock_update.call_args.args[1]
     assert campos["total_ofertas"] == 2
     assert campos["total_errores"] == 1
@@ -168,8 +169,8 @@ def test_finalizar_playwright_browser_y_instance_cerrados() -> None:
     contexto = _contexto()
     browser = MagicMock()
     playwright_instance = MagicMock()
-    setattr(contexto, "browser", browser)
-    setattr(contexto, "playwright_instance", playwright_instance)
+    contexto.browser = browser
+    contexto.playwright_instance = playwright_instance
     with patch("modules.discovery.nodes.finalizar.actualizar_corrida"):
         with patch("modules.discovery.nodes.finalizar.escribir_evento"):
             with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
@@ -177,6 +178,9 @@ def test_finalizar_playwright_browser_y_instance_cerrados() -> None:
 
     browser.close.assert_called_once()
     playwright_instance.stop.assert_called_once()
+    assert contexto.browser is None
+    assert contexto.playwright_instance is None
+    assert contexto.handle_sesion is None
 
 
 def test_finalizar_liberar_bloqueo_siempre() -> None:
@@ -217,14 +221,18 @@ def test_finalizar_evento_tipo_error_para_no_completada() -> None:
 def test_finalizar_metricas_fallan_a_ceros() -> None:
     contexto = _contexto()
     with patch(
-        "modules.discovery.nodes.finalizar.leer_tabla",
+        "modules.discovery.nodes.finalizar.contar_filas",
         side_effect=RuntimeError("db"),
     ):
-        with patch("modules.discovery.nodes.finalizar.actualizar_corrida") as mock_update:
-            with patch("modules.discovery.nodes.finalizar.escribir_evento"):
-                with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
-                    with patch("modules.discovery.nodes.finalizar.logger"):
-                        res = finalizar_proceso(contexto, "corrida_completada")
+        with patch(
+            "modules.discovery.nodes.finalizar.contar_distintos",
+            side_effect=RuntimeError("db"),
+        ):
+            with patch("modules.discovery.nodes.finalizar.actualizar_corrida") as mock_update:
+                with patch("modules.discovery.nodes.finalizar.escribir_evento"):
+                    with patch("modules.discovery.nodes.finalizar.liberar_bloqueo"):
+                        with patch("modules.discovery.nodes.finalizar.logger"):
+                            res = finalizar_proceso(contexto, "corrida_completada")
 
     assert res.estado == "ok"
     campos = mock_update.call_args.args[1]
@@ -250,6 +258,63 @@ def test_consultar_metricas_contexto_none() -> None:
         "total_errores": 0,
         "total_sucesos": 0,
         "fuentes_procesadas": 0,
+    }
+
+
+def test_consultar_metricas_bd_real(temp_db_file: Path) -> None:
+    from shared.persistence import escribir_evento, escribir_fila
+
+    escribir_fila(
+        "ofertas",
+        {
+            "id": "OFE-0001",
+            "enlace": "https://www.linkedin.com/jobs/view/1",
+            "titulo": "Oferta 1",
+            "id_externo": "1",
+            "id_corrida": "COR-0001",
+            "fecha_descubrimiento": "2026-08-10 10:00:00",
+        },
+    )
+    escribir_evento(
+        {
+            "id_corrida": "COR-0001",
+            "tipo": "error",
+            "codigo": "bloqueo_plataforma",
+            "fuente_id": "LI-01",
+        }
+    )
+    escribir_evento(
+        {
+            "id_corrida": "COR-0001",
+            "tipo": "suceso",
+            "codigo": "captura_completada",
+            "fuente_id": "LI-01",
+        }
+    )
+    escribir_evento(
+        {
+            "id_corrida": "COR-0001",
+            "tipo": "suceso",
+            "codigo": "captura_completada",
+            "fuente_id": "OTRA",
+        }
+    )
+    escribir_evento(
+        {
+            "id_corrida": "COR-0001",
+            "tipo": "suceso",
+            "codigo": "captura_completada",
+            "fuente_id": "",
+        }
+    )
+
+    metricas = consultar_metricas(_contexto())
+
+    assert metricas == {
+        "total_ofertas": 1,
+        "total_errores": 1,
+        "total_sucesos": 3,
+        "fuentes_procesadas": 2,
     }
 
 

@@ -19,8 +19,9 @@ from modules.discovery.adapters.registry import obtener_adaptador
 from modules.discovery.run_context import RunContext
 from shared.persistence import (
     actualizar_corrida,
+    contar_distintos,
+    contar_filas,
     escribir_evento,
-    leer_tabla,
     liberar_bloqueo,
 )
 
@@ -66,22 +67,27 @@ def consultar_metricas(contexto: RunContext | None) -> dict[str, int]:
         return {campo: 0 for campo in _CAMPOS_METRICAS}
     id_corrida = contexto.id_corrida
     try:
-        ofertas = leer_tabla("ofertas", {"id_corrida": id_corrida})
-        eventos = leer_tabla("eventos", {"id_corrida": id_corrida})
+        total_ofertas = contar_filas("ofertas", {"id_corrida": id_corrida})
+        total_errores = contar_filas(
+            "eventos", {"id_corrida": id_corrida, "tipo": "error"}
+        )
+        total_sucesos = (
+            contar_filas("eventos", {"id_corrida": id_corrida}) - total_errores
+        )
+        fuentes_procesadas = contar_distintos(
+            "eventos", "fuente_id", {"id_corrida": id_corrida}
+        )
     except Exception as exc:
         logger.error(
             f"Metricas no consultables | run={id_corrida} | {exc} | "
             "se degrada a ceros"
         )
         return {campo: 0 for campo in _CAMPOS_METRICAS}
-    errores = sum(1 for e in eventos if e.get("tipo") == "error")
-    sucesos = len(eventos) - errores
-    fuentes = len({e.get("fuente_id") for e in eventos if e.get("fuente_id")})
     return {
-        "total_ofertas": len(ofertas),
-        "total_errores": errores,
-        "total_sucesos": sucesos,
-        "fuentes_procesadas": fuentes,
+        "total_ofertas": total_ofertas,
+        "total_errores": total_errores,
+        "total_sucesos": total_sucesos,
+        "fuentes_procesadas": fuentes_procesadas,
     }
 
 
@@ -131,8 +137,14 @@ def _escribir_evento_terminacion(
         )
 
 
-def _cerrar_recursos(contexto: RunContext | None) -> None:
-    """Step 5: close open Playwright resources; errors never abort."""
+def cerrar_recursos(contexto: RunContext | None) -> None:
+    """Step 5: close open Playwright resources; errors never abort.
+
+    Closes in order: session page (via adapter, `page.close()` fallback),
+    browser and Playwright instance; resets the three context fields so a
+    second call is a no-op. Reused by the orchestrator when switching
+    sources.
+    """
     if contexto is None:
         return
     if contexto.handle_sesion is not None:
@@ -148,20 +160,21 @@ def _cerrar_recursos(contexto: RunContext | None) -> None:
             logger.error(
                 f"page.close() fallo | run={contexto.id_corrida} | {exc}"
             )
-    browser = getattr(contexto, "browser", None)
-    if browser is not None:
+    if contexto.browser is not None:
         try:
-            browser.close()
+            contexto.browser.close()
         except Exception as exc:
             logger.error(f"browser.close() fallo | run={contexto.id_corrida} | {exc}")
-    playwright_instance = getattr(contexto, "playwright_instance", None)
-    if playwright_instance is not None:
+    if contexto.playwright_instance is not None:
         try:
-            playwright_instance.stop()
+            contexto.playwright_instance.stop()
         except Exception as exc:
             logger.error(
                 f"playwright.stop() fallo | run={contexto.id_corrida} | {exc}"
             )
+    contexto.handle_sesion = None
+    contexto.browser = None
+    contexto.playwright_instance = None
 
 
 def _liberar_bloqueo(id_corrida: str) -> None:
@@ -191,7 +204,7 @@ def finalizar_proceso(
         _escribir_evento_terminacion(id_corrida, estado, motivo, metricas)
         _persistir_cierre_corrida(id_corrida, estado, motivo, metricas)
 
-    _cerrar_recursos(contexto)
+    cerrar_recursos(contexto)
     if id_corrida:
         _liberar_bloqueo(id_corrida)
 

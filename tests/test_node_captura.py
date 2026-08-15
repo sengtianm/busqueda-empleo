@@ -233,13 +233,18 @@ def test_registrar_una_oferta_upsert(
     contexto.id_sesion = "SES-1"
     contexto.capture_batch = CaptureBatch(ofertas=[_oferta()], indice_set=0)
 
-    with patch("modules.discovery.nodes.captura.upsert_oferta") as mock_upsert:
+    with patch(
+        "modules.discovery.nodes.captura.upsert_lote_ofertas",
+        return_value=(1, 0),
+    ) as mock_upsert:
         with patch("modules.discovery.nodes.captura.escribir_evento"):
             res = registrar_ofertas(contexto)
 
     assert res.estado == "ok"
     mock_upsert.assert_called_once()
-    fila = mock_upsert.call_args.args[0]
+    filas = mock_upsert.call_args.args[0]
+    assert len(filas) == 1
+    fila = filas[0]
     assert fila["titulo"] == "Desarrollador Python"
     assert fila["fuente_id"] == "LI-01"
     assert fila["id_externo"] == "123"
@@ -249,7 +254,7 @@ def test_registrar_una_oferta_upsert(
 def test_registrar_lote_vacio(contexto: RunContext) -> None:
     contexto.capture_batch = CaptureBatch(ofertas=[], indice_set=0)
 
-    with patch("modules.discovery.nodes.captura.upsert_oferta") as mock_upsert:
+    with patch("modules.discovery.nodes.captura.upsert_lote_ofertas") as mock_upsert:
         res = registrar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -259,7 +264,7 @@ def test_registrar_lote_vacio(contexto: RunContext) -> None:
 def test_registrar_sin_lote(contexto: RunContext) -> None:
     contexto.capture_batch = None
 
-    with patch("modules.discovery.nodes.captura.upsert_oferta") as mock_upsert:
+    with patch("modules.discovery.nodes.captura.upsert_lote_ofertas") as mock_upsert:
         res = registrar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -269,10 +274,13 @@ def test_registrar_sin_lote(contexto: RunContext) -> None:
 def test_registrar_dedup_id_externo(contexto: RunContext) -> None:
     contexto.capture_batch = CaptureBatch(ofertas=[_oferta()], indice_set=0)
 
-    with patch("modules.discovery.nodes.captura.upsert_oferta") as mock_upsert:
+    with patch(
+        "modules.discovery.nodes.captura.upsert_lote_ofertas",
+        return_value=(1, 0),
+    ) as mock_upsert:
         registrar_ofertas(contexto)
 
-    fila = mock_upsert.call_args.args[0]
+    fila = mock_upsert.call_args.args[0][0]
     assert fila["id_externo"] == "123"
 
 
@@ -288,12 +296,16 @@ def test_registrar_ofertas_exito_registra_suceso(
     )
     contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
 
-    with patch("modules.discovery.nodes.captura.upsert_oferta") as mock_upsert:
+    with patch(
+        "modules.discovery.nodes.captura.upsert_lote_ofertas",
+        return_value=(2, 0),
+    ) as mock_upsert:
         with patch("modules.discovery.nodes.captura.escribir_evento") as mock_evento:
             res = registrar_ofertas(contexto)
 
     assert res.estado == "ok"
-    assert mock_upsert.call_count == 2
+    mock_upsert.assert_called_once()
+    assert len(mock_upsert.call_args.args[0]) == 2
     mock_evento.assert_called_once()
     evento = mock_evento.call_args.args[0]
     assert evento["tipo"] == "suceso"
@@ -310,15 +322,15 @@ def test_registrar_fallo_parcial(contexto: RunContext) -> None:
     contexto.capture_batch = CaptureBatch(ofertas=[oferta_a, oferta_b], indice_set=0)
 
     with patch(
-        "modules.discovery.nodes.captura.upsert_oferta",
-        side_effect=[None, RuntimeError("db"), RuntimeError("db")],
+        "modules.discovery.nodes.captura.upsert_lote_ofertas",
+        side_effect=[RuntimeError("db"), (1, 1)],
     ) as mock_upsert:
         with patch("modules.discovery.nodes.captura.escribir_evento") as mock_evento:
             with patch("modules.discovery.nodes.captura.logger"):
                 res = registrar_ofertas(contexto)
 
     assert res.estado == "ok"
-    assert mock_upsert.call_count == 3
+    assert mock_upsert.call_count == 2
     assert mock_evento.call_count == 2
     assert mock_evento.call_args_list[0].args[0]["codigo"] == "ofertas_registradas"
     assert mock_evento.call_args_list[1].args[0]["codigo"] == "registro_parcial"
@@ -330,7 +342,7 @@ def test_registrar_fallo_total(contexto: RunContext) -> None:
     contexto.capture_batch = CaptureBatch(ofertas=[oferta_a, oferta_b], indice_set=0)
 
     with patch(
-        "modules.discovery.nodes.captura.upsert_oferta",
+        "modules.discovery.nodes.captura.upsert_lote_ofertas",
         side_effect=RuntimeError("db"),
     ) as mock_upsert:
         with patch("modules.discovery.nodes.captura.escribir_evento") as mock_evento:
@@ -338,7 +350,7 @@ def test_registrar_fallo_total(contexto: RunContext) -> None:
                 res = registrar_ofertas(contexto)
 
     assert res.estado == "ok"
-    assert mock_upsert.call_count == 4
+    assert mock_upsert.call_count == 2
     mock_evento.assert_called_once()
     assert mock_evento.call_args.args[0]["codigo"] == "lote_degradado"
 
