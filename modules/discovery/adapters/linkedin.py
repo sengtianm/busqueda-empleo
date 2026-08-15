@@ -153,10 +153,19 @@ class LinkedInAdapter:
         set_filtros: SetFiltros,
         politicas: PoliticasCaptura,
     ) -> SearchResult:
-        """Apply the official filter set and parse the first results page."""
-        enlace = self._construir_url_busqueda(ficha.enlace, set_filtros)
+        """Navigate straight to the SDUi results list and parse the first page.
+
+        (D26, 2026-08-14) The entry goes directly to ``/jobs/search-results``
+        instead of ``/jobs/search``: the results list is the view that serves
+        the real offer set (the canonical page only redirects and shows an
+        unreliable total label), and ``wait_until="commit"`` (same as
+        pagination, D11) avoids the transient ``fuente_inalcanzable`` right
+        after login. Validation (cards render, anti-bot checks) runs on the
+        real list.
+        """
+        enlace = self._construir_url_resultados(ficha.enlace, set_filtros)
         try:
-            page.goto(enlace)
+            page.goto(enlace, wait_until="commit")
         except Exception as exc:
             raise FlowError("fuente_inalcanzable", f"Search navigation failed: {exc}") from exc
         self._esperar_resultados(page, ficha.timeout_segundos)

@@ -31,12 +31,14 @@ class FakePage:
         self._actual = ""
         self.url = ""
         self.gotos: list[str] = []
+        self.wait_untils: list[str | None] = []
         self.cerrada = False
         self.keyboard = FakeKeyboard()
         self.esperas: list[tuple[str, str | None, int | None]] = []
 
     def goto(self, enlace: str, wait_until: str | None = None) -> None:
         self.gotos.append(enlace)
+        self.wait_untils.append(wait_until)
         self.url = enlace
         self._actual = self.por_url.get(enlace, "")
 
@@ -219,7 +221,7 @@ def test_apply_filters_parsea_resultados(
     set_filtros: SetFiltros,
     politicas: PoliticasCaptura,
 ) -> None:
-    pagina = FakePage({URL_CON_FILTROS: _leer("lista_linkedin.html")})
+    pagina = FakePage({URL_RESULTADOS: _leer("lista_linkedin.html")})
     resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
     assert resultado.estado == "exito"
     assert len(resultado.ofertas_primera_pagina) == 2
@@ -228,13 +230,14 @@ def test_apply_filters_parsea_resultados(
     assert oferta.id_externo == "12345"
     assert oferta.enlace == "https://www.linkedin.com/jobs/view/12345"
     assert resultado.total_declarado == 2
-    assert pagina.gotos[-1] == URL_CON_FILTROS
+    assert pagina.gotos[-1] == URL_RESULTADOS
+    assert pagina.wait_untils[-1] == "commit"
 
 
 def test_apply_filters_bloqueo(
     ficha_publica: FichaFuente, set_filtros: SetFiltros, politicas: PoliticasCaptura
 ) -> None:
-    pagina = FakePage({URL_CON_FILTROS: _leer("challenge_linkedin.html")})
+    pagina = FakePage({URL_RESULTADOS: _leer("challenge_linkedin.html")})
     with pytest.raises(FlowError) as exc:
         LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
     assert exc.value.codigo_motivo == "bloqueo_plataforma"
@@ -245,7 +248,7 @@ def test_apply_filters_parsea_resultados_ssr_2026(
     set_filtros: SetFiltros,
     politicas: PoliticasCaptura,
 ) -> None:
-    pagina = FakePage({URL_CON_FILTROS: _leer("lista_linkedin_sesion.html")})
+    pagina = FakePage({URL_RESULTADOS: _leer("lista_linkedin_sesion.html")})
     resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
     assert resultado.estado == "exito"
     assert len(resultado.ofertas_primera_pagina) == 2
@@ -262,7 +265,7 @@ def test_apply_filters_fallback_enlace_generico(
     politicas: PoliticasCaptura,
 ) -> None:
     html = "<html><body><a href='/jobs/view/99901'>Titulo Generico</a></body></html>"
-    pagina = FakePage({URL_CON_FILTROS: html})
+    pagina = FakePage({URL_RESULTADOS: html})
     resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
     assert len(resultado.ofertas_primera_pagina) == 1
     assert resultado.ofertas_primera_pagina[0].titulo == "Titulo Generico"
@@ -329,7 +332,7 @@ def test_apply_filters_fecha_formato_rn_aceptado(
             {"tipo": "fecha_publicacion", "valor": "r18000"},
         ],
     )
-    url_con_fecha = "https://www.linkedin.com/jobs/search?keywords=Data+Engineer&f_TPR=r18000"
+    url_con_fecha = URL_RESULTADOS.replace("&f_WT=2", "&f_TPR=r18000")
     pagina = FakePage({url_con_fecha: _leer("lista_linkedin.html")})
     resultado = LinkedInAdapter().apply_filters(
         pagina, ficha_publica, set_fecha, politicas
@@ -343,9 +346,9 @@ def test_apply_filters_evidencia_incluye_url_y_total(
     set_filtros: SetFiltros,
     politicas: PoliticasCaptura,
 ) -> None:
-    pagina = FakePage({URL_CON_FILTROS: _leer("lista_linkedin.html")})
+    pagina = FakePage({URL_RESULTADOS: _leer("lista_linkedin.html")})
     resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
-    assert resultado.evidencia_acotada == f"url: {URL_CON_FILTROS} | total: 2"
+    assert resultado.evidencia_acotada == f"url: {URL_RESULTADOS} | total: 2"
 
 
 def test_apply_filters_filtro_valor_vacio_se_ignora(
@@ -359,7 +362,7 @@ def test_apply_filters_filtro_valor_vacio_se_ignora(
             {"tipo": "modalidad", "valor": "remoto"},
         ],
     )
-    url_solo_modalidad = "https://www.linkedin.com/jobs/search?f_WT=2"
+    url_solo_modalidad = "https://www.linkedin.com/jobs/search-results/?f_WT=2"
     pagina = FakePage({url_solo_modalidad: _leer("lista_linkedin.html")})
     resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_valor_vacio, politicas)
     assert resultado.estado == "exito"
@@ -752,7 +755,7 @@ def test_apply_filters_parsea_resultados_sdui_2026(
     set_filtros: SetFiltros,
     politicas: PoliticasCaptura,
 ) -> None:
-    pagina = FakePage({URL_CON_FILTROS: _leer("lista_linkedin_sdui_2026.html")})
+    pagina = FakePage({URL_RESULTADOS: _leer("lista_linkedin_sdui_2026.html")})
     resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
     assert resultado.estado == "exito"
     ofertas = resultado.ofertas_primera_pagina
@@ -771,9 +774,25 @@ def test_apply_filters_sdui_ignora_apply_y_anchors_duplicados(
     set_filtros: SetFiltros,
     politicas: PoliticasCaptura,
 ) -> None:
-    pagina = FakePage({URL_CON_FILTROS: _leer("lista_linkedin_sdui_2026.html")})
+    pagina = FakePage({URL_RESULTADOS: _leer("lista_linkedin_sdui_2026.html")})
     resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
     assert len(resultado.ofertas_primera_pagina) == 3
+
+
+def test_apply_filters_y_capture_reutilizan_la_misma_carga(
+    ficha_publica: FichaFuente,
+    set_filtros: SetFiltros,
+    politicas: PoliticasCaptura,
+) -> None:
+    pagina = FakePage({URL_RESULTADOS: _leer("lista_linkedin.html")})
+    adaptador = LinkedInAdapter()
+    adaptador.apply_filters(pagina, ficha_publica, set_filtros, politicas)
+    lote, estado = adaptador.capture_batch(
+        pagina, ficha_publica, set_filtros, politicas
+    )
+    assert estado.estado == "ok"
+    assert len(lote.ofertas) == 2
+    assert pagina.gotos == [URL_RESULTADOS]
 
 
 def test_capture_batch_espera_renderizado_tardio(

@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 25 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Filter evidence debate + functional E2E & production-mode tests (COR-2068..2071) + D26: search entry straight to `/jobs/search-results` with `wait_until="commit"` — one search load + direct pagination, verified by COR-2140 (308 tests) |
 | 24 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Lote D (D25): P4 items 13–18 — `EstadoCorrida` aligned to D4 + `Corrida` closure fields validated, value checks replacing dead `hasattr`, `marcar_cambio_de_fuente`, orchestrator `_ejecutar_nodo` + Protocol, single credential resolution, `logging.logs_path` (307 tests) |
 | 23 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Lote C (D24): P3 duplication unifications — `ahora()`/`FORMATO_TIMESTAMP`/`TIPOS_ACCESO` in shared utilidades, `escribir_evento_seguro`, `_enviar`, merged capture policies, unified `_revisar_estado`, `_resultado_fallo` (302 tests) |
 | 22 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Lote A (D22): Playwright leak fix (resources tracked in context, public closure reused by orchestrator), batch persistence in one connection derogating ficha NOTA 4.4, SQL closure metrics, RETURNING ids · Lote B (D23): unified retry helper replacing the 3 node loops + test-only variant, dead `escribir_lote` removed, Pydantic validation on writes (300 tests) |
@@ -25,6 +26,30 @@ Unless noted, decisions from previous sessions remain in effect.
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+## Session 25 — 14/08/2026
+`ses_ffd4eef78ffeLdakkTRbtGuLdu` · `fase-4`
+
+**Topics**
+- Functional E2E test of Module 1 approved and run (2 real runs): COR-2068 (107 offers captured, full capture flow) + COR-2069 (108 captured, 1 new — dedup by `id_externo` verified live); DB: 110 offers, 110 distinct links, lock empty; backup `job_search.db.bak_20260814_203224`
+- "Modo producción" instrumented test (temporary script outside the repo observing `Page.goto`): COR-2070 (evidence of ALL navigated URLs; one transitory ERR-07, 0 offers) + COR-2071 pure production (107 captured, 0 new, 0 errors, completed); backup `..._modo_produccion`
+- User's manual LinkedIn evidence analyzed (clean search vs panel filters vs 24h window): `origin`/`referralSearchId`/`f_SAL` are UI/session artifacts — the user has no selectable salary filter; LinkedIn injects `f_SAL` when rebuilding panel state; the "18 ofertas" label vs the real set (~105-107) is LinkedIn's cosmetic total (D18 confirmed in practice); module URLs are canonical and reproducible, immune to account-session filters
+- The 3 pre-capture loads explained: 2 identical `/jobs/search` loads = transient post-login failure + D23 retry; 3rd+ = capture pagination (`search-results?start=N`) — LinkedIn serves max 25 cards per page, the real set cannot load "at once"
+- Decision D26 approved and implemented: `apply_filters` navigates straight to `/jobs/search-results` (SDUi list) with `wait_until="commit"` — one search load + direct pagination; tests updated (`URL_RESULTADOS`, FakePage records `wait_until`, new reuse test: apply_filters + capture_batch = 1 goto), 308 tests, ruff/mypy clean
+- Production verification COR-2140: login → 1× search-results (25 real offers) → start=25/50/75/100/105, no retries, 0 errors, completed (dedup: 0 new)
+- Reviewers: code-reviewer approved (1 minor fixed: line >100 chars), docs-reviewer approved (D26 registered, ficha as-built, tracker/AGENTS updated)
+- Docs applied with user approval: D26 + decision log v1.12, tracker 4.19, ficha técnica as-built note, AGENTS.md (status + 308)
+
+**Decisions**
+- D26: search entry straight to the `/jobs/search-results` SDUi list with `wait_until="commit"` — removes the transient post-login `fuente_inalcanzable` retry duplication and the unreliable-total `/jobs/search` intermediate; one search load + direct pagination (verified by COR-2140)
+- Decisions from previous sessions remain in effect
+
+**Status**
+- Functional E2E ✅ (COR-2068/2069) · modo producción ✅ (COR-2070/2071) · D26 ✅ (tracker 4.19); 308 tests passing · ruff 0 · mypy 0
+- Discovery behavior confirmed against real evidence: only configured filters applied, results reproducible, real set captured in full (105-107 offers)
+- Docs: decision log v1.12 (D26), tracker 4.19, ficha as-built note, AGENTS.md updated
+- Branch: `fase-4` · no merge
+- Next: Phase 5 (Module 2 — Preparation), task 1: `modules/preparation/` structure (pending)
 
 ## Session 24 — 14/08/2026
 `ses_ffd4eef78ffeLdakkTRbtGuLdu` · `fase-4`

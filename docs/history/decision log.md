@@ -224,6 +224,15 @@ Format: `D<n>` — module/business decisions; `C<n>` — prompt/design alignment
 
 ---
 
+### D26. Search entry goes straight to the SDUi results list (`/jobs/search-results`) with `wait_until="commit"`
+
+- **Date:** 2026-08-14
+- **Status:** In effect
+- **Context:** `apply_filters` navigated to the canonical LinkedIn search URL (`/jobs/search`) with the default `wait_until="load"`. Production evidence (COR-2068..COR-2071, 4/4 runs) showed two defects: (1) right after login, that `goto` competes with the stabilizing navigation and fails transiently as `fuente_inalcanzable`, forcing the D23 retry (a duplicate identical page load); (2) the `/jobs/search` view is an intermediate that LinkedIn redirects (`currentJobId`) and shows an unreliable/unrepresentative total label ("18 ofertas" while the real set had ~107), whereas the `/jobs/search-results` SDUi list — the view the module already uses for pagination (D11) — serves the real set with its real total. Manual evidence (2026-08-14): the user's own URLs confirmed `origin`/`referralSearchId`/`f_SAL` are UI/session artifacts absent from the module's canonical URL, and the "18 vs >99" discrepancy is LinkedIn's cosmetic total.
+- **Decision:** (D-1) `apply_filters` builds its URL via `_construir_url_resultados` (direct `jobs/search-results` list, same helper as `capture_batch`) instead of `_construir_url_busqueda` on `ficha.enlace`; validation (cards render via `_esperar_resultados`, anti-bot via `_revisar_estado`) now runs on the real list. (D-2) The `goto` uses `wait_until="commit"` (the pattern already proven in pagination since D11), eliminating the transient post-login failure and its retry duplication. `capture_batch` then reuses page 1 (its `"jobs/search-results" in page.url` condition now holds) — one search load + direct pagination instead of three pre-capture loads.
+- **Documented drift (as-built):** the ficha's "Aplicar filtros básicos" node spec describes the step functionally (no fixed entry URL), so no contradiction; the D11 as-built note that assumed `apply_filters` delivered page 1 via the canonical `/jobs/search` is updated to reflect the direct-list entry.
+- **Impact:** Production run COR-2140 confirmed the new behavior: `login → 1× search-results (25 real offers, total_declarado=None) → start=25/50/75/100/105`, no retries, 0 errors, run completed. One new test (`test_apply_filters_y_capture_reutilizan_la_misma_carga`) + updated URL expectations (308 tests total); ruff/mypy clean; ficha as-built note; tracker 4.19; AGENTS.md test count 308.
+
 ## Prompt/design alignment decisions
 
 ### C2. Detailed Evaluation entity uses Spanish attribute names
@@ -288,6 +297,7 @@ Source: DOC-APPENDIX 9A — archived 2026-08-11; content consolidated here uncha
 | Version | Date | Change |
 |---|---|---|
 | 1.11 | 2026-08-14 | Added D25 (Lote D, P4 items 13–18: `EstadoCorrida` aligned to D4 + `Corrida` closure fields with `extra="forbid"`, `actualizar_corrida` validated; value validation replacing dead `hasattr` checks; `marcar_cambio_de_fuente`; `_ejecutar_nodo` + `_ResultadoNodo` Protocol; `_resolver_credenciales` single read; `logging.logs_path`; F-001/F-002 drift corrected via as-built notes, F-003 kept). |
+| 1.12 | 2026-08-14 | Added D26 (search entry straight to `/jobs/search-results` SDUi list with `wait_until="commit"`: removes the transient post-login `fuente_inalcanzable` retry duplication and the unreliable-total `/jobs/search` intermediate; one search load + direct pagination, verified by COR-2140; ficha as-built note updated; tracker 4.19; 308 tests). |
 | 1.10 | 2026-08-14 | Added D24 (Lote C, P3 duplication unifications: `ahora()`/`FORMATO_TIMESTAMP`/`TIPOS_ACCESO` in `shared/utilidades.py`, `escribir_evento_seguro` in persistence, `_enviar` in ia_service, merged policies in run_context, unified `_revisar_estado` in the adapter, `_resultado_fallo` in busqueda; discarded scope and F-003 termination-event retry drift documented). |
 | 1.9 | 2026-08-14 | Added D23 (Lote B: unified retry helper `ejecutar_con_reintento` replacing `retry_conditional` and the 3 node loops; `escribir_lote` deleted; Pydantic validation on `escribir_evento`/`registrar_corrida`/session audit; `fuente_id=""` in registro; F-004/F-005 noted). |
 | 1.8 | 2026-08-14 | Added D22 (Lote A: batch persistence in one connection, `RETURNING` ids, SQL closure metrics, Playwright leak fix; derogates ficha NOTA 4.4). |
