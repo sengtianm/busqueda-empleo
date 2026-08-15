@@ -63,7 +63,7 @@ def registrar_evento(contexto: RunContext) -> ResultadoRegistro:
                 "fuente_id": (
                     contexto.fuente_corriente.fuente_id
                     if contexto.fuente_corriente
-                    else None
+                    else ""
                 ),
                 "id_sesion": contexto.id_sesion,
                 "indice_set": indice_set,

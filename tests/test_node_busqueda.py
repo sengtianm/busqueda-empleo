@@ -129,7 +129,7 @@ def test_aplicar_filtros_retry_success(mock_context: RunContext) -> None:
             FlowError("fuente_inalcanzable", "Down"),
             _resultado_ok(indice=0),
         ]
-        with patch("modules.discovery.nodes.busqueda.time.sleep"):
+        with patch("shared.retry.time.sleep"):
             res = aplicar_filtros(mock_context)
         assert res.estado == "ok"
         assert _search_result(mock_context).estado == "exito"
@@ -138,7 +138,7 @@ def test_aplicar_filtros_retry_success(mock_context: RunContext) -> None:
 def test_aplicar_filtros_retry_exhausted(mock_context: RunContext) -> None:
     with _adaptador_con_apply_filters() as mock_apply:
         mock_apply.side_effect = FlowError("fuente_inalcanzable", "Down")
-        with patch("modules.discovery.nodes.busqueda.time.sleep"):
+        with patch("shared.retry.time.sleep"):
             res = aplicar_filtros(mock_context)
         assert res.estado == "ok"
         assert _search_result(mock_context).estado == "fallo"

@@ -190,6 +190,16 @@ Format: `D<n>` — module/business decisions; `C<n>` — prompt/design alignment
 
 ---
 
+### D23. Unified retry helper, dead `escribir_lote` removed, Pydantic validation on writes (Lote B)
+
+- **Date:** 2026-08-14
+- **Status:** In effect
+- **Context:** The three discovery nodes (ingreso/busqueda/captura) each implemented the same conditional-retry loop (backoff `min(base_wait * multiplier ** (intento-1), max_wait)`, retryable codes `_CODIGOS_REINTENTABLES`) as copy-paste, and `shared/retry.py` kept a fourth, different variant (`retry_conditional`, used only by tests). `escribir_lote` (D15 rename of `write_batch`) had no production callers. Writes validated only at SQL level: a schema drift (missing `id_corrida`, invalid state) would silently produce corrupted rows.
+- **Decision:** (1) New unified helper `ejecutar_con_reintento(fn, *, al_fallo_final, al_error_interno, al_reintento, max_attempts, base_wait, multiplier, max_wait, contexto_log) -> (resultado, intentos)` in `shared/retry.py`, config-driven via `_policies()`; retries only codes in `_CODIGOS_REINTENTABLES`; `al_fallo_final`/`al_error_interno` produce the node result (fallo vs error interno), `al_reintento` runs cleanup before each backoff; `max_attempts < 1` → `RuntimeError("no attempts configured")` routed to `al_error_interno(exc, 0)` or re-raised. Dispatch is exclusively by `codigo_motivo` (not by `BaseError.code`): non-flow exceptions fall to `al_error_interno`/re-raise, exactly like the old `except Exception` branches. `retry_conditional` deleted (it was test-only); `retry_decorator` (tenacity, used by `shared/ia_service.py`) unchanged. (2) `escribir_lote` deleted from `shared/persistence.py` (no production callers since Lote 1 cleanup). (3) Pydantic validation before writes: `EventoAlmacen.model_validate` in `escribir_evento`, `Corrida.model_validate` in `registrar_corrida`, `AuditoriaSesion.model_validate` in the session audit (captura node, inside its non-aborting retry block). `registro.py` now passes `fuente_id=""` (empty string, not `None`) to satisfy the model. `actualizar_corrida` deliberately NOT validated (deferred to Lote D, P4-13 EstadoCorrida alignment).
+- **Impact:** One retry implementation (3 duplicate loops + 1 test-only variant removed); writes surface schema drift at runtime with `ValidationError` instead of writing corrupted rows (all current callers validated). Known doc note (F-004, pre-existing): the ficha states retryable codes per node (RN-03/RN-06) while the implementation uses the global union `_CODIGOS_REINTENTABLES` — unchanged behavior, optionally realigned later. Edge preserved: `retries.max_attempts=0` keeps returning `ERR-09` "Sin intentos configurados" in the capture node (F-005). 300 tests passing; ruff/mypy clean.
+
+---
+
 ## Prompt/design alignment decisions
 
 ### C2. Detailed Evaluation entity uses Spanish attribute names
@@ -253,6 +263,8 @@ Source: DOC-APPENDIX 9A — archived 2026-08-11; content consolidated here uncha
 
 | Version | Date | Change |
 |---|---|---|
+| 1.9 | 2026-08-14 | Added D23 (Lote B: unified retry helper `ejecutar_con_reintento` replacing `retry_conditional` and the 3 node loops; `escribir_lote` deleted; Pydantic validation on `escribir_evento`/`registrar_corrida`/session audit; `fuente_id=""` in registro; F-004/F-005 noted). |
+| 1.8 | 2026-08-14 | Added D22 (Lote A: batch persistence in one connection, `RETURNING` ids, SQL closure metrics, Playwright leak fix; derogates ficha NOTA 4.4). |
 | 1.7 | 2026-08-14 | Added D18 (LinkedIn labels any `f_TPR` window with the nearest UI bucket; filter itself verified working), D19 (search observability: successful `SearchResult` carries URL + declared total; INFO log in `apply_filters`), D20 (`fecha_publicacion` format validation `r<N>` in the adapter, not a UI-bucket catalog), D21 (login fallback tolerant to slow form detach). |
 | 1.6 | 2026-08-12 | Added D17 (Lote 4 test quality + cleanups: vestigial "¿Quedan ofertas…?" node retired, session close via `close_session` contract, config tests, orchestrator integration tests). |
 | 1.5 | 2026-08-12 | Added D16 (persistence performance: single-connection upsert, 3 non-unique indexes). |

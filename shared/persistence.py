@@ -9,6 +9,7 @@ from loguru import logger
 
 from shared.config import load
 from shared.errors import PersistenceError
+from shared.models import Corrida, EventoAlmacen
 
 _DB_PATH: Path | None = None
 
@@ -656,35 +657,6 @@ def actualizar_fila(tabla: str, id_valor: str, datos: dict[str, Any]) -> bool:
         conn.close()
 
 
-def escribir_lote(tabla: str, filas: list[dict[str, Any]]) -> None:
-    if not filas:
-        return
-    now = _now()
-    preparadas: list[dict[str, Any]] = []
-    for datos in filas:
-        d = _serialize(datos)
-        if "id" not in d or not d["id"]:
-            d["id"] = generar_id(tabla)
-        if not d.get("fecha_creacion"):
-            d["fecha_creacion"] = now
-        d["fecha_ultima_edicion"] = now
-        preparadas.append(d)
-
-    columnas = sorted({k for d in preparadas for k in d.keys()})
-    placeholders = ", ".join(f":{k}" for k in columnas)
-    sql = f"INSERT INTO {tabla} ({', '.join(columnas)}) VALUES ({placeholders})"
-    conn = _connection()
-    try:
-        for d in preparadas:
-            conn.execute(sql, {k: d.get(k) for k in columnas})
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
-
-
 def umbral_obsolescencia_minutos(config: dict[str, Any] | None = None) -> int:
     cfg = config if config is not None else load()
     valor = (cfg.get("concurrencia") or {}).get(
@@ -791,7 +763,12 @@ def sondear_escritura() -> None:
 
 
 def registrar_corrida(datos: dict[str, Any]) -> None:
-    """Registers a run row in `corridas`, idempotent per id_corrida."""
+    """Registers a run row in `corridas`, idempotent per id_corrida.
+
+    Validates the row against `Corrida` (Pydantic) before writing so schema
+    drift surfaces at runtime instead of producing silently corrupted rows.
+    """
+    Corrida.model_validate(datos)
     d = _serialize(datos)
     conn = _connection()
     try:
@@ -938,7 +915,12 @@ def upsert_oferta(oferta: dict[str, Any]) -> str:
 
 
 def escribir_evento(datos: dict[str, Any]) -> str:
-    """Registers an event/success row in `eventos`; returns its evento_id."""
+    """Registers an event/success row in `eventos`; returns its evento_id.
+
+    Validates the row against `EventoAlmacen` (Pydantic) before writing so
+    schema drift surfaces at runtime instead of producing corrupted rows.
+    """
+    EventoAlmacen.model_validate(datos)
     d = _serialize(datos)
     evento_id = str(d.get("evento_id") or generar_id("eventos"))
     d["evento_id"] = evento_id

@@ -121,9 +121,8 @@ def test_captura_reintento_timeout_exito(
         (lote, estado),
     ]
 
-    with patch("modules.discovery.nodes.captura.should_retry", return_value=True):
-        with patch("modules.discovery.nodes.captura.time.sleep"):
-            res = capturar_ofertas(contexto)
+    with patch("shared.retry.time.sleep"):
+        res = capturar_ofertas(contexto)
 
     assert res.estado == "ok"
     assert contexto.estado_captura is estado
@@ -135,12 +134,9 @@ def test_captura_timeout_todos_intentos(contexto: RunContext, adapter: MagicMock
     contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
     adapter.capture_batch.side_effect = FlowError("tiempo_agotado_captura", "Timeout")
 
-    with patch(
-        "modules.discovery.nodes.captura.should_retry", return_value=True
-    ):
-        with patch("modules.discovery.nodes.captura.time.sleep"):
-            with patch("modules.discovery.nodes.captura.escribir_evento"):
-                res = capturar_ofertas(contexto)
+    with patch("shared.retry.time.sleep"):
+        with patch("modules.discovery.nodes.captura.escribir_evento"):
+            res = capturar_ofertas(contexto)
 
     assert res.estado == "ok"
     assert contexto.estado_captura is not None

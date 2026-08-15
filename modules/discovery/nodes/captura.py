@@ -7,23 +7,21 @@ Cubre los nodos "Capturar ofertas", "Registrar ofertas en Ofertas Totales",
 set; la deduplicación se hace por `id_externo`.
 """
 
-import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from loguru import logger
 
 from modules.discovery.adapters.linkedin import FlowError
 from modules.discovery.adapters.registry import obtener_adaptador
 from modules.discovery.run_context import RunContext, _ahora
-from shared.config import load
-from shared.models import CaptureBatch, EstadoCaptura, Offer
+from shared.models import AuditoriaSesion, CaptureBatch, EstadoCaptura, Offer
 from shared.persistence import (
     escribir_evento,
     escribir_fila,
     upsert_lote_ofertas,
 )
-from shared.retry import should_retry
+from shared.retry import ejecutar_con_reintento
 from shared.utilidades import acotar_evidencia
 
 
@@ -34,16 +32,6 @@ class ResultadoCaptura:
     contexto: RunContext | None = None
     codigo: str = ""
     descripcion: str = ""
-
-
-def _config_reintentos() -> tuple[int, float, float, float]:
-    cfg_retries = load().get("retries", {})
-    return (
-        int(cfg_retries.get("max_attempts", 3)),
-        float(cfg_retries.get("base_wait_seconds", 2)),
-        float(cfg_retries.get("multiplier", 2)),
-        float(cfg_retries.get("max_wait_seconds", 30)),
-    )
 
 
 def _registrar_evento(
@@ -114,76 +102,74 @@ def capturar_ofertas(contexto: RunContext) -> ResultadoCaptura:
 
     # Paso 3: ejecutar captura con reintento condicional
     adapter = obtener_adaptador(fuente.fuente_id)
-    max_attempts, base_wait, multiplier, max_wait = _config_reintentos()
 
-    attempt = 0
-    while attempt < max_attempts:
-        attempt += 1
-        try:
-            lote, estado = adapter.capture_batch(
-                page=contexto.handle_sesion,
-                ficha=fuente,
-                set_filtros=set_actual,
-                politicas=politicas,
-            )
-        except FlowError as fe:
-            if should_retry(fe.codigo_motivo) and attempt < max_attempts:
-                logger.warning(
-                    f"[{contexto.id_corrida}] Captura reintentable "
-                    f"({fe.codigo_motivo}), intento {attempt}/{max_attempts}"
-                )
-                wait_time = min(
-                    base_wait * (multiplier ** (attempt - 1)), max_wait
-                )
-                time.sleep(wait_time)
-                continue
-            # Paso 6: fallo definitivo (no reintentable o intentos agotados)
-            estado_fallo = EstadoCaptura(estado="fallo", codigo_motivo=fe.codigo_motivo)
-            contexto.capture_batch = None
-            contexto.estado_captura = estado_fallo
-            _registrar_evento(
-                contexto,
-                tipo="error",
-                codigo=fe.codigo_motivo,
-                evidencia=acotar_evidencia(fe.mensaje),
-            )
-            return ResultadoCaptura(estado="ok", contexto=contexto)
-        except Exception as exc:
-            logger.error(f"ERR-07: Error interno en captura: {exc}")
-            estado_falla = EstadoCaptura(
-                estado="fallo", codigo_motivo="error_interno_captura"
-            )
-            contexto.capture_batch = None
-            contexto.estado_captura = estado_falla
-            _registrar_evento(
-                contexto,
-                tipo="error",
-                codigo="error_interno_captura",
-                evidencia=str(exc),
-            )
-            return ResultadoCaptura(estado="ok", contexto=contexto)
-
-        # Paso 4: éxito de captura
-        contexto.capture_batch = lote
-        contexto.estado_captura = estado
+    def _fallo_captura(fe: BaseException, intentos: int) -> ResultadoCaptura:
+        error = cast(FlowError, fe)
+        # Paso 6: fallo definitivo (no reintentable o intentos agotados)
+        estado_fallo = EstadoCaptura(estado="fallo", codigo_motivo=error.codigo_motivo)
+        contexto.capture_batch = None
+        contexto.estado_captura = estado_fallo
         _registrar_evento(
             contexto,
-            tipo="suceso",
-            codigo="captura_completada",
-            evidencia=(
-                f"páginas={estado.paginas_consumidas} | "
-                f"ofertas={len(lote.ofertas)}"
-            ),
+            tipo="error",
+            codigo=error.codigo_motivo,
+            evidencia=acotar_evidencia(error.mensaje),
         )
-
-        # Paso 5: auditoría de sesión (no aborta si falla la escritura)
-        _escribir_auditoria_sesion(contexto, lote)
-
         return ResultadoCaptura(estado="ok", contexto=contexto)
 
-    return ResultadoCaptura(
-        estado="error", codigo="ERR-09", descripcion="Sin intentos configurados"
+    def _fallo_interno(exc: Exception, intentos: int) -> ResultadoCaptura:
+        if intentos == 0:
+            return ResultadoCaptura(
+                estado="error",
+                codigo="ERR-09",
+                descripcion="Sin intentos configurados",
+            )
+        logger.error(f"ERR-07: Error interno en captura: {exc}")
+        estado_falla = EstadoCaptura(
+            estado="fallo", codigo_motivo="error_interno_captura"
+        )
+        contexto.capture_batch = None
+        contexto.estado_captura = estado_falla
+        _registrar_evento(
+            contexto,
+            tipo="error",
+            codigo="error_interno_captura",
+            evidencia=str(exc),
+        )
+        return ResultadoCaptura(estado="ok", contexto=contexto)
+
+    res, _ = ejecutar_con_reintento(
+        lambda: adapter.capture_batch(
+            page=contexto.handle_sesion,
+            ficha=fuente,
+            set_filtros=set_actual,
+            politicas=politicas,
+        ),
+        al_fallo_final=_fallo_captura,
+        al_error_interno=_fallo_interno,
+        contexto_log=contexto.id_corrida,
     )
+    if isinstance(res, ResultadoCaptura):
+        return res
+    lote, estado = res
+
+    # Paso 4: éxito de captura
+    contexto.capture_batch = lote
+    contexto.estado_captura = estado
+    _registrar_evento(
+        contexto,
+        tipo="suceso",
+        codigo="captura_completada",
+        evidencia=(
+            f"páginas={estado.paginas_consumidas} | "
+            f"ofertas={len(lote.ofertas)}"
+        ),
+    )
+
+    # Paso 5: auditoría de sesión (no aborta si falla la escritura)
+    _escribir_auditoria_sesion(contexto, lote)
+
+    return ResultadoCaptura(estado="ok", contexto=contexto)
 
 
 def _escribir_auditoria_sesion(contexto: RunContext, lote: CaptureBatch) -> None:
@@ -213,6 +199,7 @@ def _escribir_auditoria_sesion(contexto: RunContext, lote: CaptureBatch) -> None
     intentos = 2
     for intento in range(1, intentos + 1):
         try:
+            AuditoriaSesion.model_validate(datos)
             escribir_fila("sesiones", datos)
             return
         except Exception as exc:

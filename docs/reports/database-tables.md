@@ -55,7 +55,7 @@ Catálogo de fuentes de origen (plataformas, portales, sitios corporativos). **E
 | `tipo` | TEXT DEFAULT '' | Tipo de fuente (portal, sitio corporativo, etc.) | No se diligencia en el Módulo 1 |
 | `enlace_base` | TEXT DEFAULT '' | URL base de la fuente | No se diligencia en el Módulo 1 |
 | `activa` | INTEGER DEFAULT 1 | Indica si la fuente está habilitada (1/0) | No se diligencia en el Módulo 1 |
-| `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática al insertar con `escribir_fila`/`escribir_lote` |
+| `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática al insertar con `escribir_fila` |
 | `fecha_ultima_edicion` | TEXT DEFAULT '' | Fecha/hora de la última actualización | Automática en cada insert/update |
 
 ### 2.3. `empresas`

@@ -5,7 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
-| 22 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Lote A (D22): Playwright leak fix (resources tracked in context, public closure reused by orchestrator), batch persistence in one connection derogating ficha NOTA 4.4, SQL closure metrics, RETURNING ids (292 tests) |
+| 22 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Lote A (D22): Playwright leak fix (resources tracked in context, public closure reused by orchestrator), batch persistence in one connection derogating ficha NOTA 4.4, SQL closure metrics, RETURNING ids · Lote B (D23): unified retry helper replacing the 3 node loops + test-only variant, dead `escribir_lote` removed, Pydantic validation on writes (300 tests) |
 | 21 | 14/08/2026 | `ses_0002228fbffeOK2V1m5PaeYAiK` | Filter investigation + observability hardening (D18–D21): LinkedIn `f_TPR`/`f_WT` verified working (UI labels cosmetic), search evidence URL+total, `fecha_publicacion` format validation, robust login fallback (282 tests) |
 | 20 | 12/08/2026 | `ses_00927e803ffeXTR04EkYYKzmTV` | Project-wide review lots executed: Lote 1 quick-win cleanup (fast suite, dead state/fixtures, D14), Lote 2 Spanish catalog completed (D15), Lote 3 persistence performance (single-connection upsert + indexes, D16), Lote 4 test quality + last cleanups (vestigial node retired, contract session close, config + integration tests, D17) |
 | 19 | 11/08/2026 | `ses_00f57a514ffeUyBVloqdH07g2W` | Spanish naming catalog (D7/D8): English→Spanish rename in code, config, tests; DB migrated with backup; docs aligned (decision log v1.1, DOC-13A v1.5, ficha, plan, tracker 4.7) |
@@ -37,14 +37,19 @@ Unless noted, decisions from previous sessions remain in effect.
 - 10 new tests (batch upsert, empty lot, invalid single row, SQL counts with/without filters, resource assignment/reset, metrics with real DB, session closed on source switch); bugs fixed during implementation: mocked tuple unpacking, intra-batch dedup, call-args introspection, missing pytest import
 - Reviewers: code findings all fixed (descriptive error on invalid row, traceability in failure log, 2 missing tests); docs finding resolved: batch persistence derogates the ficha per-offer note, now registered as an approved decision
 - Docs applied with user approval: new decision entry, ficha as-built notes (capture node + global, rules/validations/step updated), tracker sub-phase 4.15, AGENTS.md test count 292
+- Lote B: unified retry helper `ejecutar_con_reintento` (config-driven backoff, `al_fallo_final`/`al_error_interno`/`al_reintento` callbacks, dispatch by `codigo_motivo` only) replacing the 3 duplicated node loops and the test-only `retry_conditional`; ingreso reuses the Playwright instance between attempts, closes page/browser via callback, stops the instance only on definitive failure
+- `escribir_lote` deleted (no production callers); Pydantic validation before writes: `EventoAlmacen`/`Corrida` in persistence, `AuditoriaSesion` in the session audit (non-aborting); `registro.py` passes `fuente_id=""` (None rejected); `max_attempts=0` keeps ERR-09 in captura; `actualizar_corrida` NOT validated (deferred to Lote D, P4-13)
+- Tests: 5 retry tests migrated + 8 new (callbacks receive exc/intentos, backoff exponential + `max_wait` cap asserted, both `max_attempts=0` routes); patches moved to `shared.retry.*`; 2 batch tests removed; 2 validation tests added; reviewer P2 fixed (`code` fallback removed from dispatch — non-flow exceptions fall to error interno like the old except branches)
+- Docs applied with user approval: decision log D23 + v1.9 (v1.8 row repaired), tracker 4.16, AGENTS.md status + test count 300, database-tables.md mention of `escribir_lote` removed
 
 **Decisions**
 - D22: batch persistence and retry in one connection (derogates ficha NOTA 4.4 "persistencia por oferta"); SQL closure metrics; RETURNING ids; Playwright resources tracked in context with public closure reused by the orchestrator on source switch
+- D23: unified retry helper `ejecutar_con_reintento` (replaces `retry_conditional` + 3 node loops); `escribir_lote` deleted; Pydantic validation on writes; notes F-004 (ficha per-node retryable codes vs global union, pre-existing) and F-005 (ERR-09 edge restored) documented
 - Decisions from previous sessions remain in effect
 
 **Status**
-- Lote A ✅ (tracker 4.15); 292 tests passing · ruff 0 · mypy 0
-- 17 files changed (13 code/tests + 4 docs), docs approved and applied
+- Lote A ✅ (tracker 4.15) · Lote B ✅ (tracker 4.16); 300 tests passing · ruff 0 · mypy 0
+- Lotes C (P3 duplication unifications) and D (P4 consistency/robustness, incl. EstadoCorrida P4-13) pending planning
 - Session history + all session changes committed in this /save; single commit + push
 - Branch: `fase-4` · no merge
 - Next: Phase 5 (Module 2 — Preparation), task 1: `modules/preparation/` structure (pending)

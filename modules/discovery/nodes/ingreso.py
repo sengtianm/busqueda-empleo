@@ -1,6 +1,5 @@
-import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from loguru import logger
 from playwright.sync_api import sync_playwright
@@ -11,7 +10,7 @@ from modules.discovery.run_context import RunContext
 from shared.config import load
 from shared.models import EntryResult, FichaFuente
 from shared.persistence import generar_id
-from shared.retry import should_retry
+from shared.retry import ejecutar_con_reintento
 from shared.utilidades import acotar_evidencia
 
 
@@ -53,18 +52,10 @@ def ejecutar_ingreso(contexto: RunContext) -> ResultadoIngreso:
                 return ResultadoIngreso(estado="ok", contexto=contexto)
             valores.append(val)
 
-    # Paso 3, 4, 5: Abrir canal y acceder con reintentos
-    cfg_retries = load().get("retries", {})
-    max_attempts = cfg_retries.get("max_attempts", 3)
-    base_wait = cfg_retries.get("base_wait_seconds", 2)
-    multiplier = cfg_retries.get("multiplier", 2)
-    max_wait = cfg_retries.get("max_wait_seconds", 30)
-
+    # Paso 3, 4, 5: Abrir canal y acceder con reintentos (config-driven)
     adapter = obtener_adaptador(ficha.fuente_id)
 
-    return _ejecutar_ingreso_loop(
-        contexto, adapter, max_attempts, base_wait, multiplier, max_wait
-    )
+    return _ejecutar_ingreso_loop(contexto, adapter, ficha)
 
 def _resolver_headless() -> bool:
     """Resuelve el modo headless: BROWSER_HEADLESS en .env gana sobre config.yaml."""
@@ -83,106 +74,103 @@ def _resolver_headless() -> bool:
 def _ejecutar_ingreso_loop(
     contexto: RunContext,
     adapter: AdaptadorPlataforma,
-    max_attempts: int,
-    base_wait: float,
-    multiplier: float,
-    max_wait: float,
+    ficha: FichaFuente,
 ) -> ResultadoIngreso:
-    # import time moved to top-level
-
-    playwright_instance = None
-    browser = None
-    page = None
+    playwright_instance: Any = None
+    browser: Any = None
+    page: Any = None
     playwright_activo = False
-    attempt = 0
 
-    try:
-        while attempt < max_attempts:
-            attempt += 1
-            try:
-                # We must not use sync_playwright() with 'with' because it closes the browser
-                # when exiting the block. We start it manually to keep the page open.
-                if playwright_instance is None:
-                    playwright_instance = sync_playwright().start()
-                    playwright_activo = True
+    def _cerrar_canal() -> None:
+        """Cierra page/browser del intento; el canal vuelve a abrirse al
+        reintentar. No detiene la instancia Playwright (se reutiliza)."""
+        nonlocal page, browser
+        if page:
+            page.close()
+        if browser:
+            browser.close()
+        page = None
+        browser = None
 
-                headless = _resolver_headless()
-                browser = playwright_instance.chromium.launch(headless=headless)
-                page = browser.new_page()
-
-                # Cast context.fuente_corriente to FichaFuente since we verified it's not
-                # None in ejecutar_ingreso
-                ficha = contexto.fuente_corriente
-                if ficha is None:
-                    raise RuntimeError("Fuente corriente must be present")
-
-                page.set_default_timeout(ficha.timeout_segundos * 1000)
-
-                # Llamada al adaptador que encapsula navegación + auth + criterio
-                # enter_source ya hace page.goto y _autenticar
-                res = adapter.enter_source(
-                    page,
-                    ficha,
-                    None if ficha.tipo_acceso == "publico"
-                    else _obtener_credenciales(ficha),
-                )
-
-                # Éxito
-                contexto.id_sesion = generar_id("sesiones")
-                contexto.handle_sesion = page
-                contexto.browser = browser
-                contexto.playwright_instance = playwright_instance
-                contexto.entry_result = res
-                playwright_activo = False  # se conserva la sesión para los nodos siguientes
-                return ResultadoIngreso(estado="ok", contexto=contexto)
-
-            except FlowError as fe:
-                # Cerrar canal antes de reintentar o fallar
-                if page:
-                    page.close()
-                if browser:
-                    browser.close()
-
-                if should_retry(fe.codigo_motivo) and attempt < max_attempts:
-                    # Backoff
-                    wait_time = min(base_wait * (multiplier ** (attempt - 1)), max_wait)
-                    time.sleep(wait_time)
-                    continue
-                else:
-                    # Fallo definitivo
-                    contexto.entry_result = EntryResult(
-                        estado="fallo",
-                        codigo_motivo=fe.codigo_motivo,
-                        evidencia_acotada=acotar_evidencia(fe.mensaje),
-                        numero_de_intentos=attempt,
-                    )
-                    contexto.id_sesion = None
-                    contexto.handle_sesion = None
-                    contexto.browser = None
-                    contexto.playwright_instance = None
-                    return ResultadoIngreso(estado="ok", contexto=contexto)
-            except Exception as e:
-                # Error no esperado (corrupción o sistema)
-                if page:
-                    page.close()
-                if browser:
-                    browser.close()
-                contexto.browser = None
-                contexto.playwright_instance = None
-                logger.error(f"ERR-09: Error interno en nodo ingreso: {e}")
-                return ResultadoIngreso(estado="error", codigo="ERR-09", descripcion=str(e))
-    finally:
-        # El flag local es la fuente de verdad: si esta invocación arrancó
-        # un playwright y no estamos en éxito, lo cerramos. Esto evita leaks
-        # cuando llegan valores stale de id_sesion/handle_sesion desde una
-        # fuente previa (multi-fuente).
+    def _cerrar_playwright_local() -> None:
+        """Detiene la instancia Playwright solo si esta invocación la arrancó."""
+        nonlocal playwright_instance, playwright_activo
         if playwright_activo:
             if playwright_instance:
                 playwright_instance.stop()
             playwright_activo = False
 
-    # Path unreachable with max_attempts > 0; satisfies mypy strict.
-    return ResultadoIngreso(estado="error", codigo="ERR-09", descripcion="sin intentos")
+    def _intento() -> EntryResult:
+        nonlocal playwright_instance, browser, page, playwright_activo
+        # No usar sync_playwright() con 'with': cierra el navegador al salir
+        # del bloque. Se inicia manualmente para mantener la página abierta.
+        if playwright_instance is None:
+            playwright_instance = sync_playwright().start()
+            playwright_activo = True
+
+        headless = _resolver_headless()
+        browser = playwright_instance.chromium.launch(headless=headless)
+        page = browser.new_page()
+
+        # Cast context.fuente_corriente to FichaFuente since we verified it's not
+        # None in ejecutar_ingreso
+        ficha_actual = contexto.fuente_corriente
+        if ficha_actual is None:
+            raise RuntimeError("Fuente corriente must be present")
+
+        page.set_default_timeout(ficha_actual.timeout_segundos * 1000)
+
+        # Llamada al adaptador que encapsula navegación + auth + criterio
+        # enter_source ya hace page.goto y _autenticar
+        return adapter.enter_source(
+            page,
+            ficha_actual,
+            None if ficha_actual.tipo_acceso == "publico"
+            else _obtener_credenciales(ficha_actual),
+        )
+
+    def _fallo_final(fe: BaseException, intentos: int) -> ResultadoIngreso:
+        _cerrar_canal()
+        _cerrar_playwright_local()
+        error = cast(FlowError, fe)
+        contexto.entry_result = EntryResult(
+            estado="fallo",
+            codigo_motivo=error.codigo_motivo,
+            evidencia_acotada=acotar_evidencia(error.mensaje),
+            numero_de_intentos=intentos,
+        )
+        contexto.id_sesion = None
+        contexto.handle_sesion = None
+        contexto.browser = None
+        contexto.playwright_instance = None
+        return ResultadoIngreso(estado="ok", contexto=contexto)
+
+    def _error_interno(exc: Exception, intentos: int) -> ResultadoIngreso:
+        _cerrar_canal()
+        _cerrar_playwright_local()
+        contexto.browser = None
+        contexto.playwright_instance = None
+        logger.error(f"ERR-09: Error interno en nodo ingreso: {exc}")
+        return ResultadoIngreso(estado="error", codigo="ERR-09", descripcion=str(exc))
+
+    res, _ = ejecutar_con_reintento(
+        _intento,
+        al_reintento=_cerrar_canal,
+        al_fallo_final=_fallo_final,
+        al_error_interno=_error_interno,
+        contexto_log=contexto.id_corrida,
+    )
+    if isinstance(res, ResultadoIngreso):
+        return res
+
+    # Éxito: se conserva la sesión para los nodos siguientes
+    contexto.id_sesion = generar_id("sesiones")
+    contexto.handle_sesion = page
+    contexto.browser = browser
+    contexto.playwright_instance = playwright_instance
+    contexto.entry_result = res
+    playwright_activo = False
+    return ResultadoIngreso(estado="ok", contexto=contexto)
 
 
 

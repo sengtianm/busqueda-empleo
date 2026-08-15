@@ -169,8 +169,7 @@ def _parches(adaptador: AdaptadorFalso) -> list[Any]:
     return [
         patch("modules.discovery.nodes.inicio.load", return_value=_CONFIG),
         patch("modules.discovery.nodes.ingreso.load", return_value=_CONFIG),
-        patch("modules.discovery.nodes.busqueda.load", return_value=_CONFIG),
-        patch("modules.discovery.nodes.captura.load", return_value=_CONFIG),
+        patch("shared.retry.load", return_value=_CONFIG),
         patch(
             "modules.discovery.nodes.ingreso.obtener_adaptador",
             return_value=adaptador,

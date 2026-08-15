@@ -2,17 +2,16 @@
 ( RN-10: Set iterator is property of this node; reset on source change)
 """
 
-import time
 from dataclasses import dataclass
+from typing import cast
 
 from loguru import logger
 
 from modules.discovery.adapters.linkedin import FlowError
 from modules.discovery.adapters.registry import obtener_adaptador
 from modules.discovery.run_context import RunContext
-from shared.config import load
 from shared.models import SearchResult
-from shared.retry import should_retry
+from shared.retry import ejecutar_con_reintento
 from shared.utilidades import acotar_evidencia
 
 
@@ -62,69 +61,50 @@ def aplicar_filtros(contexto: RunContext) -> ResultadoBusqueda:
     # Paso 3: Aplicar filtros con reintento condicional
     politicas = contexto.politicas(fuente)
     adapter = obtener_adaptador(fuente.fuente_id)
-    cfg_retries = load().get("retries", {})
-    max_attempts = cfg_retries.get("max_attempts", 3)
-    base_wait = cfg_retries.get("base_wait_seconds", 2)
-    multiplier = cfg_retries.get("multiplier", 2)
-    max_wait = cfg_retries.get("max_wait_seconds", 30)
 
-    attempt = 0
-    while attempt < max_attempts:
-        attempt += 1
-        try:
-            res = adapter.apply_filters(
-                page=handle, ficha=fuente, set_filtros=set_actual, politicas=politicas
-            )
-            # Paso 4 & 5: Resultado exitoso (intentos reales del flujo)
-            contexto.search_result = res.model_copy(
-                update={"numero_de_intentos": attempt}
-            )
-            if res.indice_set != set_actual.indice:
-                logger.warning(
-                    "Consistency warning: search_result index "
-                    f"{res.indice_set} != set index {set_actual.indice}"
-                )
+    def _fallo_final(fe: BaseException, intentos: int) -> SearchResult:
+        error = cast(FlowError, fe)
+        return SearchResult(
+            estado="fallo",
+            codigo_motivo=error.codigo_motivo,
+            evidencia_acotada=acotar_evidencia(error.mensaje),
+            numero_de_intentos=intentos,
+            ofertas_primera_pagina=[],
+            estado_paginacion="fin",
+            indice_set=set_actual.indice,
+        )
 
-            return ResultadoBusqueda(estado="ok", contexto=contexto)
+    def _fallo_interno(exc: Exception, intentos: int) -> SearchResult:
+        logger.error(f"ERR-07: Internal error in apply_filters: {exc}")
+        return SearchResult(
+            estado="fallo",
+            codigo_motivo="error_interno_consulta",
+            evidencia_acotada=acotar_evidencia(str(exc)),
+            numero_de_intentos=intentos,
+            ofertas_primera_pagina=[],
+            estado_paginacion="fin",
+            indice_set=set_actual.indice,
+        )
 
-        except FlowError as fe:
-            if should_retry(fe.codigo_motivo) and attempt < max_attempts:
-                wait_time = min(base_wait * (multiplier ** (attempt - 1)), max_wait)
-                time.sleep(wait_time)
-                continue
-            else:
-                # Paso 6: Fallo definitivo
-                contexto.search_result = SearchResult(
-                    estado="fallo",
-                    codigo_motivo=fe.codigo_motivo,
-                    evidencia_acotada=acotar_evidencia(fe.mensaje),
-                    numero_de_intentos=attempt,
-                    ofertas_primera_pagina=[],
-                    estado_paginacion="fin",
-                    indice_set=set_actual.indice,
-                )
-                return ResultadoBusqueda(estado="ok", contexto=contexto)
-        except Exception as e:
-            logger.error(f"ERR-07: Internal error in apply_filters: {e}")
-            contexto.search_result = SearchResult(
-                estado="fallo",
-                codigo_motivo="error_interno_consulta",
-                evidencia_acotada=acotar_evidencia(str(e)),
-                numero_de_intentos=attempt,
-                ofertas_primera_pagina=[],
-                estado_paginacion="fin",
-                indice_set=set_actual.indice,
-            )
-            return ResultadoBusqueda(estado="ok", contexto=contexto)
-    contexto.search_result = SearchResult(
-        estado="fallo",
-        codigo_motivo="error_interno_consulta",
-        evidencia_acotada="no attempts configured",
-        numero_de_intentos=0,
-        ofertas_primera_pagina=[],
-        estado_paginacion="fin",
-        indice_set=set_actual.indice,
+    res, intentos = ejecutar_con_reintento(
+        lambda: adapter.apply_filters(
+            page=handle, ficha=fuente, set_filtros=set_actual, politicas=politicas
+        ),
+        al_fallo_final=_fallo_final,
+        al_error_interno=_fallo_interno,
+        contexto_log=contexto.id_corrida,
     )
+
+    # Paso 4 & 5: Resultado exitoso (intentos reales del flujo)
+    contexto.search_result = res.model_copy(
+        update={"numero_de_intentos": intentos}
+    )
+    if res.indice_set != set_actual.indice:
+        logger.warning(
+            "Consistency warning: search_result index "
+            f"{res.indice_set} != set index {set_actual.indice}"
+        )
+
     return ResultadoBusqueda(estado="ok", contexto=contexto)
 
 

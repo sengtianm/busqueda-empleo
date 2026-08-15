@@ -7,7 +7,6 @@ from shared.persistence import (
     actualizar_fila,
     buscar_por_id,
     escribir_fila,
-    escribir_lote,
     generar_id,
     leer_tabla,
 )
@@ -102,36 +101,6 @@ def test_init_db_crea_nueve_tablas(temp_db_file: Path) -> None:
     expected = {"secuencia_ids", "fuentes", "empresas", "ubicaciones",
                 "ofertas", "corridas", "eventos", "sesiones", "bloqueo"}
     assert expected.issubset(tablas)
-
-
-def test_write_batch_ok(temp_db_file: Path) -> None:
-    filas = [
-        {"enlace": f"https://x.com/{i}", "titulo": f"Titulo {i}",
-         "descripcion_original": "d"} for i in range(3)
-    ]
-    escribir_lote("ofertas", filas)
-    rows = leer_tabla("ofertas")
-    assert len(rows) == 3
-    assert all(r["titulo"].startswith("Titulo") for r in rows)
-
-
-def test_write_batch_rollback_parcial(temp_db_file: Path) -> None:
-    import sqlite3
-
-    from shared.persistence import escribir_lote
-
-    try:
-        escribir_lote("ofertas", [
-            {"enlace": "https://x.com/ok", "titulo": "Ok",
-             "descripcion_original": "d"},
-            {"enlace": None},
-        ])
-    except sqlite3.IntegrityError:
-        pass
-    else:
-        raise AssertionError("escribir_lote deberia fallar con enlace NULL")
-    rows = leer_tabla("ofertas")
-    assert rows == []
 
 
 def test_acquire_and_release_lock(temp_db_file: Path) -> None:
@@ -308,6 +277,36 @@ def test_write_evento_genera_evento_id(temp_db_file: Path) -> None:
     filas = leer_tabla("eventos")
     assert len(filas) == 1
     assert filas[0]["evento_id"] == evt_id
+
+
+def test_escribir_evento_rechaza_datos_invalidos(temp_db_file: Path) -> None:
+    from pydantic import ValidationError
+
+    from shared.persistence import escribir_evento, leer_tabla
+
+    try:
+        escribir_evento({"tipo": "suceso"})
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("deberia rechazar evento sin id_corrida ni codigo")
+    assert leer_tabla("eventos") == []
+
+
+def test_registrar_corrida_rechaza_estado_invalido(temp_db_file: Path) -> None:
+    from pydantic import ValidationError
+
+    from shared.persistence import leer_tabla, registrar_corrida
+
+    try:
+        registrar_corrida(
+            {"id_corrida": "COR-0099", "estado": "estado_inventado"}
+        )
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("deberia rechazar estado fuera del catalogo")
+    assert leer_tabla("corridas") == []
 
 
 def test_lock_forzar_sobrescribe_y_contienda_mantiene(temp_db_file: Path) -> None:
