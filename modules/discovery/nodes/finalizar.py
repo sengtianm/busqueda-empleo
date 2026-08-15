@@ -10,7 +10,6 @@ here — retries are limited to one manual retry per persistence step.
 """
 
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any
 
 from loguru import logger
@@ -21,11 +20,10 @@ from shared.persistence import (
     actualizar_corrida,
     contar_distintos,
     contar_filas,
-    escribir_evento,
+    escribir_evento_seguro,
     liberar_bloqueo,
 )
-
-_FORMATO_TIMESTAMP = "%Y-%m-%d %H:%M:%S"
+from shared.utilidades import ahora
 
 _ESTADOS_POR_MOTIVO: dict[str, str] = {
     "corrida_completada": "completada",
@@ -50,10 +48,6 @@ class ResultadoFinalizar:
     contexto: RunContext | None = None
     codigo: str = ""
     metricas: dict[str, int] | None = None
-
-
-def _ahora() -> str:
-    return datetime.now().strftime(_FORMATO_TIMESTAMP)
 
 
 def consultar_metricas(contexto: RunContext | None) -> dict[str, int]:
@@ -97,7 +91,7 @@ def _persistir_cierre_corrida(
     """Step 3: update the run row with a single retry; never aborts."""
     campos: dict[str, Any] = {
         "estado": estado,
-        "fecha_fin": _ahora(),
+        "fecha_fin": ahora(),
         "motivo_terminacion": motivo,
         **metricas,
     }
@@ -120,21 +114,16 @@ def _escribir_evento_terminacion(
     evidencia = " | ".join(
         f"{campo}={metricas.get(campo, 0)}" for campo in _CAMPOS_METRICAS
     )
-    try:
-        escribir_evento(
-            {
-                "id_corrida": id_corrida,
-                "tipo": "suceso" if estado == "completada" else "error",
-                "codigo": motivo,
-                "evidencia": evidencia,
-                "marca_temporal": _ahora(),
-            }
-        )
-    except Exception as exc:
-        logger.error(
-            f"Evento de terminacion no persistible | run={id_corrida} | "
-            f"motivo={motivo} | {exc}"
-        )
+    escribir_evento_seguro(
+        {
+            "id_corrida": id_corrida,
+            "tipo": "suceso" if estado == "completada" else "error",
+            "codigo": motivo,
+            "evidencia": evidencia,
+            "marca_temporal": ahora(),
+        },
+        contexto_log=id_corrida,
+    )
 
 
 def cerrar_recursos(contexto: RunContext | None) -> None:

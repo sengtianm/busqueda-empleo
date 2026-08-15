@@ -161,7 +161,7 @@ class LinkedInAdapter:
             raise FlowError("fuente_inalcanzable", f"Search navigation failed: {exc}") from exc
         self._esperar_resultados(page, ficha.timeout_segundos)
         html = self._contenido(page)
-        self._revisar_estado_pagina(html, "tiempo_agotado_consulta")
+        self._revisar_estado(html, "tiempo_agotado_consulta")
         resultado = self._parsear_resultados(html, ficha, set_filtros, enlace)
         logger.info(
             f"Busqueda aplicada | url={enlace} | "
@@ -224,7 +224,7 @@ class LinkedInAdapter:
             )
             self._esperar_resultados(page, timeout_espera)
             html = self._contenido(page)
-            self._revisar_estado_captura(html, "tiempo_agotado_captura")
+            self._revisar_estado(html, "tiempo_agotado_captura")
             tarjetas = _tarjetas_resultado(BeautifulSoup(html, "lxml"))
             if not tarjetas:
                 break
@@ -328,7 +328,7 @@ class LinkedInAdapter:
 
     def _criterio_ingreso_cumplido(self, page: Any, ficha: FichaFuente) -> bool:
         html = self._contenido(page)
-        self._revisar_estado_pagina(html, "tiempo_agotado_ingreso")
+        self._revisar_estado(html, "tiempo_agotado_ingreso")
         return ficha.criterio_exito in html
 
     def _esperar_criterio_ingreso(self, page: Any, ficha: FichaFuente) -> None:
@@ -342,7 +342,7 @@ class LinkedInAdapter:
                     raise
                 time.sleep(1)
                 continue
-            self._revisar_estado_pagina(html, "tiempo_agotado_ingreso")
+            self._revisar_estado(html, "tiempo_agotado_ingreso")
             if ficha.criterio_exito in html:
                 return
             time.sleep(1)
@@ -351,15 +351,11 @@ class LinkedInAdapter:
             f"Entry criterion '{ficha.criterio_exito}' not verified.",
         )
 
-    def _revisar_estado_pagina(self, html: str, codigo_timeout: str) -> None:
+    def _revisar_estado(self, html: str, codigo_timeout: str) -> None:
+        """Revisión común de página: bloqueo anti-bot o contenido vacío."""
         self._revisar_bloqueo_html(html)
         if not html:
             raise FlowError(codigo_timeout, "Empty page content.")
-
-    def _revisar_estado_captura(self, html: str, codigo_timeout: str) -> None:
-        self._revisar_bloqueo_html(html)
-        if not html:
-            raise FlowError(codigo_timeout, "Empty capture page content.")
 
     def _revisar_bloqueo_html(self, html: str) -> None:
         """Detect real anti-bot evidence in visible content only.

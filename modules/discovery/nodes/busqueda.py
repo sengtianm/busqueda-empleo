@@ -24,6 +24,21 @@ class ResultadoBusqueda:
     descripcion: str = ""
 
 
+def _resultado_fallo(
+    codigo_motivo: str, evidencia: str, intentos: int, indice: int
+) -> SearchResult:
+    """SearchResult de fallo común (fallo final e error interno)."""
+    return SearchResult(
+        estado="fallo",
+        codigo_motivo=codigo_motivo,
+        evidencia_acotada=acotar_evidencia(evidencia),
+        numero_de_intentos=intentos,
+        ofertas_primera_pagina=[],
+        estado_paginacion="fin",
+        indice_set=indice,
+    )
+
+
 def aplicar_filtros(contexto: RunContext) -> ResultadoBusqueda:
     """
     Node: Apply basic filters.
@@ -64,26 +79,20 @@ def aplicar_filtros(contexto: RunContext) -> ResultadoBusqueda:
 
     def _fallo_final(fe: BaseException, intentos: int) -> SearchResult:
         error = cast(FlowError, fe)
-        return SearchResult(
-            estado="fallo",
+        return _resultado_fallo(
             codigo_motivo=error.codigo_motivo,
-            evidencia_acotada=acotar_evidencia(error.mensaje),
-            numero_de_intentos=intentos,
-            ofertas_primera_pagina=[],
-            estado_paginacion="fin",
-            indice_set=set_actual.indice,
+            evidencia=error.mensaje,
+            intentos=intentos,
+            indice=set_actual.indice,
         )
 
     def _fallo_interno(exc: Exception, intentos: int) -> SearchResult:
         logger.error(f"ERR-07: Internal error in apply_filters: {exc}")
-        return SearchResult(
-            estado="fallo",
+        return _resultado_fallo(
             codigo_motivo="error_interno_consulta",
-            evidencia_acotada=acotar_evidencia(str(exc)),
-            numero_de_intentos=intentos,
-            ofertas_primera_pagina=[],
-            estado_paginacion="fin",
-            indice_set=set_actual.indice,
+            evidencia=str(exc),
+            intentos=intentos,
+            indice=set_actual.indice,
         )
 
     res, intentos = ejecutar_con_reintento(

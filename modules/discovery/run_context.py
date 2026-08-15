@@ -7,7 +7,6 @@ and the result slots of each node. It is created by the INICIO node and does
 not contain any node logic: nodes only read and update its fields.
 """
 
-from datetime import datetime
 from typing import Any
 
 from shared.config import load
@@ -22,12 +21,7 @@ from shared.models import (
     SetFiltros,
 )
 from shared.persistence import generar_id
-
-_TIPOS_ACCESO = ("publico", "con_autenticacion")
-
-
-def _ahora() -> str:
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+from shared.utilidades import TIPOS_ACCESO, ahora
 
 
 class RunContext:
@@ -47,7 +41,7 @@ class RunContext:
         if config_captura is None:
             config_captura = load().get("captura", {})
         self.id_corrida = id_corrida or generar_id("corridas")
-        self.fecha_inicio: str = _ahora()
+        self.fecha_inicio: str = ahora()
         self.fuentes_filtradas: list[FichaFuente] = []
         self._sets_validos: dict[str, list[SetFiltros]] = {}
         self._politicas_por_fuente: dict[str, PoliticasCaptura] = {}
@@ -116,7 +110,7 @@ class RunContext:
                 "Incomplete access sheet (ERR-12): criterio_exito is mandatory.",
                 source_module="run_context",
             )
-        if ficha.tipo_acceso not in _TIPOS_ACCESO:
+        if ficha.tipo_acceso not in TIPOS_ACCESO:
             raise ConfigurationError(
                 "12",
                 f"Invalid tipo_acceso '{ficha.tipo_acceso}'",
@@ -165,56 +159,21 @@ class RunContext:
         self, conf: dict[str, Any], config_captura: dict[str, Any]
     ) -> PoliticasCaptura:
         politicas_raw = conf.get("politicas_de_captura")
-        if not isinstance(politicas_raw, dict):
-            return self._politicas_desde_global(config_captura)
+        por_fuente = politicas_raw if isinstance(politicas_raw, dict) else {}
+        combinadas = {**config_captura, **por_fuente}
         return PoliticasCaptura(
-            max_paginas=int(
-                politicas_raw.get(
-                    "max_paginas", config_captura.get("max_paginas", 5)
-                )
-            ),
+            max_paginas=int(combinadas.get("max_paginas", 5)),
             max_ofertas_por_corrida=int(
-                politicas_raw.get(
-                    "max_ofertas_por_corrida",
-                    config_captura.get("max_ofertas_por_corrida", 25),
-                )
+                combinadas.get("max_ofertas_por_corrida", 25)
             ),
             pausa_entre_lotes_segundos=int(
-                politicas_raw.get(
-                    "pausa_entre_lotes_segundos",
-                    config_captura.get("pausa_entre_lotes_segundos", 10),
-                )
+                combinadas.get("pausa_entre_lotes_segundos", 10)
             ),
             tope_espera_paginas_sucesivas_segundos=int(
-                politicas_raw.get(
-                    "tope_espera_paginas_sucesivas_segundos",
-                    config_captura.get("tope_espera_paginas_sucesivas_segundos", 10),
-                )
+                combinadas.get("tope_espera_paginas_sucesivas_segundos", 10)
             ),
             estrategia_anti_bloqueo=str(
-                politicas_raw.get(
-                    "estrategia_anti_bloqueo",
-                    config_captura.get("estrategia_anti_bloqueo", "pausa_aleatoria"),
-                )
-            ),
-        )
-
-    def _politicas_desde_global(
-        self, config_captura: dict[str, Any]
-    ) -> PoliticasCaptura:
-        return PoliticasCaptura(
-            max_paginas=int(config_captura.get("max_paginas", 5)),
-            max_ofertas_por_corrida=int(
-                config_captura.get("max_ofertas_por_corrida", 25)
-            ),
-            pausa_entre_lotes_segundos=int(
-                config_captura.get("pausa_entre_lotes_segundos", 10)
-            ),
-            tope_espera_paginas_sucesivas_segundos=int(
-                config_captura.get("tope_espera_paginas_sucesivas_segundos", 10)
-            ),
-            estrategia_anti_bloqueo=str(
-                config_captura.get("estrategia_anti_bloqueo", "pausa_aleatoria")
+                combinadas.get("estrategia_anti_bloqueo", "pausa_aleatoria")
             ),
         )
 

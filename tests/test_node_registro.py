@@ -38,7 +38,7 @@ def test_registrar_evento_search_fallo(mock_context: RunContext) -> None:
         indice_set=2,
         numero_de_intentos=3,
     )
-    with patch("modules.discovery.nodes.registro.escribir_evento") as mock_write:
+    with patch("modules.discovery.nodes.registro.escribir_evento_seguro") as mock_write:
         res = registrar_evento(mock_context)
         assert res.estado == "ok"
         mock_write.assert_called_once()
@@ -59,7 +59,7 @@ def test_registrar_evento_search_exito_empty(mock_context: RunContext) -> None:
         indice_set=1,
         numero_de_intentos=1,
     )
-    with patch("modules.discovery.nodes.registro.escribir_evento") as mock_write:
+    with patch("modules.discovery.nodes.registro.escribir_evento_seguro") as mock_write:
         res = registrar_evento(mock_context)
         assert res.estado == "ok"
         args = mock_write.call_args[0][0]
@@ -75,7 +75,7 @@ def test_registrar_evento_entry_fallo(mock_context: RunContext) -> None:
         evidencia_acotada="Missing env",
         numero_de_intentos=1,
     )
-    with patch("modules.discovery.nodes.registro.escribir_evento") as mock_write:
+    with patch("modules.discovery.nodes.registro.escribir_evento_seguro") as mock_write:
         res = registrar_evento(mock_context)
         assert res.estado == "ok"
         args = mock_write.call_args[0][0]
@@ -110,7 +110,7 @@ def test_registrar_evento_entry_priorizado_si_search_es_de_otra_fuente(
         evidencia_acotada="Down",
         numero_de_intentos=2,
     )
-    with patch("modules.discovery.nodes.registro.escribir_evento") as mock_write:
+    with patch("modules.discovery.nodes.registro.escribir_evento_seguro") as mock_write:
         res = registrar_evento(mock_context)
         assert res.estado == "ok"
         args = mock_write.call_args[0][0]
@@ -132,7 +132,7 @@ def test_registrar_evento_write_fail_continues(mock_context: RunContext) -> None
         numero_de_intentos=1,
     )
     with patch(
-        "modules.discovery.nodes.registro.escribir_evento", side_effect=Exception("DB Error")
+        "shared.persistence.escribir_evento", side_effect=Exception("DB Error")
     ):
         res = registrar_evento(mock_context)
         assert res.estado == "ok"

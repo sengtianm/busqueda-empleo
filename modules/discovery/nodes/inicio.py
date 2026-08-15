@@ -28,16 +28,15 @@ from shared.config import load
 from shared.persistence import (
     adquirir_bloqueo,
     consultar_bloqueo,
-    escribir_evento,
+    escribir_evento_seguro,
     generar_id,
     init_db,
     registrar_corrida,
     sondear_escritura,
     umbral_obsolescencia_minutos,
 )
+from shared.utilidades import FORMATO_TIMESTAMP, TIPOS_ACCESO, ahora
 
-_FORMATO_TIMESTAMP = "%Y-%m-%d %H:%M:%S"
-_TIPOS_ACCESO = ("publico", "con_autenticacion")
 _ESTRATEGIAS_ANTI_BLOQUEO = ("pausa_aleatoria", "retraso_fijo", "none")
 _RANGOS_POLITICAS: dict[str, int] = {
     "max_paginas": 1,
@@ -55,10 +54,6 @@ class ResultadoInicio:
     contexto: RunContext | None = None
     codigo: str = ""
     descripcion: str = ""
-
-
-def _ahora() -> str:
-    return datetime.now().strftime(_FORMATO_TIMESTAMP)
 
 
 def _generar_id_corrida() -> str:
@@ -86,19 +81,17 @@ def _registrar_evento(
     evidencia: str,
     fuente_id: str = "",
 ) -> None:
-    try:
-        escribir_evento(
-            {
-                "id_corrida": id_corrida,
-                "fuente_id": fuente_id,
-                "tipo": tipo,
-                "codigo": codigo,
-                "evidencia": evidencia,
-                "marca_temporal": _ahora(),
-            }
-        )
-    except Exception as exc:
-        logger.error(f"Evento no persistible | run={id_corrida} | {codigo} | {exc}")
+    escribir_evento_seguro(
+        {
+            "id_corrida": id_corrida,
+            "fuente_id": fuente_id,
+            "tipo": tipo,
+            "codigo": codigo,
+            "evidencia": evidencia,
+            "marca_temporal": ahora(),
+        },
+        contexto_log=id_corrida,
+    )
 
 
 def _validar_fuente(conf: Any) -> str | None:
@@ -118,7 +111,7 @@ def _validar_fuente(conf: Any) -> str | None:
     if not isinstance(enlace, str) or not enlace.strip():
         return "enlace ausente"
     tipo = ficha.get("tipo_acceso")
-    if tipo not in _TIPOS_ACCESO:
+    if tipo not in TIPOS_ACCESO:
         return "tipo_acceso invalido"
     credenciales = ficha.get("credenciales_referencia")
     if tipo == "con_autenticacion" and (
@@ -238,11 +231,11 @@ def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
             descripcion="lock state undecidable",
         )
 
-    marca_temporal = _ahora()
+    marca_temporal = ahora()
     if bloqueo_actual is not None:
         try:
             fecha_bloqueo = datetime.strptime(
-                str(bloqueo_actual.get("marca_temporal", "")), _FORMATO_TIMESTAMP
+                str(bloqueo_actual.get("marca_temporal", "")), FORMATO_TIMESTAMP
             )
         except (TypeError, ValueError):
             _registrar_evento(id_corrida, "error", "ERR-08", "marca_temporal del bloqueo no valido")

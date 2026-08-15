@@ -10,6 +10,7 @@ from loguru import logger
 from shared.config import load
 from shared.errors import PersistenceError
 from shared.models import Corrida, EventoAlmacen
+from shared.utilidades import ahora
 
 _DB_PATH: Path | None = None
 
@@ -183,10 +184,6 @@ def _connection() -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
-
-
-def _now() -> str:
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _serialize(datos: dict[str, Any]) -> dict[str, Any]:
@@ -614,10 +611,10 @@ def escribir_fila(tabla: str, datos: dict[str, Any]) -> str:
     d = _serialize(datos)
     if "id" not in d or not d["id"]:
         d["id"] = generar_id(tabla)
-    ahora = _now()
+    marca = ahora()
     if not d.get("fecha_creacion"):
-        d["fecha_creacion"] = ahora
-    d["fecha_ultima_edicion"] = ahora
+        d["fecha_creacion"] = marca
+    d["fecha_ultima_edicion"] = marca
 
     columnas = [k for k in d.keys()]
     placeholders = [":" + k for k in d.keys()]
@@ -642,7 +639,7 @@ def buscar_por_id(tabla: str, id_valor: str) -> dict[str, Any] | None:
 
 def actualizar_fila(tabla: str, id_valor: str, datos: dict[str, Any]) -> bool:
     d = _serialize(datos)
-    d["fecha_ultima_edicion"] = _now()
+    d["fecha_ultima_edicion"] = ahora()
     if "id" in d:
         del d["id"]
     asignaciones = ", ".join(f"{k} = :{k}" for k in d.keys())
@@ -753,7 +750,7 @@ def sondear_escritura() -> None:
     try:
         conn.execute(
             "INSERT INTO bloqueo (id_corrida, marca_temporal) VALUES (?, ?)",
-            (f"PROBE-{uuid.uuid4().hex[:8]}", _now()),
+            (f"PROBE-{uuid.uuid4().hex[:8]}", ahora()),
         )
         conn.rollback()
     except sqlite3.Error as exc:
@@ -778,7 +775,7 @@ def registrar_corrida(datos: dict[str, Any]) -> None:
             "ON CONFLICT (id_corrida) DO NOTHING",
             {
                 "id_corrida": d["id_corrida"],
-                "fecha_inicio": d.get("fecha_inicio") or _now(),
+                "fecha_inicio": d.get("fecha_inicio") or ahora(),
                 "estado": d.get("estado") or "",
             },
         )
@@ -832,22 +829,22 @@ def _upsert_ofertas_en(
             id_externos,
         ).fetchall():
             ids_por_id_externo[str(fila["id_externo"])] = str(fila["id"])
-    ahora = _now()
+    marca = ahora()
     for d in preparadas:
         try:
             id_externo = d.get("id_externo")
             if id_externo and id_externo in ids_por_id_externo:
                 conn.execute(
                     "UPDATE ofertas SET fecha_ultima_verificacion = ? WHERE id = ?",
-                    (ahora, ids_por_id_externo[id_externo]),
+                    (marca, ids_por_id_externo[id_externo]),
                 )
                 registradas.append(ids_por_id_externo[id_externo])
                 continue
             if not d.get("id"):
                 d["id"] = _generar_id_en(conn, "ofertas")
             if not d.get("fecha_creacion"):
-                d["fecha_creacion"] = ahora
-            d["fecha_ultima_edicion"] = ahora
+                d["fecha_creacion"] = marca
+            d["fecha_ultima_edicion"] = marca
             columnas = list(d.keys())
             placeholders = [":" + k for k in d.keys()]
             conn.execute(
@@ -925,7 +922,7 @@ def escribir_evento(datos: dict[str, Any]) -> str:
     evento_id = str(d.get("evento_id") or generar_id("eventos"))
     d["evento_id"] = evento_id
     if not d.get("marca_temporal"):
-        d["marca_temporal"] = _now()
+        d["marca_temporal"] = ahora()
     columnas = ", ".join(d.keys())
     placeholders = ", ".join(f":{k}" for k in d.keys())
     conn = _connection()
@@ -935,3 +932,19 @@ def escribir_evento(datos: dict[str, Any]) -> str:
         return evento_id
     finally:
         conn.close()
+
+
+def escribir_evento_seguro(datos: dict[str, Any], contexto_log: str = "") -> None:
+    """Writes an event best-effort: never aborts, falls back to Loguru.
+
+    Single non-aborting wrapper replacing the per-node try/except copies
+    (inicio, captura, control_fuentes, registro, finalizar). The node
+    builds the full row dict; validation and persistence stay in
+    `escribir_evento`.
+    """
+    try:
+        escribir_evento(datos)
+    except Exception as exc:
+        run = contexto_log or str(datos.get("id_corrida", ""))
+        codigo = str(datos.get("codigo", ""))
+        logger.error(f"Evento no persistible | run={run} | codigo={codigo} | {exc}")

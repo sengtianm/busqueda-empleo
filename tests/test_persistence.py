@@ -293,6 +293,37 @@ def test_escribir_evento_rechaza_datos_invalidos(temp_db_file: Path) -> None:
     assert leer_tabla("eventos") == []
 
 
+def test_escribir_evento_seguro_no_aborta_y_persiste(temp_db_file: Path) -> None:
+
+    from shared.persistence import escribir_evento_seguro, leer_tabla
+
+    escribir_evento_seguro(
+        {
+            "id_corrida": "RUN-0001",
+            "tipo": "suceso",
+            "codigo": "captura_completada",
+            "evidencia": "ok",
+        },
+        contexto_log="RUN-0001",
+    )
+    filas = leer_tabla("eventos")
+    assert len(filas) == 1
+    assert filas[0]["codigo"] == "captura_completada"
+
+
+def test_escribir_evento_seguro_no_aborta_ante_fallo_de_escritura(
+    temp_db_file: Path,
+) -> None:
+    from unittest.mock import patch
+
+    from shared.persistence import escribir_evento_seguro
+
+    with patch("shared.persistence.escribir_evento", side_effect=Exception("DB Error")):
+        escribir_evento_seguro(
+            {"id_corrida": "RUN-0001", "tipo": "error", "codigo": "ERR-05", "evidencia": "x"}
+        )
+
+
 def test_registrar_corrida_rechaza_estado_invalido(temp_db_file: Path) -> None:
     from pydantic import ValidationError
 

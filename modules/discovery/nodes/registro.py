@@ -6,9 +6,10 @@ from dataclasses import dataclass
 
 from loguru import logger
 
-from modules.discovery.run_context import RunContext, _ahora
+from modules.discovery.run_context import RunContext
 from shared.models import EntryResult, SearchResult, TipoEvento
-from shared.persistence import escribir_evento
+from shared.persistence import escribir_evento_seguro
+from shared.utilidades import ahora
 
 
 @dataclass
@@ -51,33 +52,27 @@ def registrar_evento(contexto: RunContext) -> ResultadoRegistro:
     # 2. Typify with the official enum (DOC-05 CNP-014)
     tipo = TipoEvento.ERROR if resultado.estado == "fallo" else TipoEvento.SUCESO
 
-    # 3. Write to events table
+    # 3. Write to events table (non-aborting: RN-04 continue on failure)
     evidencia = (
         f"{resultado.evidencia_acotada} | "
         f"intentos: {resultado.numero_de_intentos}"
     )
-    try:
-        escribir_evento(
-            {
-                "id_corrida": contexto.id_corrida,
-                "fuente_id": (
-                    contexto.fuente_corriente.fuente_id
-                    if contexto.fuente_corriente
-                    else ""
-                ),
-                "id_sesion": contexto.id_sesion,
-                "indice_set": indice_set,
-                "marca_temporal": _ahora(),
-                "tipo": tipo.value,
-                "codigo": resultado.codigo_motivo,
-                "evidencia": evidencia,
-            }
-        )
-    except Exception as exc:
-        logger.error(
-            f"[{contexto.id_corrida}] Failed to write event to DB: {exc} | "
-            f"codigo={resultado.codigo_motivo} | evidencia={evidencia}"
-        )
-        # RN-04: Continue regardless of write failure
+    escribir_evento_seguro(
+        {
+            "id_corrida": contexto.id_corrida,
+            "fuente_id": (
+                contexto.fuente_corriente.fuente_id
+                if contexto.fuente_corriente
+                else ""
+            ),
+            "id_sesion": contexto.id_sesion,
+            "indice_set": indice_set,
+            "marca_temporal": ahora(),
+            "tipo": tipo.value,
+            "codigo": resultado.codigo_motivo,
+            "evidencia": evidencia,
+        },
+        contexto_log=contexto.id_corrida,
+    )
 
     return ResultadoRegistro(estado="ok", contexto=contexto)

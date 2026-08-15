@@ -14,15 +14,15 @@ from loguru import logger
 
 from modules.discovery.adapters.linkedin import FlowError
 from modules.discovery.adapters.registry import obtener_adaptador
-from modules.discovery.run_context import RunContext, _ahora
+from modules.discovery.run_context import RunContext
 from shared.models import AuditoriaSesion, CaptureBatch, EstadoCaptura, Offer
 from shared.persistence import (
-    escribir_evento,
+    escribir_evento_seguro,
     escribir_fila,
     upsert_lote_ofertas,
 )
 from shared.retry import ejecutar_con_reintento
-from shared.utilidades import acotar_evidencia
+from shared.utilidades import acotar_evidencia, ahora
 
 
 @dataclass
@@ -41,32 +41,27 @@ def _registrar_evento(
     evidencia: str,
 ) -> None:
     """Escribe un evento en la tabla `eventos` sin abortar el flujo."""
-    try:
-        escribir_evento(
-            {
-                "id_corrida": contexto.id_corrida,
-                "fuente_id": (
-                    contexto.fuente_corriente.fuente_id
-                    if contexto.fuente_corriente
-                    else ""
-                ),
-                "id_sesion": contexto.id_sesion,
-                "indice_set": (
-                    contexto.set_corriente.indice
-                    if contexto.set_corriente
-                    else None
-                ),
-                "marca_temporal": _ahora(),
-                "tipo": tipo,
-                "codigo": codigo,
-                "evidencia": evidencia,
-            }
-        )
-    except Exception as exc:
-        logger.error(
-            f"[{contexto.id_corrida}] Failed to write event to DB: {exc} | "
-            f"codigo={codigo}"
-        )
+    escribir_evento_seguro(
+        {
+            "id_corrida": contexto.id_corrida,
+            "fuente_id": (
+                contexto.fuente_corriente.fuente_id
+                if contexto.fuente_corriente
+                else ""
+            ),
+            "id_sesion": contexto.id_sesion,
+            "indice_set": (
+                contexto.set_corriente.indice
+                if contexto.set_corriente
+                else None
+            ),
+            "marca_temporal": ahora(),
+            "tipo": tipo,
+            "codigo": codigo,
+            "evidencia": evidencia,
+        },
+        contexto_log=contexto.id_corrida,
+    )
 
 
 def capturar_ofertas(contexto: RunContext) -> ResultadoCaptura:
@@ -191,7 +186,7 @@ def _escribir_auditoria_sesion(contexto: RunContext, lote: CaptureBatch) -> None
             else ""
         ),
         "indice_set": indice_set if indice_set is not None else None,
-        "marca_temporal": _ahora(),
+        "marca_temporal": ahora(),
         "total_declarado": total_declarado,
         "conteo": len(lote.ofertas),
         "estado": "completa",
@@ -279,7 +274,7 @@ def _oferta_a_dict(oferta: Offer, contexto: RunContext) -> dict[str, Any]:
         "id_externo": oferta.id_externo,
         "id_corrida": contexto.id_corrida,
         "id_sesion": contexto.id_sesion,
-        "fecha_descubrimiento": _ahora(),
+        "fecha_descubrimiento": ahora(),
     }
 
 

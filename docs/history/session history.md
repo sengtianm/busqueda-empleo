@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 23 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Lote C (D24): P3 duplication unifications — `ahora()`/`FORMATO_TIMESTAMP`/`TIPOS_ACCESO` in shared utilidades, `escribir_evento_seguro`, `_enviar`, merged capture policies, unified `_revisar_estado`, `_resultado_fallo` (302 tests) |
 | 22 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Lote A (D22): Playwright leak fix (resources tracked in context, public closure reused by orchestrator), batch persistence in one connection derogating ficha NOTA 4.4, SQL closure metrics, RETURNING ids · Lote B (D23): unified retry helper replacing the 3 node loops + test-only variant, dead `escribir_lote` removed, Pydantic validation on writes (300 tests) |
 | 21 | 14/08/2026 | `ses_0002228fbffeOK2V1m5PaeYAiK` | Filter investigation + observability hardening (D18–D21): LinkedIn `f_TPR`/`f_WT` verified working (UI labels cosmetic), search evidence URL+total, `fecha_publicacion` format validation, robust login fallback (282 tests) |
 | 20 | 12/08/2026 | `ses_00927e803ffeXTR04EkYYKzmTV` | Project-wide review lots executed: Lote 1 quick-win cleanup (fast suite, dead state/fixtures, D14), Lote 2 Spanish catalog completed (D15), Lote 3 persistence performance (single-connection upsert + indexes, D16), Lote 4 test quality + last cleanups (vestigial node retired, contract session close, config + integration tests, D17) |
@@ -23,6 +24,31 @@ Unless noted, decisions from previous sessions remain in effect.
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+## Session 23 — 14/08/2026
+`ses_ffd4eef78ffeLdakkTRbtGuLdu` · `fase-4`
+
+**Topics**
+- Improvement plan recovered from the local OpenCode DB (not in the repo): priorities P0–P4 with lotes A ✅ / B ✅ / C ✅ / D pending; plan presented and Lote C approved by the user
+- Lote C (P3): 6 duplication unifications, pure refactor with zero contract change
+- `ahora()` + `FORMATO_TIMESTAMP` + `TIPOS_ACCESO` as public helpers in shared utilidades, replacing 7 duplicated implementations (persistence `_now`, run_context/inicio/finalizar/control_fuentes/captura/registro `_ahora`); shadowed locals renamed to `marca` in persistence
+- `escribir_evento_seguro` in persistence replacing the 5 node wrappers (inicio, captura, control_fuentes, registro, finalizar); RN-04 preserved (failure logged, never aborts); 25 test patches retargeted to the node-imported name (patches against the persistence source would not intercept) + write-fail test re-patched at the real call site + 2 new helper tests
+- `_enviar` in ia_service unifying `_send_local`/`_send_cloud` (thin `@retry_decorator()` wrappers kept public; LLM-001..003 intact)
+- Capture policies merged via `{**global, **por_fuente}` (identical defaults); adapter status check unified in `_revisar_estado`; failure `SearchResult` built once via `_resultado_fallo` in busqueda
+- Discarded scope documented (structural source validation INICIO↔RunContext, `_es_obsoleto` mirror) + cosmetic message changes (capture empty-page evidence, LLM-003 local capitalization, unified failure log)
+- Reviewers: code-reviewer approved (P3 cosmetic only), docs-reviewer 0 contract violations; F-003 pre-existing drift documented per recommendation (termination event written in a single attempt; retry NOT implemented)
+- Docs applied with user approval: D24 + decision log v1.10, tracker 4.17, AGENTS.md (status + 302 + `shared/utilidades.py` in the Spanish exception list), ficha técnica as-built note
+
+**Decisions**
+- D24: Lote C — 6 duplication unifications (items 7–12 of the P3 plan); discarded scope; observable cosmetic changes; F-003 termination-event retry drift documented (not implemented)
+- Decisions from previous sessions remain in effect
+
+**Status**
+- Lote A ✅ (tracker 4.15) · Lote B ✅ (tracker 4.16) · Lote C ✅ (tracker 4.17); 302 tests passing · ruff 0 · mypy 0
+- Lote D (P4 consistency/robustness, incl. EstadoCorrida P4-13) pending planning
+- Session history + all session changes committed in this /save; single commit + push
+- Branch: `fase-4` · no merge
+- Next: Phase 5 (Module 2 — Preparation), task 1: `modules/preparation/` structure (pending)
 
 ## Session 22 — 14/08/2026
 `ses_ffd4eef78ffeLdakkTRbtGuLdu` · `fase-4`

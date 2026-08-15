@@ -135,7 +135,7 @@ def test_captura_timeout_todos_intentos(contexto: RunContext, adapter: MagicMock
     adapter.capture_batch.side_effect = FlowError("tiempo_agotado_captura", "Timeout")
 
     with patch("shared.retry.time.sleep"):
-        with patch("modules.discovery.nodes.captura.escribir_evento"):
+        with patch("modules.discovery.nodes.captura.escribir_evento_seguro"):
             res = capturar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -151,7 +151,7 @@ def test_captura_bloqueo_inmediato(contexto: RunContext, adapter: MagicMock) -> 
     contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
     adapter.capture_batch.side_effect = FlowError("bloqueo_plataforma", "Captcha")
 
-    with patch("modules.discovery.nodes.captura.escribir_evento"):
+    with patch("modules.discovery.nodes.captura.escribir_evento_seguro"):
         res = capturar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -168,7 +168,7 @@ def test_captura_sesion_expirada_inmediato(
     contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
     adapter.capture_batch.side_effect = FlowError("sesion_expirada", "Authwall")
 
-    with patch("modules.discovery.nodes.captura.escribir_evento"):
+    with patch("modules.discovery.nodes.captura.escribir_evento_seguro"):
         res = capturar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -233,7 +233,7 @@ def test_registrar_una_oferta_upsert(
         "modules.discovery.nodes.captura.upsert_lote_ofertas",
         return_value=(1, 0),
     ) as mock_upsert:
-        with patch("modules.discovery.nodes.captura.escribir_evento"):
+        with patch("modules.discovery.nodes.captura.escribir_evento_seguro"):
             res = registrar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -296,7 +296,7 @@ def test_registrar_ofertas_exito_registra_suceso(
         "modules.discovery.nodes.captura.upsert_lote_ofertas",
         return_value=(2, 0),
     ) as mock_upsert:
-        with patch("modules.discovery.nodes.captura.escribir_evento") as mock_evento:
+        with patch("modules.discovery.nodes.captura.escribir_evento_seguro") as mock_evento:
             res = registrar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -321,7 +321,7 @@ def test_registrar_fallo_parcial(contexto: RunContext) -> None:
         "modules.discovery.nodes.captura.upsert_lote_ofertas",
         side_effect=[RuntimeError("db"), (1, 1)],
     ) as mock_upsert:
-        with patch("modules.discovery.nodes.captura.escribir_evento") as mock_evento:
+        with patch("modules.discovery.nodes.captura.escribir_evento_seguro") as mock_evento:
             with patch("modules.discovery.nodes.captura.logger"):
                 res = registrar_ofertas(contexto)
 
@@ -341,7 +341,7 @@ def test_registrar_fallo_total(contexto: RunContext) -> None:
         "modules.discovery.nodes.captura.upsert_lote_ofertas",
         side_effect=RuntimeError("db"),
     ) as mock_upsert:
-        with patch("modules.discovery.nodes.captura.escribir_evento") as mock_evento:
+        with patch("modules.discovery.nodes.captura.escribir_evento_seguro") as mock_evento:
             with patch("modules.discovery.nodes.captura.logger"):
                 res = registrar_ofertas(contexto)
 

@@ -77,71 +77,66 @@ def _get_cloud_config() -> dict[str, Any]:
     }
 
 
-@retry_decorator()
-def _send_local(prompt: str) -> str:
-    cfg = _get_local_config()
-    url = f"http://{cfg['host']}:{cfg['port']}/api/generate"
-    payload = {"model": cfg["model"], "prompt": prompt, "stream": False}
+def _enviar(
+    url: str,
+    headers: dict[str, str],
+    payload: dict[str, Any],
+    timeout: float,
+    servicio: str,
+) -> str:
+    """POST a un endpoint IA con el mapeo de errores común (LLM-001..003)."""
     try:
-        response = httpx.post(url, json=payload, timeout=cfg["timeout"])
+        response = httpx.post(url, json=payload, headers=headers, timeout=timeout)
         response.raise_for_status()
         data = response.json()
         return str(data.get("response", ""))
     except httpx.ConnectError:
         raise LLMError(
             "001",
-            f"Could not connect to local Ollama at {url}",
+            f"Could not connect to {servicio} at {url}",
             source_module="ia_service",
         )
     except httpx.TimeoutException:
         raise LLMError(
             "002",
-            f"Timeout connecting to local Ollama ({cfg['timeout']}s)",
+            f"Timeout connecting to {servicio} ({timeout}s)",
             source_module="ia_service",
         )
     except httpx.HTTPStatusError as e:
         raise LLMError(
             "003",
-            f"Local Ollama responded with code {e.response.status_code}",
+            f"{servicio} responded with code {e.response.status_code}",
             source_module="ia_service",
         )
+
+
+@retry_decorator()
+def _send_local(prompt: str) -> str:
+    cfg = _get_local_config()
+    return _enviar(
+        f"http://{cfg['host']}:{cfg['port']}/api/generate",
+        {"Content-Type": "application/json"},
+        {"model": cfg["model"], "prompt": prompt, "stream": False},
+        cfg["timeout"],
+        "local Ollama",
+    )
 
 
 @retry_decorator()
 def _send_cloud(prompt: str) -> str:
     cfg = _get_cloud_config()
-    url = f"{cfg['endpoint']}/api/generate"
     headers: dict[str, str] = {
         "Content-Type": "application/json",
     }
     if cfg["api_key"]:
         headers["Authorization"] = f"Bearer {cfg['api_key']}"
-    payload = {"model": cfg["model"], "prompt": prompt, "stream": False}
-    try:
-        response = httpx.post(
-            url, json=payload, headers=headers, timeout=cfg["timeout"]
-        )
-        response.raise_for_status()
-        data = response.json()
-        return str(data.get("response", ""))
-    except httpx.ConnectError:
-        raise LLMError(
-            "001",
-            f"Could not connect to AI Cloud at {url}",
-            source_module="ia_service",
-        )
-    except httpx.TimeoutException:
-        raise LLMError(
-            "002",
-            f"Timeout connecting to AI Cloud ({cfg['timeout']}s)",
-            source_module="ia_service",
-        )
-    except httpx.HTTPStatusError as e:
-        raise LLMError(
-            "003",
-            f"AI Cloud responded with code {e.response.status_code}",
-            source_module="ia_service",
-        )
+    return _enviar(
+        f"{cfg['endpoint']}/api/generate",
+        headers,
+        {"model": cfg["model"], "prompt": prompt, "stream": False},
+        cfg["timeout"],
+        "AI Cloud",
+    )
 
 
 def _validate_response(raw_response: str) -> dict[str, Any]:

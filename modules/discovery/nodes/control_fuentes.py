@@ -18,14 +18,12 @@ instruction, the Yes branch goes directly to the iteration decision.
 """
 
 from dataclasses import dataclass
-from datetime import datetime
 
 from loguru import logger
 
 from modules.discovery.run_context import RunContext
-from shared.persistence import escribir_evento
-
-_FORMATO_TIMESTAMP = "%Y-%m-%d %H:%M:%S"
+from shared.persistence import escribir_evento_seguro
+from shared.utilidades import ahora
 
 
 @dataclass
@@ -39,28 +37,22 @@ class ResultadoControlFuentes:
     descripcion: str = ""
 
 
-def _ahora() -> str:
-    return datetime.now().strftime(_FORMATO_TIMESTAMP)
-
-
 def _registrar_evento(contexto: RunContext | None, codigo: str, evidencia: str) -> None:
     """Critical abort event; falls back to Loguru when the store rejects it."""
     id_corrida = contexto.id_corrida if contexto is not None else ""
     if not id_corrida:
         logger.error(f"{codigo} | sin id_corrida | {evidencia}")
         return
-    try:
-        escribir_evento(
-            {
-                "id_corrida": id_corrida,
-                "tipo": "error",
-                "codigo": codigo,
-                "evidencia": evidencia,
-                "marca_temporal": _ahora(),
-            }
-        )
-    except Exception as exc:
-        logger.error(f"Evento no persistible | run={id_corrida} | {codigo} | {exc}")
+    escribir_evento_seguro(
+        {
+            "id_corrida": id_corrida,
+            "tipo": "error",
+            "codigo": codigo,
+            "evidencia": evidencia,
+            "marca_temporal": ahora(),
+        },
+        contexto_log=id_corrida,
+    )
 
 
 def _abortar(

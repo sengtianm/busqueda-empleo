@@ -200,6 +200,19 @@ Format: `D<n>` — module/business decisions; `C<n>` — prompt/design alignment
 
 ---
 
+### D24. Duplication unifications from the P3 improvement plan (Lote C)
+
+- **Date:** 2026-08-14
+- **Status:** In effect
+- **Context:** The project-wide improvement plan approved in session 22 (priorities P0–P4) identified 6 duplications in the P3 group (items 7–12): `_ahora`/`_FORMATO_TIMESTAMP` implemented 5 times plus `_now` in persistence; try/except wrappers around `escribir_evento` in 5 nodes; `_send_local`/`_send_cloud` nearly identical (~30 lines each); `_construir_politicas` + `_politicas_desde_global` overlapping; `_TIPOS_ACCESO` duplicated between INICIO and RunContext; `_revisar_estado_pagina`/`_revisar_estado_captura` identical plus `SearchResult` failure objects built twice in busqueda.
+- **Decision:** (C-7) `ahora()` and `FORMATO_TIMESTAMP` moved to `shared/utilidades.py` as public helpers; all 7 call sites updated (persistence, run_context, inicio, finalizar, control_fuentes, captura, registro); local `ahora` variables renamed to `marca` in persistence where they shadowed the import. (C-8) New `escribir_evento_seguro(datos, contexto_log="")` in `shared/persistence.py` replaces the 5 per-node wrappers (each node keeps its exact event dict, including conditional fields; RN-04 preserved — write failure logs and never aborts). (C-9) `_enviar(url, headers, payload, timeout, servicio)` in `shared/ia_service.py` centralizes the POST/error mapping; `_send_local`/`_send_cloud` remain public thin wrappers with `@retry_decorator()` — LLM-001..003 and retry policy unchanged. (C-10) `_construir_politicas` merges both paths via `{**config_captura, **por_fuente}` — identical defaults (5/25/10/10/`pausa_aleatoria`); `_politicas_desde_global` deleted. (C-11) `TIPOS_ACCESO` is now a single catalog constant in `shared/utilidades.py`, imported by INICIO and RunContext. (C-12) Adapter status check unified into `_revisar_estado(html, codigo_timeout)` (same block-detection + empty-content check); `busqueda.py` builds failure `SearchResult` objects through one `_resultado_fallo(codigo_motivo, evidencia, intentos, indice)` helper.
+- **Discarded scope:** the full structural source validation between INICIO (`_validar_fuente`, ERR-12 discard) and RunContext (`_construir_ficha`) was NOT unified (different error messages and responsibilities; would change ERR-12 evidence without benefit), nor was the `_es_obsoleto` mirror (persistence-side staleness check) — both remain as-is.
+- **Observable cosmetic changes (documented):** capture empty-page evidence now reads "Empty page content." (was "Empty capture page content."); the local LLM-003 message drops the capital "Local Ollama" → "local Ollama responded..."; the unified failure log is "Evento no persistible | run=... | codigo=..." without the `evidencia` field. None are part of any documented contract (error contracts are by code, not message).
+- **F-003 (pre-existing drift, documented, not introduced here):** the ficha "Finalizar Proceso" states "escribir evento de terminación… fallo → reintento único", but the termination event is written in a single attempt (try/except + Loguru fallback; only `actualizar_corrida` keeps the `(1, 2)` retry loop). Aligned with the as-built note; the retry was not implemented (would require separate approval).
+- **Impact:** 6 duplications removed with zero contract change; 2 new helper tests (302 total); ruff/mypy clean; `shared/utilidades.py` added to the Spanish data-layer exception list in AGENTS.md; ficha as-built note; tracker sub-phase 4.17.
+
+---
+
 ## Prompt/design alignment decisions
 
 ### C2. Detailed Evaluation entity uses Spanish attribute names
@@ -263,6 +276,7 @@ Source: DOC-APPENDIX 9A — archived 2026-08-11; content consolidated here uncha
 
 | Version | Date | Change |
 |---|---|---|
+| 1.10 | 2026-08-14 | Added D24 (Lote C, P3 duplication unifications: `ahora()`/`FORMATO_TIMESTAMP`/`TIPOS_ACCESO` in `shared/utilidades.py`, `escribir_evento_seguro` in persistence, `_enviar` in ia_service, merged policies in run_context, unified `_revisar_estado` in the adapter, `_resultado_fallo` in busqueda; discarded scope and F-003 termination-event retry drift documented). |
 | 1.9 | 2026-08-14 | Added D23 (Lote B: unified retry helper `ejecutar_con_reintento` replacing `retry_conditional` and the 3 node loops; `escribir_lote` deleted; Pydantic validation on `escribir_evento`/`registrar_corrida`/session audit; `fuente_id=""` in registro; F-004/F-005 noted). |
 | 1.8 | 2026-08-14 | Added D22 (Lote A: batch persistence in one connection, `RETURNING` ids, SQL closure metrics, Playwright leak fix; derogates ficha NOTA 4.4). |
 | 1.7 | 2026-08-14 | Added D18 (LinkedIn labels any `f_TPR` window with the nearest UI bucket; filter itself verified working), D19 (search observability: successful `SearchResult` carries URL + declared total; INFO log in `apply_filters`), D20 (`fecha_publicacion` format validation `r<N>` in the adapter, not a UI-bucket catalog), D21 (login fallback tolerant to slow form detach). |
