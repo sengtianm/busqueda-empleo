@@ -17,10 +17,14 @@ fuentes:
             valor: ["Data Engineer"]
           - tipo: "ubicacion"
             valor: "Colombia"
-          - tipo: "modalidad"
-            valor: "remoto"
+          # Modalidad (D27): la UI nueva de LinkedIn solo soporta "remoto"
+          # (f_SAL=f_SA_id_225001:272001); presencial/hibrido no son
+          # representables (fallo filtros_no_aplicables). Para capturar
+          # solo remoto, descomentar:
+          # - tipo: "modalidad"
+          #   valor: "remoto"
           - tipo: "fecha_publicacion"
-            valor: "r18000"
+            valor: "r86400"
     politicas_de_captura:
       max_paginas: 100
       max_ofertas_por_corrida: 1000

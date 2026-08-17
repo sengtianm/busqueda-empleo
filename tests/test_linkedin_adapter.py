@@ -10,7 +10,8 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 URL_BUSQUEDA = "https://www.linkedin.com/jobs/search"
 
 URL_CON_FILTROS = (
-    "https://www.linkedin.com/jobs/search?keywords=Data+Engineer&f_WT=2"
+    "https://www.linkedin.com/jobs/search?keywords=Data+Engineer"
+    "&f_SAL=f_SA_id_225001%3A272001"
 )
 
 URL_RESULTADOS = URL_CON_FILTROS.replace(
@@ -35,6 +36,7 @@ class FakePage:
         self.cerrada = False
         self.keyboard = FakeKeyboard()
         self.esperas: list[tuple[str, str | None, int | None]] = []
+        self.clics: list[str] = []
 
     def goto(self, enlace: str, wait_until: str | None = None) -> None:
         self.gotos.append(enlace)
@@ -48,8 +50,8 @@ class FakePage:
     def fill(self, selector: str, valor: str) -> None:
         pass
 
-    def click(self, selector: str) -> None:
-        pass
+    def click(self, selector: str, timeout: int | None = None) -> None:
+        self.clics.append(selector)
 
     def wait_for_selector(
         self,
@@ -264,7 +266,13 @@ def test_apply_filters_fallback_enlace_generico(
     set_filtros: SetFiltros,
     politicas: PoliticasCaptura,
 ) -> None:
-    html = "<html><body><a href='/jobs/view/99901'>Titulo Generico</a></body></html>"
+    html = (
+        "<html><body>"
+        "<div role='radio' aria-label='Filtrar por En remoto' "
+        "aria-checked='true'>En remoto</div>"
+        "<a href='/jobs/view/99901'>Titulo Generico</a>"
+        "</body></html>"
+    )
     pagina = FakePage({URL_RESULTADOS: html})
     resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
     assert len(resultado.ofertas_primera_pagina) == 1
@@ -329,16 +337,36 @@ def test_apply_filters_fecha_formato_rn_aceptado(
         indice=0,
         filtros=[
             {"tipo": "keywords", "valor": ["Data Engineer"]},
-            {"tipo": "fecha_publicacion", "valor": "r18000"},
+            {"tipo": "fecha_publicacion", "valor": "r86400"},
         ],
     )
-    url_con_fecha = URL_RESULTADOS.replace("&f_WT=2", "&f_TPR=r18000")
+    url_con_fecha = URL_RESULTADOS.replace(
+        "&f_SAL=f_SA_id_225001%3A272001", "&f_TPR=r86400"
+    )
     pagina = FakePage({url_con_fecha: _leer("lista_linkedin.html")})
     resultado = LinkedInAdapter().apply_filters(
         pagina, ficha_publica, set_fecha, politicas
     )
     assert resultado.estado == "exito"
     assert pagina.gotos[-1] == url_con_fecha
+
+
+def test_apply_filters_fecha_r_no_canonico_falla_set(
+    ficha_publica: FichaFuente, politicas: PoliticasCaptura
+) -> None:
+    set_fecha = SetFiltros(
+        fuente_id=ficha_publica.fuente_id,
+        indice=0,
+        filtros=[
+            {"tipo": "keywords", "valor": ["Data Engineer"]},
+            {"tipo": "fecha_publicacion", "valor": "r18000"},
+        ],
+    )
+    with pytest.raises(FlowError) as exc:
+        LinkedInAdapter().apply_filters(
+            FakePage({}), ficha_publica, set_fecha, politicas
+        )
+    assert exc.value.codigo_motivo == "filtros_no_aplicables"
 
 
 def test_apply_filters_evidencia_incluye_url_y_total(
@@ -362,7 +390,9 @@ def test_apply_filters_filtro_valor_vacio_se_ignora(
             {"tipo": "modalidad", "valor": "remoto"},
         ],
     )
-    url_solo_modalidad = "https://www.linkedin.com/jobs/search-results/?f_WT=2"
+    url_solo_modalidad = (
+        "https://www.linkedin.com/jobs/search-results/?f_SAL=f_SA_id_225001%3A272001"
+    )
     pagina = FakePage({url_solo_modalidad: _leer("lista_linkedin.html")})
     resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_valor_vacio, politicas)
     assert resultado.estado == "exito"
@@ -862,3 +892,216 @@ def test_esperar_resultados_tolerante_a_timeout() -> None:
     pagina = PageSinTarjetas({})
     LinkedInAdapter()._esperar_resultados(pagina, 5)
     assert not pagina.cerrada
+
+
+CHIPS_ACTIVOS = (
+    "<div role='radio' aria-label='Filtrar por En remoto' aria-checked='true'>"
+    "En remoto</div>"
+    "<div role='button' aria-expanded='false' "
+    "componentkey='SearchResults_filter_pill_"
+    "JobSearchFacetSuggestionType_TIME_POSTED'>"
+    "<input id='r1' type='checkbox' checked='checked' />"
+    "<label for='r1'>Últimas 24 horas</label>"
+    "</div>"
+)
+
+HTML_SIN_CHIPS = (
+    "<html><body>"
+    "<div componentkey='job-card-component-ref-99901'>"
+    "<div componentkey='job-card-component-ref-99901'>"
+    "<span aria-hidden='true'>Oferta Sin Filtros</span>"
+    "</div></div>"
+    "</body></html>"
+)
+
+
+class FakePageFallbackUI(FakePage):
+    """Simula el clic de fallback: tras el primer clic el DOM aplica chips."""
+
+    def __init__(self, por_url: dict[str, str]) -> None:
+        super().__init__(por_url)
+        self._html_tras_clic = (
+            "<html><body>"
+            f"{CHIPS_ACTIVOS}"
+            "<div componentkey='job-card-component-ref-99901'>"
+            "<div componentkey='job-card-component-ref-99901'>"
+            "<span aria-hidden='true'>Oferta Con Filtros</span>"
+            "</div></div>"
+            "</body></html>"
+        )
+
+    def click(self, selector: str, timeout: int | None = None) -> None:
+        self.clics.append(selector)
+        self._actual = self._html_tras_clic
+        self.url = (
+            "https://www.linkedin.com/jobs/search-results/?currentJobId=1"
+            "&keywords=Data+Engineer&origin=JOB_SEARCH_PAGE_JOB_FILTER"
+            "&referralSearchId=x&f_TPR=r86400&f_SAL=f_SA_id_225001%3A272001"
+        )
+
+
+def test_apply_filters_verifica_chips_sin_clics(
+    ficha_publica: FichaFuente,
+    set_filtros: SetFiltros,
+    politicas: PoliticasCaptura,
+) -> None:
+    pagina = FakePage({URL_RESULTADOS: _leer("lista_linkedin.html")})
+    resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
+    assert resultado.estado == "exito"
+    assert pagina.clics == []
+
+
+def test_apply_filters_fallback_clic_aplica_filtros(
+    ficha_publica: FichaFuente,
+    set_filtros: SetFiltros,
+    politicas: PoliticasCaptura,
+) -> None:
+    pagina = FakePageFallbackUI({URL_RESULTADOS: HTML_SIN_CHIPS})
+    resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
+    assert resultado.estado == "exito"
+    assert len(resultado.ofertas_primera_pagina) == 1
+    assert resultado.evidencia_acotada.startswith(
+        "url: https://www.linkedin.com/jobs/search-results/?currentJobId=1"
+    )
+    assert "div[role='radio'][aria-label='Filtrar por En remoto']" in pagina.clics
+
+
+def test_apply_filters_fallback_clic_fecha_aplica_filtros(
+    ficha_publica: FichaFuente,
+    politicas: PoliticasCaptura,
+) -> None:
+    set_fecha = SetFiltros(
+        fuente_id=ficha_publica.fuente_id,
+        indice=0,
+        filtros=[{"tipo": "fecha_publicacion", "valor": "r86400"}],
+    )
+    url_fecha = "https://www.linkedin.com/jobs/search-results/?f_TPR=r86400"
+    pagina = FakePageFallbackUI({url_fecha: HTML_SIN_CHIPS})
+    resultado = LinkedInAdapter().apply_filters(
+        pagina, ficha_publica, set_fecha, politicas
+    )
+    assert resultado.estado == "exito"
+    assert pagina.clics == [
+        "div[role='button'][aria-expanded='false'][componentkey^="
+        "'SearchResults_filter_pill_JobSearchFacetSuggestionType_"
+        "TIME_POSTED']",
+        "div[role='radio'][aria-label='Últimas 24 horas']",
+        "button:text-is('Mostrar resultados'), a:text-is('Mostrar resultados')",
+    ]
+
+
+def test_apply_filters_fallback_fecha_no_aplica_falla_set(
+    ficha_publica: FichaFuente,
+    politicas: PoliticasCaptura,
+) -> None:
+    set_fecha = SetFiltros(
+        fuente_id=ficha_publica.fuente_id,
+        indice=0,
+        filtros=[{"tipo": "fecha_publicacion", "valor": "r86400"}],
+    )
+    url_fecha = "https://www.linkedin.com/jobs/search-results/?f_TPR=r86400"
+    pagina = FakePage({url_fecha: HTML_SIN_CHIPS})
+    with pytest.raises(FlowError) as exc:
+        LinkedInAdapter().apply_filters(pagina, ficha_publica, set_fecha, politicas)
+    assert exc.value.codigo_motivo == "filtros_no_aplicables"
+    assert pagina.clics == [
+        "div[role='button'][aria-expanded='false'][componentkey^="
+        "'SearchResults_filter_pill_JobSearchFacetSuggestionType_"
+        "TIME_POSTED']",
+        "div[role='radio'][aria-label='Últimas 24 horas']",
+        "button:text-is('Mostrar resultados'), a:text-is('Mostrar resultados')",
+    ]
+
+
+def test_apply_filters_verifica_chips_fecha_sin_clics(
+    ficha_publica: FichaFuente,
+    politicas: PoliticasCaptura,
+) -> None:
+    set_fecha = SetFiltros(
+        fuente_id=ficha_publica.fuente_id,
+        indice=0,
+        filtros=[{"tipo": "fecha_publicacion", "valor": "r86400"}],
+    )
+    url_fecha = "https://www.linkedin.com/jobs/search-results/?f_TPR=r86400"
+    pagina = FakePage({url_fecha: _leer("lista_linkedin.html")})
+    resultado = LinkedInAdapter().apply_filters(
+        pagina, ficha_publica, set_fecha, politicas
+    )
+    assert resultado.estado == "exito"
+    assert pagina.clics == []
+
+
+def test_apply_filters_fallback_no_aplica_falla_set(
+    ficha_publica: FichaFuente,
+    set_filtros: SetFiltros,
+    politicas: PoliticasCaptura,
+) -> None:
+    pagina = FakePage({URL_RESULTADOS: HTML_SIN_CHIPS})
+    with pytest.raises(FlowError) as exc:
+        LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
+    assert exc.value.codigo_motivo == "filtros_no_aplicables"
+    assert pagina.clics == ["div[role='radio'][aria-label='Filtrar por En remoto']"]
+
+
+def test_apply_filters_modalidad_no_remota_falla_set(
+    ficha_publica: FichaFuente, politicas: PoliticasCaptura
+) -> None:
+    set_presencial = SetFiltros(
+        fuente_id=ficha_publica.fuente_id,
+        indice=0,
+        filtros=[{"tipo": "modalidad", "valor": "presencial"}],
+    )
+    pagina = FakePage({})
+    with pytest.raises(FlowError) as exc:
+        LinkedInAdapter().apply_filters(pagina, ficha_publica, set_presencial, politicas)
+    assert exc.value.codigo_motivo == "filtros_no_aplicables"
+
+
+def test_apply_filters_total_nuevo_markup_par(
+    ficha_publica: FichaFuente, politicas: PoliticasCaptura
+) -> None:
+    set_solo_keywords = SetFiltros(
+        fuente_id=ficha_publica.fuente_id,
+        indice=0,
+        filtros=[{"tipo": "keywords", "valor": ["Data Engineer"]}],
+    )
+    url = "https://www.linkedin.com/jobs/search-results/?keywords=Data+Engineer"
+    html = (
+        "<html><body>"
+        "<div componentkey='job-card-component-ref-99901'>"
+        "<div componentkey='job-card-component-ref-99901'>"
+        "<span aria-hidden='true'>Oferta</span>"
+        "</div></div>"
+        "<p>67 resultados</p>"
+        "</body></html>"
+    )
+    pagina = FakePage({url: html})
+    resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_solo_keywords, politicas)
+    assert resultado.total_declarado == 67
+    assert resultado.evidencia_acotada == f"url: {url} | total: 67"
+
+
+def test_capture_batch_pagina_partir_de_url_canonica(
+    ficha_publica: FichaFuente, set_filtros: SetFiltros
+) -> None:
+    politicas = PoliticasCaptura(
+        max_paginas=10,
+        max_ofertas_por_corrida=10,
+        pausa_entre_lotes_segundos=0,
+        estrategia_anti_bloqueo="none",
+    )
+    url_canonica = (
+        "https://www.linkedin.com/jobs/search-results/?currentJobId=123"
+        "&keywords=Data+Engineer&f_TPR=r86400&f_SAL=f_SA_id_225001%3A272001"
+    )
+    pagina = FakePage(
+        {f"{url_canonica}&start=3": "<html><body><div>sin resultados</div></body></html>"}
+    )
+    pagina.url = url_canonica
+    pagina._actual = _leer("lista_linkedin_sdui_2026.html")
+    lote, estado = LinkedInAdapter().capture_batch(
+        pagina, ficha_publica, set_filtros, politicas
+    )
+    assert estado.estado == "ok"
+    assert len(lote.ofertas) == 3
+    assert pagina.gotos == [f"{url_canonica}&start=3"]

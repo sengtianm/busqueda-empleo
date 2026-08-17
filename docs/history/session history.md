@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 26 | 17/08/2026 | `ses_fef46d693ffeeJzOMWNCGCQb5s` | SDUi filter fix (D27): new LinkedIn UI drops `f_WT`/`location` — remote-only via `f_SAL`, canonical date buckets, DOM chip verification + UI click fallback, config without modality (318 tests) |
 | 25 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Filter evidence debate + functional E2E & production-mode tests (COR-2068..2071) + D26: search entry straight to `/jobs/search-results` with `wait_until="commit"` — one search load + direct pagination, verified by COR-2140 (308 tests) |
 | 24 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Lote D (D25): P4 items 13–18 — `EstadoCorrida` aligned to D4 + `Corrida` closure fields validated, value checks replacing dead `hasattr`, `marcar_cambio_de_fuente`, orchestrator `_ejecutar_nodo` + Protocol, single credential resolution, `logging.logs_path` (307 tests) |
 | 23 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Lote C (D24): P3 duplication unifications — `ahora()`/`FORMATO_TIMESTAMP`/`TIPOS_ACCESO` in shared utilidades, `escribir_evento_seguro`, `_enviar`, merged capture policies, unified `_revisar_estado`, `_resultado_fallo` (302 tests) |
@@ -26,6 +27,32 @@ Unless noted, decisions from previous sessions remain in effect.
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+## Session 26 — 17/08/2026
+`ses_fef46d693ffeeJzOMWNCGCQb5s` · `fase-4`
+
+**Topics**
+- DB reset: all records deleted without backup + VACUUM (sequences restarted); verification run COR-0001: 75 offers, 0 errors, 41 s, completed
+- Filter bug: COR-0001 captured non-remote/stale offers — LinkedIn's new SDUi UI (`/jobs/search-results`) drops `f_WT` and `location` from the URL and honors only canonical date buckets; the old total span is gone (plain text "N resultados")
+- Empirical investigation (Exp 1–7, authenticated browser): remote filter = `f_SAL=f_SA_id_225001:272001` (internal taxonomy id); 5 h window (`r18000`) not representable (rewritten to `r86400`); DOM selectors for chip verification documented; new-UI module URL pattern
+- Decision D27 implemented: remote-only via `f_SAL` (presencial/híbrido → `filtros_no_aplicables`), canonical date buckets only (`r86400`/`r604800`/`r2592000`; config `r86400`; any other `r<N>` → `filtros_no_aplicables`), post-load DOM chip verification (remote radio `aria-checked='true'`, date via `label[for]` + sibling checkbox) + best-effort UI click fallback for missing filters + re-verification + `filtros_no_aplicables` on failure (never silent capture), total from "N resultados", pagination from the applied `page.url`; 10 new tests (308→318)
+- Exp 8 (user-requested, before implementation): híbrido/presencial NOT representable in the new UI (taxonomy only contains the remoto segment; id stable across 2 searches × 2 sessions) — D27 validated empirically
+- Live debug COR-0275 → root cause: real DOM uses `<input>` + `<label for>` SIBLINGS (not nested) and the date pill selector matched 2 elements (strict-mode); selectors corrected with verified evidence → COR-0344 OK (remote-only: 72 listed, 27 registered, 0 errors)
+- Config default changed: `modalidad` removed from the filter set (captures all modalities); commented D27 instructions in `config.yaml` to re-enable remote → COR-0481 OK (no `f_SAL`, 89 listed, 17 new, 0 errors)
+- Reviewers: code-reviewer (1 major fixed — non-canonical `r<N>` now hard-fails; minors deferred as future improvements), docs-reviewer twice, final close check CONFORME
+- `temp/` investigation scripts cleaned (gitignored) → global `mypy .` clean (51 files)
+
+**Decisions**
+- D27 (2026-08-17): new SDUi UI filters — remote-only `f_SAL=f_SA_id_225001:272001`, canonical date buckets only, DOM chip verification + UI click fallback + `filtros_no_aplicables` on failure, total from plain text, pagination from applied URL; supersedes D18/D20/D26 (documented in decision log v1.13)
+- Default config: no modality filter (all modalities captured); remote reactivable by uncommenting (documented in `config.yaml`, ficha note g)
+- Decisions from previous sessions remain in effect
+
+**Status**
+- D27 ✅ (tracker 4.20); 318 tests passing · ruff 0 · mypy 0 (global, `temp/` cleaned)
+- Production: COR-0344 (remote-only) + COR-0481 (all modalities) — 0 errors, verification passed without fallback
+- Session history + all session changes committed in this /save; single commit + push
+- Branch: `fase-4` · no merge
+- Next: Phase 5 (Module 2 — Preparation), task 1: `modules/preparation/` structure (pending)
 
 ## Session 25 — 14/08/2026
 `ses_ffd4eef78ffeLdakkTRbtGuLdu` · `fase-4`

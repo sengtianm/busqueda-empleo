@@ -40,16 +40,37 @@ from shared.utilidades import acotar_evidencia
 _PARAMETROS_FILTROS: dict[str, str] = {
     "keywords": "keywords",
     "ubicacion": "location",
-    "modalidad": "f_WT",
     "fecha_publicacion": "f_TPR",
     "nivel_experiencia": "f_JT",
 }
 
-_MODALIDAD_F_WT: dict[str, str] = {
-    "presencial": "1",
-    "remoto": "2",
-    "hibrido": "3",
+# D27 (2026-08-17): la UI nueva (SDUi) descarta f_WT de la URL; el remoto se
+# codifica como f_SAL=<id interno de taxonomia>. Solo "remoto" es
+# representable hoy; presencial/hibrido -> filtros_no_aplicables.
+_MODALIDAD_F_SAL: dict[str, str] = {
+    "remoto": "f_SA_id_225001:272001",
 }
+
+# D27: buckets canonicos de la UI nueva (menu de fecha). Unicos valores
+# representables: cualquier otro r<N> -> filtros_no_aplicables (LinkedIn lo
+# descarta silenciosamente y degradaria el alcance temporal del set).
+_BUCKETS_FECHA_UI: dict[str, str] = {
+    "r86400": "Últimas 24 horas",
+    "r604800": "Última semana",
+    "r2592000": "Último mes",
+}
+_SEL_CHIP_REMOTO = "div[role='radio'][aria-label='Filtrar por En remoto']"
+_SEL_PILL_FECHA = (
+    "div[role='button'][aria-expanded='false']"
+    "[componentkey^='SearchResults_filter_pill_"
+    "JobSearchFacetSuggestionType_TIME_POSTED']"
+)
+_SEL_RADIO_FECHA = "div[role='radio'][aria-label='{}']"
+_SEL_MOSTRAR_RESULTADOS = (
+    "button:text-is('Mostrar resultados'), a:text-is('Mostrar resultados')"
+)
+
+_RE_TOTAL_DECLARADO = re.compile(r"^(\d+) resultados$")
 
 _SEL_ENLACE_TARJETA = "a.base-search-card__link"
 _SEL_ENLACE_TARJETA_2026 = "div.job-card-container a.job-card-container__link"
@@ -58,7 +79,6 @@ _SEL_TARJETA_SDUI = "div[componentkey^='job-card-component-ref-']"
 _SEL_TITULO_TARJETA = ".base-search-card__title"
 _SEL_EMPRESA_TARJETA = ".base-search-card__subtitle"
 _SEL_UBICACION_TARJETA = ".base-search-card__location"
-_SEL_TOTAL_RESULTADOS = "span.jobs-search-results__total-count"
 _SEL_SIGUIENTE = (
     "button[aria-label='Next']",
     "a[aria-label='Next']",
@@ -162,6 +182,15 @@ class LinkedInAdapter:
         pagination, D11) avoids the transient ``fuente_inalcanzable`` right
         after login. Validation (cards render, anti-bot checks) runs on the
         real list.
+
+        (D27, 2026-08-17) The new UI drops ``f_WT``/``location`` from the URL
+        and honors only canonical date buckets; the remote filter must be
+        requested as ``f_SAL=<internal taxonomy id>``. Since params can stop
+        being honored silently, the applied filter state is verified in the
+        DOM (chips) after loading; if the expected chips are not active, a
+        best-effort UI click fallback is attempted and verified again. If the
+        filters still are not applied, the set fails with
+        ``filtros_no_aplicables`` instead of capturing non-conforming offers.
         """
         enlace = self._construir_url_resultados(ficha.enlace, set_filtros)
         try:
@@ -171,6 +200,19 @@ class LinkedInAdapter:
         self._esperar_resultados(page, ficha.timeout_segundos)
         html = self._contenido(page)
         self._revisar_estado(html, "tiempo_agotado_consulta")
+        esperados = self._filtros_esperados(set_filtros)
+        if esperados and not self._verificar_filtros_aplicados(html, esperados):
+            self._aplicar_filtros_por_ui(page, esperados, html)
+            self._esperar_resultados(page, ficha.timeout_segundos)
+            html = self._contenido(page)
+            self._revisar_estado(html, "tiempo_agotado_consulta")
+            if not self._verificar_filtros_aplicados(html, esperados):
+                raise FlowError(
+                    "filtros_no_aplicables",
+                    "LinkedIn no aplico los filtros esperados "
+                    f"({', '.join(esperados)}) tras URL ni fallback UI.",
+                )
+            enlace = page.url
         resultado = self._parsear_resultados(html, ficha, set_filtros, enlace)
         logger.info(
             f"Busqueda aplicada | url={enlace} | "
@@ -200,7 +242,11 @@ class LinkedInAdapter:
         """
         ofertas_capturadas: list[Offer] = []
         paginas_consumidas = 0
-        url_resultados = self._construir_url_resultados(ficha.enlace, set_filtros)
+        url_resultados = (
+            page.url
+            if "jobs/search-results" in page.url
+            else self._construir_url_resultados(ficha.enlace, set_filtros)
+        )
         desplazamiento = 0
         enlaces_vistos: set[str] = set()
         while (
@@ -282,6 +328,86 @@ class LinkedInAdapter:
         """Close the browser page left open after the session."""
         try:
             page.close()
+        except Exception:
+            pass
+
+    # --------------------------- filter verification ---------------------- #
+
+    def _filtros_esperados(self, set_filtros: SetFiltros) -> list[str]:
+        """Chips que deben estar activos en el DOM para el set de filtros.
+
+        Solo los filtros verificables en la UI nueva: modalidad (remoto) y
+        ventana de fecha (bucket canonico). ``keywords``/``location`` no
+        tienen chip verificable (LinkedIn conserva la ubicacion en estado,
+        no en la URL).
+        """
+        esperados: list[str] = []
+        for filtro in set_filtros.filtros:
+            tipo = str(filtro.get("tipo") or "")
+            valor = filtro.get("valor")
+            if not valor:
+                continue
+            if tipo == "modalidad":
+                esperados.append("remoto")
+            elif tipo == "fecha_publicacion":
+                esperados.append(_BUCKETS_FECHA_UI[str(valor)])
+        return esperados
+
+    def _verificar_filtros_aplicados(self, html: str, esperados: list[str]) -> bool:
+        """True si los chips esperados estan activos en el DOM (D27)."""
+        soup = BeautifulSoup(html, "lxml")
+        for esperado in esperados:
+            if esperado == "remoto":
+                if not soup.select(f"{_SEL_CHIP_REMOTO}[aria-checked='true']"):
+                    return False
+                continue
+            if not self._checkbox_fecha_marcado(soup, esperado):
+                return False
+        return True
+
+    def _checkbox_fecha_marcado(self, soup: BeautifulSoup, etiqueta: str) -> bool:
+        """Checkbox de fecha marcado cuyo label[for] coincide exactamente.
+
+        (D27, debug COR-0275) El DOM real usa input + label HERMANOS
+        (<input id=...><label for=...>), no anidados; el id es inestable por
+        render, por eso se resuelve siempre via label[for].
+        """
+        for label in soup.find_all("label"):
+            if label.get_text(strip=True) != etiqueta:
+                continue
+            id_input = label.get("for")
+            if not id_input:
+                continue
+            casilla = soup.find(
+                "input", {"id": id_input, "type": "checkbox", "checked": True}
+            )
+            if casilla is not None:
+                return True
+        return False
+
+    def _aplicar_filtros_por_ui(
+        self, page: Any, esperados: list[str], html: str
+    ) -> None:
+        """Fallback por clics en la UI (D27): mejores esfuerzos, sin excepciones.
+
+        Solo clica los filtros que NO estan activos en el DOM actual (el
+        clic sobre un radio activo lo DESACTIVA). El estado final lo decide
+        la verificacion posterior; los timeouts se absorben y el flujo
+        continua.
+        """
+        try:
+            sopa = BeautifulSoup(html, "lxml")
+            for esperado in esperados:
+                if esperado == "remoto":
+                    if sopa.select(f"{_SEL_CHIP_REMOTO}[aria-checked='true']"):
+                        continue
+                    page.click(_SEL_CHIP_REMOTO, timeout=5000)
+                else:
+                    if self._checkbox_fecha_marcado(sopa, esperado):
+                        continue
+                    page.click(_SEL_PILL_FECHA, timeout=5000)
+                    page.click(_SEL_RADIO_FECHA.format(esperado), timeout=5000)
+                    page.click(_SEL_MOSTRAR_RESULTADOS, timeout=5000)
         except Exception:
             pass
 
@@ -417,8 +543,12 @@ class LinkedInAdapter:
                     id_externo=_extraer_id_externo(enlace_oferta),
                 )
             )
-        total_el = soup.select_one(_SEL_TOTAL_RESULTADOS)
-        total = _parsear_numero(total_el.get_text(strip=True)) if total_el else None
+        total: int | None = None
+        for texto in soup.find_all(string=True):
+            coincidencia = _RE_TOTAL_DECLARADO.match(texto.strip())
+            if coincidencia:
+                total = int(coincidencia.group(1))
+                break
         hay_mas = self._hay_pagina_siguiente(html)
         evidencia = f"url: {enlace}"
         if total is not None:
@@ -453,6 +583,19 @@ class LinkedInAdapter:
         for filtro in set_filtros.filtros:
             tipo = str(filtro.get("tipo") or "")
             valor = filtro.get("valor")
+            if tipo == "modalidad":
+                if not valor:
+                    continue
+                valores: list[str] = valor if isinstance(valor, list) else [str(valor)]
+                normales = [v.strip().lower() for v in valores]
+                if any(v not in _MODALIDAD_F_SAL for v in normales):
+                    raise FlowError(
+                        "filtros_no_aplicables",
+                        f"Modalidad '{valores}' no representable en la UI "
+                        f"actual (solo 'remoto', D27).",
+                    )
+                parametros["f_SAL"] = _MODALIDAD_F_SAL["remoto"]
+                continue
             parametro = _PARAMETROS_FILTROS.get(tipo)
             if not parametro:
                 raise FlowError(
@@ -461,19 +604,23 @@ class LinkedInAdapter:
                 )
             if not valor:
                 continue
-            if tipo == "fecha_publicacion" and not _RE_FECHA_PUBLICACION.match(
-                str(valor)
-            ):
-                raise FlowError(
-                    "filtros_no_aplicables",
-                    f"Filter '{tipo}' value '{valor}' is not a "
-                    f"valid time window (expected 'r<N>', e.g. 'r86400').",
-                )
-            if tipo == "modalidad":
-                valores: list[str] = valor if isinstance(valor, list) else [str(valor)]
-                codigos = [_MODALIDAD_F_WT.get(v.lower(), v) for v in valores]
-                parametros[parametro] = ",".join(codigos)
-            elif isinstance(valor, list):
+            if tipo == "fecha_publicacion":
+                if not _RE_FECHA_PUBLICACION.match(str(valor)):
+                    raise FlowError(
+                        "filtros_no_aplicables",
+                        f"Filter '{tipo}' value '{valor}' is not a "
+                        f"valid time window (expected 'r<N>', e.g. 'r86400').",
+                    )
+                if str(valor) not in _BUCKETS_FECHA_UI:
+                    raise FlowError(
+                        "filtros_no_aplicables",
+                        f"Filter '{tipo}' value '{valor}' no es un bucket "
+                        f"canonico de la UI (D27): "
+                        f"{', '.join(sorted(_BUCKETS_FECHA_UI))}.",
+                    )
+                parametros[parametro] = str(valor)
+                continue
+            if isinstance(valor, list):
                 parametros[parametro] = ", ".join(str(v) for v in valor)
             else:
                 parametros[parametro] = str(valor)
@@ -489,6 +636,9 @@ class LinkedInAdapter:
 
         Navegar directo a /jobs/search-results evita la doble carga
         (search -> redirect -> search-results) observada al paginar (D11).
+        (D27) La UI nueva elimina location/f_WT de la URL final pero honra
+        los parametros al aplicarlos (estado de busqueda conservado); por eso
+        siguen enviandose en la URL construida.
         """
         base_resultados = base.replace(
             "https://www.linkedin.com/jobs/search",
@@ -568,8 +718,3 @@ def _texto_de(elemento: Any, selector: str) -> str:
 def _extraer_id_externo(enlace: str) -> str | None:
     match = _RE_ID_EXTERNO.search(enlace)
     return match.group(1) if match else None
-
-
-def _parsear_numero(texto: str) -> int | None:
-    numeros = re.findall(r"\d+", texto.replace(".", "").replace(",", ""))
-    return int(numeros[0]) if numeros else None
