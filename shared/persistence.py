@@ -93,8 +93,6 @@ ESQUEMAS: dict[str, str] = {
         "fuente_id TEXT DEFAULT '',"
         "empresa_id TEXT DEFAULT '',"
         "ubicacion_id TEXT DEFAULT '',"
-        "empresa_nombre TEXT DEFAULT '',"
-        "ubicacion_nombre TEXT DEFAULT '',"
         "id_corrida TEXT DEFAULT '',"
         "id_sesion TEXT DEFAULT '',"
         "indice_set INTEGER DEFAULT '',"
@@ -439,37 +437,22 @@ def _migrate_ofertas(conn: sqlite3.Connection) -> None:
 
 
 def _migrate_ofertas_empresa_nombre(conn: sqlite3.Connection) -> None:
-    """4.4 fix migration: rebuild `ofertas` with FK-free schema + name columns.
+    """D29 migration: drop `empresa_nombre`/`ubicacion_nombre` from `ofertas`.
 
-    The old schema declared `fuente_id`, `empresa_id` and `ubicacion_id` as
-    foreign keys, so capturing without catalog rows failed with FOREIGN KEY
-    constraint errors. SQLite cannot drop FK constraints in place, so the
-    table is rebuilt from the current schema (no REFERENCES clauses, plus
-    `empresa_nombre` and `ubicacion_nombre`). Idempotent: only runs when the
-    current table still lacks `empresa_nombre`.
+    D4 (2026-08-09) added these raw-string columns for company/location; D29
+    (2026-08-17) removes them from the model: the adapter no longer extracts
+    company/location from the cards (only the publication date), so the raw
+    strings are not persisted. SQLite >= 3.35 supports in-place
+    `ALTER TABLE ... DROP COLUMN`; each column is dropped only if present
+    (idempotent).
     """
     columnas = {
         fila["name"]
         for fila in conn.execute("PRAGMA table_info(ofertas)").fetchall()
     }
-    if "empresa_nombre" in columnas and "ubicacion_nombre" in columnas:
-        return
-    conn.execute(
-        ESQUEMAS["ofertas"].replace("TABLE IF NOT EXISTS ofertas", "TABLE ofertas_nueva")
-    )
-    nuevas = {
-        fila["name"]
-        for fila in conn.execute("PRAGMA table_info(ofertas_nueva)").fetchall()
-    }
-    comunes = [
-        fila["name"]
-        for fila in conn.execute("PRAGMA table_info(ofertas)").fetchall()
-        if fila["name"] in nuevas
-    ]
-    lista = ", ".join(comunes)
-    conn.execute(f"INSERT INTO ofertas_nueva ({lista}) SELECT {lista} FROM ofertas")
-    conn.execute("DROP TABLE ofertas")
-    conn.execute("ALTER TABLE ofertas_nueva RENAME TO ofertas")
+    for columna in ("empresa_nombre", "ubicacion_nombre"):
+        if columna in columnas:
+            conn.execute(f"ALTER TABLE ofertas DROP COLUMN {columna}")
 
 
 def _migrate_ofertas_timestamp_ultima_verificacion(conn: sqlite3.Connection) -> None:

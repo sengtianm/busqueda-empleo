@@ -19,6 +19,10 @@ URL_RESULTADOS = URL_CON_FILTROS.replace(
     "https://www.linkedin.com/jobs/search-results/",
 )
 
+URL_SIN_MODALIDAD = (
+    "https://www.linkedin.com/jobs/search-results/?keywords=Data+Engineer"
+)
+
 
 def _leer(nombre: str) -> str:
     return (FIXTURES / nombre).read_text(encoding="utf-8")
@@ -109,6 +113,15 @@ def set_filtros() -> SetFiltros:
             {"tipo": "keywords", "valor": ["Data Engineer"]},
             {"tipo": "modalidad", "valor": "remoto"},
         ],
+    )
+
+
+@pytest.fixture
+def set_filtros_sin_modalidad() -> SetFiltros:
+    return SetFiltros(
+        fuente_id="linkedin",
+        indice=0,
+        filtros=[{"tipo": "keywords", "valor": ["Data Engineer"]}],
     )
 
 
@@ -575,9 +588,9 @@ def test_capture_batch_dedup_entre_paginas(
             URL_RESULTADOS: _leer("lista_linkedin_sdui_2026.html"),
             f"{URL_RESULTADOS}&start=3": (
                 "<html><body>"
-                "<div componentkey='job-card-component-ref-4415705281'>"
-                "<div componentkey='job-card-component-ref-4415705281'>"
-                "<span aria-hidden='true'>Data Engineer duplicada</span>"
+                "<div componentkey='job-card-component-ref-4377518497'>"
+                "<div componentkey='job-card-component-ref-4377518497'>"
+                "<span aria-hidden='true'>Programador Staff duplicada</span>"
                 "</div></div>"
                 "</body></html>"
             ),
@@ -782,30 +795,36 @@ def test_apply_filters_espera_renderizado_tardio_ssr_2026(
 
 def test_apply_filters_parsea_resultados_sdui_2026(
     ficha_publica: FichaFuente,
-    set_filtros: SetFiltros,
+    set_filtros_sin_modalidad: SetFiltros,
     politicas: PoliticasCaptura,
 ) -> None:
-    pagina = FakePage({URL_RESULTADOS: _leer("lista_linkedin_sdui_2026.html")})
-    resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
+    pagina = FakePage({URL_SIN_MODALIDAD: _leer("lista_linkedin_sdui_2026.html")})
+    resultado = LinkedInAdapter().apply_filters(
+        pagina, ficha_publica, set_filtros_sin_modalidad, politicas
+    )
     assert resultado.estado == "exito"
     ofertas = resultado.ofertas_primera_pagina
     assert len(ofertas) == 3
-    assert ofertas[0].titulo == "Data Engineer"
-    assert ofertas[0].id_externo == "4415705281"
-    assert ofertas[0].enlace == "https://www.linkedin.com/jobs/view/4415705281"
-    assert ofertas[1].titulo == "Data Engineer (Ingeniero de Datos)"
-    assert ofertas[1].id_externo == "4449035947"
-    assert ofertas[2].id_externo == "4450160439"
-    assert resultado.total_declarado is None
+    assert ofertas[0].titulo == "Programador Staff - Data Engineering"
+    assert ofertas[0].id_externo == "4377518497"
+    assert ofertas[0].enlace == "https://www.linkedin.com/jobs/view/4377518497"
+    assert ofertas[0].observaciones == "Publicado hace 9 horas"
+    assert ofertas[0].fecha_publicacion is not None
+    assert ofertas[1].titulo == "Solutions Data and Analytics Specialist"
+    assert ofertas[1].id_externo == "4454411536"
+    assert ofertas[2].id_externo == "4455353156"
+    assert resultado.total_declarado == 89
 
 
 def test_apply_filters_sdui_ignora_apply_y_anchors_duplicados(
     ficha_publica: FichaFuente,
-    set_filtros: SetFiltros,
+    set_filtros_sin_modalidad: SetFiltros,
     politicas: PoliticasCaptura,
 ) -> None:
-    pagina = FakePage({URL_RESULTADOS: _leer("lista_linkedin_sdui_2026.html")})
-    resultado = LinkedInAdapter().apply_filters(pagina, ficha_publica, set_filtros, politicas)
+    pagina = FakePage({URL_SIN_MODALIDAD: _leer("lista_linkedin_sdui_2026.html")})
+    resultado = LinkedInAdapter().apply_filters(
+        pagina, ficha_publica, set_filtros_sin_modalidad, politicas
+    )
     assert len(resultado.ofertas_primera_pagina) == 3
 
 
@@ -1105,3 +1124,135 @@ def test_capture_batch_pagina_partir_de_url_canonica(
     assert estado.estado == "ok"
     assert len(lote.ofertas) == 3
     assert pagina.gotos == [f"{url_canonica}&start=3"]
+
+
+def test_fecha_relativa_a_datetime_por_unidad() -> None:
+    from datetime import datetime, timedelta
+
+    from modules.discovery.adapters.linkedin import _fecha_relativa_a_datetime
+
+    ahora = datetime.now()
+    casos = {
+        "Publicado hace 5 minutos": timedelta(minutes=5),
+        "Publicado hace 1 minuto": timedelta(minutes=1),
+        "Publicado hace 9 horas": timedelta(hours=9),
+        "Publicado hace 1 hora": timedelta(hours=1),
+        "Publicado hace 2 días": timedelta(days=2),
+        "Publicado hace 1 día": timedelta(days=1),
+        "Publicado hace 3 semanas": timedelta(weeks=3),
+        "Publicado hace 2 meses": timedelta(days=60),
+    }
+    for texto, delta in casos.items():
+        resultado = _fecha_relativa_a_datetime(texto)
+        assert resultado is not None
+        assert abs((ahora - resultado) - delta) < timedelta(seconds=5), texto
+    assert _fecha_relativa_a_datetime("") is None
+    assert _fecha_relativa_a_datetime("Publicado hace ayer") is None
+    assert _fecha_relativa_a_datetime("Publicado hace 999999999 horas") is None
+
+
+def test_capture_batch_sdui_extrae_fecha_y_observaciones(
+    ficha_publica: FichaFuente,
+    set_filtros: SetFiltros,
+) -> None:
+    politicas = PoliticasCaptura(
+        max_paginas=10,
+        max_ofertas_por_corrida=10,
+        pausa_entre_lotes_segundos=0,
+        estrategia_anti_bloqueo="none",
+    )
+    pagina = FakePage(
+        {
+            URL_RESULTADOS: _leer("lista_linkedin_sdui_2026.html"),
+            f"{URL_RESULTADOS}&start=3": _leer("lista_linkedin_sdui_2026_pag2.html"),
+        }
+    )
+    lote, estado = LinkedInAdapter().capture_batch(
+        pagina, ficha_publica, set_filtros, politicas
+    )
+    assert estado.estado == "ok"
+    assert len(lote.ofertas) == 5
+    ofertas = {o.id_externo: o for o in lote.ofertas}
+    assert ofertas["4377518497"].observaciones == "Publicado hace 9 horas"
+    assert ofertas["4377518497"].fecha_publicacion is not None
+    assert ofertas["4454426405"].fecha_publicacion is not None
+
+
+def test_total_declarado_ignora_scripts_y_styles(
+    ficha_publica: FichaFuente,
+    politicas: PoliticasCaptura,
+) -> None:
+    set_solo_keywords = SetFiltros(
+        fuente_id="linkedin",
+        indice=0,
+        filtros=[{"tipo": "keywords", "valor": ["Data Engineer"]}],
+    )
+    url = "https://www.linkedin.com/jobs/search-results/?keywords=Data+Engineer"
+    html = (
+        "<html><body>"
+        "<script>window.__initialData__ = 999999;</script>"
+        "<style>div { content: '500 resultados'; }</style>"
+        "<!-- 700 resultados -->"
+        "<p>67 resultados</p>"
+        "<div componentkey='job-card-component-ref-99901'>"
+        "<div componentkey='job-card-component-ref-99901'>"
+        "<span aria-hidden='true'>Oferta</span>"
+        "</div></div>"
+        "</body></html>"
+    )
+    pagina = FakePage({url: html})
+    resultado = LinkedInAdapter().apply_filters(
+        pagina, ficha_publica, set_solo_keywords, politicas
+    )
+    assert resultado.total_declarado == 67
+
+
+def test_capture_batch_tarjeta_sin_campos_no_falla(
+    ficha_publica: FichaFuente,
+    set_filtros: SetFiltros,
+) -> None:
+    politicas = PoliticasCaptura(
+        max_paginas=1,
+        max_ofertas_por_corrida=10,
+        pausa_entre_lotes_segundos=0,
+        estrategia_anti_bloqueo="none",
+    )
+    html = (
+        "<html><body>"
+        "<div componentkey='job-card-component-ref-99901'>"
+        "<div componentkey='job-card-component-ref-99901'>"
+        "<span aria-hidden='true'>Oferta</span>"
+        "</div></div>"
+        "</body></html>"
+    )
+    pagina = FakePage({URL_RESULTADOS: html})
+    lote, estado = LinkedInAdapter().capture_batch(
+        pagina, ficha_publica, set_filtros, politicas
+    )
+    assert estado.estado == "ok"
+    assert len(lote.ofertas) == 1
+    oferta = lote.ofertas[0]
+    assert oferta.fecha_publicacion is None
+    assert oferta.observaciones == ""
+
+
+def test_capture_batch_variante_clasica_solo_titulos(
+    ficha_publica: FichaFuente,
+    set_filtros: SetFiltros,
+) -> None:
+    politicas = PoliticasCaptura(
+        max_paginas=1,
+        max_ofertas_por_corrida=10,
+        pausa_entre_lotes_segundos=0,
+        estrategia_anti_bloqueo="none",
+    )
+    pagina = FakePage({URL_RESULTADOS: _leer("lista_linkedin.html")})
+    lote, estado = LinkedInAdapter().capture_batch(
+        pagina, ficha_publica, set_filtros, politicas
+    )
+    assert estado.estado == "ok"
+    assert len(lote.ofertas) == 2
+    oferta = lote.ofertas[0]
+    assert oferta.titulo == "Data Engineer"
+    assert oferta.fecha_publicacion is None
+    assert oferta.observaciones == ""

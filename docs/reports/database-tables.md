@@ -60,7 +60,7 @@ Catálogo de fuentes de origen (plataformas, portales, sitios corporativos). **E
 
 ### 2.3. `empresas`
 
-Catálogo de empresas. **En el MVP del Módulo 1 no se escribe en esta tabla** (0 filas): el nombre de empresa capturado se conserva crudo en `ofertas.empresa_nombre` (decisión D4); la tabla queda reservada para la gestión del catálogo.
+Catálogo de empresas. **En el MVP del Módulo 1 no se escribe en esta tabla** (0 filas): el Módulo 1 no extrae la empresa de las tarjetas (decisión D29; las columnas crudas `empresa_nombre`/`ubicacion_nombre` de `ofertas` fueron eliminadas); la tabla queda reservada para la gestión del catálogo.
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
@@ -77,7 +77,7 @@ Catálogo de empresas. **En el MVP del Módulo 1 no se escribe en esta tabla** (
 
 ### 2.4. `ubicaciones`
 
-Catálogo de ubicaciones. **En el MVP del Módulo 1 no se escribe en esta tabla** (0 filas): la ubicación capturada se conserva cruda en `ofertas.ubicacion_nombre` (decisión D4); la tabla queda reservada para la gestión del catálogo.
+Catálogo de ubicaciones. **En el MVP del Módulo 1 no se escribe en esta tabla** (0 filas): el Módulo 1 no extrae la ubicación de las tarjetas (decisión D29); la tabla queda reservada para la gestión del catálogo.
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
@@ -100,17 +100,15 @@ Oportunidades (vacantes) descubiertas. La escribe el **nodo Captura** mediante `
 | `enlace` | TEXT NOT NULL | Enlace original de la oferta | En la inserción, desde la oferta capturada (obligatorio) |
 | `titulo` | TEXT DEFAULT '' | Título original de la oferta | En la inserción, desde la oferta capturada |
 | `descripcion_original` | TEXT DEFAULT '' | Contenido original obtenido en el descubrimiento (no se sobrescribe) | En la inserción, desde la oferta capturada |
-| `fecha_publicacion` | TEXT DEFAULT '' | Fecha de publicación indicada por la fuente | Sin escritura en el Módulo 1 (futuros módulos) |
+| `fecha_publicacion` | TEXT DEFAULT '' | Fecha de publicación indicada por la fuente; en el Módulo 1 es timestamp aproximado derivado de "Publicado hace N <unidad>" (±1 h; mes = 30 días) (D28) | En la inserción, desde la oferta capturada |
 | `fecha_descubrimiento` | TEXT DEFAULT '' | Fecha/hora en que la automatización descubrió la oferta | En la inserción, con la hora actual (`_now()`) |
 | `estado` | TEXT DEFAULT 'descubierta' | Estado en el flujo de procesamiento (7 valores: `descubierta`, `preparada`, `evaluada`, `aceptada`, `descartada`, `procesada`, `finalizada`) | En la inserción queda `descubierta` (valor por defecto); los demás estados los asumirán módulos posteriores |
-| `observaciones` | TEXT DEFAULT '' | Información adicional relevante | Sin escritura en el Módulo 1 |
+| `observaciones` | TEXT DEFAULT '' | Información adicional relevante; en el Módulo 1 conserva el texto crudo de la fecha relativa (p. ej. "Publicado hace 9 horas") (D28) | En la inserción, desde la oferta capturada |
 | `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática en la inserción |
 | `fecha_ultima_edicion` | TEXT DEFAULT '' | Fecha/hora de la última actualización | Automática en la inserción y en cada actualización |
 | `fuente_id` | TEXT DEFAULT '' | Fuente de origen de la oferta (identificador de la fuente configurada) | En la inserción, desde la oferta capturada |
-| `empresa_id` | TEXT DEFAULT '' | Referencia a la empresa del catálogo (decisión D4: `NULL` en MVP) | Sin escritura en el Módulo 1 (futuros módulos) |
-| `ubicacion_id` | TEXT DEFAULT '' | Referencia a la ubicación del catálogo (decisión D4: `NULL` en MVP) | Sin escritura en el Módulo 1 (futuros módulos) |
-| `empresa_nombre` | TEXT DEFAULT '' | Nombre de empresa tal como lo entrega la fuente (crudo) | En la inserción, desde la oferta capturada |
-| `ubicacion_nombre` | TEXT DEFAULT '' | Ubicación tal como la entrega la fuente (cruda) | En la inserción, desde la oferta capturada |
+| `empresa_id` | TEXT DEFAULT '' | Referencia a la empresa del catálogo (decisión D4: `NULL` en MVP; D29: el Módulo 1 no extrae la empresa) | Sin escritura en el Módulo 1 (futuros módulos) |
+| `ubicacion_id` | TEXT DEFAULT '' | Referencia a la ubicación del catálogo (decisión D4: `NULL` en MVP; D29: el Módulo 1 no extrae la ubicación) | Sin escritura en el Módulo 1 (futuros módulos) |
 | `id_corrida` | TEXT DEFAULT '' | Corrida que descubrió la oferta | En la inserción, desde el contexto de la corrida |
 | `id_sesion` | TEXT DEFAULT '' | Sesión de plataforma usada al descubrirla | En la inserción, desde el contexto de la sesión |
 | `indice_set` | INTEGER DEFAULT '' | Índice del set de filtros que la produjo | En la inserción, desde el contexto del set actual |

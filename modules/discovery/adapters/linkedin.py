@@ -19,10 +19,12 @@ import random
 import re
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 from loguru import logger
 
 from shared.models import (
@@ -77,8 +79,6 @@ _SEL_ENLACE_TARJETA_2026 = "div.job-card-container a.job-card-container__link"
 _SEL_ENLACE_TARJETA_GENERICO = "a[href*='/jobs/view/']"
 _SEL_TARJETA_SDUI = "div[componentkey^='job-card-component-ref-']"
 _SEL_TITULO_TARJETA = ".base-search-card__title"
-_SEL_EMPRESA_TARJETA = ".base-search-card__subtitle"
-_SEL_UBICACION_TARJETA = ".base-search-card__location"
 _SEL_SIGUIENTE = (
     "button[aria-label='Next']",
     "a[aria-label='Next']",
@@ -91,10 +91,30 @@ _SEL_SIGUIENTE = (
 _RE_ID_EXTERNO = re.compile(r"/jobs/view/(\d+)")
 _RE_ID_COMPONENTE = re.compile(r"job-card-component-ref-(\d+)")
 
+# D28/D29 (2026-08-17): las clases CSS reales de la tarjeta SDUi estan
+# hasheadas por pagina (obfuscacion); el parseo usa el texto de los <p> de la
+# tarjeta, validado empiricamente (Exp 9: 75/75 tarjetas, 3 paginas reales).
+# (D29) De la tarjeta solo se conserva la fecha relativa de publicacion; la
+# empresa y la ubicacion ya no se extraen (columnas eliminadas de `ofertas`).
+_RE_PUBLICADO_SDUI = re.compile(
+    r"Publicado hace\s+(\d+)\s+(minutos?|horas?|d[ií]as?|semanas?|mes(?:es)?)",
+    re.IGNORECASE,
+)
+
 _URL_LOGIN = "https://www.linkedin.com/login/es/?fromSignIn=true"
 _URL_JOBS_VIEW = "https://www.linkedin.com/jobs/view"
 
 _RE_FECHA_PUBLICACION = re.compile(r"^r\d+$")
+
+
+@dataclass
+class _TarjetaExtraida:
+    """Datos de una tarjeta de resultado: enlace, titulo y fecha relativa
+    de publicacion (D29: empresa y ubicacion ya no se extraen)."""
+
+    enlace: str
+    titulo: str
+    fecha_relativa: str = ""
 
 
 class FlowError(Exception):
@@ -280,23 +300,27 @@ class LinkedInAdapter:
             self._esperar_resultados(page, timeout_espera)
             html = self._contenido(page)
             self._revisar_estado(html, "tiempo_agotado_captura")
-            tarjetas = _tarjetas_resultado(BeautifulSoup(html, "lxml"))
+            tarjetas = _tarjetas_resultado(BeautifulSoup(html, "lxml"), ficha.enlace)
             if not tarjetas:
                 break
             restantes = politicas.max_ofertas_por_corrida - len(ofertas_capturadas)
-            for enlace, titulo in tarjetas[:restantes]:
-                enlace = _url_absoluta(enlace, ficha.enlace)
+            for tarjeta in tarjetas[:restantes]:
+                enlace = _url_absoluta(tarjeta.enlace, ficha.enlace)
                 if enlace in enlaces_vistos:
                     continue
                 enlaces_vistos.add(enlace)
                 ofertas_capturadas.append(
                     Offer(
                         enlace=enlace,
-                        titulo=titulo,
+                        titulo=tarjeta.titulo,
                         descripcion_original="",
                         fuente_id=ficha.fuente_id,
                         indice_set=set_filtros.indice,
                         id_externo=_extraer_id_externo(enlace),
+                        fecha_publicacion=_fecha_relativa_a_datetime(
+                            tarjeta.fecha_relativa
+                        ),
+                        observaciones=tarjeta.fecha_relativa,
                     )
                 )
             paginas_consumidas += 1
@@ -531,21 +555,24 @@ class LinkedInAdapter:
     ) -> SearchResult:
         soup = BeautifulSoup(html, "lxml")
         ofertas: list[Offer] = []
-        for href, titulo in _tarjetas_resultado(soup):
-            enlace_oferta = _url_absoluta(href, ficha.enlace)
+        for tarjeta in _tarjetas_resultado(soup, ficha.enlace):
             ofertas.append(
                 Offer(
-                    enlace=enlace_oferta,
-                    titulo=titulo,
+                    enlace=tarjeta.enlace,
+                    titulo=tarjeta.titulo,
                     descripcion_original="",
                     fuente_id=ficha.fuente_id,
                     indice_set=set_filtros.indice,
-                    id_externo=_extraer_id_externo(enlace_oferta),
+                    id_externo=_extraer_id_externo(tarjeta.enlace),
+                    fecha_publicacion=_fecha_relativa_a_datetime(
+                        tarjeta.fecha_relativa
+                    ),
+                    observaciones=tarjeta.fecha_relativa,
                 )
             )
         total: int | None = None
-        for texto in soup.find_all(string=True):
-            coincidencia = _RE_TOTAL_DECLARADO.match(texto.strip())
+        for nodo in _nodos_texto_visibles(soup):
+            coincidencia = _RE_TOTAL_DECLARADO.match(nodo.strip())
             if coincidencia:
                 total = int(coincidencia.group(1))
                 break
@@ -660,8 +687,9 @@ def _url_absoluta(href: str, base: str) -> str:
     return f"{origen.scheme}://{origen.netloc}{href}"
 
 
-def _tarjetas_resultado(soup: BeautifulSoup) -> list[tuple[str, str]]:
-    """(href, title) pairs of job cards across the known SSR variants.
+def _tarjetas_resultado(soup: BeautifulSoup, base: str = "") -> list[_TarjetaExtraida]:
+    """Tarjetas de oferta de las variantes SSR conocidas (D29: solo titulo y
+    fecha relativa donde la variante la expone).
 
     Priority: session SDUi cards (2026, ``componentkey`` divs without links),
     session SSR 2026 cards, classic logged-out cards, then any canonical
@@ -677,17 +705,13 @@ def _tarjetas_resultado(soup: BeautifulSoup) -> list[tuple[str, str]]:
         enlaces = soup.select(selector)
         if enlaces:
             break
-    tarjetas: list[tuple[str, str]] = []
+    tarjetas: list[_TarjetaExtraida] = []
     vistos: set[str] = set()
     for enlace in enlaces:
         if selector == _SEL_TARJETA_SDUI:
-            componente = str(enlace.get("componentkey") or "")
-            id_oferta = _RE_ID_COMPONENTE.search(componente)
-            if id_oferta is None:
+            tarjeta = _extraer_tarjeta_sdui(enlace)
+            if tarjeta is None:
                 continue
-            href = f"{_URL_JOBS_VIEW}/{id_oferta.group(1)}"
-            span_titulo = enlace.select_one("span[aria-hidden='true']")
-            titulo = span_titulo.get_text(strip=True) if span_titulo else ""
         else:
             href = str(enlace.get("href") or "")
             if "/jobs/view/" not in href or "/apply/" in href:
@@ -703,11 +727,91 @@ def _tarjetas_resultado(soup: BeautifulSoup) -> list[tuple[str, str]]:
                 titulo = _texto_de(enlace.parent, _SEL_TITULO_TARJETA)
             else:
                 titulo = enlace.get_text(strip=True)
-        if not titulo or href in vistos:
+            tarjeta = _TarjetaExtraida(
+                enlace=_url_absoluta(href, base),
+                titulo=titulo,
+                fecha_relativa="",
+            )
+        if not tarjeta.titulo or tarjeta.enlace in vistos:
             continue
-        vistos.add(href)
-        tarjetas.append((href, titulo))
+        vistos.add(tarjeta.enlace)
+        tarjetas.append(tarjeta)
     return tarjetas
+
+
+def _extraer_tarjeta_sdui(div: Any) -> _TarjetaExtraida | None:
+    """Construye la tarjeta desde el div SDUi (componentkey + texto)."""
+    componente = str(div.get("componentkey") or "")
+    id_oferta = _RE_ID_COMPONENTE.search(componente)
+    if id_oferta is None:
+        return None
+    href = f"{_URL_JOBS_VIEW}/{id_oferta.group(1)}"
+    span_titulo = div.select_one("span[aria-hidden='true']")
+    titulo = span_titulo.get_text(strip=True) if span_titulo else ""
+    fecha_relativa = _fecha_relativa_sdui(div)
+    return _TarjetaExtraida(
+        enlace=href,
+        titulo=titulo,
+        fecha_relativa=fecha_relativa,
+    )
+
+
+def _fecha_relativa_sdui(card: Any) -> str:
+    """Texto "Publicado hace N <unidad>" desde los <p> de la tarjeta SDUi.
+
+    (D28/D29) En la tarjeta SDUi el <p> de la fecha es "Publicado hace 9
+    horas|hace 9 horas": se toma el primer segmento (texto visible) y se
+    ignora el texto accesible duplicado (Exp 9: 75/75 tarjetas).
+    """
+    for p in card.find_all("p"):
+        texto = p.get_text("|", strip=True)
+        if "Publicado hace" in texto:
+            return str(texto.split("|")[0].strip())
+    return ""
+
+
+def _fecha_relativa_a_datetime(texto: str) -> datetime | None:
+    """Convierte 'Publicado hace N <unidad>' a timestamp absoluto aproximado.
+
+    D28: LinkedIn redondea la antiguedad publicada (error hasta ~1 h); el
+    texto crudo se conserva en `observaciones` de la oferta. La unidad mes se
+    aproxima a 30 dias (documentado en la ficha).
+    """
+    if not texto:
+        return None
+    coincidencia = _RE_PUBLICADO_SDUI.search(texto)
+    if coincidencia is None:
+        return None
+    cantidad = int(coincidencia.group(1))
+    if cantidad > 365:
+        return None
+    unidad = coincidencia.group(2).lower()
+    if unidad.startswith("minuto"):
+        delta = timedelta(minutes=cantidad)
+    elif unidad.startswith("hora"):
+        delta = timedelta(hours=cantidad)
+    elif unidad.startswith("d"):
+        delta = timedelta(days=cantidad)
+    elif unidad.startswith("semana"):
+        delta = timedelta(weeks=cantidad)
+    elif unidad.startswith("mes"):
+        delta = timedelta(days=30 * cantidad)
+    else:
+        return None
+    return datetime.now() - delta
+
+
+def _nodos_texto_visibles(soup: BeautifulSoup) -> list[str]:
+    """Nodos de texto fuera de script/style (D28): el total declarado debe
+    leerse del DOM visible; los bundles JS contienen numeros que podrian
+    falsificarlo."""
+    return [
+        str(nodo)
+        for nodo in soup.find_all(string=True)
+        if nodo.parent is not None
+        and nodo.parent.name not in ("script", "style")
+        and not isinstance(nodo, Comment)
+    ]
 
 
 def _texto_de(elemento: Any, selector: str) -> str:

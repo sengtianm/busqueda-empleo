@@ -402,8 +402,6 @@ def test_upsert_oferta_inserta_nueva(temp_db_file: Path) -> None:
         "descripcion_original": "Descripcion.",
         "empresa_id": None,
         "ubicacion_id": None,
-        "empresa_nombre": "TechCorp",
-        "ubicacion_nombre": "Madrid",
         "enlace": "https://www.linkedin.com/jobs/view/123",
         "fuente_id": "LI-01",
         "indice_set": 0,
@@ -433,8 +431,6 @@ def test_upsert_oferta_ids_nulos_sin_fk_error(temp_db_file: Path) -> None:
             "descripcion_original": "Sin empresa registrada.",
             "empresa_id": None,
             "ubicacion_id": None,
-            "empresa_nombre": "",
-            "ubicacion_nombre": "Remoto",
             "enlace": "https://www.linkedin.com/jobs/view/456",
             "fuente_id": "LI-01",
             "indice_set": 1,
@@ -447,8 +443,8 @@ def test_upsert_oferta_ids_nulos_sin_fk_error(temp_db_file: Path) -> None:
     assert id_oferta.startswith("OFE-")
     filas = leer_tabla("ofertas", {"id_externo": "456"})
     assert len(filas) == 1
-    assert filas[0]["empresa_nombre"] == ""
-    assert filas[0]["ubicacion_nombre"] == "Remoto"
+    assert filas[0]["empresa_id"] is None
+    assert filas[0]["ubicacion_id"] is None
 
 
 def test_init_db_crea_indices_esperados(temp_db_file: Path) -> None:
@@ -483,8 +479,6 @@ def test_upsert_oferta_mismo_id_externo_no_duplica_y_actualiza_timestamp(
         "descripcion_original": "Descripcion.",
         "empresa_id": None,
         "ubicacion_id": None,
-        "empresa_nombre": "",
-        "ubicacion_nombre": "",
         "enlace": "https://www.linkedin.com/jobs/view/789",
         "fuente_id": "LI-01",
         "indice_set": 0,
@@ -503,32 +497,6 @@ def test_upsert_oferta_mismo_id_externo_no_duplica_y_actualiza_timestamp(
     assert filas[0]["id"] == primero
 
 
-def test_upsert_oferta_con_empresa_nombre_persistido(temp_db_file: Path) -> None:
-    from shared.persistence import leer_tabla, upsert_oferta
-
-    id_oferta = upsert_oferta(
-        {
-            "titulo": "Backend Engineer",
-            "descripcion_original": "Descripcion.",
-            "empresa_id": None,
-            "ubicacion_id": None,
-            "empresa_nombre": "OpenAI",
-            "ubicacion_nombre": "Barcelona",
-            "enlace": "https://www.linkedin.com/jobs/view/1011",
-            "fuente_id": "LI-01",
-            "indice_set": 0,
-            "id_externo": "1011",
-            "id_corrida": "RUN-0004",
-            "id_sesion": "SES-0004",
-            "fecha_descubrimiento": "2026-08-09 10:10:00",
-        }
-    )
-    assert id_oferta.startswith("OFE-")
-    filas = leer_tabla("ofertas", {"id": id_oferta})
-    assert filas[0]["empresa_nombre"] == "OpenAI"
-    assert filas[0]["ubicacion_nombre"] == "Barcelona"
-
-
 def _oferta_base(
     id_externo: str, enlace: str | None, id_corrida: str = "RUN-0005"
 ) -> dict[str, Any]:
@@ -537,8 +505,6 @@ def _oferta_base(
         "descripcion_original": "Descripcion.",
         "empresa_id": None,
         "ubicacion_id": None,
-        "empresa_nombre": "",
-        "ubicacion_nombre": "",
         "enlace": enlace,
         "fuente_id": "LI-01",
         "indice_set": 0,
@@ -680,8 +646,8 @@ def test_migracion_4_4_fks_anulables_idempotente(tmp_path: Path) -> None:
                 "PRAGMA table_info(ofertas)"
             ).fetchall()
         }
-        assert "empresa_nombre" in columnas
-        assert "ubicacion_nombre" in columnas
+        assert "empresa_nombre" not in columnas
+        assert "ubicacion_nombre" not in columnas
         fks = sqlite3.connect(str(path)).execute(
             "PRAGMA foreign_key_list(ofertas)"
         ).fetchall()
@@ -988,6 +954,8 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
                 "fecha_ultima_edicion",
             }
             assert esperadas_ofertas.issubset(columnas_ofertas)
+            assert "empresa_nombre" not in columnas_ofertas
+            assert "ubicacion_nombre" not in columnas_ofertas
             sql_ofertas = conn.execute(
                 "SELECT sql FROM sqlite_master WHERE type='table' "
                 "AND name='ofertas'"

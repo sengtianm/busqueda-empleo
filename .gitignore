@@ -48,6 +48,9 @@ data/*.db
 temp/*
 !temp/.gitkeep
 
+# --- Playwright CLI artifacts ---
+.playwright-cli/
+
 # --- Packaging ---
 *.egg-info/
 dist/

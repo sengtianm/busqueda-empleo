@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 27 | 17/08/2026 | `ses_fef46d693ffeeJzOMWNCGCQb5s` | Card field extraction (D28) then user-requested revert (D29): only publication date kept, raw company/location columns dropped from `ofertas`, DB reset without run, verification COR-0001 99 offers 0 errors (322 tests) |
 | 26 | 17/08/2026 | `ses_fef46d693ffeeJzOMWNCGCQb5s` | SDUi filter fix (D27): new LinkedIn UI drops `f_WT`/`location` — remote-only via `f_SAL`, canonical date buckets, DOM chip verification + UI click fallback, config without modality (318 tests) |
 | 25 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Filter evidence debate + functional E2E & production-mode tests (COR-2068..2071) + D26: search entry straight to `/jobs/search-results` with `wait_until="commit"` — one search load + direct pagination, verified by COR-2140 (308 tests) |
 | 24 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Lote D (D25): P4 items 13–18 — `EstadoCorrida` aligned to D4 + `Corrida` closure fields validated, value checks replacing dead `hasattr`, `marcar_cambio_de_fuente`, orchestrator `_ejecutar_nodo` + Protocol, single credential resolution, `logging.logs_path` (307 tests) |
@@ -27,6 +28,31 @@ Unless noted, decisions from previous sessions remain in effect.
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+## Session 27 — 17/08/2026
+`ses_fef46d693ffeeJzOMWNCGCQb5s` · `fase-4`
+
+**Topics**
+- D28: SDUi card field extraction — hashed CSS classes per page, `<p>` text classification with fixed UI noise exclusion (Exp 9: 3 real pages / 75 unique cards, 75/75); company/location/relative date captured from the card
+- D28: `fecha_publicacion` persisted as approximate absolute timestamp from "Publicado hace N <unidad>" (±1 h, month = 30 days) + raw text kept in `observaciones` (approved RN-03 deviation); declared total only from visible DOM text (excludes script/style/comments); production COR-0001 on clean DB: 89 offers, 0 errors, 89/89 populated (323 tests)
+- User rejected the company/location outcome: raw strings in `ofertas` are not useful — the offer's relation to the catalogs must be their ids; populating catalogs out of scope
+- D29: adapter reverted to enlace/título/fecha relativa + visible total (`_fecha_relativa_sdui`); classic company/location selectors removed; `empresa_nombre`/`ubicacion_nombre` columns dropped from `ofertas` (schema + live DB via idempotent `ALTER TABLE DROP COLUMN` migration); `empresa_id`/`ubicacion_id` stay NULL (D4), catalogs unpopulated (PMD-021); Offer model untouched (322 tests: 1 removed, 3 reduced)
+- Live DB reset without run (user-specified) with backup; pytest runs re-polluted the DB (integration tests write the real DB with synthetic ids) → caught by docs-reviewer → final cleanup to 0 rows
+- Docs aligned: decision log v1.15 (D29), DOC-13A v1.7, ficha (RN-03 + as-built notes + NOTA 4.4 inline marker), tracker 4.22, AGENTS.md (322), database-tables.md
+- Verification run COR-0001: 99 offers, 0 errors, completed; `fecha_publicacion` 99/99 + raw `observaciones` 99/99; `empresa_id`/`ubicacion_id` 99/99 NULL; dropped columns absent from schema
+
+**Decisions**
+- D28 (2026-08-17): card field extraction — company/location/date via `<p>` classification, date as approximate absolute timestamp + raw text in `observaciones`, total visible-only (decision log v1.14; company/location part superseded by D29)
+- D29 (2026-08-17): user-ordered revert — adapter keeps enlace/título/fecha relativa + visible total; `empresa_nombre`/`ubicacion_nombre` dropped from `ofertas` (idempotent migration); `empresa_id`/`ubicacion_id` NULL in MVP; catalogs not populated (out of scope) (decision log v1.15)
+- Decisions from previous sessions remain in effect
+
+**Status**
+- D28 ✅ (tracker 4.21; company/location superseded by D29) · D29 ✅ (tracker 4.22); 322 tests passing · ruff 0 · mypy 0
+- Production: COR-0001 — 99 offers, 0 errors, date 99/99, ids NULL 99/99, completed
+- Live DB clean (0 rows in traceability tables); backup preserved
+- Session history + all session changes committed in this /save; single commit + push
+- Branch: `fase-4` · no merge
+- Next: Phase 5 (Module 2 — Preparation), task 1: `modules/preparation/` structure (pending)
 
 ## Session 26 — 17/08/2026
 `ses_fef46d693ffeeJzOMWNCGCQb5s` · `fase-4`

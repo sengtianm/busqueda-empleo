@@ -36,7 +36,7 @@ Specification order: Offer, Source, Company, Location, Processed Offer, Initial 
 
 **Description/purpose:** Represents each job opportunity identified during discovery. Main entity of the model. Stores original offer information before normalization, evaluation, or document generation, and preserves the official reference throughout its lifecycle.
 
-**Attributes:** `id`, `fuente_id`, `company_id`, `location_id`, `company_name`, `location_name`, `identificador_origen`, `id_corrida`, `id_sesion`, `indice_set`, `id_externo`, `fecha_ultima_verificacion`, `enlace`, `title`, `original_description`, `publication_date`, `fecha_descubrimiento`, `status`, `active`, `observations`, `fecha_creacion`, `update_date`.
+**Attributes:** `id`, `fuente_id`, `company_id`, `location_id`, `identificador_origen`, `id_corrida`, `id_sesion`, `indice_set`, `id_externo`, `fecha_ultima_verificacion`, `enlace`, `title`, `original_description`, `publication_date`, `fecha_descubrimiento`, `status`, `active`, `observations`, `fecha_creacion`, `update_date`.
 
 **Primary key:** `id`.  
 **Alternate keys:** None.  
@@ -52,7 +52,7 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_i
 - Original offer content must not be overwritten after discovery.
 - Offer status follows the official state machine.
 - Discovery module records new offers with status `descubierta` (decision C5, 2026-08-07); other transitions belong to Processing module 2.
-- `company_name` and `location_name` store raw adapter strings as `empresa_nombre` and `ubicacion_nombre` (D4).
+- `company_name` and `location_name` raw-string columns were **dropped from the physical model** — decision D29 (2026-08-17): Module 1 no longer extracts company/location from the cards; the offer's relation to Company/Location is exclusively via `empresa_id`/`ubicacion_id` (catalogs remain unpopulated in the MVP, D4/PMD-021).
 - `id_externo` is an external source identifier, alias of `identificador_origen`, best effort.
 - Registration deduplicates by `id_externo` via upsert; each dedup hit refreshes `fecha_ultima_verificacion` (D4).
 
@@ -511,8 +511,8 @@ Any addition, modification, or deletion of attributes must update this dictionar
 
 - `id` — Unique identifier. UUID; required; PK. Sensitivity Internal; Permanent. Actual name: `id`.
 - `fuente_id` — Reference to the source where the offer was discovered. UUID; required; FK Source. Constraint: mandatory source. Internal; Permanent. Actual name: `fuente_id`; MVP stores raw `fuente_id` string without FK constraint — D4.
-- `company_id` — Reference to the company publishing the offer. UUID; logically mandatory association; FK Company. Constraint: mandatory company. Internal; Permanent. Actual name: `empresa_id`; MVP capture may be `NULL` — D4.
-- `location_id` — Reference to the location associated with the offer. UUID; optional; FK Location. Public; Permanent. Actual name: `ubicacion_id`; MVP capture may be `NULL` — D4.
+- `company_id` — Reference to the company publishing the offer. UUID; logically mandatory association; FK Company. Constraint: mandatory company. Internal; Permanent. Actual name: `empresa_id`; MVP capture may be `NULL` — D4. **As-built D29 (2026-08-17):** Module 1 does not extract the company from the cards; the adapter writes `NULL` and the `empresas` catalog stays unpopulated (PMD-021).
+- `location_id` — Reference to the location associated with the offer. UUID; optional; FK Location. Public; Permanent. Actual name: `ubicacion_id`; MVP capture may be `NULL` — D4. **As-built D29 (2026-08-17):** Module 1 does not extract the location from the cards; the adapter writes `NULL` and the `ubicaciones` catalog stays unpopulated (PMD-021).
 - `identificador_origen` — Identifier used by the source of origin. Text; optional. Public; Permanent.
 - `id_corrida` — Run that discovered the offer. UUID; optional; FK Corrida. Discovery traceability — RN-01. Internal; Permanent. Actual name: `id_corrida`.
 - `id_sesion` — Platform session used to discover the offer. UUID; optional; module 1. Internal; Permanent. Actual name: `id_sesion`.
@@ -521,11 +521,11 @@ Any addition, modification, or deletion of attributes must update this dictionar
 - `enlace` — Original offer link. Text; required. Constraint: preserved throughout lifecycle. Public; Permanent.
 - `title` — Original offer title. Text; required. Public; Permanent. Actual name: `titulo`.
 - `original_description` — Original content obtained during discovery. Long Text; required. Constraint: must not be overwritten after discovery. Public; Permanent. Actual name: `descripcion_original`.
-- `publication_date` — Publication date indicated by the source. Date/Time; optional. Public; Permanent. Actual name: `fecha_publicacion`.
+- `publication_date` — Publication date indicated by the source. Date/Time; optional. Public; Permanent. Actual name: `fecha_publicacion`. **As-built D28 (2026-08-17):** in Module 1 the value is an **approximate absolute timestamp** derived from the card's relative date "Publicado hace N <unidad>" (`FORMATO_TIMESTAMP`; precision ±1 h due to LinkedIn rounding; month unit = 30 days); the raw source text is preserved verbatim in `observations`. Normalization (Module 2) still applies on the raw text.
 - `fecha_descubrimiento` — Date/time when automation discovered the offer. Date/Time; required. Internal; Permanent.
 - `status` — Current offer status in the processing flow. Catalog; required; FK Catalog. Default: `descubierta`. Domain: Offer Statuses — 7 values. Constraint: follows official state machine. Internal; Permanent. Actual name: `estado`.
 - `active` — Indicates whether the offer remains valid. Boolean; required; default `true`. Internal; Permanent.
-- `observations` — Additional relevant offer information. Long Text; optional. Internal; Permanent. Actual name: `observaciones`.
+- `observations` — Additional relevant offer information. Long Text; optional. Internal; Permanent. Actual name: `observaciones`. **As-built D28 (2026-08-17):** carries the raw adapter text of the relative publication date (e.g. "Publicado hace 9 horas") captured during discovery.
 
 #### 5.5.2. Source
 
@@ -831,3 +831,5 @@ Every data-model modification must be recorded before becoming official. Each ve
 | 1.3 | 2026-08-07 | System | Discovery module — module 1: traceability fields added to Offer — `id_corrida`, `id_sesion`, `indice_set`, `id_externo`; Source.`active` redefined as catalog attribute — decision D1; Event formalized — mandatory `id_corrida`, typology `tipo` error/suceso, `codigo`, `evidencia`, optional `id_oferta`; new entities Corrida, Sesion, Bloqueo — decisions D2 and D3; inventory, Logical Data Model, Data Dictionary, and ERD updated. |
 | 1.4 | 2026-08-09 | System | Sub-phase 4.4 capture registration — decision D4: Offer gains `empresa_nombre`, `ubicacion_nombre`, and `fecha_ultima_verificacion`; `empresa_id` / `ubicacion_id` optional — `NULL` in MVP; `fuente_id` stored as raw string without FK constraint; registration deduplicates by `id_externo` via upsert. Data Dictionary updated. |
 | 1.5 | 2026-08-11 | System | Spanish naming catalog — decisions D7/D8: attribute/column identifiers, config keys, and Offer Statuses values aligned to the Spanish catalog (`id_corrida`, `fuente_id`, `id_sesion`, `indice_set`, `id_oferta`, `id_oferta_procesada`, `id_externo`, `fecha_creacion`, `fecha_ultima_edicion`, `fecha_descubrimiento`, `fecha_ultima_verificacion`, `marca_temporal`, `enlace`, `identificador_origen`, states `descubierta`…`finalizada`); `job_search.db` migrated preserving data (backup `job_search_pre_espanol_20260811_073632.db`). |
+| 1.6 | 2026-08-17 | System | Card field extraction — decision D28: Data Dictionary as-built notes in §5.5.1 — `publication_date` is an approximate absolute timestamp derived from the relative date ("Publicado hace N <unidad>"; ±1 h, month = 30 days) with the raw text preserved in `observations`; no structural change (no migration). |
+| 1.7 | 2026-08-17 | System | Revert of company/location extraction — decision D29: `empresa_nombre`/`ubicacion_nombre` columns dropped from the physical `ofertas` model (schema + live DB, idempotent migration); `empresa_id`/`ubicacion_id` remain optional `NULL` in MVP (D4, catalogs unpopulated per PMD-021); Offer attributes, constraints, and §5.5.1 updated. |

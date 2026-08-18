@@ -22,7 +22,7 @@ from shared.persistence import (
     upsert_lote_ofertas,
 )
 from shared.retry import ejecutar_con_reintento
-from shared.utilidades import acotar_evidencia, ahora
+from shared.utilidades import FORMATO_TIMESTAMP, acotar_evidencia, ahora
 
 
 @dataclass
@@ -257,21 +257,24 @@ def registrar_ofertas(contexto: RunContext) -> ResultadoCaptura:
 def _oferta_a_dict(oferta: Offer, contexto: RunContext) -> dict[str, Any]:
     """Construye el dict de la fila `ofertas` desde una oferta capturada.
 
-    `empresa_id`/`ubicacion_id` se guardan como NULL (los catálogos aún no
-    existen en el MVP); el string del adaptador se conserva en las columnas
-    `empresa_nombre`/`ubicacion_nombre` y `fuente_id` conserva su fuente_id.
+    `empresa_id`/`ubicacion_id` se guardan como NULL (catálogos no poblados
+    en el MVP, D29) y `fuente_id` conserva su fuente_id.
     """
     return {
         "titulo": oferta.titulo,
         "descripcion_original": oferta.descripcion_original,
         "empresa_id": None,
         "ubicacion_id": None,
-        "empresa_nombre": oferta.empresa_id,
-        "ubicacion_nombre": oferta.ubicacion_id,
         "enlace": oferta.enlace,
         "fuente_id": oferta.fuente_id,
         "indice_set": oferta.indice_set,
         "id_externo": oferta.id_externo,
+        "fecha_publicacion": (
+            oferta.fecha_publicacion.strftime(FORMATO_TIMESTAMP)
+            if oferta.fecha_publicacion
+            else None
+        ),
+        "observaciones": oferta.observaciones or "",
         "id_corrida": contexto.id_corrida,
         "id_sesion": contexto.id_sesion,
         "fecha_descubrimiento": ahora(),
