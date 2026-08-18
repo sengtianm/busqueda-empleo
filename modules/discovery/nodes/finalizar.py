@@ -56,6 +56,12 @@ def consultar_metricas(contexto: RunContext | None) -> dict[str, int]:
     Metrics: offers registered in this run, error/success events, and the
     number of distinct sources present in the run's events. A failing query
     degrades to zeros (best-effort, ES-4.5 closure must never abort).
+
+    Semantics of `total_sucesos` (D30): it counts the flow events written
+    *before* closure — the termination event is written after counting
+    (in `_escribir_evento_terminacion`) and is never included. So the value
+    means "success events of the run prior to closing", not the absolute
+    event count.
     """
     if contexto is None:
         return {campo: 0 for campo in _CAMPOS_METRICAS}
@@ -187,6 +193,8 @@ def finalizar_proceso(
     estado = _ESTADOS_POR_MOTIVO.get(motivo, "abortada")
     id_corrida = contexto.id_corrida if contexto is not None else ""
 
+    # Métricas antes del evento de cierre (D30): total_sucesos excluye el
+    # evento de terminación — ver semántica en consultar_metricas.
     metricas = consultar_metricas(contexto)
 
     if id_corrida:

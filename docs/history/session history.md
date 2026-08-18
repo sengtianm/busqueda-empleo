@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 28 | 17/08/2026 | `ses_fef46d693ffeeJzOMWNCGCQb5s` | Success-event traceability + observability (D30): `ingreso_exitoso`/`consulta_exitosa` emitted by the entry/search nodes aligning the ficha contracts, `duracion_s` in capture evidence, INFO logs default, `total_sucesos` semantics documented; verified fresh run COR-0001 98 offers 0 errors (327 tests) |
 | 27 | 17/08/2026 | `ses_fef46d693ffeeJzOMWNCGCQb5s` | Card field extraction (D28) then user-requested revert (D29): only publication date kept, raw company/location columns dropped from `ofertas`, DB reset without run, verification COR-0001 99 offers 0 errors (322 tests) |
 | 26 | 17/08/2026 | `ses_fef46d693ffeeJzOMWNCGCQb5s` | SDUi filter fix (D27): new LinkedIn UI drops `f_WT`/`location` — remote-only via `f_SAL`, canonical date buckets, DOM chip verification + UI click fallback, config without modality (318 tests) |
 | 25 | 14/08/2026 | `ses_ffd4eef78ffeLdakkTRbtGuLdu` | Filter evidence debate + functional E2E & production-mode tests (COR-2068..2071) + D26: search entry straight to `/jobs/search-results` with `wait_until="commit"` — one search load + direct pagination, verified by COR-2140 (308 tests) |
@@ -28,6 +29,32 @@ Unless noted, decisions from previous sessions remain in effect.
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+## Session 28 — 17/08/2026
+`ses_fef46d693ffeeJzOMWNCGCQb5s` · `fase-4`
+
+**Topics**
+- D30 (user-approved scope H+I+C+F): success-event traceability, capture duration, INFO logs, `total_sucesos` semantics
+- Entry node writes `ingreso_exitoso` on success (suceso; evidence `sesion=<id>`, never credentials); search node writes `consulta_exitosa` only on success-with-offers (evidence `set=<indice> | total=<total_declarado>`); success-with-zero-offers and failures still typed by the register node — one event per search result, no duplicates (aligns the existing ficha contracts)
+- Capture evidence `captura_completada` now includes `duracion_s=<N>` (monotonic elapsed of the capture block with retries); `total_sucesos` semantics documented (success events prior to closure; termination event written after counting, never counted — no behavior change)
+- Default log level INFO in config; `LOG_LEVEL=DEBUG` override documented in `.env.template`; logging fallback default aligned to INFO (reviewer minor)
+- 5 new tests (event written/not written in entry and search, `duracion_s` in evidence) + integration test asserting the 2 new codes, `duracion_s` and `total_sucesos == 4` → 327 passing
+- Live verification run on clean DB (run numbered COR-0001 — id sequences reset with the DB): 98 offers, 0 errors; complete trace `ingreso_exitoso` → `consulta_exitosa` → `captura_completada` (`duracion_s=39`) → `ofertas_registradas`, `total_sucesos=4`; dates 98/98, raw text in `observaciones` 98/98, `empresa_id`/`ubicacion_id` NULL 98/98
+- DB cleaned to 0 rows after verification (user decision) + VACUUM; backups preserved (pre-run state and post-run evidence)
+- Docs aligned: decision log v1.16 (D30), ficha as-built note, DOC-13A v1.8, tracker 4.23, AGENTS.md (327)
+- Reviewers: code-reviewer approved (3 minors — fallback INFO fixed, DOC-13A version row order fixed, dead guard nit accepted); docs-reviewer approved (2 format minors fixed: DOC-13A row order, tracker docs column)
+
+**Decisions**
+- D30 (2026-08-17): success-event traceability — `ingreso_exitoso`/`consulta_exitosa` emitted by the nodes aligning the ficha contracts (one event per search result; zero-offers/failures via the register node); `duracion_s` in `captura_completada` evidence; default log level INFO with `LOG_LEVEL=DEBUG` override; `total_sucesos` semantics documented as success events prior to closure (decision log v1.16)
+- Decisions from previous sessions remain in effect
+
+**Status**
+- D30 ✅ (tracker 4.23); 327 tests passing · ruff 0 · mypy 0
+- Production: fresh run COR-0001 — 98 offers, 0 errors, trace complete, `total_sucesos=4`
+- Live DB clean (0 rows in traceability tables); backups preserved
+- Session history + all session changes committed in this /save; single commit + push
+- Branch: `fase-4` · no merge
+- Next: Phase 5 (Module 2 — Preparation), task 1: `modules/preparation/` structure (pending)
 
 ## Session 27 — 17/08/2026
 `ses_fef46d693ffeeJzOMWNCGCQb5s` · `fase-4`

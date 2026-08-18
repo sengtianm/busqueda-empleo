@@ -9,9 +9,9 @@ from modules.discovery.adapters.registry import AdaptadorPlataforma, obtener_ada
 from modules.discovery.run_context import RunContext
 from shared.config import load
 from shared.models import EntryResult, FichaFuente
-from shared.persistence import generar_id
+from shared.persistence import escribir_evento_seguro, generar_id
 from shared.retry import ejecutar_con_reintento
-from shared.utilidades import acotar_evidencia
+from shared.utilidades import acotar_evidencia, ahora
 
 
 @dataclass
@@ -165,7 +165,34 @@ def _ejecutar_ingreso_loop(
     contexto.playwright_instance = playwright_instance
     contexto.entry_result = res
     playwright_activo = False
+    _registrar_evento_ingreso_exitoso(contexto)
     return ResultadoIngreso(estado="ok", contexto=contexto)
+
+
+def _registrar_evento_ingreso_exitoso(contexto: RunContext) -> None:
+    """Writes the `ingreso_exitoso` success event (ficha contract, D30).
+
+    Non-aborting; evidence is bounded (source and session id, never
+    credentials — RN-08 of the sheet).
+    """
+    if contexto.id_sesion is None:
+        return
+    escribir_evento_seguro(
+        {
+            "id_corrida": contexto.id_corrida,
+            "fuente_id": (
+                contexto.fuente_corriente.fuente_id
+                if contexto.fuente_corriente
+                else ""
+            ),
+            "id_sesion": contexto.id_sesion,
+            "marca_temporal": ahora(),
+            "tipo": "suceso",
+            "codigo": "ingreso_exitoso",
+            "evidencia": f"sesion={contexto.id_sesion}",
+        },
+        contexto_log=contexto.id_corrida,
+    )
 
 
 

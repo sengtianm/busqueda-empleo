@@ -8,6 +8,7 @@ set; la deduplicación se hace por `id_externo`.
 """
 
 from dataclasses import dataclass
+from time import monotonic
 from typing import Any, cast
 
 from loguru import logger
@@ -97,6 +98,7 @@ def capturar_ofertas(contexto: RunContext) -> ResultadoCaptura:
 
     # Paso 3: ejecutar captura con reintento condicional
     adapter = obtener_adaptador(fuente.fuente_id)
+    inicio_captura = monotonic()
 
     def _fallo_captura(fe: BaseException, intentos: int) -> ResultadoCaptura:
         error = cast(FlowError, fe)
@@ -157,7 +159,8 @@ def capturar_ofertas(contexto: RunContext) -> ResultadoCaptura:
         codigo="captura_completada",
         evidencia=(
             f"páginas={estado.paginas_consumidas} | "
-            f"ofertas={len(lote.ofertas)}"
+            f"ofertas={len(lote.ofertas)} | "
+            f"duracion_s={int(monotonic() - inicio_captura)}"
         ),
     )
 

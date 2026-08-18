@@ -94,8 +94,10 @@ persistence:
   db_file: "data/job_search.db"
 
 # --- Logging ---
+# Nivel por defecto INFO (corridas rutinarias); para depuración,
+# LOG_LEVEL=DEBUG en .env (ver config/.env.template).
 logging:
-  level: "DEBUG"
+  level: "INFO"
   rotation: "10 MB"
   retention_days: 30
   logs_path: "logs"

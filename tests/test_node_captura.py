@@ -223,6 +223,26 @@ def test_captura_auditoria_falla_no_aborta(
     assert mock_write_row.call_count == 2
 
 
+def test_captura_exito_evidencia_con_duracion(
+    contexto: RunContext, adapter: MagicMock
+) -> None:
+    """D30: la evidencia de `captura_completada` incluye la duración en segundos."""
+    contexto.handle_sesion = MagicMock()
+    contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
+    lote = CaptureBatch(ofertas=[_oferta()], indice_set=0)
+    estado = EstadoCaptura(estado="exito", paginas_consumidas=2)
+    adapter.capture_batch.return_value = (lote, estado)
+
+    with patch("modules.discovery.nodes.captura.escribir_evento_seguro") as mock_evento:
+        res = capturar_ofertas(contexto)
+
+    assert res.estado == "ok"
+    evento = mock_evento.call_args.args[0]
+    assert evento["codigo"] == "captura_completada"
+    assert evento["evidencia"].startswith("páginas=2 | ofertas=1 | duracion_s=")
+    assert evento["evidencia"].split("duracion_s=")[1].isdigit()
+
+
 def test_registrar_una_oferta_upsert(
     contexto: RunContext,
 ) -> None:

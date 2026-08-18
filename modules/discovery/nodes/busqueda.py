@@ -11,8 +11,9 @@ from modules.discovery.adapters.linkedin import FlowError
 from modules.discovery.adapters.registry import obtener_adaptador
 from modules.discovery.run_context import RunContext
 from shared.models import SearchResult
+from shared.persistence import escribir_evento_seguro
 from shared.retry import ejecutar_con_reintento
-from shared.utilidades import acotar_evidencia
+from shared.utilidades import acotar_evidencia, ahora
 
 
 @dataclass
@@ -110,7 +111,41 @@ def aplicar_filtros(contexto: RunContext) -> ResultadoBusqueda:
             f"{res.indice_set} != set index {set_actual.indice}"
         )
 
+    if res.estado == "exito" and len(res.ofertas_primera_pagina) > 0:
+        _registrar_evento_consulta_exitosa(contexto, res)
+
     return ResultadoBusqueda(estado="ok", contexto=contexto)
+
+
+def _registrar_evento_consulta_exitosa(
+    contexto: RunContext, res: SearchResult
+) -> None:
+    """Writes the `consulta_exitosa` success event (ficha contract, D30).
+
+    Non-aborting. Emitted only on success *with offers*: success with zero
+    offers and failures keep being typed by the register node
+    (registro.py), so every search result ends with exactly one event.
+    """
+    escribir_evento_seguro(
+        {
+            "id_corrida": contexto.id_corrida,
+            "fuente_id": (
+                contexto.fuente_corriente.fuente_id
+                if contexto.fuente_corriente
+                else ""
+            ),
+            "id_sesion": contexto.id_sesion,
+            "indice_set": res.indice_set,
+            "marca_temporal": ahora(),
+            "tipo": "suceso",
+            "codigo": "consulta_exitosa",
+            "evidencia": (
+                f"set={res.indice_set} | "
+                f"total={res.total_declarado if res.total_declarado is not None else 'desconocido'}"
+            ),
+        },
+        contexto_log=contexto.id_corrida,
+    )
 
 
 def se_encontraron_ofertas(contexto: RunContext) -> ResultadoBusqueda:

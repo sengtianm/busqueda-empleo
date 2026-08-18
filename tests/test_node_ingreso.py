@@ -42,6 +42,13 @@ def mock_playwright() -> Generator[MagicMock, None, None]:
         yield instance
 
 
+@pytest.fixture(autouse=True)
+def _mock_evento_ingreso() -> Generator[MagicMock, None, None]:
+    """D30: aislar la escritura de eventos (la rama de éxito la emite)."""
+    with patch("modules.discovery.nodes.ingreso.escribir_evento_seguro") as mock:
+        yield mock
+
+
 def _entry_result(ctx: RunContext) -> EntryResult:
     res = ctx.entry_result
     assert res is not None
@@ -308,3 +315,41 @@ def test_ejecutar_ingreso_headless_default(
 
         assert res.estado == "ok"
         mock_playwright.chromium.launch.assert_called_once_with(headless=True)
+
+
+def test_ejecutar_ingreso_exito_escribe_evento_ingreso_exitoso(
+    mock_context: RunContext,
+    mock_adapter: MagicMock,
+    mock_playwright: MagicMock,
+    _mock_evento_ingreso: MagicMock,
+) -> None:
+    """D30: el ingreso exitoso deja el evento `ingreso_exitoso` (contrato ficha)."""
+    mock_context.fuente_corriente = mock_context.fuentes_filtradas[0]
+    mock_adapter.enter_source.return_value = EntryResult(
+        estado="exito", evidencia_acotada="ok", numero_de_intentos=1
+    )
+
+    ejecutar_ingreso(mock_context)
+
+    _mock_evento_ingreso.assert_called_once()
+    args = _mock_evento_ingreso.call_args.args[0]
+    assert args["codigo"] == "ingreso_exitoso"
+    assert args["tipo"] == "suceso"
+    assert args["id_sesion"] == mock_context.id_sesion
+    assert args["evidencia"] == f"sesion={mock_context.id_sesion}"
+
+
+def test_ejecutar_ingreso_fallo_no_escribe_evento_exito(
+    mock_context: RunContext,
+    mock_adapter: MagicMock,
+    mock_playwright: MagicMock,
+    _mock_evento_ingreso: MagicMock,
+) -> None:
+    """D30: el ingreso fallido no emite `ingreso_exitoso` (lo tipifica el registro)."""
+    mock_context.fuente_corriente = mock_context.fuentes_filtradas[0]
+    mock_adapter.enter_source.side_effect = FlowError("fuente_inalcanzable", "Down")
+
+    with patch("time.sleep"):
+        ejecutar_ingreso(mock_context)
+
+    _mock_evento_ingreso.assert_not_called()

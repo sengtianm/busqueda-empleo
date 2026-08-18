@@ -72,6 +72,13 @@ def mock_context() -> RunContext:
     return ctx
 
 
+@pytest.fixture(autouse=True)
+def _mock_evento_busqueda() -> Generator[MagicMock, None, None]:
+    """D30: aislar la escritura de eventos (la rama de éxito con ofertas la emite)."""
+    with patch("modules.discovery.nodes.busqueda.escribir_evento_seguro") as mock:
+        yield mock
+
+
 def test_aplicar_filtros_success_with_results(mock_context: RunContext) -> None:
     with _adaptador_con_apply_filters() as mock_apply:
         mock_apply.return_value = SearchResult(
@@ -86,6 +93,40 @@ def test_aplicar_filtros_success_with_results(mock_context: RunContext) -> None:
         assert res.estado == "ok"
         assert _search_result(mock_context).estado == "exito"
         assert _set_corriente(mock_context).indice == 0
+
+
+def test_aplicar_filtros_exito_con_ofertas_escribe_consulta_exitosa(
+    mock_context: RunContext, _mock_evento_busqueda: MagicMock
+) -> None:
+    """D30: éxito con ofertas deja el evento `consulta_exitosa` (contrato ficha)."""
+    with _adaptador_con_apply_filters() as mock_apply:
+        mock_apply.return_value = SearchResult(
+            estado="exito",
+            ofertas_primera_pagina=[_oferta()],
+            estado_paginacion="fin",
+            total_declarado=10,
+            indice_set=0,
+            numero_de_intentos=1,
+        )
+        aplicar_filtros(mock_context)
+
+    _mock_evento_busqueda.assert_called_once()
+    args = _mock_evento_busqueda.call_args.args[0]
+    assert args["codigo"] == "consulta_exitosa"
+    assert args["tipo"] == "suceso"
+    assert args["indice_set"] == 0
+    assert "set=0" in args["evidencia"]
+    assert "total=10" in args["evidencia"]
+
+
+def test_aplicar_filtros_exito_sin_ofertas_no_escribe_evento(
+    mock_context: RunContext, _mock_evento_busqueda: MagicMock
+) -> None:
+    """D30: éxito sin ofertas no emite `consulta_exitosa` (lo tipifica el registro)."""
+    with _adaptador_con_apply_filters(return_value=_resultado_ok(indice=0)):
+        aplicar_filtros(mock_context)
+
+    _mock_evento_busqueda.assert_not_called()
 
 
 def test_aplicar_filtros_success_no_results(mock_context: RunContext) -> None:

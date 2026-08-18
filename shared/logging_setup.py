@@ -19,7 +19,7 @@ def _log_level() -> str:
     env_level = config.get("_env", {}).get("LOG_LEVEL")
     if env_level:
         return str(env_level).upper()
-    return str(config.get("logging", {}).get("level", "DEBUG")).upper()
+    return str(config.get("logging", {}).get("level", "INFO")).upper()
 
 
 def _rotation() -> str:

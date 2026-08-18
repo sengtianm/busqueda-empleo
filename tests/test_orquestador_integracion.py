@@ -218,6 +218,13 @@ def test_flujo_completo_nodos_reales_persiste_y_cierra(
     eventos = leer_tabla("eventos")
     codigos = {e["codigo"] for e in eventos}
     assert "captura_completada" in codigos
+    assert "ingreso_exitoso" in codigos
+    assert "consulta_exitosa" in codigos
+    captura_evidencia = next(
+        e["evidencia"] for e in eventos if e["codigo"] == "captura_completada"
+    )
+    assert "duracion_s=" in captura_evidencia
+    assert corridas[0]["total_sucesos"] == 4
 
     assert consultar_bloqueo() is None
     assert adaptador_falso.entradas == 1
