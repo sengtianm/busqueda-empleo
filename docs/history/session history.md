@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 29 | 18/08/2026 | `ses_feb0c7a29ffe0jOcMvPYiDv5wa` | Schema cleanup + no-empty-field rule (D31): `eventos.id_oferta`, `ofertas.identificador_origen` and the `fuentes` table/FNT prefix removed; N/A/N/R placeholders enforced at the persistence boundary, `fecha_ultima_verificacion` exempted; live DB migrated 9→8 tables with backup (329 tests) |
 | 28 | 17/08/2026 | `ses_fef46d693ffeeJzOMWNCGCQb5s` | Success-event traceability + observability (D30): `ingreso_exitoso`/`consulta_exitosa` emitted by the entry/search nodes aligning the ficha contracts, `duracion_s` in capture evidence, INFO logs default, `total_sucesos` semantics documented; verified fresh run COR-0001 98 offers 0 errors (327 tests) |
 | 27 | 17/08/2026 | `ses_fef46d693ffeeJzOMWNCGCQb5s` | Card field extraction (D28) then user-requested revert (D29): only publication date kept, raw company/location columns dropped from `ofertas`, DB reset without run, verification COR-0001 99 offers 0 errors (322 tests) |
 | 26 | 17/08/2026 | `ses_fef46d693ffeeJzOMWNCGCQb5s` | SDUi filter fix (D27): new LinkedIn UI drops `f_WT`/`location` — remote-only via `f_SAL`, canonical date buckets, DOM chip verification + UI click fallback, config without modality (318 tests) |
@@ -29,6 +30,32 @@ Unless noted, decisions from previous sessions remain in effect.
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+## Session 29 — 18/08/2026
+`ses_feb0c7a29ffe0jOcMvPYiDv5wa` · `fase-4`
+
+**Topics**
+- D31 (user request, 4 points): schema cleanup + no-empty-field rule
+- `eventos.id_oferta` dropped (reserved, never written; event-offer traceability out of Module 1 scope); `ofertas.identificador_origen` dropped (dead duplicate of the dedup key); `fuentes` table + `FNT` prefix removed (never populated — sources are config-driven, concept stays)
+- `fecha_ultima_verificacion` untouched — exempted by explicit user instruction
+- Fundamental rule established: no empty fields — `N/A`/`N/R` placeholders, never `''`/NULL; enforced at the persistence boundary (event fields: fuente/sesion/set index/evidence; offer fields: description/date/observations/company/location), schema `DEFAULT 'N/A'`
+- `empresa_id`/`ubicacion_id` NULL → `'N/A'` (supersedes D4/D29 on those columns); `id_externo` excluded (would collide in dedup)
+- `contar_distintos` treats `N/A` as empty — the termination event no longer inflates the closure metric `fuentes_procesadas` (behavior verified: still 1 for the historical run)
+- Idempotent in-place migration (drop table + sequence row, guarded column drops, per-column backfill); live DB migrated 9→8 tables with backup, 62 offers preserved, zero empties in normalized columns
+- 2 new tests (event/offer normalization to `N/A`) + extended coverage (`contar_distintos`, legacy-schema migration asserts the drops) → 329 passing
+- Docs aligned: decision log v1.17 (D31), DOC-13A v1.9 (+ new §2.17 data management rules), database-tables.md (8 tables), ficha as-built note, tracker 4.24, AGENTS.md data rule
+- Reviewers: code-reviewer approved (3 minors — migration docstring precision, test row-order robustness); docs-reviewer approved (no findings)
+
+**Decisions**
+- D31 (2026-08-18): schema cleanup + no-empty-field rule — dropped `id_oferta`/`identificador_origen`/`fuentes`, `N/A` placeholders at the persistence boundary for events and offers, `fecha_ultima_verificacion` exempted, `contar_distintos` excludes `N/A` (decision log v1.17)
+- Decisions from previous sessions remain in effect
+
+**Status**
+- D31 ✅ (tracker 4.24); 329 tests passing · ruff 0 · mypy 0
+- Live DB migrated 9→8 tables (backup preserved); 62 offers intact, trace normalized
+- Session history + all session changes committed in this /save; single commit + push
+- Branch: `fase-4` · no merge
+- Next: Phase 5 (Module 2 — Preparation), task 1: `modules/preparation/` structure (pending)
 
 ## Session 28 — 17/08/2026
 `ses_fef46d693ffeeJzOMWNCGCQb5s` · `fase-4`

@@ -61,7 +61,8 @@ def test_evento_almacen() -> None:
     )
     assert evento.tipo == TipoEvento.ERROR
     assert evento.codigo == "ERR-05"
-    assert evento.id_oferta is None
+    assert evento.fuente_id == "N/A"
+    assert evento.evidencia == "evidencia"
 
 
 def test_auditoria_sesion_minima() -> None:

@@ -34,7 +34,7 @@ def temp_db_file(tmp_path: Path) -> Generator[Path, None, None]:
 @pytest.fixture
 def example_source() -> Source:
     return Source(
-        id="FNT-0001",
+        id="LI-01",
         nombre="LinkedIn",
         tipo="red_social",
         enlace_base="https://www.linkedin.com",
@@ -68,7 +68,6 @@ def example_offer(
         enlace="https://www.linkedin.com/jobs/view/12345",
         titulo="Data Engineer",
         descripcion_original="Descripcion de prueba",
-        identificador_origen="12345",
         estado=OfferState.DESCUBIERTA,
     )
 

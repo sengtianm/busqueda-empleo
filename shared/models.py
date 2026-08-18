@@ -60,16 +60,15 @@ class Location(BaseModel):
 class Offer(BaseModel):
     id: str = ""
     fuente_id: str = ""
-    empresa_id: str = ""
-    ubicacion_id: str = ""
-    identificador_origen: str = ""
+    empresa_id: str = "N/A"
+    ubicacion_id: str = "N/A"
     enlace: str
     titulo: str
     descripcion_original: str
     fecha_publicacion: datetime | None = None
     fecha_descubrimiento: datetime | None = None
     estado: OfferState = OfferState.DESCUBIERTA
-    observaciones: str = ""
+    observaciones: str = "N/A"
     fecha_creacion: str = ""
     fecha_ultima_edicion: str = ""
     id_corrida: str | None = None
@@ -115,14 +114,13 @@ class Corrida(BaseModel):
 class EventoAlmacen(BaseModel):
     evento_id: str = ""
     id_corrida: str
-    fuente_id: str = ""
+    fuente_id: str = "N/A"
     id_sesion: str | None = None
     indice_set: int | None = None
     marca_temporal: datetime | None = None
     tipo: TipoEvento
     codigo: str
-    evidencia: str = ""
-    id_oferta: str | None = None
+    evidencia: str = "N/A"
 
 
 class AuditoriaSesion(BaseModel):

@@ -24,7 +24,7 @@ Official record of all persistent entities in the job search automation data mod
 | Bloqueo | Operational | Concurrency | Persistent lock guaranteeing a single active Discovery module run. |
 
 **Scope of implemented persistence** — decisions 2026-07-30 and 2026-08-07:  
-The MVP database (`job_search.db`) persists only: `secuencia_ids`, `fuentes`, `empresas`, `ubicaciones`, and `ofertas`. The Discovery module additionally defines `eventos`, `sesiones`, `corridas`, and `bloqueo` as tables in the same SQLite file (decision D2, 2026-08-07). Remaining entities are deferred to later modules. This note formalizes the implemented scope; the full inventory remains the target model.
+The MVP database (`job_search.db`) persists only: `secuencia_ids`, `empresas`, `ubicaciones`, and `ofertas`. The Discovery module additionally defines `eventos`, `sesiones`, `corridas`, and `bloqueo` as tables in the same SQLite file (decision D2, 2026-08-07). Remaining entities are deferred to later modules. This note formalizes the implemented scope; the full inventory remains the target model. **As-built D31 (2026-08-18):** the `fuentes` table was dropped from the physical model (never populated; sources are config-driven via `config.yaml`); the physical DB now has 8 tables.
 
 ## 2. Detailed Specification of Entities
 
@@ -36,12 +36,12 @@ Specification order: Offer, Source, Company, Location, Processed Offer, Initial 
 
 **Description/purpose:** Represents each job opportunity identified during discovery. Main entity of the model. Stores original offer information before normalization, evaluation, or document generation, and preserves the official reference throughout its lifecycle.
 
-**Attributes:** `id`, `fuente_id`, `company_id`, `location_id`, `identificador_origen`, `id_corrida`, `id_sesion`, `indice_set`, `id_externo`, `fecha_ultima_verificacion`, `enlace`, `title`, `original_description`, `publication_date`, `fecha_descubrimiento`, `status`, `active`, `observations`, `fecha_creacion`, `update_date`.
+**Attributes:** `id`, `fuente_id`, `company_id`, `location_id`, `id_corrida`, `id_sesion`, `indice_set`, `id_externo`, `fecha_ultima_verificacion`, `enlace`, `title`, `original_description`, `publication_date`, `fecha_descubrimiento`, `status`, `active`, `observations`, `fecha_creacion`, `update_date`.
 
 **Primary key:** `id`.  
 **Alternate keys:** None.  
 **Foreign keys:** `fuente_id → Source`; `company_id → Company`; `location_id → Location`; `id_corrida → Corrida`; `status → Catalog`.  
-MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_id` string without FK constraint; `empresa_id` and `ubicacion_id` may be `NULL`.
+MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_id` string without FK constraint; `empresa_id` and `ubicacion_id` may be `NULL`. **As-built D31 (2026-08-18):** `identificador_origen` was removed from the physical model (dead duplicate of `id_externo`); `empresa_id`/`ubicacion_id` store the placeholder `'N/A'` instead of `NULL` when the company/location is unknown (no-empty-field rule, D31 — supersedes D4/D29 on those columns; catalogs remain unpopulated, PMD-021).
 
 **Relationships:** belongs to Source N:1; captured by Corrida N:1; published by Company N:1; located in Location N:1; generates Processed Offer 1:1; evaluated by Initial Evaluation 1:1; may generate Detailed Evaluation 1:0..1; may generate Generated Document 1:N; may originate Application 1:0..1; records Event 1:N; records Decision 1:N.
 
@@ -53,8 +53,9 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_i
 - Offer status follows the official state machine.
 - Discovery module records new offers with status `descubierta` (decision C5, 2026-08-07); other transitions belong to Processing module 2.
 - `company_name` and `location_name` raw-string columns were **dropped from the physical model** — decision D29 (2026-08-17): Module 1 no longer extracts company/location from the cards; the offer's relation to Company/Location is exclusively via `empresa_id`/`ubicacion_id` (catalogs remain unpopulated in the MVP, D4/PMD-021).
-- `id_externo` is an external source identifier, alias of `identificador_origen`, best effort.
+- `id_externo` is an external source identifier, best effort (`identificador_origen` was removed from the physical model as a dead duplicate — D31).
 - Registration deduplicates by `id_externo` via upsert; each dedup hit refreshes `fecha_ultima_verificacion` (D4).
+- No-empty-field rule (D31, 2026-08-18): `descripcion_original`, `fecha_publicacion`, `observaciones`, `empresa_id` and `ubicacion_id` store `'N/A'` when the value is not applicable/available — never `''` or NULL. `fecha_ultima_verificacion` is exempted: empty until a re-visit refreshes it (user instruction, D31 point 4).
 
 **State machine:** Official offer state machine applies; detailed specification is documented in the corresponding section.
 
@@ -80,7 +81,7 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_i
 
 **State machine:** Not applicable.
 
-**Observations:** Represents only the origin of offers; it does not store individual offer data.
+**Observations:** Represents only the origin of offers; it does not store individual offer data. **As-built D31 (2026-08-18):** the `fuentes` table was **dropped from the physical model** — it was never populated in production (sources are config-driven via `config.yaml` and the `Source` model is never stored); the entity remains in the target model for future modules (catalog persistence). `ofertas.fuente_id` keeps storing the config `fuente_id` string (D4).
 
 ### 2.3. Entity: Company
 
@@ -244,17 +245,18 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_i
 
 **Description/purpose:** Represents each relevant fact occurring during automation execution: action, state change, process execution, error, or occurrence preserved for traceability, auditing, and diagnostics.
 
-**Attributes:** `id`, `id_corrida`, `fuente_id`, `id_sesion`, `indice_set`, `id_oferta`, `tipo`, `codigo`, `evidencia`, `event_type`, `affected_entity`, `entity_id`, `action`, `description`, `result`, `origin`, `context`, `event_date`, `fecha_creacion`.
+**Attributes:** `id`, `id_corrida`, `fuente_id`, `id_sesion`, `indice_set`, `tipo`, `codigo`, `evidencia`, `event_type`, `affected_entity`, `entity_id`, `action`, `description`, `result`, `origin`, `context`, `event_date`, `fecha_creacion`.
 
 **Primary key:** `id`.  
 **Alternate keys:** None.  
-**Foreign keys:** `id_oferta → Offer`; `id_corrida → Corrida`; `fuente_id → Source`; `event_type → Catalog`; `tipo → Catalog`; `action → Catalog`; `result → Catalog`; `origin → Catalog`.
+**Foreign keys:** `id_corrida → Corrida`; `fuente_id → Source`; `event_type → Catalog`; `tipo → Catalog`; `action → Catalog`; `result → Catalog`; `origin → Catalog`.
 
 **Relationships:** records events of Offer N:1; anchored to Corrida N:1; may be associated with Decision N:0..1; may record Application N:0..1.
 
 **Constraints:**
 - In module 1, every event must be associated with a `id_corrida`.
-- `id_oferta` is required only when the event belongs to a specific offer.
+- `id_oferta` is required only when the event belongs to a specific offer. **As-built D31 (2026-08-18):** `id_oferta` was **removed from the physical model** — Module 1 never wrote it (per-offer event traceability is not implemented; the column had no FK constraint and no writer); if a future module needs event-offer relations, the column must be re-added with the corresponding FK.
+- No-empty-field rule (D31, 2026-08-18): `fuente_id`, `id_sesion`, `indice_set` and `evidencia` store `'N/A'` when not applicable (e.g. run-level events) — never `''` or NULL; `indice_set` keeps `0` as a valid value.
 - Every event must record the exact moment it occurred.
 - Every module 1 event must record `tipo` — `error` or `suceso` — and, when applicable, `codigo` from the Discovery module technical sheet.
 - `event_type`, `action`, `result`, and `origin` must use valid official catalog values.
@@ -393,6 +395,16 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_i
 
 **Observations:** `umbral_obsolescencia` is centralized in the system configuration file; no hardcoded values.
 
+### 2.17. Data management rules (D31, 2026-08-18)
+
+Fundamental rules applicable to all persisted data from this decision onward:
+
+- **No empty fields:** no persisted field may hold `''` or NULL as "no value". When a value is not applicable or not available, the placeholder is `N/A` (not-applicable) or `N/R` (not-required). Implemented at the persistence boundary (`shared/persistence.py`): `escribir_evento` normalizes `fuente_id`/`id_sesion`/`indice_set`/`evidencia` and `_upsert_ofertas_en` normalizes `descripcion_original`/`fecha_publicacion`/`observaciones`/`empresa_id`/`ubicacion_id` (empty/None → `'N/A'`; `indice_set` only when `is None`, since `0` is a valid set index); affected columns declare `DEFAULT 'N/A'` in the schema.
+- **Exclusions:** `ofertas.id_externo` (a `'N/A'` value would collide during dedup — registration deduplicates by `id_externo`) and `ofertas.fecha_ultima_verificacion` (explicitly exempted by the user, D31 point 4: empty until a re-visit refreshes it).
+- **Scope:** currently enforced on `ofertas` and `eventos`. `corridas`, `sesiones`, `bloqueo`, `empresas`, `ubicaciones` and `secuencia_ids` are not restructured (their columns are either always complete or reserved); the rule applies to any future modification or new entity.
+- **Query semantics:** value-counting queries treat `'N/A'` as empty — `contar_distintos` excludes NULL, `''` and `'N/A'` (keeps `fuentes_procesadas` correct, since run-level events carry `fuente_id='N/A'`).
+- **Physical cleanup (same decision):** the `fuentes` table and the `FNT-` prefix, `ofertas.identificador_origen` and `eventos.id_oferta` are removed from the physical model; migration `_migrate_limpieza_d31` is idempotent (`DROP TABLE IF EXISTS`, guarded `ALTER TABLE ... DROP COLUMN`, backfill).
+
 ## 3. Catalogs and Reference Tables
 
 Catalogs are controlled value sets used through foreign keys to guarantee consistency, integrity, and normalization.
@@ -511,25 +523,25 @@ Any addition, modification, or deletion of attributes must update this dictionar
 
 - `id` — Unique identifier. UUID; required; PK. Sensitivity Internal; Permanent. Actual name: `id`.
 - `fuente_id` — Reference to the source where the offer was discovered. UUID; required; FK Source. Constraint: mandatory source. Internal; Permanent. Actual name: `fuente_id`; MVP stores raw `fuente_id` string without FK constraint — D4.
-- `company_id` — Reference to the company publishing the offer. UUID; logically mandatory association; FK Company. Constraint: mandatory company. Internal; Permanent. Actual name: `empresa_id`; MVP capture may be `NULL` — D4. **As-built D29 (2026-08-17):** Module 1 does not extract the company from the cards; the adapter writes `NULL` and the `empresas` catalog stays unpopulated (PMD-021).
-- `location_id` — Reference to the location associated with the offer. UUID; optional; FK Location. Public; Permanent. Actual name: `ubicacion_id`; MVP capture may be `NULL` — D4. **As-built D29 (2026-08-17):** Module 1 does not extract the location from the cards; the adapter writes `NULL` and the `ubicaciones` catalog stays unpopulated (PMD-021).
-- `identificador_origen` — Identifier used by the source of origin. Text; optional. Public; Permanent.
+- `company_id` — Reference to the company publishing the offer. UUID; logically mandatory association; FK Company. Constraint: mandatory company. Internal; Permanent. Actual name: `empresa_id`; MVP capture may be `NULL` — D4. **As-built D29 (2026-08-17):** Module 1 does not extract the company from the cards; the adapter writes `NULL` and the `empresas` catalog stays unpopulated (PMD-021). **As-built D31 (2026-08-18):** stores `'N/A'` when the company is unknown (no-empty-field rule; supersedes D4/D29 on this column).
+- `location_id` — Reference to the location associated with the offer. UUID; optional; FK Location. Public; Permanent. Actual name: `ubicacion_id`; MVP capture may be `NULL` — D4. **As-built D29 (2026-08-17):** Module 1 does not extract the location from the cards; the adapter writes `NULL` and the `ubicaciones` catalog stays unpopulated (PMD-021). **As-built D31 (2026-08-18):** stores `'N/A'` when the location is unknown (no-empty-field rule; supersedes D4/D29 on this column).
 - `id_corrida` — Run that discovered the offer. UUID; optional; FK Corrida. Discovery traceability — RN-01. Internal; Permanent. Actual name: `id_corrida`.
 - `id_sesion` — Platform session used to discover the offer. UUID; optional; module 1. Internal; Permanent. Actual name: `id_sesion`.
 - `indice_set` — Index of the filter set that produced the offer. Integer; optional; module 1. Internal; Permanent. Actual name: `indice_set`.
-- `id_externo` — External identifier of the offer in the source of origin; alias of `identificador_origen`; best effort. Text; optional. Public; Permanent. Actual name: `id_externo`.
+- `id_externo` — External identifier of the offer in the source of origin; best effort. Text; optional. Public; Permanent. Actual name: `id_externo`. **As-built D31 (2026-08-18):** `identificador_origen` was removed from the physical model as a dead duplicate; `id_externo` is the single dedup key (D4) and is excluded from the `N/A` normalization.
 - `enlace` — Original offer link. Text; required. Constraint: preserved throughout lifecycle. Public; Permanent.
 - `title` — Original offer title. Text; required. Public; Permanent. Actual name: `titulo`.
-- `original_description` — Original content obtained during discovery. Long Text; required. Constraint: must not be overwritten after discovery. Public; Permanent. Actual name: `descripcion_original`.
-- `publication_date` — Publication date indicated by the source. Date/Time; optional. Public; Permanent. Actual name: `fecha_publicacion`. **As-built D28 (2026-08-17):** in Module 1 the value is an **approximate absolute timestamp** derived from the card's relative date "Publicado hace N <unidad>" (`FORMATO_TIMESTAMP`; precision ±1 h due to LinkedIn rounding; month unit = 30 days); the raw source text is preserved verbatim in `observations`. Normalization (Module 2) still applies on the raw text.
+- `original_description` — Original content obtained during discovery. Long Text; required. Constraint: must not be overwritten after discovery. Public; Permanent. Actual name: `descripcion_original`. **As-built D31 (2026-08-18):** stores `'N/A'` when no description is available (no-empty-field rule).
+- `publication_date` — Publication date indicated by the source. Date/Time; optional. Public; Permanent. Actual name: `fecha_publicacion`. **As-built D28 (2026-08-17):** in Module 1 the value is an **approximate absolute timestamp** derived from the card's relative date "Publicado hace N <unidad>" (`FORMATO_TIMESTAMP`; precision ±1 h due to LinkedIn rounding; month unit = 30 days); the raw source text is preserved verbatim in `observations`. Normalization (Module 2) still applies on the raw text. **As-built D31 (2026-08-18):** stores `'N/A'` when the card has no relative date (no-empty-field rule).
 - `fecha_descubrimiento` — Date/time when automation discovered the offer. Date/Time; required. Internal; Permanent.
 - `status` — Current offer status in the processing flow. Catalog; required; FK Catalog. Default: `descubierta`. Domain: Offer Statuses — 7 values. Constraint: follows official state machine. Internal; Permanent. Actual name: `estado`.
 - `active` — Indicates whether the offer remains valid. Boolean; required; default `true`. Internal; Permanent.
-- `observations` — Additional relevant offer information. Long Text; optional. Internal; Permanent. Actual name: `observaciones`. **As-built D28 (2026-08-17):** carries the raw adapter text of the relative publication date (e.g. "Publicado hace 9 horas") captured during discovery.
+- `observations` — Additional relevant offer information. Long Text; optional. Internal; Permanent. Actual name: `observaciones`. **As-built D28 (2026-08-17):** carries the raw adapter text of the relative publication date (e.g. "Publicado hace 9 horas") captured during discovery. **As-built D31 (2026-08-18):** stores `'N/A'` when empty (no-empty-field rule).
+- `fecha_ultima_verificacion` — Last re-visit timestamp of the listing. Date/Time; optional. Internal; Permanent. **As-built D31 (2026-08-18):** exempted from the `N/A` rule by explicit user instruction — empty until a dedup re-visit refreshes it.
 
 #### 5.5.2. Source
 
-- `id` — Unique identifier. UUID; required; PK. Internal; Permanent.
+- `id` — Unique identifier. UUID; required; PK. Internal; Permanent. **As-built D31 (2026-08-18):** the Source entity has no physical table — the `fuentes` table was dropped (never populated; sources are config-driven). The entity remains in the target model; `ofertas.fuente_id` stores the config `fuente_id` string (D4).
 - `name` — Official source name. Text; required. Constraint: unique name. Internal; Permanent. Actual name: `nombre`.
 - `type` — Source type. Catalog; required; FK Catalog. Domain: Source Types. Constraint: valid catalog value. Internal; Permanent. Actual name: `tipo`.
 - `main_url` — Main source URL. Text; required. Constraint: unique URL. Public; Permanent. Actual name: `enlace_base`.
@@ -658,13 +670,12 @@ Any addition, modification, or deletion of attributes must update this dictionar
 
 - `id` — Unique identifier. UUID; required; PK. Internal; Permanent.
 - `id_corrida` — Run that generated the event. UUID; required; FK Corrida. Constraint: mandatory in module 1 — RN-01. Internal; Permanent. Actual name: `id_corrida`.
-- `fuente_id` — Source on which the event occurred. UUID; optional; FK Source. Module 1 traceability. Internal; Permanent.
-- `id_sesion` — Platform session in which the event occurred. UUID; optional; module 1. Internal; Permanent.
-- `indice_set` — Filter-set index where the event occurred. Integer; optional; module 1. Internal; Permanent.
-- `id_oferta` — Offer related to the event. UUID; optional; FK Offer. Constraint: required only when event belongs to a specific offer. Internal; Permanent.
+- `fuente_id` — Source on which the event occurred. UUID; optional; FK Source. Module 1 traceability. Internal; Permanent. **As-built D31 (2026-08-18):** run-level events store `'N/A'` (no-empty-field rule).
+- `id_sesion` — Platform session in which the event occurred. UUID; optional; module 1. Internal; Permanent. **As-built D31 (2026-08-18):** stores `'N/A'` when the event is not session-scoped.
+- `indice_set` — Filter-set index where the event occurred. Integer; optional; module 1. Internal; Permanent. **As-built D31 (2026-08-18):** stores `'N/A'` when not applicable; `0` is a valid value.
 - `tipo` — Event classification: `error` or `suceso`. Catalog; required; FK Catalog. Domain: `error`, `suceso`. Module 1 typology — decision 2026-08-07. Internal; Permanent.
 - `codigo` — Business code — e.g., `ERR-01`, `EVT-01`. Text; optional. Per Discovery module technical sheet. Internal; Permanent.
-- `evidencia` — Evidence — screenshots, traces, raw snippets. Long Text; optional. Constraint: never credentials or session tokens. Internal; Permanent. Actual name: `evidencia`.
+- `evidencia` — Evidence — screenshots, traces, raw snippets. Long Text; optional. Constraint: never credentials or session tokens. Internal; Permanent. Actual name: `evidencia`. **As-built D31 (2026-08-18):** stores `'N/A'` when the event carries no evidence payload.
 - `event_type` — Type of event recorded. Catalog; required; FK Catalog. Domain: Event Types. Constraint: valid catalog value. Internal; Permanent.
 - `affected_entity` — Name of entity affected. Text; required. Internal; Permanent.
 - `entity_id` — Identifier of record affected. UUID; required. For run-level events, use `id_corrida`. Internal; Permanent.
@@ -834,3 +845,4 @@ Every data-model modification must be recorded before becoming official. Each ve
 | 1.6 | 2026-08-17 | System | Card field extraction — decision D28: Data Dictionary as-built notes in §5.5.1 — `publication_date` is an approximate absolute timestamp derived from the relative date ("Publicado hace N <unidad>"; ±1 h, month = 30 days) with the raw text preserved in `observations`; no structural change (no migration). |
 | 1.7 | 2026-08-17 | System | Revert of company/location extraction — decision D29: `empresa_nombre`/`ubicacion_nombre` columns dropped from the physical `ofertas` model (schema + live DB, idempotent migration); `empresa_id`/`ubicacion_id` remain optional `NULL` in MVP (D4, catalogs unpopulated per PMD-021); Offer attributes, constraints, and §5.5.1 updated. |
 | 1.8 | 2026-08-17 | System | Success-event traceability and observability — decision D30: `ingreso_exitoso`/`consulta_exitosa` events emitted by the entry/search nodes (one event per search result; success-with-zero-offers and failures typed by the register node); `captura_completada` evidence now includes `duracion_s=<N>`; `total_sucesos` semantics documented as success events prior to closure (termination event never counted); default log level INFO with `LOG_LEVEL=DEBUG` override. |
+| 1.9 | 2026-08-18 | System | Schema cleanup + no-empty-field rule — decision D31: `fuentes` table (FNT prefix), `ofertas.identificador_origen` and `eventos.id_oferta` removed from the physical model (idempotent in-place migration, live DB 9→8 tables, backup `job_search_pre_d31_20260818_123148.db`); new §2.17 "Data management rules" — `N/A`/`N/R` placeholders, never empty; normalization at the persistence boundary for `eventos` and `ofertas` (`empresa_id`/`ubicacion_id` `NULL` → `'N/A'`, supersedes D4/D29 on those columns; `id_externo` excluded to protect dedup; `fecha_ultima_verificacion` exempted per user instruction); `contar_distintos` treats `'N/A'` as empty; §2.1/§2.2/§2.10, §5.5.1/§5.5.2/§5.5.10 and scope note updated. |

@@ -6,22 +6,23 @@ Fuente de verdad: `shared/persistence.py` (esquemas y funciones de escritura) y 
 
 ## 1. Resumen
 
-La BD tiene 9 tablas. Se habilita con `init_db()` (crea tablas y aplica migraciones idempotentes, incluida la migración al catálogo español D7/D8 y la creación de índices, decisión D16). Fechas en formato `YYYY-MM-DD HH:MM:SS` (hora local). IDs secuenciales con prefijo por tabla (`FNT`, `EMP`, `UBI`, `OFE`, `COR`, `SES`, `EVT`, `BLO`) generados por `generar_id()`.
+La BD tiene 8 tablas. Se habilita con `init_db()` (crea tablas y aplica migraciones idempotentes, incluida la migración al catálogo español D7/D8, la limpieza D31 y la creación de índices, decisión D16). Fechas en formato `YYYY-MM-DD HH:MM:SS` (hora local). IDs secuenciales con prefijo por tabla (`EMP`, `UBI`, `OFE`, `COR`, `SES`, `EVT`, `BLO`) generados por `generar_id()`.
+
+**Regla de gestión de datos (decisión D31, 2026-08-18):** ningún campo persistido puede quedar vacío (`''`/NULL); cuando un valor no aplica o no está disponible se guarda `N/A` (o `N/R`). La normalización ocurre en la frontera de persistencia (`escribir_evento()`, `_upsert_ofertas_en()`) y las columnas afectadas declaran `DEFAULT 'N/A'`. Exenciones: `id_externo` (colisionaría en la deduplicación) y `fecha_ultima_verificacion` (por instrucción explícita del usuario; vacía hasta que una re-visita la refresca). Las consultas de conteo tratan `N/A` como vacío (`contar_distintos` excluye NULL, `''` y `'N/A'`).
 
 Índices (creados con `CREATE INDEX IF NOT EXISTS`, no únicos — la unicidad estricta es del Módulo 2, decisión D4): `idx_ofertas_id_externo` (deduplicación por oferta), `idx_ofertas_id_corrida` y `idx_eventos_id_corrida` (métricas de cierre y auditoría).
 
-Estado actual (conteos al momento del reporte):
+Estado actual (conteos al momento del reporte, tras la migración D31):
 
 | Tabla | Filas | Escritor principal |
 |---|---|---|
 | `secuencia_ids` | 4 | Automática (generador de IDs) |
-| `fuentes` | 0 | — (catálogo reservado; sin escritura en Módulo 1) |
 | `empresas` | 0 | — (catálogo reservado; sin escritura en Módulo 1) |
 | `ubicaciones` | 0 | — (catálogo reservado; sin escritura en Módulo 1) |
-| `ofertas` | 7 | Nodo Captura → `upsert_oferta()` |
-| `corridas` | 9 | Nodo INICIO → `registrar_corrida()`; Nodo Finalizar → `actualizar_corrida()` |
-| `eventos` | 35 | Nodos del flujo → `escribir_evento()` |
-| `sesiones` | 7 | Nodo Captura → `escribir_fila("sesiones")` |
+| `ofertas` | 62 | Nodo Captura → `upsert_oferta()` |
+| `corridas` | 1 | Nodo INICIO → `registrar_corrida()`; Nodo Finalizar → `actualizar_corrida()` |
+| `eventos` | 28 | Nodos del flujo → `escribir_evento()` |
+| `sesiones` | 13 | Nodo Captura → `escribir_fila("sesiones")` |
 | `bloqueo` | 0 | Nodo INICIO → `adquirir_bloqueo()`; Nodo Finalizar → `liberar_bloqueo()` |
 
 ### Momentos del flujo que diligencian las tablas
@@ -41,24 +42,12 @@ Control interno del generador de IDs secuenciales (`PREFIJO-NNNN`). No se escrib
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
 | `tabla_nombre` | TEXT (PK) | Nombre de la tabla para la que se lleva la secuencia | En el primer `generar_id()` de esa tabla (automático) |
-| `prefijo` | TEXT NOT NULL | Prefijo del ID de esa tabla (`FNT`, `EMP`, `UBI`, `OFE`, `COR`, `SES`, `EVT`, `BLO`) | En el primer `generar_id()` de esa tabla (automático) |
+| `prefijo` | TEXT NOT NULL | Prefijo del ID de esa tabla (`EMP`, `UBI`, `OFE`, `COR`, `SES`, `EVT`, `BLO`) | En el primer `generar_id()` de esa tabla (automático) |
 | `ultimo_numero` | INTEGER NOT NULL DEFAULT 0 | Último número asignado (se incrementa en 1 por cada ID) | En cada `generar_id()` (automático) |
 
-### 2.2. `fuentes`
+> **D31:** la secuencia de `fuentes` fue eliminada junto con la tabla (2026-08-18).
 
-Catálogo de fuentes de origen (plataformas, portales, sitios corporativos). **En el MVP del Módulo 1 no se escribe en esta tabla** (0 filas): las fuentes se definen en `config/config.yaml` y el flujo las usa en memoria. La tabla queda reservada para cuando la gestión de fuentes sea persistente (decision D4).
-
-| Columna | Tipo | Qué hace | Cuándo se diligencia |
-|---|---|---|---|
-| `id` | TEXT (PK) | ID único (prefijo `FNT`) | No se diligencia en el Módulo 1 (generador disponible) |
-| `nombre` | TEXT NOT NULL | Nombre oficial de la fuente | No se diligencia en el Módulo 1 |
-| `tipo` | TEXT DEFAULT '' | Tipo de fuente (portal, sitio corporativo, etc.) | No se diligencia en el Módulo 1 |
-| `enlace_base` | TEXT DEFAULT '' | URL base de la fuente | No se diligencia en el Módulo 1 |
-| `activa` | INTEGER DEFAULT 1 | Indica si la fuente está habilitada (1/0) | No se diligencia en el Módulo 1 |
-| `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática al insertar con `escribir_fila` |
-| `fecha_ultima_edicion` | TEXT DEFAULT '' | Fecha/hora de la última actualización | Automática en cada insert/update |
-
-### 2.3. `empresas`
+### 2.2. `empresas`
 
 Catálogo de empresas. **En el MVP del Módulo 1 no se escribe en esta tabla** (0 filas): el Módulo 1 no extrae la empresa de las tarjetas (decisión D29; las columnas crudas `empresa_nombre`/`ubicacion_nombre` de `ofertas` fueron eliminadas); la tabla queda reservada para la gestión del catálogo.
 
@@ -75,7 +64,7 @@ Catálogo de empresas. **En el MVP del Módulo 1 no se escribe en esta tabla** (
 | `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática al insertar |
 | `fecha_ultima_edicion` | TEXT DEFAULT '' | Fecha/hora de la última actualización | Automática en cada insert/update |
 
-### 2.4. `ubicaciones`
+### 2.3. `ubicaciones`
 
 Catálogo de ubicaciones. **En el MVP del Módulo 1 no se escribe en esta tabla** (0 filas): el Módulo 1 no extrae la ubicación de las tarjetas (decisión D29); la tabla queda reservada para la gestión del catálogo.
 
@@ -89,33 +78,34 @@ Catálogo de ubicaciones. **En el MVP del Módulo 1 no se escribe en esta tabla*
 | `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática al insertar |
 | `fecha_ultima_edicion` | TEXT DEFAULT '' | Fecha/hora de la última actualización | Automática en cada insert/update |
 
-### 2.5. `ofertas`
+### 2.4. `ofertas`
 
-Oportunidades (vacantes) descubiertas. La escribe el **nodo Captura** mediante `upsert_oferta()`: si ya existe una fila con el mismo `id_externo` no inserta de nuevo, solo refresca `fecha_ultima_verificacion` y devuelve el `id` existente; si no, genera un ID (`OFE-NNNN`) e inserta la fila.
+Oportunidades (vacantes) descubiertas. La escribe el **nodo Captura** mediante `upsert_oferta()`: si ya existe una fila con el mismo `id_externo` no inserta de nuevo, solo refresca `fecha_ultima_verificacion` y devuelve el `id` existente; si no, genera un ID (`OFE-NNNN`) e inserta la fila. Regla D31: los campos sin valor se guardan como `N/A` (nunca `''`/NULL); `fecha_ultima_verificacion` queda exenta (vacía hasta una re-visita).
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
 | `id` | TEXT (PK) | ID único de la oferta (prefijo `OFE`) | Automático en la inserción (`upsert_oferta`) |
-| `identificador_origen` | TEXT DEFAULT '' | Identificador usado por la fuente de origen (definido en el modelo; no se escribe aún) | Sin escritura en el Módulo 1 (futuros módulos) |
 | `enlace` | TEXT NOT NULL | Enlace original de la oferta | En la inserción, desde la oferta capturada (obligatorio) |
 | `titulo` | TEXT DEFAULT '' | Título original de la oferta | En la inserción, desde la oferta capturada |
-| `descripcion_original` | TEXT DEFAULT '' | Contenido original obtenido en el descubrimiento (no se sobrescribe) | En la inserción, desde la oferta capturada |
-| `fecha_publicacion` | TEXT DEFAULT '' | Fecha de publicación indicada por la fuente; en el Módulo 1 es timestamp aproximado derivado de "Publicado hace N <unidad>" (±1 h; mes = 30 días) (D28) | En la inserción, desde la oferta capturada |
+| `descripcion_original` | TEXT DEFAULT 'N/A' | Contenido original obtenido en el descubrimiento (no se sobrescribe); `N/A` si no hay descripción (D31) | En la inserción, desde la oferta capturada |
+| `fecha_publicacion` | TEXT DEFAULT 'N/A' | Fecha de publicación indicada por la fuente; en el Módulo 1 es timestamp aproximado derivado de "Publicado hace N <unidad>" (±1 h; mes = 30 días) (D28); `N/A` si la tarjeta no muestra fecha relativa (D31) | En la inserción, desde la oferta capturada |
 | `fecha_descubrimiento` | TEXT DEFAULT '' | Fecha/hora en que la automatización descubrió la oferta | En la inserción, con la hora actual (`_now()`) |
 | `estado` | TEXT DEFAULT 'descubierta' | Estado en el flujo de procesamiento (7 valores: `descubierta`, `preparada`, `evaluada`, `aceptada`, `descartada`, `procesada`, `finalizada`) | En la inserción queda `descubierta` (valor por defecto); los demás estados los asumirán módulos posteriores |
-| `observaciones` | TEXT DEFAULT '' | Información adicional relevante; en el Módulo 1 conserva el texto crudo de la fecha relativa (p. ej. "Publicado hace 9 horas") (D28) | En la inserción, desde la oferta capturada |
+| `observaciones` | TEXT DEFAULT 'N/A' | Información adicional relevante; en el Módulo 1 conserva el texto crudo de la fecha relativa (p. ej. "Publicado hace 9 horas") (D28); `N/A` si no hay texto (D31) | En la inserción, desde la oferta capturada |
 | `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática en la inserción |
 | `fecha_ultima_edicion` | TEXT DEFAULT '' | Fecha/hora de la última actualización | Automática en la inserción y en cada actualización |
 | `fuente_id` | TEXT DEFAULT '' | Fuente de origen de la oferta (identificador de la fuente configurada) | En la inserción, desde la oferta capturada |
-| `empresa_id` | TEXT DEFAULT '' | Referencia a la empresa del catálogo (decisión D4: `NULL` en MVP; D29: el Módulo 1 no extrae la empresa) | Sin escritura en el Módulo 1 (futuros módulos) |
-| `ubicacion_id` | TEXT DEFAULT '' | Referencia a la ubicación del catálogo (decisión D4: `NULL` en MVP; D29: el Módulo 1 no extrae la ubicación) | Sin escritura en el Módulo 1 (futuros módulos) |
+| `empresa_id` | TEXT DEFAULT 'N/A' | Referencia a la empresa del catálogo; `N/A` mientras no haya catálogo (D4: NULL en MVP; D29: el Módulo 1 no extrae la empresa; D31: NULL → `N/A`) | Sin escritura en el Módulo 1 (futuros módulos) |
+| `ubicacion_id` | TEXT DEFAULT 'N/A' | Referencia a la ubicación del catálogo; `N/A` mientras no haya catálogo (D4: NULL en MVP; D29: el Módulo 1 no extrae la ubicación; D31: NULL → `N/A`) | Sin escritura en el Módulo 1 (futuros módulos) |
 | `id_corrida` | TEXT DEFAULT '' | Corrida que descubrió la oferta | En la inserción, desde el contexto de la corrida |
 | `id_sesion` | TEXT DEFAULT '' | Sesión de plataforma usada al descubrirla | En la inserción, desde el contexto de la sesión |
 | `indice_set` | INTEGER DEFAULT '' | Índice del set de filtros que la produjo | En la inserción, desde el contexto del set actual |
-| `id_externo` | TEXT DEFAULT '' | Identificador externo de la oferta en la fuente; clave de deduplicación del upsert | En la inserción, desde la oferta capturada |
-| `fecha_ultima_verificacion` | TEXT DEFAULT '' | Última fecha/hora en que la oferta fue vista de nuevo en una captura | Solo en re-visitas: `upsert_oferta()` la actualiza cuando ya existe una fila con el mismo `id_externo` |
+| `id_externo` | TEXT DEFAULT '' | Identificador externo de la oferta en la fuente; clave de deduplicación del upsert (no se normaliza a `N/A` — D31) | En la inserción, desde la oferta capturada |
+| `fecha_ultima_verificacion` | TEXT DEFAULT '' | Última fecha/hora en que la oferta fue vista de nuevo en una captura (exenta de la regla N/A — D31, punto 4) | Solo en re-visitas: `upsert_oferta()` la actualiza cuando ya existe una fila con el mismo `id_externo` |
 
-### 2.6. `corridas`
+> **D31:** la columna `identificador_origen` fue eliminada (duplicado muerto de `id_externo`, nunca escrita).
+
+### 2.5. `corridas`
 
 Registro de cada corrida (ejecución completa del flujo). Se crea en el **nodo INICIO** con `registrar_corrida()` (insert idempotente por `id_corrida`) y se cierra en el **nodo Finalizar** con `actualizar_corrida()`.
 
@@ -131,24 +121,25 @@ Registro de cada corrida (ejecución completa del flujo). Se crea en el **nodo I
 | `total_sucesos` | INTEGER DEFAULT 0 | Total de eventos de éxito de la corrida | En el Finalizar, desde las métricas del cierre |
 | `fuentes_procesadas` | INTEGER DEFAULT 0 | Número de fuentes procesadas en la corrida | En el Finalizar, desde las métricas del cierre |
 
-### 2.7. `eventos`
+### 2.6. `eventos`
 
-Bitácora de eventos (errores y sucesos) de las corridas, con `tipo` `error` o `suceso` y código de negocio. La escribe `escribir_evento()` desde los nodos: INICIO (fallos de inicialización, p. ej. ERR-10), Control de fuentes (abortos, ERR-01), Registro (resultado del registro), Captura (éxito `ofertas_registradas`, `registro_parcial`), Finalizar (terminación: `corrida_completada` como suceso o el motivo como error). Nunca se eliminan (auditoría).
+Bitácora de eventos (errores y sucesos) de las corridas, con `tipo` `error` o `suceso` y código de negocio. La escribe `escribir_evento()` desde los nodos: INICIO (fallos de inicialización, p. ej. ERR-10), Control de fuentes (abortos, ERR-01), Registro (resultado del registro), Captura (éxito `ofertas_registradas`, `registro_parcial`), Finalizar (terminación: `corrida_completada` como suceso o el motivo como error). Nunca se eliminan (auditoría). Regla D31: los campos sin valor se guardan como `N/A` (p. ej. el evento de terminación no tiene fuente ni sesión); `indice_set` conserva `0` como valor válido.
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
 | `evento_id` | TEXT (PK) | ID único del evento (prefijo `EVT`) | Automático en cada `escribir_evento()` |
 | `id_corrida` | TEXT NOT NULL | Corrida a la que pertenece el evento (obligatorio) | En cada `escribir_evento()`, desde el contexto de la corrida |
-| `fuente_id` | TEXT DEFAULT '' | Fuente sobre la que ocurrió el evento | Solo en eventos con contexto de fuente (Captura, Registro); vacío en eventos de corrida (INICIO, Finalizar) |
-| `id_sesion` | TEXT DEFAULT '' | Sesión de plataforma del evento | Solo en eventos de Captura/Registro con sesión activa |
-| `indice_set` | INTEGER DEFAULT '' | Índice del set de filtros donde ocurrió | Solo en eventos de Captura/Registro con set activo |
+| `fuente_id` | TEXT DEFAULT 'N/A' | Fuente sobre la que ocurrió el evento; `N/A` en eventos de corrida (INICIO, Finalizar) | En eventos con contexto de fuente (Captura, Registro); `N/A` en el resto (D31) |
+| `id_sesion` | TEXT DEFAULT 'N/A' | Sesión de plataforma del evento; `N/A` si el evento no es de sesión | En eventos de Captura/Registro con sesión activa; `N/A` en el resto (D31) |
+| `indice_set` | INTEGER DEFAULT 'N/A' | Índice del set de filtros donde ocurrió; `N/A` si no aplica (`0` es válido) | En eventos de Captura/Registro con set activo; `N/A` en el resto (D31) |
 | `marca_temporal` | TEXT NOT NULL | Fecha/hora exacta del evento | En cada `escribir_evento()` (o automática si no se provee) |
 | `tipo` | TEXT NOT NULL | Clasificación: `error` o `suceso` | En cada `escribir_evento()`, según el resultado del nodo |
 | `codigo` | TEXT NOT NULL | Código de negocio (`ERR-01`, `ERR-10`, `ofertas_registradas`, `registro_parcial`, motivo de terminación, etc.) | En cada `escribir_evento()` |
-| `evidencia` | TEXT DEFAULT '' | Evidencia: trazas, fragmentos, métricas asociadas | En cada `escribir_evento()` (nunca credenciales) |
-| `id_oferta` | TEXT DEFAULT '' | Oferta relacionada al evento (definida en el modelo; no se escribe aún) | Sin escritura en el Módulo 1 (reservada) |
+| `evidencia` | TEXT DEFAULT 'N/A' | Evidencia: trazas, fragmentos, métricas asociadas; `N/A` si no hay payload | En cada `escribir_evento()` (nunca credenciales); `N/A` si vacío (D31) |
 
-### 2.8. `sesiones`
+> **D31:** la columna `id_oferta` fue eliminada (nunca escrita en el Módulo 1; la trazabilidad evento-oferta no está implementada).
+
+### 2.7. `sesiones`
 
 Auditoría de las sesiones de plataforma por lote capturado. La escribe el **nodo Captura** con `escribir_fila("sesiones")` tras procesar cada lote (con reintento si falla).
 
@@ -166,7 +157,7 @@ Auditoría de las sesiones de plataforma por lote capturado. La escribe el **nod
 | `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática en la inserción |
 | `fecha_ultima_edicion` | TEXT DEFAULT '' | Fecha/hora de la última actualización | Automática en la inserción y en cada actualización |
 
-### 2.9. `bloqueo`
+### 2.8. `bloqueo`
 
 Bloqueo de concurrencia de corridas (una sola corrida activa a la vez). Máximo una fila. La escribe el **nodo INICIO** con `adquirir_bloqueo()` (insert, o update por obsolescencia o con `forzar`) y la elimina el **nodo Finalizar** con `liberar_bloqueo()`. El INICIO también hace una prueba de escritura con `sondear_escritura()` (insert + rollback, sin dejar datos).
 

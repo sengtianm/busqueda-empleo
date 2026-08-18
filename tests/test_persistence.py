@@ -24,10 +24,10 @@ def test_generate_id_sequence(temp_db_file: Path) -> None:
 def test_generate_id_per_table(temp_db_file: Path) -> None:
     company_id = generar_id("empresas")
     id_oferta = generar_id("ofertas")
-    fuente_id = generar_id("fuentes")
+    ubicacion_id = generar_id("ubicaciones")
     assert company_id.startswith("EMP-")
     assert id_oferta.startswith("OFE-")
-    assert fuente_id.startswith("FNT-")
+    assert ubicacion_id.startswith("UBI-")
 
 
 def test_write_and_read(temp_db_file: Path) -> None:
@@ -86,7 +86,7 @@ def test_json_lists(temp_db_file: Path) -> None:
     assert result["titulo"] == "Data Engineer"
 
 
-def test_init_db_crea_nueve_tablas(temp_db_file: Path) -> None:
+def test_init_db_crea_ocho_tablas(temp_db_file: Path) -> None:
     import sqlite3
 
     conn = sqlite3.connect(str(temp_db_file))
@@ -98,9 +98,10 @@ def test_init_db_crea_nueve_tablas(temp_db_file: Path) -> None:
         }
     finally:
         conn.close()
-    expected = {"secuencia_ids", "fuentes", "empresas", "ubicaciones",
+    expected = {"secuencia_ids", "empresas", "ubicaciones",
                 "ofertas", "corridas", "eventos", "sesiones", "bloqueo"}
     assert expected.issubset(tablas)
+    assert "fuentes" not in tablas
 
 
 def test_acquire_and_release_lock(temp_db_file: Path) -> None:
@@ -418,8 +419,8 @@ def test_upsert_oferta_inserta_nueva(temp_db_file: Path) -> None:
     assert len(filas) == 1
     assert filas[0]["titulo"] == "Desarrollador Python"
     assert filas[0]["fuente_id"] == "LI-01"
-    assert filas[0]["empresa_id"] is None
-    assert filas[0]["ubicacion_id"] is None
+    assert filas[0]["empresa_id"] == "N/A"
+    assert filas[0]["ubicacion_id"] == "N/A"
 
 
 def test_upsert_oferta_ids_nulos_sin_fk_error(temp_db_file: Path) -> None:
@@ -443,8 +444,8 @@ def test_upsert_oferta_ids_nulos_sin_fk_error(temp_db_file: Path) -> None:
     assert id_oferta.startswith("OFE-")
     filas = leer_tabla("ofertas", {"id_externo": "456"})
     assert len(filas) == 1
-    assert filas[0]["empresa_id"] is None
-    assert filas[0]["ubicacion_id"] is None
+    assert filas[0]["empresa_id"] == "N/A"
+    assert filas[0]["ubicacion_id"] == "N/A"
 
 
 def test_init_db_crea_indices_esperados(temp_db_file: Path) -> None:
@@ -605,10 +606,70 @@ def test_contar_distintos_excluye_vacios(temp_db_file: Path) -> None:
     escribir_evento(
         {"id_corrida": "COR-0002", "tipo": "suceso", "codigo": "c", "fuente_id": ""}
     )
+    escribir_evento(
+        {"id_corrida": "COR-0003", "tipo": "suceso", "codigo": "corrida_completada"}
+    )
 
     assert contar_distintos("eventos", "fuente_id", {"id_corrida": "COR-0001"}) == 1
     assert contar_distintos("eventos", "fuente_id", {}) == 1
     assert contar_distintos("eventos", "fuente_id") == 1
+
+
+def test_eventos_sin_vacios_se_guardan_como_n_a(temp_db_file: Path) -> None:
+    from shared.persistence import escribir_evento, leer_tabla
+
+    escribir_evento(
+        {
+            "id_corrida": "COR-0001",
+            "tipo": "suceso",
+            "codigo": "corrida_completada",
+            "evidencia": "ok",
+        }
+    )
+    escribir_evento(
+        {
+            "id_corrida": "COR-0002",
+            "tipo": "error",
+            "codigo": "fuente_inalcanzable",
+            "fuente_id": "",
+        }
+    )
+
+    filas = leer_tabla("eventos", {"id_corrida": "COR-0001"})
+    assert len(filas) == 1
+    assert filas[0]["fuente_id"] == "N/A"
+    assert filas[0]["id_sesion"] == "N/A"
+    assert filas[0]["indice_set"] == "N/A"
+    filas = leer_tabla("eventos", {"id_corrida": "COR-0002"})
+    assert len(filas) == 1
+    assert filas[0]["fuente_id"] == "N/A"
+
+
+def test_ofertas_sin_vacios_se_guardan_como_n_a(temp_db_file: Path) -> None:
+    from shared.persistence import leer_tabla, upsert_oferta
+
+    id_oferta = upsert_oferta(
+        {
+            "titulo": "Data Analyst",
+            "descripcion_original": "",
+            "empresa_id": None,
+            "ubicacion_id": None,
+            "enlace": "https://www.linkedin.com/jobs/view/789",
+            "fuente_id": "LI-01",
+            "indice_set": 1,
+            "id_externo": "789",
+            "id_corrida": "COR-0002",
+            "id_sesion": "SES-0002",
+            "fecha_descubrimiento": "2026-08-09 10:05:00",
+        }
+    )
+    filas = leer_tabla("ofertas", {"id": id_oferta})
+    assert len(filas) == 1
+    assert filas[0]["descripcion_original"] == "N/A"
+    assert filas[0]["empresa_id"] == "N/A"
+    assert filas[0]["ubicacion_id"] == "N/A"
+    assert filas[0]["observaciones"] == "N/A"
+    assert filas[0]["fecha_publicacion"] == "N/A"
 
 
 def test_migracion_4_4_fks_anulables_idempotente(tmp_path: Path) -> None:
@@ -948,12 +1009,13 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
                 ).fetchall()
             }
             esperadas_ofertas = {
-                "identificador_origen", "enlace", "fecha_descubrimiento",
+                "enlace", "fecha_descubrimiento",
                 "id_corrida", "id_sesion", "indice_set", "id_externo",
                 "fecha_ultima_verificacion", "fecha_creacion",
                 "fecha_ultima_edicion",
             }
             assert esperadas_ofertas.issubset(columnas_ofertas)
+            assert "identificador_origen" not in columnas_ofertas
             assert "empresa_nombre" not in columnas_ofertas
             assert "ubicacion_nombre" not in columnas_ofertas
             sql_ofertas = conn.execute(
@@ -962,11 +1024,16 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
             ).fetchone()[0]
             assert "descubierta" in sql_ofertas
             assert "discovered" not in sql_ofertas
+            tablas = {
+                fila[0] for fila in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+            assert "fuentes" not in tablas
             for tabla, esperadas in {
-                "fuentes": {"enlace_base", "fecha_creacion", "fecha_ultima_edicion"},
                 "empresas": {"nombre_normalizado", "perfil_linkedin", "tamano"},
                 "corridas": {"id_corrida", "fecha_inicio"},
-                "eventos": {"id_corrida", "fuente_id", "marca_temporal", "id_oferta"},
+                "eventos": {"id_corrida", "fuente_id", "marca_temporal"},
                 "sesiones": {"id", "id_sesion", "id_corrida", "fuente_id"},
                 "bloqueo": {"id_corrida", "marca_temporal"},
             }.items():
@@ -976,6 +1043,12 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
                     ).fetchall()
                 }
                 assert esperadas.issubset(columnas), f"{tabla}: {esperadas - columnas}"
+            columnas_eventos = {
+                fila[1] for fila in conn.execute(
+                    "PRAGMA table_info(eventos)"
+                ).fetchall()
+            }
+            assert "id_oferta" not in columnas_eventos
         finally:
             conn.close()
 
@@ -991,10 +1064,7 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
         assert oferta["fecha_descubrimiento"] == "2026-08-10 16:38:02"
         assert oferta["fecha_ultima_verificacion"] == "2026-08-10 16:38:02"
         assert oferta["estado"] == "descubierta"
-        assert oferta["identificador_origen"] == "LI-1"
 
-        fuentes = leer_tabla("fuentes")
-        assert fuentes[0]["enlace_base"] == "https://www.linkedin.com/jobs"
         empresas = leer_tabla("empresas")
         assert empresas[0]["nombre_normalizado"] == "techcorp"
         assert empresas[0]["perfil_linkedin"] == "https://www.linkedin.com/company/techcorp"
@@ -1002,7 +1072,7 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
         eventos = leer_tabla("eventos")
         assert eventos[0]["id_corrida"] == "COR-1839"
         assert eventos[0]["fuente_id"] == "linkedin"
-        assert eventos[0]["id_oferta"] == "OFE-0001"
+        assert "id_oferta" not in eventos[0]
         sesiones = leer_tabla("sesiones")
         assert len(sesiones) == 1
         assert sesiones[0]["id"] == "SES-0218"
@@ -1034,7 +1104,7 @@ def test_migracion_espanol_total_idempotente(tmp_path: Path) -> None:
             }
         finally:
             conn.close()
-        assert "identificador_origen" in columnas
+        assert "identificador_origen" not in columnas
         rows = leer_tabla("ofertas")
         assert len(rows) == 1
         assert rows[0]["id"] == "OFE-0001"
@@ -1062,7 +1132,7 @@ def test_migracion_espanol_total_base_nueva_no_reconstruye(tmp_path: Path) -> No
             }
         finally:
             conn.close()
-        assert "identificador_origen" in columnas
+        assert "identificador_origen" not in columnas
         assert "enlace" in columnas
         assert "fecha_descubrimiento" in columnas
     finally:

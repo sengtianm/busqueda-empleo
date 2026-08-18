@@ -15,7 +15,6 @@ from shared.utilidades import ahora
 _DB_PATH: Path | None = None
 
 PREFIXES: dict[str, str] = {
-    "fuentes": "FNT",
     "empresas": "EMP",
     "ubicaciones": "UBI",
     "ofertas": "OFE",
@@ -37,17 +36,6 @@ ESQUEMAS: dict[str, str] = {
         "tabla_nombre TEXT PRIMARY KEY,"
         "prefijo TEXT NOT NULL,"
         "ultimo_numero INTEGER NOT NULL DEFAULT 0"
-        ")"
-    ),
-    "fuentes": (
-        "CREATE TABLE IF NOT EXISTS fuentes ("
-        "id TEXT PRIMARY KEY,"
-        "nombre TEXT NOT NULL,"
-        "tipo TEXT DEFAULT '',"
-        "enlace_base TEXT DEFAULT '',"
-        "activa INTEGER DEFAULT 1,"
-        "fecha_creacion TEXT DEFAULT '',"
-        "fecha_ultima_edicion TEXT DEFAULT ''"
         ")"
     ),
     "empresas": (
@@ -78,21 +66,20 @@ ESQUEMAS: dict[str, str] = {
     "ofertas": (
         "CREATE TABLE IF NOT EXISTS ofertas ("
         "id TEXT PRIMARY KEY,"
-        "identificador_origen TEXT DEFAULT '',"
         "enlace TEXT NOT NULL,"
         "titulo TEXT DEFAULT '',"
-        "descripcion_original TEXT DEFAULT '',"
-        "fecha_publicacion TEXT DEFAULT '',"
+        "descripcion_original TEXT DEFAULT 'N/A',"
+        "fecha_publicacion TEXT DEFAULT 'N/A',"
         "fecha_descubrimiento TEXT DEFAULT '',"
         "estado TEXT DEFAULT 'descubierta' "
         "CHECK(estado IN ('descubierta','preparada','evaluada',"
         "'aceptada','descartada','procesada','finalizada')),"
-        "observaciones TEXT DEFAULT '',"
+        "observaciones TEXT DEFAULT 'N/A',"
         "fecha_creacion TEXT DEFAULT '',"
         "fecha_ultima_edicion TEXT DEFAULT '',"
         "fuente_id TEXT DEFAULT '',"
-        "empresa_id TEXT DEFAULT '',"
-        "ubicacion_id TEXT DEFAULT '',"
+        "empresa_id TEXT DEFAULT 'N/A',"
+        "ubicacion_id TEXT DEFAULT 'N/A',"
         "id_corrida TEXT DEFAULT '',"
         "id_sesion TEXT DEFAULT '',"
         "indice_set INTEGER DEFAULT '',"
@@ -117,14 +104,13 @@ ESQUEMAS: dict[str, str] = {
         "CREATE TABLE IF NOT EXISTS eventos ("
         "evento_id TEXT PRIMARY KEY,"
         "id_corrida TEXT NOT NULL,"
-        "fuente_id TEXT DEFAULT '',"
-        "id_sesion TEXT DEFAULT '',"
-        "indice_set INTEGER DEFAULT '',"
+        "fuente_id TEXT DEFAULT 'N/A',"
+        "id_sesion TEXT DEFAULT 'N/A',"
+        "indice_set INTEGER DEFAULT 'N/A',"
         "marca_temporal TEXT NOT NULL,"
         "tipo TEXT NOT NULL CHECK(tipo IN ('error','suceso')),"
         "codigo TEXT NOT NULL,"
-        "evidencia TEXT DEFAULT '',"
-        "id_oferta TEXT DEFAULT ''"
+        "evidencia TEXT DEFAULT 'N/A'"
         ")"
     ),
     "sesiones": (
@@ -214,7 +200,7 @@ def _deserialize(fila: sqlite3.Row | None) -> dict[str, Any] | None:
 def init_db() -> None:
     conn = _connection()
     try:
-        tablas = ("secuencia_ids", "fuentes", "empresas", "ubicaciones",
+        tablas = ("secuencia_ids", "empresas", "ubicaciones",
                   "ofertas", "corridas", "eventos", "sesiones", "bloqueo")
         for nombre_tabla in tablas:
             conn.execute(ESQUEMAS[nombre_tabla])
@@ -224,6 +210,7 @@ def init_db() -> None:
         _migrate_ofertas_empresa_nombre(conn)
         _migrate_corridas_finalizacion(conn)
         _migrate_sesiones_id(conn)
+        _migrate_limpieza_d31(conn)
         for sentencia in _INDICES:
             conn.execute(sentencia)
         conn.commit()
@@ -232,11 +219,6 @@ def init_db() -> None:
 
 
 MAPA_COLUMNAS_ESPANOL: dict[str, dict[str, str]] = {
-    "fuentes": {
-        "url_base": "enlace_base",
-        "creation_date": "fecha_creacion",
-        "last_edit_date": "fecha_ultima_edicion",
-    },
     "empresas": {
         "normalized_name": "nombre_normalizado",
         "linkedin": "perfil_linkedin",
@@ -249,7 +231,6 @@ MAPA_COLUMNAS_ESPANOL: dict[str, dict[str, str]] = {
         "last_edit_date": "fecha_ultima_edicion",
     },
     "ofertas": {
-        "source_identifier": "identificador_origen",
         "url": "enlace",
         "discovery_date": "fecha_descubrimiento",
         "creation_date": "fecha_creacion",
@@ -271,7 +252,6 @@ MAPA_COLUMNAS_ESPANOL: dict[str, dict[str, str]] = {
         "session_id": "id_sesion",
         "set_indice": "indice_set",
         "timestamp": "marca_temporal",
-        "offer_id": "id_oferta",
     },
     "sesiones": {
         "session_id": "id_sesion",
@@ -289,7 +269,7 @@ MAPA_COLUMNAS_ESPANOL: dict[str, dict[str, str]] = {
 }
 
 _TABLAS_ESQUEMA: tuple[str, ...] = (
-    "fuentes", "empresas", "ubicaciones", "ofertas",
+    "empresas", "ubicaciones", "ofertas",
     "corridas", "eventos", "sesiones", "bloqueo",
 )
 
@@ -472,6 +452,53 @@ def _migrate_ofertas_timestamp_ultima_verificacion(conn: sqlite3.Connection) -> 
         )
 
 
+def _migrate_limpieza_d31(conn: sqlite3.Connection) -> None:
+    """D31 migration: schema cleanup + no-empty-field rule (N/A).
+
+    (1) Drops the `fuentes` table and its `secuencia_ids` row (sources are
+    config-driven; the catalog was never populated).
+    (2) Drops `ofertas.identificador_origen` (dead duplicate of `id_externo`)
+    and `eventos.id_oferta` (never used; per-offer traceability is out of
+    Module 1 scope).
+    (3) Backfills the no-empty-field rule (decision D31): empty/NULL values
+    in the non-nullable-by-semantics columns become 'N/A' so no field stays
+    empty (the backfill updates are per-column and safe no-ops when no row
+    matches; the DROP COLUMN steps are guarded by a column-presence check).
+    `ofertas.fecha_ultima_verificacion` is exempted (only refreshed
+    on re-visits; D31 point 4 keeps its current behavior).
+    Idempotent: every destructive step only runs when its target is present.
+    """
+    conn.execute("DROP TABLE IF EXISTS fuentes")
+    conn.execute("DELETE FROM secuencia_ids WHERE tabla_nombre = 'fuentes'")
+    for tabla, columnas in (
+        ("ofertas", ("identificador_origen",)),
+        ("eventos", ("id_oferta",)),
+    ):
+        actuales = {
+            fila["name"]
+            for fila in conn.execute(f"PRAGMA table_info({tabla})").fetchall()
+        }
+        for columna in columnas:
+            if columna in actuales:
+                conn.execute(f"ALTER TABLE {tabla} DROP COLUMN {columna}")
+    for columna in (
+        "descripcion_original",
+        "fecha_publicacion",
+        "observaciones",
+        "empresa_id",
+        "ubicacion_id",
+    ):
+        conn.execute(
+            f"UPDATE ofertas SET {columna} = 'N/A' "
+            f"WHERE {columna} IS NULL OR {columna} = ''"
+        )
+    for columna in ("fuente_id", "id_sesion", "indice_set", "evidencia"):
+        conn.execute(
+            f"UPDATE eventos SET {columna} = 'N/A' "
+            f"WHERE {columna} IS NULL OR {columna} = ''"
+        )
+
+
 _COLUMNAS_FINALIZACION_CORRIDAS: tuple[str, ...] = (
     "fecha_fin TEXT DEFAULT ''",
     "motivo_terminacion TEXT DEFAULT ''",
@@ -572,10 +599,17 @@ def contar_filas(tabla: str, filtros: dict[str, Any] | None = None) -> int:
 def contar_distintos(
     tabla: str, columna: str, filtros: dict[str, Any] | None = None
 ) -> int:
-    """Counts distinct non-empty values of a column (equality filters)."""
+    """Counts distinct non-empty values of a column (equality filters).
+
+    Empty values are NULL, '' and 'N/A' (no-empty-field rule, decision D31:
+    'N/A' is the placeholder for not-applicable fields).
+    """
     conn = _connection()
     try:
-        condiciones = f"{columna} IS NOT NULL AND {columna} != ''"
+        condiciones = (
+            f"{columna} IS NOT NULL AND {columna} != '' "
+            f"AND {columna} != 'N/A'"
+        )
         params: dict[str, Any] = {}
         if filtros:
             condiciones += " AND " + " AND ".join(f"{k} = :{k}" for k in filtros.keys())
@@ -799,13 +833,25 @@ def _upsert_ofertas_en(
     Existing rows only refresh `fecha_ultima_verificacion`; new rows get a
     generated `id` on the same connection. Row-level failures are logged and
     counted without aborting the remaining rows; the caller commits.
-    Returns (ids_registradas, fallidas).
+    Returns (ids_registradas, fallidas). No-empty-field rule (D31): empty
+    values in `descripcion_original`/`fecha_publicacion`/`observaciones`/
+    `empresa_id`/`ubicacion_id` are persisted as 'N/A'.
     """
     registradas: list[str] = []
     fallidas = 0
     if not filas:
         return registradas, fallidas
     preparadas = [_serialize(dict(f)) for f in filas]
+    for d in preparadas:
+        for campo in (
+            "descripcion_original",
+            "fecha_publicacion",
+            "observaciones",
+            "empresa_id",
+            "ubicacion_id",
+        ):
+            if not d.get(campo):
+                d[campo] = "N/A"
     id_externos = [d.get("id_externo") for d in preparadas if d.get("id_externo")]
     ids_por_id_externo: dict[str, str] = {}
     if id_externos:
@@ -905,6 +951,11 @@ def escribir_evento(datos: dict[str, Any]) -> str:
     """
     EventoAlmacen.model_validate(datos)
     d = _serialize(datos)
+    for campo in ("fuente_id", "id_sesion", "evidencia"):
+        if not d.get(campo):
+            d[campo] = "N/A"
+    if d.get("indice_set") is None:
+        d["indice_set"] = "N/A"
     evento_id = str(d.get("evento_id") or generar_id("eventos"))
     d["evento_id"] = evento_id
     if not d.get("marca_temporal"):
