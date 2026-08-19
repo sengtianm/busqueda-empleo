@@ -10,6 +10,11 @@ fuentes:
         - "LINKEDIN_PASSWORD"
       criterio_exito: "MainFeed"
       timeout_segundos: 30
+    # Sets de filtros: una búsqueda por set; todos se ejecutan en la misma
+    # corrida (set 0: buscar -> capturar -> registrar -> siguiente set).
+    # Regla: indice_set debe ser consecutivo desde 0 (0, 1, 2, ...). Un hueco
+    # (p.ej. 0 y 2) aborta la corrida con ERR-01 "Set ausente"; un índice
+    # duplicado hace que el segundo set se ignore en silencio.
     sets_de_filtros:
       - indice_set: 0
         filtros:

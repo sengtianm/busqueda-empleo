@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 30 | 18/08/2026 | `ses_fea037d3dffeR12tTJoQEt4IFq` | Multi-search Q&A in Module 1: `sets_de_filtros` natively supports several queries per run (search → capture → register per set, dedup by external id); contiguous-index rule documented in `config.yaml` (option A, config-only) — no code changes |
 | 29 | 18/08/2026 | `ses_feb0c7a29ffe0jOcMvPYiDv5wa` | Schema cleanup + no-empty-field rule (D31): `eventos.id_oferta`, `ofertas.identificador_origen` and the `fuentes` table/FNT prefix removed; N/A/N/R placeholders enforced at the persistence boundary, `fecha_ultima_verificacion` exempted; live DB migrated 9→8 tables with backup (329 tests) |
 | 28 | 17/08/2026 | `ses_fef46d693ffeeJzOMWNCGCQb5s` | Success-event traceability + observability (D30): `ingreso_exitoso`/`consulta_exitosa` emitted by the entry/search nodes aligning the ficha contracts, `duracion_s` in capture evidence, INFO logs default, `total_sucesos` semantics documented; verified fresh run COR-0001 98 offers 0 errors (327 tests) |
 | 27 | 17/08/2026 | `ses_fef46d693ffeeJzOMWNCGCQb5s` | Card field extraction (D28) then user-requested revert (D29): only publication date kept, raw company/location columns dropped from `ofertas`, DB reset without run, verification COR-0001 99 offers 0 errors (322 tests) |
@@ -30,6 +31,25 @@ Unless noted, decisions from previous sessions remain in effect.
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+## Session 30 — 18/08/2026
+`ses_fea037d3dffeR12tTJoQEt4IFq` · `fase-4`
+
+**Topics**
+- Q&A: how to search more job queries on LinkedIn — answered from the code: `sets_de_filtros` is a list, the orchestrator loops each set inside the same run (set N: search → capture → register → next set), per-source set iterator with reset on source change, dedup by `id_externo` across sets, per-set traceability via `indice_set`
+- Rule explained: `indice_set` must be consecutive from 0 — a gap (0 and 2) aborts the run with ERR-01 "Set ausente"; a duplicate index is silently ignored; `max_ofertas_por_corrida` caps the whole run, not per set
+- Option A implemented (document-only, user-approved): contiguous-index rule commented above `sets_de_filtros` in `config.yaml`; no code changes, config load verified (1 set, index 0)
+- Second search set ("Operaciones manager") NOT added — pending user keywords/config
+
+**Decisions**
+- Option A approved: rule documented in config comments; no validation code (options B/C deferred)
+- Decisions from previous sessions remain in effect
+
+**Status**
+- Config comment ✅ · no code changes (ruff/mypy/pytest n/a; suite remains 329)
+- Session history committed in this /save; single commit + push
+- Branch: `fase-4` · no merge
+- Next: Phase 5 (Module 2 — Preparation), task 1: `modules/preparation/` structure (pending)
 
 ## Session 29 — 18/08/2026
 `ses_feb0c7a29ffe0jOcMvPYiDv5wa` · `fase-4`
