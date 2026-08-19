@@ -95,7 +95,7 @@ _RE_ID_COMPONENTE = re.compile(r"job-card-component-ref-(\d+)")
 # hasheadas por pagina (obfuscacion); el parseo usa el texto de los <p> de la
 # tarjeta, validado empiricamente (Exp 9: 75/75 tarjetas, 3 paginas reales).
 # (D29) De la tarjeta solo se conserva la fecha relativa de publicacion; la
-# empresa y la ubicacion ya no se extraen (columnas eliminadas de `ofertas`).
+# empresa y la ubicacion ya no se extraen (columnas eliminadas de `ofertas_descubiertas`).
 _RE_PUBLICADO_SDUI = re.compile(
     r"Publicado hace\s+(\d+)\s+(minutos?|horas?|d[ií]as?|semanas?|mes(?:es)?)",
     re.IGNORECASE,

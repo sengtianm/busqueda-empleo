@@ -24,7 +24,7 @@ Official record of all persistent entities in the job search automation data mod
 | Bloqueo | Operational | Concurrency | Persistent lock guaranteeing a single active Discovery module run. |
 
 **Scope of implemented persistence** — decisions 2026-07-30 and 2026-08-07:  
-The MVP database (`job_search.db`) persists only: `secuencia_ids`, `empresas`, `ubicaciones`, and `ofertas`. The Discovery module additionally defines `eventos`, `sesiones`, `corridas`, and `bloqueo` as tables in the same SQLite file (decision D2, 2026-08-07). Remaining entities are deferred to later modules. This note formalizes the implemented scope; the full inventory remains the target model. **As-built D31 (2026-08-18):** the `fuentes` table was dropped from the physical model (never populated; sources are config-driven via `config.yaml`); the physical DB now has 8 tables.
+The MVP database (`job_search.db`) persists only: `secuencia_ids`, `empresas`, `ubicaciones`, and `ofertas_descubiertas`. The Discovery module additionally defines `eventos`, `sesiones`, `corridas`, and `bloqueo` as tables in the same SQLite file (decision D2, 2026-08-07). Remaining entities are deferred to later modules. This note formalizes the implemented scope; the full inventory remains the target model. **As-built D31 (2026-08-18):** the `fuentes` table was dropped from the physical model (never populated; sources are config-driven via `config.yaml`); the physical DB now has 8 tables. **As-built D32 (2026-08-19):** the physical table `ofertas` was renamed to `ofertas_descubiertas` to distinguish it from the offer tables of later stages (Preparation, Evaluation, Processing); prefix `OFE`, indexes and function names unchanged.
 
 ## 2. Detailed Specification of Entities
 
@@ -81,7 +81,7 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_i
 
 **State machine:** Not applicable.
 
-**Observations:** Represents only the origin of offers; it does not store individual offer data. **As-built D31 (2026-08-18):** the `fuentes` table was **dropped from the physical model** — it was never populated in production (sources are config-driven via `config.yaml` and the `Source` model is never stored); the entity remains in the target model for future modules (catalog persistence). `ofertas.fuente_id` keeps storing the config `fuente_id` string (D4).
+**Observations:** Represents only the origin of offers; it does not store individual offer data. **As-built D31 (2026-08-18):** the `fuentes` table was **dropped from the physical model** — it was never populated in production (sources are config-driven via `config.yaml` and the `Source` model is never stored); the entity remains in the target model for future modules (catalog persistence). `ofertas_descubiertas.fuente_id` keeps storing the config `fuente_id` string (D4).
 
 ### 2.3. Entity: Company
 
@@ -400,10 +400,10 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_i
 Fundamental rules applicable to all persisted data from this decision onward:
 
 - **No empty fields:** no persisted field may hold `''` or NULL as "no value". When a value is not applicable or not available, the placeholder is `N/A` (not-applicable) or `N/R` (not-required). Implemented at the persistence boundary (`shared/persistence.py`): `escribir_evento` normalizes `fuente_id`/`id_sesion`/`indice_set`/`evidencia` and `_upsert_ofertas_en` normalizes `descripcion_original`/`fecha_publicacion`/`observaciones`/`empresa_id`/`ubicacion_id` (empty/None → `'N/A'`; `indice_set` only when `is None`, since `0` is a valid set index); affected columns declare `DEFAULT 'N/A'` in the schema.
-- **Exclusions:** `ofertas.id_externo` (a `'N/A'` value would collide during dedup — registration deduplicates by `id_externo`) and `ofertas.fecha_ultima_verificacion` (explicitly exempted by the user, D31 point 4: empty until a re-visit refreshes it).
-- **Scope:** currently enforced on `ofertas` and `eventos`. `corridas`, `sesiones`, `bloqueo`, `empresas`, `ubicaciones` and `secuencia_ids` are not restructured (their columns are either always complete or reserved); the rule applies to any future modification or new entity.
+- **Exclusions:** `ofertas_descubiertas.id_externo` (a `'N/A'` value would collide during dedup — registration deduplicates by `id_externo`) and `ofertas_descubiertas.fecha_ultima_verificacion` (explicitly exempted by the user, D31 point 4: empty until a re-visit refreshes it).
+- **Scope:** currently enforced on `ofertas_descubiertas` and `eventos`. `corridas`, `sesiones`, `bloqueo`, `empresas`, `ubicaciones` and `secuencia_ids` are not restructured (their columns are either always complete or reserved); the rule applies to any future modification or new entity.
 - **Query semantics:** value-counting queries treat `'N/A'` as empty — `contar_distintos` excludes NULL, `''` and `'N/A'` (keeps `fuentes_procesadas` correct, since run-level events carry `fuente_id='N/A'`).
-- **Physical cleanup (same decision):** the `fuentes` table and the `FNT-` prefix, `ofertas.identificador_origen` and `eventos.id_oferta` are removed from the physical model; migration `_migrate_limpieza_d31` is idempotent (`DROP TABLE IF EXISTS`, guarded `ALTER TABLE ... DROP COLUMN`, backfill).
+- **Physical cleanup (same decision):** the `fuentes` table and the `FNT-` prefix, `ofertas_descubiertas.identificador_origen` and `eventos.id_oferta` are removed from the physical model; migration `_migrate_limpieza_d31` is idempotent (`DROP TABLE IF EXISTS`, guarded `ALTER TABLE ... DROP COLUMN`, backfill).
 
 ## 3. Catalogs and Reference Tables
 
@@ -541,7 +541,7 @@ Any addition, modification, or deletion of attributes must update this dictionar
 
 #### 5.5.2. Source
 
-- `id` — Unique identifier. UUID; required; PK. Internal; Permanent. **As-built D31 (2026-08-18):** the Source entity has no physical table — the `fuentes` table was dropped (never populated; sources are config-driven). The entity remains in the target model; `ofertas.fuente_id` stores the config `fuente_id` string (D4).
+- `id` — Unique identifier. UUID; required; PK. Internal; Permanent. **As-built D31 (2026-08-18):** the Source entity has no physical table — the `fuentes` table was dropped (never populated; sources are config-driven). The entity remains in the target model; `ofertas_descubiertas.fuente_id` stores the config `fuente_id` string (D4).
 - `name` — Official source name. Text; required. Constraint: unique name. Internal; Permanent. Actual name: `nombre`.
 - `type` — Source type. Catalog; required; FK Catalog. Domain: Source Types. Constraint: valid catalog value. Internal; Permanent. Actual name: `tipo`.
 - `main_url` — Main source URL. Text; required. Constraint: unique URL. Public; Permanent. Actual name: `enlace_base`.
@@ -836,6 +836,7 @@ Every data-model modification must be recorded before becoming official. Each ve
 
 | Version | Date | Author | Change description |
 | --- | --- | --- | --- |
+| 1.10 | 2026-08-19 | System | Table rename — decision D32: the physical table `ofertas` was renamed to `ofertas_descubiertas` (schema, `secuencia_ids` row, queries, discovery nodes, tests, docs); idempotent migration `_migrate_ofertas_descubiertas` runs first in `init_db()`; prefix `OFE`, indexes and function names unchanged; live DB migrated in place via `init_db()`, no backup, 62 offers preserved; physical references in the scope note, §2.2/§2.17 and §5.5.2 updated to the current naming (precedent D7/D8); historical version rows are left intact (original wording in git). |
 | 1.0 | 2026-07-30 | System | Initial creation of Document 13A — Detailed Data Model Design. |
 | 1.1 | 2026-07-30 | System | Alignment with implementation: official Offer Statuses catalog reduced to the 7 states of `shared/state_machine.py`; attribute names aligned with `shared/models.py` — `version_modelo`, `region`; recorded Processed Offer deviations — PMD-020; implemented-persistence scope note. |
 | 1.2 | 2026-07-30 | System | Detailed Evaluation entity redefined with Spanish attribute names — decision C2: prompts adjusted to the entity; Overqualification Risk and Final Recommendation catalog values in Spanish; Official Data Dictionary §5.5 for the 13 entities; ERD §6.6 in Mermaid + ASCII; sensitivity classification per DOC-12 §14.2. |

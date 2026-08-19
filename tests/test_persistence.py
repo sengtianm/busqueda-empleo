@@ -23,7 +23,7 @@ def test_generate_id_sequence(temp_db_file: Path) -> None:
 
 def test_generate_id_per_table(temp_db_file: Path) -> None:
     company_id = generar_id("empresas")
-    id_oferta = generar_id("ofertas")
+    id_oferta = generar_id("ofertas_descubiertas")
     ubicacion_id = generar_id("ubicaciones")
     assert company_id.startswith("EMP-")
     assert id_oferta.startswith("OFE-")
@@ -75,12 +75,12 @@ def test_write_with_explicit_id(temp_db_file: Path) -> None:
 
 
 def test_json_lists(temp_db_file: Path) -> None:
-    id_oferta = escribir_fila("ofertas", {
+    id_oferta = escribir_fila("ofertas_descubiertas", {
         "enlace": "https://example.com/job",
         "titulo": "Data Engineer",
         "descripcion_original": "Test",
     })
-    result = buscar_por_id("ofertas", id_oferta)
+    result = buscar_por_id("ofertas_descubiertas", id_oferta)
     assert result is not None
     assert result["enlace"] == "https://example.com/job"
     assert result["titulo"] == "Data Engineer"
@@ -99,7 +99,8 @@ def test_init_db_crea_ocho_tablas(temp_db_file: Path) -> None:
     finally:
         conn.close()
     expected = {"secuencia_ids", "empresas", "ubicaciones",
-                "ofertas", "corridas", "eventos", "sesiones", "bloqueo"}
+                "ofertas_descubiertas", "corridas", "eventos",
+                "sesiones", "bloqueo"}
     assert expected.issubset(tablas)
     assert "fuentes" not in tablas
 
@@ -156,7 +157,7 @@ def test_esquema_ofertas_sin_not_null(temp_db_file: Path) -> None:
     try:
         columnas = {
             fila[1]: fila[3] for fila in conn.execute(
-                "PRAGMA table_info(ofertas)"
+                "PRAGMA table_info(ofertas_descubiertas)"
             ).fetchall()
         }
     finally:
@@ -192,12 +193,12 @@ def test_migracion_c2_desde_esquema_antiguo(tmp_path: Path) -> None:
         init_db()
         columnas = {
             fila[1]: fila[3] for fila in sqlite3.connect(str(path)).execute(
-                "PRAGMA table_info(ofertas)"
+                "PRAGMA table_info(ofertas_descubiertas)"
             ).fetchall()
         }
         assert columnas["titulo"] == 0
         assert columnas["descripcion_original"] == 0
-        rows = leer_tabla("ofertas")
+        rows = leer_tabla("ofertas_descubiertas")
         assert len(rows) == 1
         assert rows[0]["id"] == "OFE-0001"
         assert rows[0]["titulo"] == "Titulo Antiguo"
@@ -229,11 +230,112 @@ def test_migracion_c2_idempotente(tmp_path: Path) -> None:
         init_db()
         columnas = {
             fila[1]: fila[3] for fila in sqlite3.connect(str(path)).execute(
-                "PRAGMA table_info(ofertas)"
+                "PRAGMA table_info(ofertas_descubiertas)"
             ).fetchall()
         }
         assert columnas["titulo"] == 0
         assert columnas["descripcion_original"] == 0
+    finally:
+        reset_path()
+
+
+def test_migracion_d32_renombra_ofertas_a_ofertas_descubiertas(
+    tmp_path: Path,
+) -> None:
+    import sqlite3
+
+    from shared.persistence import change_path, init_db, leer_tabla, reset_path
+
+    path = tmp_path / "d32.db"
+    conn = sqlite3.connect(str(path))
+    conn.execute(
+        "CREATE TABLE ofertas ("
+        "id TEXT PRIMARY KEY,"
+        "enlace TEXT NOT NULL,"
+        "titulo TEXT NOT NULL,"
+        "descripcion_original TEXT NOT NULL"
+        ")"
+    )
+    conn.execute(
+        "INSERT INTO ofertas (id, enlace, titulo, descripcion_original) "
+        "VALUES ('OFE-0001', 'https://x.com/1', 'Titulo Antiguo', 'Desc')"
+    )
+    conn.execute(
+        "CREATE TABLE secuencia_ids ("
+        "tabla_nombre TEXT PRIMARY KEY,"
+        "prefijo TEXT NOT NULL,"
+        "ultimo_numero INTEGER NOT NULL DEFAULT 0"
+        ")"
+    )
+    conn.execute(
+        "INSERT INTO secuencia_ids (tabla_nombre, prefijo, ultimo_numero) "
+        "VALUES ('ofertas', 'OFE', 62)"
+    )
+    conn.commit()
+    conn.close()
+
+    change_path(path)
+    try:
+        init_db()
+        conn = sqlite3.connect(str(path))
+        try:
+            tablas = {
+                fila[0]
+                for fila in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+            secuencia = conn.execute(
+                "SELECT tabla_nombre, prefijo, ultimo_numero FROM secuencia_ids"
+            ).fetchone()
+        finally:
+            conn.close()
+        assert "ofertas" not in tablas
+        assert "ofertas_descubiertas" in tablas
+        assert secuencia == ("ofertas_descubiertas", "OFE", 62)
+        rows = leer_tabla("ofertas_descubiertas")
+        assert len(rows) == 1
+        assert rows[0]["id"] == "OFE-0001"
+        assert rows[0]["titulo"] == "Titulo Antiguo"
+    finally:
+        reset_path()
+
+
+def test_migracion_d32_idempotente(tmp_path: Path) -> None:
+    import sqlite3
+
+    from shared.persistence import change_path, init_db, leer_tabla, reset_path
+
+    path = tmp_path / "d32_nueva.db"
+    conn = sqlite3.connect(str(path))
+    conn.execute(
+        "CREATE TABLE ofertas ("
+        "id TEXT PRIMARY KEY,"
+        "enlace TEXT NOT NULL,"
+        "titulo TEXT NOT NULL,"
+        "descripcion_original TEXT NOT NULL"
+        ")"
+    )
+    conn.commit()
+    conn.close()
+
+    change_path(path)
+    try:
+        init_db()
+        init_db()
+        conn = sqlite3.connect(str(path))
+        try:
+            tablas = {
+                fila[0]
+                for fila in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+        finally:
+            conn.close()
+        assert "ofertas" not in tablas
+        assert "ofertas_descubiertas" in tablas
+        assert len(leer_tabla("ofertas_descubiertas")) == 0
     finally:
         reset_path()
 
@@ -415,7 +517,7 @@ def test_upsert_oferta_inserta_nueva(temp_db_file: Path) -> None:
     id_oferta = upsert_oferta(oferta)
     assert id_oferta.startswith("OFE-")
 
-    filas = leer_tabla("ofertas", {"id": id_oferta})
+    filas = leer_tabla("ofertas_descubiertas", {"id": id_oferta})
     assert len(filas) == 1
     assert filas[0]["titulo"] == "Desarrollador Python"
     assert filas[0]["fuente_id"] == "LI-01"
@@ -442,7 +544,7 @@ def test_upsert_oferta_ids_nulos_sin_fk_error(temp_db_file: Path) -> None:
         }
     )
     assert id_oferta.startswith("OFE-")
-    filas = leer_tabla("ofertas", {"id_externo": "456"})
+    filas = leer_tabla("ofertas_descubiertas", {"id_externo": "456"})
     assert len(filas) == 1
     assert filas[0]["empresa_id"] == "N/A"
     assert filas[0]["ubicacion_id"] == "N/A"
@@ -458,7 +560,7 @@ def test_init_db_crea_indices_esperados(temp_db_file: Path) -> None:
     try:
         indices = {
             fila[1]
-            for tabla in ("ofertas", "eventos")
+            for tabla in ("ofertas_descubiertas", "eventos")
             for fila in conn.execute(f"PRAGMA index_list('{tabla}')")
         }
     finally:
@@ -492,7 +594,7 @@ def test_upsert_oferta_mismo_id_externo_no_duplica_y_actualiza_timestamp(
     segundo = upsert_oferta(dict(base))
 
     assert primero == segundo
-    filas = leer_tabla("ofertas", {"id_externo": "789"})
+    filas = leer_tabla("ofertas_descubiertas", {"id_externo": "789"})
     assert len(filas) == 1
     assert filas[0]["fecha_ultima_verificacion"] != ""
     assert filas[0]["id"] == primero
@@ -527,7 +629,7 @@ def test_upsert_lote_ofertas_inserta_nuevas(temp_db_file: Path) -> None:
 
     assert registradas == 2
     assert fallidas == 0
-    assert len(leer_tabla("ofertas", {"id_corrida": "RUN-0005"})) == 2
+    assert len(leer_tabla("ofertas_descubiertas", {"id_corrida": "RUN-0005"})) == 2
 
 
 def test_upsert_lote_ofertas_mismo_id_externo_no_duplica(
@@ -540,7 +642,7 @@ def test_upsert_lote_ofertas_mismo_id_externo_no_duplica(
 
     assert registradas == 2
     assert fallidas == 0
-    filas = leer_tabla("ofertas", {"id_externo": "789"})
+    filas = leer_tabla("ofertas_descubiertas", {"id_externo": "789"})
     assert len(filas) == 1
     assert filas[0]["fecha_ultima_verificacion"] != ""
 
@@ -554,7 +656,7 @@ def test_upsert_lote_ofertas_fila_invalida_no_pierde_lote(temp_db_file: Path) ->
 
     assert registradas == 1
     assert fallidas == 1
-    filas = leer_tabla("ofertas", {"id_corrida": "RUN-0005"})
+    filas = leer_tabla("ofertas_descubiertas", {"id_corrida": "RUN-0005"})
     assert len(filas) == 1
     assert filas[0]["id_externo"] == "ok"
 
@@ -663,7 +765,7 @@ def test_ofertas_sin_vacios_se_guardan_como_n_a(temp_db_file: Path) -> None:
             "fecha_descubrimiento": "2026-08-09 10:05:00",
         }
     )
-    filas = leer_tabla("ofertas", {"id": id_oferta})
+    filas = leer_tabla("ofertas_descubiertas", {"id": id_oferta})
     assert len(filas) == 1
     assert filas[0]["descripcion_original"] == "N/A"
     assert filas[0]["empresa_id"] == "N/A"
@@ -704,16 +806,16 @@ def test_migracion_4_4_fks_anulables_idempotente(tmp_path: Path) -> None:
         columnas = {
             fila[1]
             for fila in sqlite3.connect(str(path)).execute(
-                "PRAGMA table_info(ofertas)"
+                "PRAGMA table_info(ofertas_descubiertas)"
             ).fetchall()
         }
         assert "empresa_nombre" not in columnas
         assert "ubicacion_nombre" not in columnas
         fks = sqlite3.connect(str(path)).execute(
-            "PRAGMA foreign_key_list(ofertas)"
+            "PRAGMA foreign_key_list(ofertas_descubiertas)"
         ).fetchall()
         assert fks == []
-        rows = leer_tabla("ofertas")
+        rows = leer_tabla("ofertas_descubiertas")
         assert len(rows) == 1
         assert rows[0]["id"] == "OFE-0001"
         assert rows[0]["titulo"] == "Vieja"
@@ -1005,7 +1107,7 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
         try:
             columnas_ofertas = {
                 fila[1] for fila in conn.execute(
-                    "PRAGMA table_info(ofertas)"
+                    "PRAGMA table_info(ofertas_descubiertas)"
                 ).fetchall()
             }
             esperadas_ofertas = {
@@ -1020,7 +1122,7 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
             assert "ubicacion_nombre" not in columnas_ofertas
             sql_ofertas = conn.execute(
                 "SELECT sql FROM sqlite_master WHERE type='table' "
-                "AND name='ofertas'"
+                "AND name='ofertas_descubiertas'"
             ).fetchone()[0]
             assert "descubierta" in sql_ofertas
             assert "discovered" not in sql_ofertas
@@ -1052,7 +1154,7 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
         finally:
             conn.close()
 
-        ofertas = leer_tabla("ofertas")
+        ofertas = leer_tabla("ofertas_descubiertas")
         assert len(ofertas) == 1
         oferta = ofertas[0]
         assert oferta["id"] == "OFE-0001"
@@ -1099,13 +1201,13 @@ def test_migracion_espanol_total_idempotente(tmp_path: Path) -> None:
         try:
             columnas = {
                 fila[1] for fila in conn.execute(
-                    "PRAGMA table_info(ofertas)"
+                    "PRAGMA table_info(ofertas_descubiertas)"
                 ).fetchall()
             }
         finally:
             conn.close()
         assert "identificador_origen" not in columnas
-        rows = leer_tabla("ofertas")
+        rows = leer_tabla("ofertas_descubiertas")
         assert len(rows) == 1
         assert rows[0]["id"] == "OFE-0001"
         assert rows[0]["enlace"] == "https://www.linkedin.com/jobs/view/4439280106"
@@ -1127,7 +1229,7 @@ def test_migracion_espanol_total_base_nueva_no_reconstruye(tmp_path: Path) -> No
         try:
             columnas = {
                 fila[1] for fila in conn.execute(
-                    "PRAGMA table_info(ofertas)"
+                    "PRAGMA table_info(ofertas_descubiertas)"
                 ).fetchall()
             }
         finally:

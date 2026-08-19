@@ -12,14 +12,14 @@ La BD tiene 8 tablas. Se habilita con `init_db()` (crea tablas y aplica migracio
 
 Índices (creados con `CREATE INDEX IF NOT EXISTS`, no únicos — la unicidad estricta es del Módulo 2, decisión D4): `idx_ofertas_id_externo` (deduplicación por oferta), `idx_ofertas_id_corrida` y `idx_eventos_id_corrida` (métricas de cierre y auditoría).
 
-Estado actual (conteos al momento del reporte, tras la migración D31):
+Estado actual (conteos al momento del reporte, tras la migración D31 y el rename D32):
 
 | Tabla | Filas | Escritor principal |
 |---|---|---|
 | `secuencia_ids` | 4 | Automática (generador de IDs) |
 | `empresas` | 0 | — (catálogo reservado; sin escritura en Módulo 1) |
 | `ubicaciones` | 0 | — (catálogo reservado; sin escritura en Módulo 1) |
-| `ofertas` | 62 | Nodo Captura → `upsert_oferta()` |
+| `ofertas_descubiertas` | 62 | Nodo Captura → `upsert_oferta()` |
 | `corridas` | 1 | Nodo INICIO → `registrar_corrida()`; Nodo Finalizar → `actualizar_corrida()` |
 | `eventos` | 28 | Nodos del flujo → `escribir_evento()` |
 | `sesiones` | 13 | Nodo Captura → `escribir_fila("sesiones")` |
@@ -30,7 +30,7 @@ Estado actual (conteos al momento del reporte, tras la migración D31):
 1. **INICIO**: prueba de escritura (`sondear_escritura()`, insert+rollback en `bloqueo`), adquisición del bloqueo (`adquirir_bloqueo()` → `bloqueo`) y registro de la corrida (`registrar_corrida()` → `corridas` con estado `en_ejecucion`). Ante fallos escribe eventos de error (`eventos`).
 2. **Control de fuentes / Ingreso / Búsqueda**: no escriben en BD; en caso de aborto o error crítico registran eventos de error (`eventos`).
 3. **Registro**: registra el resultado del registro de la fuente como evento de éxito o fallo (`eventos`).
-4. **Captura**: audita cada lote capturado escribiendo la sesión de plataforma (`sesiones`) y registra las ofertas (`upsert_oferta()` → `ofertas`); emite eventos de éxito/registro parcial (`eventos`).
+4. **Captura**: audita cada lote capturado escribiendo la sesión de plataforma (`sesiones`) y registra las ofertas (`upsert_oferta()` → `ofertas_descubiertas`); emite eventos de éxito/registro parcial (`eventos`).
 5. **Finalizar**: cierra la corrida con estado final y métricas (`actualizar_corrida()` → `corridas`), escribe el evento de terminación (`eventos`) y libera el bloqueo (`liberar_bloqueo()` → `bloqueo`).
 
 ## 2. Detalle por tabla
@@ -49,7 +49,7 @@ Control interno del generador de IDs secuenciales (`PREFIJO-NNNN`). No se escrib
 
 ### 2.2. `empresas`
 
-Catálogo de empresas. **En el MVP del Módulo 1 no se escribe en esta tabla** (0 filas): el Módulo 1 no extrae la empresa de las tarjetas (decisión D29; las columnas crudas `empresa_nombre`/`ubicacion_nombre` de `ofertas` fueron eliminadas); la tabla queda reservada para la gestión del catálogo.
+Catálogo de empresas. **En el MVP del Módulo 1 no se escribe en esta tabla** (0 filas): el Módulo 1 no extrae la empresa de las tarjetas (decisión D29; las columnas crudas `empresa_nombre`/`ubicacion_nombre` de `ofertas_descubiertas` fueron eliminadas); la tabla queda reservada para la gestión del catálogo.
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
@@ -78,9 +78,11 @@ Catálogo de ubicaciones. **En el MVP del Módulo 1 no se escribe en esta tabla*
 | `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática al insertar |
 | `fecha_ultima_edicion` | TEXT DEFAULT '' | Fecha/hora de la última actualización | Automática en cada insert/update |
 
-### 2.4. `ofertas`
+### 2.4. `ofertas_descubiertas`
 
 Oportunidades (vacantes) descubiertas. La escribe el **nodo Captura** mediante `upsert_oferta()`: si ya existe una fila con el mismo `id_externo` no inserta de nuevo, solo refresca `fecha_ultima_verificacion` y devuelve el `id` existente; si no, genera un ID (`OFE-NNNN`) e inserta la fila. Regla D31: los campos sin valor se guardan como `N/A` (nunca `''`/NULL); `fecha_ultima_verificacion` queda exenta (vacía hasta una re-visita).
+
+> **D32:** la tabla se llamaba `ofertas` y fue renombrada a `ofertas_descubiertas` (2026-08-19) para distinguirla de las tablas de etapas posteriores (Preparación, Evaluación, Procesamiento). El prefijo `OFE`, la secuencia y los índices conservan su nombre; la migración `_migrate_ofertas_descubiertas` en `init_db()` es idempotente.
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|

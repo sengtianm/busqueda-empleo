@@ -17,7 +17,7 @@ _DB_PATH: Path | None = None
 PREFIXES: dict[str, str] = {
     "empresas": "EMP",
     "ubicaciones": "UBI",
-    "ofertas": "OFE",
+    "ofertas_descubiertas": "OFE",
     "corridas": "COR",
     "sesiones": "SES",
     "eventos": "EVT",
@@ -63,8 +63,8 @@ ESQUEMAS: dict[str, str] = {
         "fecha_ultima_edicion TEXT DEFAULT ''"
         ")"
     ),
-    "ofertas": (
-        "CREATE TABLE IF NOT EXISTS ofertas ("
+    "ofertas_descubiertas": (
+        "CREATE TABLE IF NOT EXISTS ofertas_descubiertas ("
         "id TEXT PRIMARY KEY,"
         "enlace TEXT NOT NULL,"
         "titulo TEXT DEFAULT '',"
@@ -137,8 +137,10 @@ ESQUEMAS: dict[str, str] = {
 }
 
 _INDICES: tuple[str, ...] = (
-    "CREATE INDEX IF NOT EXISTS idx_ofertas_id_externo ON ofertas(id_externo)",
-    "CREATE INDEX IF NOT EXISTS idx_ofertas_id_corrida ON ofertas(id_corrida)",
+    "CREATE INDEX IF NOT EXISTS idx_ofertas_id_externo "
+    "ON ofertas_descubiertas(id_externo)",
+    "CREATE INDEX IF NOT EXISTS idx_ofertas_id_corrida "
+    "ON ofertas_descubiertas(id_corrida)",
     "CREATE INDEX IF NOT EXISTS idx_eventos_id_corrida ON eventos(id_corrida)",
 )
 
@@ -200,8 +202,10 @@ def _deserialize(fila: sqlite3.Row | None) -> dict[str, Any] | None:
 def init_db() -> None:
     conn = _connection()
     try:
+        _migrate_ofertas_descubiertas(conn)
         tablas = ("secuencia_ids", "empresas", "ubicaciones",
-                  "ofertas", "corridas", "eventos", "sesiones", "bloqueo")
+                  "ofertas_descubiertas", "corridas", "eventos",
+                  "sesiones", "bloqueo")
         for nombre_tabla in tablas:
             conn.execute(ESQUEMAS[nombre_tabla])
         _migrar_espanol_total(conn)
@@ -218,6 +222,31 @@ def init_db() -> None:
         conn.close()
 
 
+def _migrate_ofertas_descubiertas(conn: sqlite3.Connection) -> None:
+    """D32 migration: rename the `ofertas` table to `ofertas_descubiertas`.
+
+    Renames the physical table when a DB created before decision D32 still
+    holds `ofertas`; SQLite keeps the indexes under their same names and the
+    `secuencia_ids` row is updated so the next generated id continues the
+    `OFE` sequence without collisions. Runs before the schema creation loop
+    so the new `CREATE TABLE IF NOT EXISTS` never creates an empty duplicate.
+    Idempotent: no-op when the rename is already applied.
+    """
+    tablas = {
+        fila["name"]
+        for fila in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'"
+        ).fetchall()
+    }
+    if "ofertas" in tablas and "ofertas_descubiertas" not in tablas:
+        conn.execute("ALTER TABLE ofertas RENAME TO ofertas_descubiertas")
+    if "secuencia_ids" in tablas:
+        conn.execute(
+            "UPDATE secuencia_ids SET tabla_nombre = 'ofertas_descubiertas' "
+            "WHERE tabla_nombre = 'ofertas'"
+        )
+
+
 MAPA_COLUMNAS_ESPANOL: dict[str, dict[str, str]] = {
     "empresas": {
         "normalized_name": "nombre_normalizado",
@@ -230,7 +259,7 @@ MAPA_COLUMNAS_ESPANOL: dict[str, dict[str, str]] = {
         "creation_date": "fecha_creacion",
         "last_edit_date": "fecha_ultima_edicion",
     },
-    "ofertas": {
+    "ofertas_descubiertas": {
         "url": "enlace",
         "discovery_date": "fecha_descubrimiento",
         "creation_date": "fecha_creacion",
@@ -269,13 +298,13 @@ MAPA_COLUMNAS_ESPANOL: dict[str, dict[str, str]] = {
 }
 
 _TABLAS_ESQUEMA: tuple[str, ...] = (
-    "empresas", "ubicaciones", "ofertas",
+    "empresas", "ubicaciones", "ofertas_descubiertas",
     "corridas", "eventos", "sesiones", "bloqueo",
 )
 
 
 def _migrar_espanol_total(conn: sqlite3.Connection) -> None:
-    """D7/D8 migration: full Spanish schema (columns + `ofertas.estado` CHECK).
+    """D7/D8 migration: full Spanish schema (columns + `ofertas_descubiertas.estado` CHECK).
 
     Rebuilds each tracked table from the Spanish ESQUEMAS when its current
     schema still uses English column names, mapping old columns to their
@@ -316,7 +345,7 @@ def _migrar_espanol_total(conn: sqlite3.Connection) -> None:
                     seleccion.append(f"{columna} AS {nuevo}")
                     destinos.append(nuevo)
             elif columna in esperadas:
-                if nombre_tabla == "ofertas" and columna == "estado":
+                if nombre_tabla == "ofertas_descubiertas" and columna == "estado":
                     seleccion.append(
                         "CASE estado WHEN 'discovered' THEN 'descubierta' "
                         "WHEN 'prepared' THEN 'preparada' "
@@ -383,41 +412,55 @@ def _migrate_sesiones_id(conn: sqlite3.Connection) -> None:
 def _migrate_ofertas(conn: sqlite3.Connection) -> None:
     """C2 migration: "lo crudo se conserva crudo".
 
-    SQLite cannot drop a NOT NULL constraint in place, so the `ofertas` table
-    is rebuilt without NOT NULL on `titulo` and `descripcion_original`, allowing
-    capturing raw listings that lack those fields. The columns of traceability
-    (`id_corrida`, `id_sesion`, `indice_set`, `id_externo`) are included in the
-    new schema. Migration is idempotent: it only runs when the current schema
-    still declares `titulo NOT NULL`.
+    SQLite cannot drop a NOT NULL constraint in place, so the
+    `ofertas_descubiertas` table is rebuilt without NOT NULL on `titulo` and
+    `descripcion_original`, allowing capturing raw listings that lack those
+    fields. The columns of traceability (`id_corrida`, `id_sesion`,
+    `indice_set`, `id_externo`) are included in the new schema. Migration is
+    idempotent: it only runs when the current schema still declares
+    `titulo NOT NULL`.
     """
     columnas = {
         fila["name"]: fila["notnull"]
-        for fila in conn.execute("PRAGMA table_info(ofertas)").fetchall()
+        for fila in conn.execute(
+            "PRAGMA table_info(ofertas_descubiertas)"
+        ).fetchall()
     }
     if "titulo" in columnas and columnas["titulo"] == 0:
         return
     conn.execute(
-        ESQUEMAS["ofertas"].replace("TABLE IF NOT EXISTS ofertas", "TABLE ofertas_nueva")
+        ESQUEMAS["ofertas_descubiertas"].replace(
+            "TABLE IF NOT EXISTS ofertas_descubiertas",
+            "TABLE ofertas_descubiertas_nueva",
+        )
     )
     nuevas = {
         fila["name"]
-        for fila in conn.execute("PRAGMA table_info(ofertas_nueva)").fetchall()
+        for fila in conn.execute(
+            "PRAGMA table_info(ofertas_descubiertas_nueva)"
+        ).fetchall()
     }
     comunes = [
         fila["name"]
-        for fila in conn.execute("PRAGMA table_info(ofertas)").fetchall()
+        for fila in conn.execute(
+            "PRAGMA table_info(ofertas_descubiertas)"
+        ).fetchall()
         if fila["name"] in nuevas
     ]
     lista = ", ".join(comunes)
     conn.execute(
-        f"INSERT INTO ofertas_nueva ({lista}) SELECT {lista} FROM ofertas"
+        f"INSERT INTO ofertas_descubiertas_nueva ({lista}) SELECT {lista} "
+        "FROM ofertas_descubiertas"
     )
-    conn.execute("DROP TABLE ofertas")
-    conn.execute("ALTER TABLE ofertas_nueva RENAME TO ofertas")
+    conn.execute("DROP TABLE ofertas_descubiertas")
+    conn.execute(
+        "ALTER TABLE ofertas_descubiertas_nueva "
+        "RENAME TO ofertas_descubiertas"
+    )
 
 
 def _migrate_ofertas_empresa_nombre(conn: sqlite3.Connection) -> None:
-    """D29 migration: drop `empresa_nombre`/`ubicacion_nombre` from `ofertas`.
+    """D29 migration: drop `empresa_nombre`/`ubicacion_nombre` from `ofertas_descubiertas`.
 
     D4 (2026-08-09) added these raw-string columns for company/location; D29
     (2026-08-17) removes them from the model: the adapter no longer extracts
@@ -428,26 +471,32 @@ def _migrate_ofertas_empresa_nombre(conn: sqlite3.Connection) -> None:
     """
     columnas = {
         fila["name"]
-        for fila in conn.execute("PRAGMA table_info(ofertas)").fetchall()
+        for fila in conn.execute(
+            "PRAGMA table_info(ofertas_descubiertas)"
+        ).fetchall()
     }
     for columna in ("empresa_nombre", "ubicacion_nombre"):
         if columna in columnas:
-            conn.execute(f"ALTER TABLE ofertas DROP COLUMN {columna}")
+            conn.execute(
+                f"ALTER TABLE ofertas_descubiertas DROP COLUMN {columna}"
+            )
 
 
 def _migrate_ofertas_timestamp_ultima_verificacion(conn: sqlite3.Connection) -> None:
-    """4.4 migration: ensure `ofertas.fecha_ultima_verificacion` exists.
+    """4.4 migration: ensure `ofertas_descubiertas.fecha_ultima_verificacion` exists.
 
     The capture upsert refreshes this column for re-seen listings. The column
     is added on first init if absent; subsequent inits are no-ops.
     """
     columnas = {
         fila["name"]
-        for fila in conn.execute("PRAGMA table_info(ofertas)").fetchall()
+        for fila in conn.execute(
+            "PRAGMA table_info(ofertas_descubiertas)"
+        ).fetchall()
     }
     if "fecha_ultima_verificacion" not in columnas:
         conn.execute(
-            "ALTER TABLE ofertas ADD COLUMN "
+            "ALTER TABLE ofertas_descubiertas ADD COLUMN "
             "fecha_ultima_verificacion TEXT DEFAULT ''"
         )
 
@@ -457,21 +506,21 @@ def _migrate_limpieza_d31(conn: sqlite3.Connection) -> None:
 
     (1) Drops the `fuentes` table and its `secuencia_ids` row (sources are
     config-driven; the catalog was never populated).
-    (2) Drops `ofertas.identificador_origen` (dead duplicate of `id_externo`)
-    and `eventos.id_oferta` (never used; per-offer traceability is out of
-    Module 1 scope).
+    (2) Drops `ofertas_descubiertas.identificador_origen` (dead duplicate of
+    `id_externo`) and `eventos.id_oferta` (never used; per-offer traceability
+    is out of Module 1 scope).
     (3) Backfills the no-empty-field rule (decision D31): empty/NULL values
     in the non-nullable-by-semantics columns become 'N/A' so no field stays
     empty (the backfill updates are per-column and safe no-ops when no row
     matches; the DROP COLUMN steps are guarded by a column-presence check).
-    `ofertas.fecha_ultima_verificacion` is exempted (only refreshed
-    on re-visits; D31 point 4 keeps its current behavior).
+    `ofertas_descubiertas.fecha_ultima_verificacion` is exempted (only
+    refreshed on re-visits; D31 point 4 keeps its current behavior).
     Idempotent: every destructive step only runs when its target is present.
     """
     conn.execute("DROP TABLE IF EXISTS fuentes")
     conn.execute("DELETE FROM secuencia_ids WHERE tabla_nombre = 'fuentes'")
     for tabla, columnas in (
-        ("ofertas", ("identificador_origen",)),
+        ("ofertas_descubiertas", ("identificador_origen",)),
         ("eventos", ("id_oferta",)),
     ):
         actuales = {
@@ -489,7 +538,7 @@ def _migrate_limpieza_d31(conn: sqlite3.Connection) -> None:
         "ubicacion_id",
     ):
         conn.execute(
-            f"UPDATE ofertas SET {columna} = 'N/A' "
+            f"UPDATE ofertas_descubiertas SET {columna} = 'N/A' "
             f"WHERE {columna} IS NULL OR {columna} = ''"
         )
     for columna in ("fuente_id", "id_sesion", "indice_set", "evidencia"):
@@ -857,7 +906,8 @@ def _upsert_ofertas_en(
     if id_externos:
         marcas = ",".join("?" for _ in id_externos)
         for fila in conn.execute(
-            f"SELECT id_externo, id FROM ofertas WHERE id_externo IN ({marcas})",
+            "SELECT id_externo, id FROM ofertas_descubiertas "
+            f"WHERE id_externo IN ({marcas})",
             id_externos,
         ).fetchall():
             ids_por_id_externo[str(fila["id_externo"])] = str(fila["id"])
@@ -867,21 +917,22 @@ def _upsert_ofertas_en(
             id_externo = d.get("id_externo")
             if id_externo and id_externo in ids_por_id_externo:
                 conn.execute(
-                    "UPDATE ofertas SET fecha_ultima_verificacion = ? WHERE id = ?",
+                    "UPDATE ofertas_descubiertas "
+                    "SET fecha_ultima_verificacion = ? WHERE id = ?",
                     (marca, ids_por_id_externo[id_externo]),
                 )
                 registradas.append(ids_por_id_externo[id_externo])
                 continue
             if not d.get("id"):
-                d["id"] = _generar_id_en(conn, "ofertas")
+                d["id"] = _generar_id_en(conn, "ofertas_descubiertas")
             if not d.get("fecha_creacion"):
                 d["fecha_creacion"] = marca
             d["fecha_ultima_edicion"] = marca
             columnas = list(d.keys())
             placeholders = [":" + k for k in d.keys()]
             conn.execute(
-                f"INSERT INTO ofertas ({', '.join(columnas)}) VALUES "
-                f"({', '.join(placeholders)})",
+                "INSERT INTO ofertas_descubiertas "
+                f"({', '.join(columnas)}) VALUES ({', '.join(placeholders)})",
                 d,
             )
             registradas.append(cast(str, d["id"]))

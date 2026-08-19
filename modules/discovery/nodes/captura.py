@@ -258,7 +258,7 @@ def registrar_ofertas(contexto: RunContext) -> ResultadoCaptura:
 
 
 def _oferta_a_dict(oferta: Offer, contexto: RunContext) -> dict[str, Any]:
-    """Construye el dict de la fila `ofertas` desde una oferta capturada.
+    """Construye el dict de la fila `ofertas_descubiertas` desde una oferta capturada.
 
     `empresa_id`/`ubicacion_id` se guardan como NULL (catálogos no poblados
     en el MVP, D29) y `fuente_id` conserva su fuente_id.

@@ -67,7 +67,9 @@ def consultar_metricas(contexto: RunContext | None) -> dict[str, int]:
         return {campo: 0 for campo in _CAMPOS_METRICAS}
     id_corrida = contexto.id_corrida
     try:
-        total_ofertas = contar_filas("ofertas", {"id_corrida": id_corrida})
+        total_ofertas = contar_filas(
+            "ofertas_descubiertas", {"id_corrida": id_corrida}
+        )
         total_errores = contar_filas(
             "eventos", {"id_corrida": id_corrida, "tipo": "error"}
         )

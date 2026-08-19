@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 31 | 19/08/2026 | `ses_fe539fd2ffferuSLgK6EE88f5b` | Table rename D32: `ofertas` → `ofertas_descubiertas` everywhere (schema, secuencia_ids, nodes, tests, docs); idempotent migration first in `init_db`; live DB migrated in place, no backup; prefix OFE, indexes and function names unchanged; 331 tests |
 | 30 | 18/08/2026 | `ses_fea037d3dffeR12tTJoQEt4IFq` | Multi-search Q&A in Module 1: `sets_de_filtros` natively supports several queries per run (search → capture → register per set, dedup by external id); contiguous-index rule documented in `config.yaml` (option A, config-only) — no code changes |
 | 29 | 18/08/2026 | `ses_feb0c7a29ffe0jOcMvPYiDv5wa` | Schema cleanup + no-empty-field rule (D31): `eventos.id_oferta`, `ofertas.identificador_origen` and the `fuentes` table/FNT prefix removed; N/A/N/R placeholders enforced at the persistence boundary, `fecha_ultima_verificacion` exempted; live DB migrated 9→8 tables with backup (329 tests) |
 | 28 | 17/08/2026 | `ses_fef46d693ffeeJzOMWNCGCQb5s` | Success-event traceability + observability (D30): `ingreso_exitoso`/`consulta_exitosa` emitted by the entry/search nodes aligning the ficha contracts, `duracion_s` in capture evidence, INFO logs default, `total_sucesos` semantics documented; verified fresh run COR-0001 98 offers 0 errors (327 tests) |
@@ -31,6 +32,28 @@ Unless noted, decisions from previous sessions remain in effect.
 | 7 | 07/08/2026 | `ses_0234a5a0effeWIUu0hsOpfvx3L` | Module 1 (Discovery): build strategy decided node-by-node; MVP Plan Phase 4 redefined as 13-node plan |
 | 6 | 01/08/2026 | `ses_041587944ffe8Ve6EeplEa9Huo` | Session History restructured; custom sub-agents created |
 | 1–5 | 23–30/07/2026 | — | Project foundation, Phases 0–3, SQLite migration, prompts retested |
+
+## Session 31 — 19/08/2026
+`ses_fe539fd2ffferuSLgK6EE88f5b` · `fase-5`
+
+**Topics**
+- Table rename D32 (user request): physical table `ofertas` → `ofertas_descubiertas` to disambiguate as later modules add their own offer tables; applied to schema, `secuencia_ids`, queries, discovery nodes, tests and docs
+- Idempotent migration `_migrate_ofertas_descubiertas` runs first in `init_db` (before the schema creation loop, so `CREATE TABLE IF NOT EXISTS` never creates an empty duplicate); `secuencia_ids` row updated so the OFE sequence continues without collisions
+- Scope limits honored: prefix `OFE`/`ultimo_numero`, index names (`idx_ofertas_id_externo`, `idx_ofertas_id_corrida`) and function names unchanged; prior decision references (D1/D4/D7/D8/D15/D16/D17/D29/D31/PMD-021) updated to the current naming, original wording preserved in git
+- Live DB migrated in place via `init_db()`, no backup (user instruction; reversible rename + idempotent migration); verified 8 tables, 62 offers, `ofertas_descubiertas|OFE|62`, second run no-op
+- Bugs found and fixed during tests: `secuencia_ids` UPDATE guarded by table existence (legacy fixtures), f-string prefix restored in `_upsert_ofertas_en`
+- Reviewers executed: code-reviewer approved; docs-reviewer minor findings F-001/F-003 applied, F-002 pre-existing (missing v1.11 version row) left documented
+- Docs updated: decision log v1.18 (D32), DOC-13A v1.10, ficha técnica as-built note, database-tables.md, AGENTS.md, tracker 4.25
+
+**Decisions**
+- D32 (user-approved): rename `ofertas` → `ofertas_descubiertas` with OFE prefix, indexes and function names unchanged; no backup of the live DB; prior decision references updated to the current naming
+- Decisions from previous sessions remain in effect
+
+**Status**
+- 331 tests passing (2 new: rename + secuencia preserved, idempotency); ruff/mypy clean
+- Live DB migrated and verified; all docs updated; reviewer findings closed
+- Branch: `fase-5` · no merge
+- Next: Phase 5 (Module 2 — Preparation), task 1: `modules/preparation/` structure (pending)
 
 ## Session 30 — 18/08/2026
 `ses_fea037d3dffeR12tTJoQEt4IFq` · `fase-4`

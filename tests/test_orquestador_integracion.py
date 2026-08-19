@@ -205,7 +205,7 @@ def test_flujo_completo_nodos_reales_persiste_y_cierra(
     assert len(corridas) == 1
     assert corridas[0]["estado"] == "completada"
 
-    ofertas = leer_tabla("ofertas")
+    ofertas = leer_tabla("ofertas_descubiertas")
     assert len(ofertas) == 2
     ids_externos = {o["id_externo"] for o in ofertas}
     assert ids_externos == {"ext-1", "ext-2"}
@@ -246,5 +246,5 @@ def test_flujo_completo_segunda_corrida_reusa_indices_y_dedup(
     assert len(corridas) == 2
     assert {c["estado"] for c in corridas} == {"completada"}
 
-    ofertas = leer_tabla("ofertas")
+    ofertas = leer_tabla("ofertas_descubiertas")
     assert len(ofertas) == 2

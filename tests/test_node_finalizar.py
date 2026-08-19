@@ -70,7 +70,7 @@ def test_finalizar_metricas_consultadas_de_bd() -> None:
     def _count_side(
         tabla: str, filtros: dict[str, Any] | None = None
     ) -> int:
-        if tabla == "ofertas":
+        if tabla == "ofertas_descubiertas":
             return 2
         if filtros and filtros.get("tipo") == "error":
             return 1
@@ -265,7 +265,7 @@ def test_consultar_metricas_bd_real(temp_db_file: Path) -> None:
     from shared.persistence import escribir_evento, escribir_fila
 
     escribir_fila(
-        "ofertas",
+        "ofertas_descubiertas",
         {
             "id": "OFE-0001",
             "enlace": "https://www.linkedin.com/jobs/view/1",
