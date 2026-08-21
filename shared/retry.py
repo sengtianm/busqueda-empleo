@@ -29,6 +29,10 @@ _CODIGOS_REINTENTABLES = (
     "tiempo_agotado_ingreso",
     "tiempo_agotado_consulta",
     "tiempo_agotado_captura",
+    # Module 2 capture codes (ficha M2 ERR-02/03/04): same retryable nature —
+    # a fresh guest session or backoff can succeed on a later attempt.
+    "pagina_inalcanzable",
+    "authwall_detectado",
 )
 
 

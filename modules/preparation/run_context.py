@@ -46,3 +46,13 @@ class RunContext:
         # `sin_pendientes`; "Finalizar Proceso" lo consume y registra.
         self.motivo_cierre: str | None = None
         self.motivo_marca_temporal: str | None = None
+        # Recursos de la fase de preparación (nodo "Preparación de ofertas",
+        # ficha M2): sesión httpx de invitado creada con pereza y su contador
+        # de vida, más las cachés de corrida (empresas por nombre normalizado,
+        # ubicaciones por tupla normalizada e IA por texto crudo distinto —
+        # solo éxitos; los fallos no se cachean para que el lote (b) reintente).
+        self.sesion_http: Any = None
+        self.ofertas_en_sesion: int = 0
+        self.cache_empresas: dict[str, str] = {}
+        self.cache_ubicaciones: dict[tuple[str, str, str], str] = {}
+        self.cache_ia: dict[str, tuple[str, str, str]] = {}

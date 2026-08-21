@@ -5,7 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
-| 34 | 21/08/2026 | `ses_fdafc2fd0ffexoEFYn60IjcuYQ` | Sub-fases 5.1 y 5.2 del Módulo 2 implementadas: fundamentos D33 (esquema M2, modelos, config, PRM-006 con gpt-oss:20b-cloud, BD real migrada) + nodos INICIO y decisión de candidatas en paquete nuevo espejo de M1 con lectura FIFO en persistencia; D35 registrada |
+| 34 | 21/08/2026 | `ses_fdafc2fd0ffexoEFYn60IjcuYQ` | Sub-fases 5.1–5.3 del Módulo 2 implementadas: fundamentos D33, nodos INICIO + decisión de candidatas, y nodo Preparación de ofertas (captura httpx invitado con authwall/reintentos, catálogos empresa/ubicación con IA PRM-006 y cachés, dos lotes por pasada H1); D35–D37 registradas |
 | 33 | 21/08/2026 | `ses_fdba95353ffezwVG7roiPKaX2c` | Phase 5 build plan defined from the two technical sheets: 7 sub-phases approved and written into MVP Execution Plan + tracker replacing the obsolete generic task list; docs-reviewer findings corrected |
 | 32 | 20/08/2026 | `ses_fe33fd2dfffeQS3bPEmnaiJW1h` | Phase 5 documentation: Module 2 (Preparation) + transversal orchestrator technical sheets created and aligned across project docs (decision log, DOC-13A, database-tables, Appendix 5A, ficha M1, plan, guide, README); tracker 4.26 |
 | 31 | 19/08/2026 | `ses_fe539fd2ffferuSLgK6EE88f5b` | Table rename D32: `ofertas` → `ofertas_descubiertas` everywhere (schema, secuencia_ids, nodes, tests, docs); idempotent migration first in `init_db`; live DB migrated in place, no backup; prefix OFE, indexes and function names unchanged; 331 tests |
@@ -41,20 +41,23 @@ Unless noted, decisions from previous sessions remain in effect.
 - Sub-phase 5.2 implemented: Module 2 INICIO + candidate decision in a new preparation package mirroring discovery (context, lock, FIFO candidates, `sin_pendientes` motive slots for the closure node)
 - FIFO candidate read added to the persistence layer; shared global lock reused across modules without touching Module 1 code
 - Docs review caught config key drift in the retries validation (seconds-suffixed keys); fixed and regression-guarded against the official config
+- Sub-phase 5.3 implemented: Preparación de ofertas node — two lots per pass (H1), guest httpx capture with browser headers, authwall multi-signal detection with session renewal, configurable retries/pauses/session lifetime
+- Catalogs populated without SQL in the module: company upsert by normalized name; location classification via PRM-006 with Pydantic validation, per-text success-only cache, remote → N/R without row
+- Reviewers: docs approved; code review MAJOR resolved as D36 plus four minors applied (ERR-07 warning parity, shared evidence truncation helper, sentinel guard for lot b, coverage tests)
 
 **Decisions**
+- D36: `total_preparadas` at Finalizar Proceso counts DISTINCT offer ids via `contar_distintos` — lot (b) keeps re-emitting the success event for per-step traceability (user choice A); implementation lands in 5.5 (decision log v1.21)
+- D37: Spanish identifier exception extended to `modules/preparation/` (node files/tests/run_context), same scope and limits as `modules/discovery/` (decision log v1.22)
 - D35: `ai_routing.preparacion: "local"` with `ai_local.model: "gpt-oss:20b-cloud"` (Ollama-hosted via local proxy) — user choice avoiding cloud quota limits and undersized models; per-purpose model selection in `ia_service` deferred until a second local purpose exists (decision log v1.20)
 - Config defaults approved for `preparacion:`: pausa 2 s, limite_vida_sesion 50, umbrales 90/85, max_pasadas 2, profundidad 0, retries block mirroring global
-- Spanish identifier exception extended to the preparation module (user-approved; AGENTS.md conventions updated)
+- Approved deviations from the 5.3 analysis: empty description → `N/R` + observaciones evidence; authwall multi-signal heuristic; `Offer` model += `ubicacion_nombre`/`modalidad`
 - Decisions from previous sessions remain in effect
 
 **Status**
-- Sub-fases 5.1 ✅ y 5.2 ✅ (tracker); sub-fases 5.3–5.7 pending
-- Ruff 0 · mypy 0 · pytest 383 passing (15 new in 5.1, +37 total in 5.2 incl. official-config guard and lock coverage)
-- Reviewers: docs-reviewer blocker fixed (retries keys), code-reviewer approved
-- Pending user decision: optional decision-log entry for the naming-exception extension
+- Sub-fases 5.1 ✅ 5.2 ✅ 5.3 ✅ (tracker); sub-fases 5.4–5.7 pending
+- Ruff 0 · mypy 0 · pytest 424 passing (+41 net in 5.3; pre-5.3 baseline corrected to 383)
 - Single commit + push on `fase-5`; no merge
-- Next: sub-fase 5.3 — Preparación de ofertas del Módulo 2
+- Next: sub-fase 5.4 — Verificación de duplicidad + ¿Quedan ofertas en 'descubierta'?
 
 ## Session 33 — 21/08/2026
 `ses_fdba95353ffezwVG7roiPKaX2c` · `fase-5`

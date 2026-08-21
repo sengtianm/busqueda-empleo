@@ -62,6 +62,8 @@ class Offer(BaseModel):
     fuente_id: str = ""
     empresa_id: str = "N/A"
     ubicacion_id: str = "N/A"
+    ubicacion_nombre: str = "N/A"
+    modalidad: str = "N/A"
     enlace: str
     titulo: str
     descripcion_original: str

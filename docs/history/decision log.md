@@ -305,6 +305,22 @@ Format: `D<n>` — module/business decisions; `C<n>` — prompt/design alignment
 - **Decision:** `ai_routing.preparacion: "local"` with `ai_local.model: "gpt-oss:20b-cloud"` — an Ollama-hosted model reached through the local Ollama proxy (same mechanism as `gemma4:31b-cloud`): near-zero local resource consumption, 20B-class quality, no project-side API quota. The `ai_local.model` slot is safe to repurpose because no other purpose routes to local today (evaluation/processing stay cloud). When a future purpose needs a distinct local model, `ia_service` will gain per-purpose model selection (out of scope now). PRM-006 manually verified against the routed model: 3/3 valid JSON (city tuple, remote → N/A×3, country-only → `(N/A, N/A, país)`).
 - **Impact:** `config/config.yaml` (`ai_routing.preparacion`, `ai_local.model`); tracker 5.1. No primary document fixed the provider value; no drift.
 
+### D36. `total_preparadas` counts distinct offer ids at Finalizar Proceso (2026-08-21)
+
+- **Date:** 2026-08-21
+- **Status:** In effect
+- **Context:** Sub-phase 5.3 (Preparación de ofertas) exposed a ficha M2 inconsistency: paso 8 (lot (b)) re-emits `oferta_preparada` when a pending location is resolved in the same pass, while the Finalizar Proceso metric section defines `total_preparadas = contar_filas(eventos, {id_corrida, codigo='oferta_preparada'})` — a plain row count. An offer prepared with AI down in lot (a) and resolved by lot (b) of the same pass carries two success events and would be counted twice.
+- **Decision:** Option A approved by the user: keep BOTH events (full per-step traceability — every resolution leaves an event). The Finalizar Proceso metric (sub-phase 5.5) counts distinct ids instead of rows: `total_preparadas` = number of DISTINCT `id_oferta` among this run's `oferta_preparada` events, via the existing `contar_distintos` helper (D22 SQL closure metrics, already excludes `'N/A'`). `total_duplicadas` keeps plain counting (Verificación emits one event per duplicate by construction).
+- **Impact:** Ficha M2 (Finalizar métricas + paso 8) receives an as-built note at phase close together with the other approved 5.3 deviations; tracker 5.3 updated from OPEN to decided; no code change in sub-phase 5.3; implementation lands in 5.5.
+
+### D37. Spanish identifier exception extended to Module 2 (`modules/preparation/`) (2026-08-21)
+
+- **Date:** 2026-08-21
+- **Status:** In effect
+- **Context:** D7/D8 established the Spanish naming catalog for the data layer and applied Spanish identifiers to `modules/discovery/**`, but the convention exception for functional-module domain concepts was documented only for Discovery. Sub-phase 5.2 created `modules/preparation/` as a structural mirror of Module 1 and needed the same treatment for consistency across functional modules.
+- **Decision:** Node files, tests, and `run_context.py` of `modules/preparation/` use Spanish identifiers for domain concepts (e.g., `ejecutar_preparacion`, `ResultadoPreparacion`, `_diligenciar_empresa`, `quedan_ofertas_por_preparar`, `cache_ubicaciones`), with the same scope and limits as `modules/discovery/`: English remains the norm for code/documentation/configuration outside this exception, shared-layer docstrings stay in English, and Spanish docstrings/error-evidence strings are allowed only inside these module files. User-approved during the sub-phase 5.2 analysis.
+- **Impact:** AGENTS.md Conventions section already reflects both modules; no schema/data changes; applies from sub-phase 5.2 onward (retroactive documentation of a convention already in force).
+
 ## Prompt/design alignment decisions
 
 ### C2. Detailed Evaluation entity uses Spanish attribute names
@@ -368,6 +384,8 @@ Source: DOC-APPENDIX 9A — archived 2026-08-11; content consolidated here uncha
 
 | Version | Date | Change |
 |---|---|---|
+| 1.22 | 2026-08-21 | Added D37 (Spanish identifier exception extended to `modules/preparation/` — node files/tests/run_context use Spanish domain identifiers with the same scope and limits as `modules/discovery/`, user-approved during sub-phase 5.2; AGENTS.md conventions already reflected it). |
+| 1.21 | 2026-08-21 | Added D36 (`total_preparadas` at Finalizar Proceso counts DISTINCT offer ids via `contar_distintos` — resolves the double-count between ficha paso 8 lot-(b) re-emission and plain row counting; both events kept for per-step traceability per user choice; implementation lands in 5.5; tracker 5.3; 424 tests). |
 | 1.20 | 2026-08-21 | Added D35 (location-classification routing for Module 2: `ai_routing.preparacion: "local"` with `ai_local.model: "gpt-oss:20b-cloud"` via the local Ollama proxy — user choice avoiding cloud quota limits and undersized hardware models; `ia_service` per-purpose model selection deferred until a second local purpose exists; PRM-006 manually verified 3/3 valid JSON; tracker 5.1; 346 tests). |
 | 1.19 | 2026-08-20 | Added D33 (Module 2 «Preparación de ofertas» — technical sheet approved: macro decisions D1–D5, corrections, H1–H7, 6 optimizations, 11 consolidated schema migrations, `sin_pendientes`, verification marker `fecha_ultima_verificacion`, metrics by events, no AI beyond location classification; DOC-13A v1.11, `database-tables.md`, Appendix 5A, ficha M1, plan, `adding-a-new-source.md` and README aligned) and D34 (transversal orchestrator — technical sheet approved: `modules/orchestrator/`, module result derived from `corridas` via `leer_ultima_corrida_cerrada`, scheduled run as its own `corridas` row + events, continue on module failure, config `orquestador:`, no migrations). |
 | 1.18 | 2026-08-19 | Added D32 (table `ofertas` renamed to `ofertas_descubiertas`: schema, `secuencia_ids` row, queries, discovery nodes, tests and docs; idempotent migration `_migrate_ofertas_descubiertas` first in `init_db` before the schema loop; prefix `OFE`, index and function names unchanged; prior decision references updated to the current naming (precedent D7/D8); live DB migrated in place via `init_db()`, no backup, 62 offers preserved, `ofertas_descubiertas|OFE|62`; tracker 4.25; 331 tests). |
