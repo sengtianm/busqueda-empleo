@@ -5,7 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
-| 34 | 21/08/2026 | `ses_fdafc2fd0ffexoEFYn60IjcuYQ` | Sub-fases 5.1–5.4 del Módulo 2 implementadas: fundamentos D33, nodos INICIO + decisión de candidatas, nodo Preparación de ofertas (captura httpx invitado con authwall/reintentos, catálogos empresa/ubicación con IA PRM-006 y cachés), y Verificación de duplicidad + decisión de bucle (RapidFuzz dos etapas, regla id-menor, revision_pendientes); D35–D37 registradas |
+| 34 | 21/08/2026 | `ses_fdafc2fd0ffexoEFYn60IjcuYQ` | Sub-fases 5.1–5.5 del Módulo 2 implementadas: fundamentos D33, nodos INICIO + decisión de candidatas, nodo Preparación de ofertas (captura httpx invitado, catálogos empresa/ubicación con IA PRM-006), Verificación de duplicidad + decisión de bucle (RapidFuzz dos etapas), y Finalizar Proceso + orquestador del flujo del módulo (métricas por eventos, ruteo de terminaciones, fila de corrida registrada antes del bloqueo); D35–D37 registradas |
 | 33 | 21/08/2026 | `ses_fdba95353ffezwVG7roiPKaX2c` | Phase 5 build plan defined from the two technical sheets: 7 sub-phases approved and written into MVP Execution Plan + tracker replacing the obsolete generic task list; docs-reviewer findings corrected |
 | 32 | 20/08/2026 | `ses_fe33fd2dfffeQS3bPEmnaiJW1h` | Phase 5 documentation: Module 2 (Preparation) + transversal orchestrator technical sheets created and aligned across project docs (decision log, DOC-13A, database-tables, Appendix 5A, ficha M1, plan, guide, README); tracker 4.26 |
 | 31 | 19/08/2026 | `ses_fe539fd2ffferuSLgK6EE88f5b` | Table rename D32: `ofertas` → `ofertas_descubiertas` everywhere (schema, secuencia_ids, nodes, tests, docs); idempotent migration first in `init_db`; live DB migrated in place, no backup; prefix OFE, indexes and function names unchanged; 331 tests |
@@ -48,11 +48,22 @@ Unless noted, decisions from previous sessions remain in effect.
 - Loop decision node ¿Quedan ofertas en 'descubierta'? — module's only I/O decision; bounded passes with revision_pendientes event always at close
 - Code review found and fixed during build: validators returning empty string vs is-not-None checks, generic SQLite exceptions not wrapped as retryable flow codes, mutual intra-lot duplicate marking (smaller-id rule)
 - Reviewers applied: anti-chain guard (ids marked this pass stop being candidates), context counters synced, public event helper reused by the decision node, transient-retry success test
+- Sub-phase 5.5 implemented: Finalizar Proceso node — metrics from events with DISTINCT offer ids per success code, success events counted before the termination event, official motive/state table with concurrence as a success event
+- Motive resolution priority: explicit from the orchestrator > pre-fixed on the context > derived from metrics plus had-candidates flag; failed metric queries degrade to default abort motive when nothing is pre-fixed
+- Module orchestrator: INICIO routing closes every registered run (post-registration failures close as abort; contention route closes without touching the foreign lock), loop until the loop node signals finalize, structured database/config failures close as critical error while unexpected exceptions close as abort
+- Run row now registered right after the database probe and before the lock attempt, making every termination closable including the contention route; single shared start timestamp for row and context
+- Company enrichment stays a gate-only stub that logs when configured depth is positive (deferred H2)
+- Build-time bug fixed: infinite loop from reading a non-existent decision field on the loop-node result (its signal is its state)
+- Reviewers applied: mandatory closure step order restored (resources before lock release), orchestration coverage test for post-registration INICIO failure, negative enrichment-stub case, timestamp consistency pin
 
 **Decisions**
-- P1 approved: offers without an extracted company are excluded from duplicate matching on both sides (only the verification marker)
-- P2 approved: the loop node writes its pending-revision event only when it runs; a zero-candidates start short-circuits to Finalizar with the sin_pendientes motive
-- Approved technical latitude: token-sort/partial-ratio fuzzers with inclusive thresholds, oldest-id tie-breaks and smaller-id-only matching, invalid thresholds abort as ERR-03, error_bd added as retryable flow code
+- P1 approved (5.4): offers without an extracted company are excluded from duplicate matching on both sides (only the verification marker)
+- P2 approved (5.4): the loop node writes its pending-revision event only when it runs; a zero-candidates start short-circuits to Finalizar with the sin_pendientes motive
+- Approved technical latitude (5.4): token-sort/partial-ratio fuzzers with inclusive thresholds, oldest-id tie-breaks and smaller-id-only matching, invalid thresholds abort as ERR-03, error_bd added as retryable flow code
+- P1 approved: company enrichment implemented as gate-only stub (no network) — full enrichment deferred to future work
+- P2-A approved and applied to already-implemented code: run registration moved before the lock attempt in INICIO so every registered run is closable; registration failure reports as ERR-05
+- Approved technical latitude: motive priority explicit > context-prefixed > derived; degraded metrics keep an explicit/pre-fixed motive otherwise default aborto; INICIO routing by presence of run id; critical codes set {ERR-01, ERR-03, ERR-09} → error_critico, unexpected exceptions → aborto; event type map with concurrencia as suceso
+- Ficha deviations left as as-built notes for phase documentation closure: single-retry semantics on steps 2/5 (mirror M1), DISTINCT metrics formula (D36 supersedes literal counting), registration at step 3b instead of step 6
 - D36: `total_preparadas` at Finalizar Proceso counts DISTINCT offer ids via `contar_distintos` — lot (b) keeps re-emitting the success event for per-step traceability (user choice A); implementation lands in 5.5 (decision log v1.21)
 - D37: Spanish identifier exception extended to `modules/preparation/` (node files/tests/run_context), same scope and limits as `modules/discovery/` (decision log v1.22)
 - D35: `ai_routing.preparacion: "local"` with `ai_local.model: "gpt-oss:20b-cloud"` (Ollama-hosted via local proxy) — user choice avoiding cloud quota limits and undersized models; per-purpose model selection in `ia_service` deferred until a second local purpose exists (decision log v1.20)
@@ -60,11 +71,11 @@ Unless noted, decisions from previous sessions remain in effect.
 - Decisions from previous sessions remain in effect
 
 **Status**
-- Sub-fases 5.1 ✅ 5.2 ✅ 5.3 ✅ 5.4 ✅ (tracker); sub-fases 5.5–5.7 pending
-- Ruff 0 · mypy 0 · pytest 461 passing (+41 net in 5.3, +37 in 5.4; pre-5.3 baseline corrected to 383)
+- Sub-fases 5.1 ✅ 5.2 ✅ 5.3 ✅ 5.4 ✅ 5.5 ✅ (tracker); sub-fases 5.6–5.7 pending to close Phase 5
+- Ruff 0 · mypy 0 · pytest 494 passing (+37 in 5.4, +33 in 5.5)
 - Known limitation documented: lexicographic id ordering breaks past 10k offers per prefix (pre-existing, affects FIFO and duplicate original selection)
 - Single commit + push on `fase-5`; no merge
-- Next: sub-fase 5.5 — Finalizar Proceso del Módulo 2
+- Next: sub-fase 5.6 — Orquestador transversal (`modules/orchestrator/`)
 
 ## Session 33 — 21/08/2026
 `ses_fdba95353ffezwVG7roiPKaX2c` · `fase-5`

@@ -5,10 +5,12 @@ Two nodes implemented here:
 1. Process INICIO (v1.0): instantiates the run (id_corrida with a single
    retry, ERR-01), loads and validates the whole `preparacion:` section
    (VAL-02; ERR-02/03/04), verifies the database with a rolled-back write
-   probe (VAL-03, ERR-05), resolves the shared global concurrency lock kept
-   with Module 1 (RN-02; ERR-06/07/08/09), loads the FIFO candidates from
-   `ofertas_descubiertas` (VAL-06, ERR-05), initializes the run state and
-   registers the run row, then delivers a complete RunContext (VAL-05).
+   probe (VAL-03, ERR-05), REGISTERS THE RUN ROW right after the probe and
+   before the lock attempt (sub-phase 5.5 P2-A: every registered run is
+   closable by Finalizar Proceso), resolves the shared global concurrency
+   lock kept with Module 1 (RN-02; ERR-06/07/08/09), loads the FIFO
+   candidates from `ofertas_descubiertas` (VAL-06, ERR-05), initializes the
+   run state, then delivers a complete RunContext (VAL-05).
 2. Decision "¿Quedan ofertas por preparar en esta corrida?" (v1.0): pure
    in-memory evaluation of the candidate list (RN-01 forbids re-reading the
    database). An empty list fixes the controlled-termination motive
@@ -204,6 +206,31 @@ def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
             descripcion="database unavailable or not writable",
         )
 
+    # Paso 3b — registro de la corrida (sub-fase 5.5, P2-A): tras el sondeo
+    # de BD y ANTES del intento de bloqueo, de modo que toda terminación
+    # posterior (incluida la ruta concurrencia) deja una fila en `corridas`
+    # que "Finalizar Proceso" puede cerrar.
+    marca_inicio = ahora()
+    try:
+        registrar_corrida(
+            {
+                "id_corrida": id_corrida,
+                "fecha_inicio": marca_inicio,
+                "estado": "en_ejecucion",
+            }
+        )
+    except Exception as error:
+        _registrar_evento(
+            id_corrida, "error", "ERR-05", f"fallo al registrar la corrida: {error}"
+        )
+        logger.error(f"ERR-05 | run={id_corrida} | run registration failed | {error}")
+        return ResultadoInicio(
+            estado="error",
+            id_corrida=id_corrida,
+            codigo="ERR-05",
+            descripcion="run registration failed",
+        )
+
     # Paso 4 — bloqueo global compartido con el Módulo 1 (RN-02).
     try:
         bloqueo_actual = consultar_bloqueo()
@@ -322,21 +349,16 @@ def ejecutar_inicio(config: dict[str, Any] | None = None) -> ResultadoInicio:
             descripcion="candidate load failed",
         )
 
-    # Paso 6 — inicialización de estado y registro de la corrida.
+    # Paso 6 — inicialización de estado (la fila de la corrida ya existe:
+    # se registró en el paso 3b antes del bloqueo).
     try:
         contexto = RunContext(
             config_preparacion=config["preparacion"],
             candidatas=candidatas,
             id_corrida=id_corrida,
+            fecha_inicio=marca_inicio,
         )
         contexto.bloqueo_adquirido = True
-        registrar_corrida(
-            {
-                "id_corrida": id_corrida,
-                "fecha_inicio": contexto.fecha_inicio,
-                "estado": "en_ejecucion",
-            }
-        )
     except Exception as error:
         _registrar_evento(
             id_corrida,

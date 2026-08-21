@@ -26,11 +26,14 @@ class RunContext:
         config_preparacion: dict[str, Any] | None = None,
         candidatas: list[dict[str, Any]] | None = None,
         id_corrida: str | None = None,
+        fecha_inicio: str | None = None,
     ) -> None:
         self.id_corrida = id_corrida or generar_id("corridas")
         if not self.id_corrida:
             raise ValueError("id_corrida vacio")
-        self.fecha_inicio: str = ahora()
+        # La corrida puede fijar la marca de inicio (INICIO la registra en
+        # `corridas` antes del bloqueo); sin ella se genera aquí.
+        self.fecha_inicio: str = fecha_inicio or ahora()
         self.config_preparacion: dict[str, Any] = (
             config_preparacion if config_preparacion is not None else {}
         )

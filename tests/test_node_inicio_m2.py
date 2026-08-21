@@ -89,10 +89,12 @@ def test_inicio_ok_sin_candidatas(temp_db_file: Path) -> None:
     assert ctx.candidatas == []
     assert ctx.config_preparacion == PREPARACION_VALIDA
     corridas = leer_tabla("corridas")
-    assert any(
-        c["id_corrida"] == res.id_corrida and c["estado"] == "en_ejecucion"
-        for c in corridas
+    fila = next(
+        c for c in corridas if c["id_corrida"] == res.id_corrida
     )
+    assert fila["estado"] == "en_ejecucion"
+    # P2-A: una sola fuente de tiempo — la fila y el contexto comparten marca.
+    assert fila["fecha_inicio"] == ctx.fecha_inicio
     bloqueo = consultar_bloqueo()
     assert bloqueo is not None
     assert bloqueo["id_corrida"] == res.id_corrida
@@ -248,7 +250,13 @@ def test_inicio_concurrencia_activa_terminacion_controlada(
         liberar_bloqueo("COR-OTRA")
     assert res.estado == "concurrencia"
     assert res.codigo == "ERR-06"
-    assert leer_tabla("corridas") == []
+    # P2-A (sub-fase 5.5): la fila se registra antes del bloqueo, así que
+    # la ruta concurrencia deja una corrida cerrable por Finalizar.
+    corridas = leer_tabla("corridas")
+    assert any(
+        c["id_corrida"] == res.id_corrida and c["estado"] == "en_ejecucion"
+        for c in corridas
+    )
     eventos = leer_tabla("eventos")
     assert any(e["codigo"] == "ERR-06" and e["tipo"] == "suceso" for e in eventos)
 
@@ -294,7 +302,10 @@ def test_inicio_timestamp_bloqueo_invalido_aborta(
     res = ejecutar_inicio(dict(CONFIG_BASE))
     assert res.estado == "error"
     assert res.codigo == "ERR-08"
-    assert leer_tabla("corridas") == []
+    # P2-A: la fila ya existe (el registro precede al bloqueo).
+    assert any(
+        c["id_corrida"] == res.id_corrida for c in leer_tabla("corridas")
+    )
 
 
 def test_inicio_fallo_adquisicion_bloqueo_err08(
@@ -342,7 +353,9 @@ def test_inicio_registro_corrida_falla_aborta(
     )
     res = ejecutar_inicio(dict(CONFIG_BASE))
     assert res.estado == "error"
-    assert res.codigo == "ERR-10"
+    # El registro ocurre en el paso 3b (antes del bloqueo): su fallo es ERR-05.
+    assert res.codigo == "ERR-05"
+    assert leer_tabla("corridas") == []
 
 
 def test_inicio_id_falla_dos_veces_aborta(
