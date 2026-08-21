@@ -5,7 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
-| 34 | 21/08/2026 | `ses_fdafc2fd0ffexoEFYn60IjcuYQ` | Sub-fases 5.1–5.3 del Módulo 2 implementadas: fundamentos D33, nodos INICIO + decisión de candidatas, y nodo Preparación de ofertas (captura httpx invitado con authwall/reintentos, catálogos empresa/ubicación con IA PRM-006 y cachés, dos lotes por pasada H1); D35–D37 registradas |
+| 34 | 21/08/2026 | `ses_fdafc2fd0ffexoEFYn60IjcuYQ` | Sub-fases 5.1–5.4 del Módulo 2 implementadas: fundamentos D33, nodos INICIO + decisión de candidatas, nodo Preparación de ofertas (captura httpx invitado con authwall/reintentos, catálogos empresa/ubicación con IA PRM-006 y cachés), y Verificación de duplicidad + decisión de bucle (RapidFuzz dos etapas, regla id-menor, revision_pendientes); D35–D37 registradas |
 | 33 | 21/08/2026 | `ses_fdba95353ffezwVG7roiPKaX2c` | Phase 5 build plan defined from the two technical sheets: 7 sub-phases approved and written into MVP Execution Plan + tracker replacing the obsolete generic task list; docs-reviewer findings corrected |
 | 32 | 20/08/2026 | `ses_fe33fd2dfffeQS3bPEmnaiJW1h` | Phase 5 documentation: Module 2 (Preparation) + transversal orchestrator technical sheets created and aligned across project docs (decision log, DOC-13A, database-tables, Appendix 5A, ficha M1, plan, guide, README); tracker 4.26 |
 | 31 | 19/08/2026 | `ses_fe539fd2ffferuSLgK6EE88f5b` | Table rename D32: `ofertas` → `ofertas_descubiertas` everywhere (schema, secuencia_ids, nodes, tests, docs); idempotent migration first in `init_db`; live DB migrated in place, no backup; prefix OFE, indexes and function names unchanged; 331 tests |
@@ -44,20 +44,27 @@ Unless noted, decisions from previous sessions remain in effect.
 - Sub-phase 5.3 implemented: Preparación de ofertas node — two lots per pass (H1), guest httpx capture with browser headers, authwall multi-signal detection with session renewal, configurable retries/pauses/session lifetime
 - Catalogs populated without SQL in the module: company upsert by normalized name; location classification via PRM-006 with Pydantic validation, per-text success-only cache, remote → N/R without row
 - Reviewers: docs approved; code review MAJOR resolved as D36 plus four minors applied (ERR-07 warning parity, shared evidence truncation helper, sentinel guard for lot b, coverage tests)
+- Sub-phase 5.4 implemented: Verificación de duplicidad node — 100% local RapidFuzz two-stage matching (exact index O(1) + fuzzy title/description thresholds same-company only), marker written on every evaluated offer, duplicates point to the oldest original
+- Loop decision node ¿Quedan ofertas en 'descubierta'? — module's only I/O decision; bounded passes with revision_pendientes event always at close
+- Code review found and fixed during build: validators returning empty string vs is-not-None checks, generic SQLite exceptions not wrapped as retryable flow codes, mutual intra-lot duplicate marking (smaller-id rule)
+- Reviewers applied: anti-chain guard (ids marked this pass stop being candidates), context counters synced, public event helper reused by the decision node, transient-retry success test
 
 **Decisions**
+- P1 approved: offers without an extracted company are excluded from duplicate matching on both sides (only the verification marker)
+- P2 approved: the loop node writes its pending-revision event only when it runs; a zero-candidates start short-circuits to Finalizar with the sin_pendientes motive
+- Approved technical latitude: token-sort/partial-ratio fuzzers with inclusive thresholds, oldest-id tie-breaks and smaller-id-only matching, invalid thresholds abort as ERR-03, error_bd added as retryable flow code
 - D36: `total_preparadas` at Finalizar Proceso counts DISTINCT offer ids via `contar_distintos` — lot (b) keeps re-emitting the success event for per-step traceability (user choice A); implementation lands in 5.5 (decision log v1.21)
 - D37: Spanish identifier exception extended to `modules/preparation/` (node files/tests/run_context), same scope and limits as `modules/discovery/` (decision log v1.22)
 - D35: `ai_routing.preparacion: "local"` with `ai_local.model: "gpt-oss:20b-cloud"` (Ollama-hosted via local proxy) — user choice avoiding cloud quota limits and undersized models; per-purpose model selection in `ia_service` deferred until a second local purpose exists (decision log v1.20)
 - Config defaults approved for `preparacion:`: pausa 2 s, limite_vida_sesion 50, umbrales 90/85, max_pasadas 2, profundidad 0, retries block mirroring global
-- Approved deviations from the 5.3 analysis: empty description → `N/R` + observaciones evidence; authwall multi-signal heuristic; `Offer` model += `ubicacion_nombre`/`modalidad`
 - Decisions from previous sessions remain in effect
 
 **Status**
-- Sub-fases 5.1 ✅ 5.2 ✅ 5.3 ✅ (tracker); sub-fases 5.4–5.7 pending
-- Ruff 0 · mypy 0 · pytest 424 passing (+41 net in 5.3; pre-5.3 baseline corrected to 383)
+- Sub-fases 5.1 ✅ 5.2 ✅ 5.3 ✅ 5.4 ✅ (tracker); sub-fases 5.5–5.7 pending
+- Ruff 0 · mypy 0 · pytest 461 passing (+41 net in 5.3, +37 in 5.4; pre-5.3 baseline corrected to 383)
+- Known limitation documented: lexicographic id ordering breaks past 10k offers per prefix (pre-existing, affects FIFO and duplicate original selection)
 - Single commit + push on `fase-5`; no merge
-- Next: sub-fase 5.4 — Verificación de duplicidad + ¿Quedan ofertas en 'descubierta'?
+- Next: sub-fase 5.5 — Finalizar Proceso del Módulo 2
 
 ## Session 33 — 21/08/2026
 `ses_fdba95353ffezwVG7roiPKaX2c` · `fase-5`

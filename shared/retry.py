@@ -33,6 +33,9 @@ _CODIGOS_REINTENTABLES = (
     # a fresh guest session or backoff can succeed on a later attempt.
     "pagina_inalcanzable",
     "authwall_detectado",
+    # Module 2 local nodes (ficha M2 Verificación ERR-01 / decisión de bucle
+    # ERR-01): a transient SQLite failure can succeed on a later attempt.
+    "error_bd",
 )
 
 

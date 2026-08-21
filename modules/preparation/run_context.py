@@ -56,3 +56,7 @@ class RunContext:
         self.cache_empresas: dict[str, str] = {}
         self.cache_ubicaciones: dict[tuple[str, str, str], str] = {}
         self.cache_ia: dict[str, tuple[str, str, str]] = {}
+        # Control del bucle de pasadas (nodo "¿Quedan ofertas en 'descubierta'?",
+        # ficha M2): pasadas completadas que ese nodo contabiliza al evaluar
+        # `pasadas_actuales < max_pasadas`; 0 hasta la primera evaluación.
+        self.pasadas: int = 0

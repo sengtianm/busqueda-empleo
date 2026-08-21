@@ -95,7 +95,8 @@ class ClasificacionUbicacion(BaseModel):
 
 
 class FalloPreparacion(Exception):
-    """Capture failure carrying the sheet's flow code (`codigo_motivo`)."""
+    """Failure carrying a sheet flow code (`codigo_motivo`) for the retry
+    helper; created by the capture steps and the local nodes' DB reads."""
 
     def __init__(self, codigo_motivo: str, detalle: str) -> None:
         super().__init__(f"{codigo_motivo}: {detalle}")

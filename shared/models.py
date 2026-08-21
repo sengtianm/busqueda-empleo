@@ -70,6 +70,7 @@ class Offer(BaseModel):
     fecha_publicacion: datetime | None = None
     fecha_descubrimiento: datetime | None = None
     estado: OfferState = OfferState.DESCUBIERTA
+    id_duplicidad: str = "N/A"
     observaciones: str = "N/A"
     fecha_creacion: str = ""
     fecha_ultima_edicion: str = ""
