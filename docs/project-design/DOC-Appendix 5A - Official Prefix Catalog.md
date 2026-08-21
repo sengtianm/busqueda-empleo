@@ -93,17 +93,17 @@ Sole official reference for assigning, administering, and interpreting all prefi
 
 | Prefix | SQLite Table | Meaning |
 |--------|-------------|---------|
-| FNT | sources | Job source (LinkedIn) |
-| EMP | companies | Employer company |
-| UBI | locations | Geographic location |
-| OFE | offers | Raw job offer |
+| FNT | — (retired) | Job source — **retired** (D31, 2026-08-18): the `fuentes` table was dropped from the physical model; sources are config-driven via `config.yaml`; the FNT- prefix is no longer generated. |
+| EMP | companies | Employer company (populated by Module 2, Nodo 2 — D33) |
+| UBI | locations | Geographic location (populated by Module 2, Nodo 2 — D33; tuple dedup; no `modalidad` column) |
+| OFE | ofertas_descubiertas | Raw job offer (Module 1 capture + Module 2 enrichment) |
 | OFP | processed_offers | Processed and cleaned offer |
 | EVL | evaluations | Compatibility evaluation |
 | RSP | processing_results | Deep processing result |
-| COR | corridas | Run of the Discovery module (Module 1) |
-| SES | sesiones | Platform session of the Discovery module |
-| EVT | eventos | Event (error or success) of the Discovery module |
-| BLO | bloqueo | Concurrency lock record (Module 1) |
+| COR | corridas | Run of a module (Discovery — Module 1, Preparation — Module 2) or of the scheduled run (transversal orchestrator — D34) |
+| SES | sesiones | Platform session of the Discovery module (Module 1) |
+| EVT | eventos | Event (error or success) of any module or the transversal orchestrator |
+| BLO | bloqueo | Concurrency lock record (single active run across the whole pipeline — D33) |
 
 ## A.10 Configuration prefixes
 

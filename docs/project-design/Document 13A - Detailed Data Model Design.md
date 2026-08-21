@@ -19,12 +19,12 @@ Official record of all persistent entities in the job search automation data mod
 | Decision | Operational | Decision Model | Functional decisions made by the automation during offer processing. |
 | Configuration | Support | Configuration | Configuration parameters used during execution. |
 | Catalog | Support | References | Controlled values used by model entities. |
-| Corrida | Operational | Traceability | Discovery module execution instance (run); all module records anchor to its `id_corrida` (RN-01). |
-| Sesion | Operational | Traceability | Audit of each platform session used by the Discovery module during a run. |
-| Bloqueo | Operational | Concurrency | Persistent lock guaranteeing a single active Discovery module run. |
+| Corrida | Operational | Traceability | Execution instance (run) of the Discovery (Module 1), Preparation (Module 2) module, or of the scheduled run (transversal orchestrator); all module records anchor to its `id_corrida` (RN-01). |
+| Sesion | Operational | Traceability | Audit of each platform session used by the Discovery module (Module 1) during a run. |
+| Bloqueo | Operational | Concurrency | Persistent lock guaranteeing a single active run across the whole pipeline (Modules 1 and 2, decisions D3 module 2 / D33). |
 
 **Scope of implemented persistence** — decisions 2026-07-30 and 2026-08-07:  
-The MVP database (`job_search.db`) persists only: `secuencia_ids`, `empresas`, `ubicaciones`, and `ofertas_descubiertas`. The Discovery module additionally defines `eventos`, `sesiones`, `corridas`, and `bloqueo` as tables in the same SQLite file (decision D2, 2026-08-07). Remaining entities are deferred to later modules. This note formalizes the implemented scope; the full inventory remains the target model. **As-built D31 (2026-08-18):** the `fuentes` table was dropped from the physical model (never populated; sources are config-driven via `config.yaml`); the physical DB now has 8 tables. **As-built D32 (2026-08-19):** the physical table `ofertas` was renamed to `ofertas_descubiertas` to distinguish it from the offer tables of later stages (Preparation, Evaluation, Processing); prefix `OFE`, indexes and function names unchanged.
+The MVP database (`job_search.db`) persists only: `secuencia_ids`, `empresas`, `ubicaciones`, and `ofertas_descubiertas`. The Discovery module additionally defines `eventos`, `sesiones`, `corridas`, and `bloqueo` as tables in the same SQLite file (decision D2, 2026-08-07). Remaining entities are deferred to later modules. This note formalizes the implemented scope; the full inventory remains the target model. **As-built D31 (2026-08-18):** the `fuentes` table was dropped from the physical model (never populated; sources are config-driven via `config.yaml`); the physical DB now has 8 tables. **As-built D32 (2026-08-19):** the physical table `ofertas` was renamed to `ofertas_descubiertas` to distinguish it from the offer tables of later stages (Preparation, Evaluation, Processing); prefix `OFE`, indexes and function names unchanged. **As-built D33 (2026-08-20):** Module 2 (Preparation) populates `empresas` and `ubicaciones` catalogs; adds `ubicacion_nombre`, `modalidad`, and `id_duplicidad` to `ofertas_descubiertas`; re-adds `id_oferta` to `eventos`; extends `corridas` with `total_preparadas` and `total_duplicadas`.
 
 ## 2. Detailed Specification of Entities
 
@@ -36,7 +36,7 @@ Specification order: Offer, Source, Company, Location, Processed Offer, Initial 
 
 **Description/purpose:** Represents each job opportunity identified during discovery. Main entity of the model. Stores original offer information before normalization, evaluation, or document generation, and preserves the official reference throughout its lifecycle.
 
-**Attributes:** `id`, `fuente_id`, `company_id`, `location_id`, `id_corrida`, `id_sesion`, `indice_set`, `id_externo`, `fecha_ultima_verificacion`, `enlace`, `title`, `original_description`, `publication_date`, `fecha_descubrimiento`, `status`, `active`, `observations`, `fecha_creacion`, `update_date`.
+**Attributes:** `id`, `fuente_id`, `company_id`, `location_id`, `id_corrida`, `id_sesion`, `indice_set`, `id_externo`, `fecha_ultima_verificacion`, `enlace`, `title`, `original_description`, `publication_date`, `fecha_descubrimiento`, `status`, `active`, `observations`, `fecha_creacion`, `update_date`, `ubicacion_nombre`, `modalidad`, `id_duplicidad`.
 
 **Primary key:** `id`.  
 **Alternate keys:** None.  
@@ -51,11 +51,12 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_i
 - The offer URL is preserved throughout its lifecycle.
 - Original offer content must not be overwritten after discovery.
 - Offer status follows the official state machine.
-- Discovery module records new offers with status `descubierta` (decision C5, 2026-08-07); other transitions belong to Processing module 2.
+- Discovery module records new offers with status `descubierta` (decision C5, 2026-08-07); other transitions belong to Processing module 2. **As-built D33 (2026-08-20):** Module 2 introduces the transitions `descubierta → preparada` (Nodo 2 — Preparación de ofertas) and `preparada → duplicada` (Nodo 3 — Verificación de duplicidad); `duplicada` is the 8th state of the `estado` CHECK; the company's `empresa_id` and the location's `ubicacion_id` are populated by Module 2 (previously `NULL`/`N/A` under D4/D29/PMD-021).
 - `company_name` and `location_name` raw-string columns were **dropped from the physical model** — decision D29 (2026-08-17): Module 1 no longer extracts company/location from the cards; the offer's relation to Company/Location is exclusively via `empresa_id`/`ubicacion_id` (catalogs remain unpopulated in the MVP, D4/PMD-021).
 - `id_externo` is an external source identifier, best effort (`identificador_origen` was removed from the physical model as a dead duplicate — D31).
 - Registration deduplicates by `id_externo` via upsert; each dedup hit refreshes `fecha_ultima_verificacion` (D4).
 - No-empty-field rule (D31, 2026-08-18): `descripcion_original`, `fecha_publicacion`, `observaciones`, `empresa_id` and `ubicacion_id` store `'N/A'` when the value is not applicable/available — never `''` or NULL. `fecha_ultima_verificacion` is exempted: empty until a re-visit refreshes it (user instruction, D31 point 4).
+- **As-built D33 (2026-08-20):** the Verification node of Module 2 reuses `fecha_ultima_verificacion` as the **duplicate-verification marker** — `''` means pending verification and is written only by that node when an offer finishes being checked. Module 1's upsert keeps refreshing the column on dedup hits. Both writers are correct within their module; the column carries the timestamp of the most recent writer (dual semantics documented).
 
 **State machine:** Official offer state machine applies; detailed specification is documented in the corresponding section.
 
@@ -103,29 +104,29 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_i
 
 **State machine:** Not applicable.
 
-**Observations:** Represents only the organization offering the vacancy. The same company may publish multiple offers over time and through different sources while maintaining a single record.
+**Observations:** Represents only the organization offering the vacancy. The same company may publish multiple offers over time and through different sources while maintaining a single record. **As-built D33 (2026-08-20):** Module 2 (Preparation — Nodo 2) populates this catalog via upsert by `nombre_normalizado` (no AI); the deep enrichment of `sitio_web`, `sector`, `tamano` and `descripcion` is decoupled from the critical path (decision D4) and runs as step 6 of Finalizar Proceso, controlled by `preparacion.profundidad_catalogo_empresa`.
 
 ### 2.4. Entity: Location
 
 **Description/purpose:** Represents the geographic location associated with a job offer. Stores normalized location information to avoid duplication when multiple offers share the same place.
 
-**Attributes:** `id`, `country`, `region`, `city`, `address`, `modality`, `location_type`, `observations`, `fecha_creacion`, `update_date`.
+**Attributes:** `id`, `ciudad`, `region`, `pais`, `fecha_creacion`, `fecha_ultima_edicion`. (`address`, `modality`, `location_type` and `observations` belong to the target model and are not implemented in the physical table — `modalidad` was removed in D33.)
 
 **Primary key:** `id`.  
 **Alternate keys:** None.  
-**Foreign keys:** `modality → Catalog`; `location_type → Catalog`.
+**Foreign keys:** Not applicable.
 
 **Relationships:** is used by Offer 1:N.
 
 **Constraints:**
-- At least `country` is mandatory.
-- `modality` must be a valid official catalog value.
-- `location_type` must be a valid official catalog value.
-- Geographic coordinates may be stored only when available and consistent with the registered location.
+- Deduplication is by the **full normalized tuple** `(ciudad, region, pais)`; there is no individual mandatory component.
+- Each component stores `'N/A'` when the source did not provide it (e.g. "Colombia" alone → `(N/A, N/A, Colombia)` with a single shared id).
+- "Remoto" / not-reported offers do not create a location row — the offer's `ubicacion_id` is set to `'N/R'` (not-required).
+- Geographic coordinates may be stored only when available and consistent with the registered location (target model; not implemented in the physical table).
 
 **State machine:** Not applicable.
 
-**Observations:** Work modality belongs to Location because it relates to how the vacancy is performed — on-site, remote, hybrid — and enables reuse across offers.
+**Observations:** Work modality is a property of the **offer**, not of the location — it moved to `ofertas_descubiertas.modalidad` (D33), so the location table no longer carries that column.
 
 ### 2.5. Entity: Processed Offer
 
@@ -255,7 +256,7 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_i
 
 **Constraints:**
 - In module 1, every event must be associated with a `id_corrida`.
-- `id_oferta` is required only when the event belongs to a specific offer. **As-built D31 (2026-08-18):** `id_oferta` was **removed from the physical model** — Module 1 never wrote it (per-offer event traceability is not implemented; the column had no FK constraint and no writer); if a future module needs event-offer relations, the column must be re-added with the corresponding FK.
+- `id_oferta` is required only when the event belongs to a specific offer. **As-built D31 (2026-08-18):** `id_oferta` was **removed from the physical model** — Module 1 never wrote it (per-offer event traceability is not implemented; the column had no FK constraint and no writer). **As-built D33 (2026-08-20):** `id_oferta` is **re-added** (default `'N/A'`) so that Module 2 can attribute its per-offer events (`oferta_preparada`, `preparacion_fallida`, `oferta_duplicada`, `revision_pendientes`) to the offer. Module-level events and orchestration events keep `id_oferta = 'N/A'`; per-offer events of Module 2 carry the real id. No FK constraint is enforced at the physical level.
 - No-empty-field rule (D31, 2026-08-18): `fuente_id`, `id_sesion`, `indice_set` and `evidencia` store `'N/A'` when not applicable (e.g. run-level events) — never `''` or NULL; `indice_set` keeps `0` as a valid value.
 - Every event must record the exact moment it occurred.
 - Every module 1 event must record `tipo` — `error` or `suceso` — and, when applicable, `codigo` from the Discovery module technical sheet.
@@ -337,9 +338,9 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_i
 
 ### 2.14. Entity: Corrida
 
-**Description/purpose:** Execution instance (run) of the Discovery module. Created at startup, acquires the persistent lock, processes sources, and ends with a termination motive. Every module record anchors to its `id_corrida`.
+**Description/purpose:** Execution instance (run) of the Discovery (Module 1), Preparation (Module 2) module, or of the scheduled run (transversal orchestrator). Created at startup, acquires the persistent lock, processes its workload, and ends with a termination motive. Every module record anchors to its `id_corrida`.
 
-**Attributes:** `id`, `id_corrida`, `fecha_inicio`, `fecha_fin`, `estado`, `motivo_terminacion`, `total_ofertas`, `total_sucesos`, `total_errores`, `fuentes_procesadas`. (As-built 2026-08-14, decision D25: the closure attributes — `motivo_terminacion` and the four SQL-computed metrics — were already present in the physical table and are now enforced by the Pydantic model `Corrida` with `extra="forbid"`.)
+**Attributes:** `id`, `id_corrida`, `fecha_inicio`, `fecha_fin`, `estado`, `motivo_terminacion`, `total_ofertas`, `total_sucesos`, `total_errores`, `fuentes_procesadas`, `total_preparadas`, `total_duplicadas`. (As-built 2026-08-14, decision D25: the closure attributes — `motivo_terminacion` and the four SQL-computed metrics — were already present in the physical table and are now enforced by the Pydantic model `Corrida` with `extra="forbid"`. As-built D33, 2026-08-20: `total_preparadas` and `total_duplicadas` are added for Module 2; default `0`; metrics-by-events semantics from the Verification node.)
 
 **Primary key:** `id`.  
 **Alternate keys:** `id_corrida` — unique.  
@@ -351,7 +352,7 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_i
 - `id_corrida` is unique within the system.
 - Every record generated by the module — errors, success events, sessions, offers — must reference its `id_corrida`.
 
-**State machine:** Run statuses and transitions are defined by the Discovery module technical sheet — INICIO and FINALIZAR PROCESO nodes.
+**State machine:** Run statuses and transitions are defined by each module's technical sheet — Discovery (INICIO / Finalizar Proceso), Preparation (INICIO / Finalizar Proceso) and the transversal orchestrator (Corrida programada — lanzar y supervisar módulos). `EstadoCorrida` values: `en_ejecucion`, `completada`, `sin_fuentes`, `sin_pendientes`, `abortada` (the last two added by Module 2 — D33; `sin_pendientes` is the new value for runs that had nothing to process).
 
 **Observations:** Physical table: `corridas` (decision D2, 2026-08-07).
 
@@ -377,7 +378,7 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_i
 
 ### 2.16. Entity: Bloqueo
 
-**Description/purpose:** Persistent concurrency lock for the Discovery module: at most one active run at a time.
+**Description/purpose:** Persistent concurrency lock for the whole pipeline: at most one active run at a time across Modules 1 and 2.
 
 **Attributes:** `id`, `id_corrida`, `marca_temporal`, `umbral_obsolescencia`, `estado`.
 
@@ -388,7 +389,7 @@ MVP capture deviation (D4, 2026-08-09): `fuente_id` is stored as a raw `fuente_i
 **Relationships:** protects Corrida 1:0..1.
 
 **Constraints:**
-- At most one record with `estado = activo` per module.
+- At most one record with `estado = activo` across the whole pipeline (single active run — Module 1 and Module 2 share the same lock).
 - If an active lock's `marca_temporal` is older than `umbral_obsolescencia`, a new run may take over the lock as obsolete.
 
 **State machine:** Not applicable.
@@ -401,9 +402,10 @@ Fundamental rules applicable to all persisted data from this decision onward:
 
 - **No empty fields:** no persisted field may hold `''` or NULL as "no value". When a value is not applicable or not available, the placeholder is `N/A` (not-applicable) or `N/R` (not-required). Implemented at the persistence boundary (`shared/persistence.py`): `escribir_evento` normalizes `fuente_id`/`id_sesion`/`indice_set`/`evidencia` and `_upsert_ofertas_en` normalizes `descripcion_original`/`fecha_publicacion`/`observaciones`/`empresa_id`/`ubicacion_id` (empty/None → `'N/A'`; `indice_set` only when `is None`, since `0` is a valid set index); affected columns declare `DEFAULT 'N/A'` in the schema.
 - **Exclusions:** `ofertas_descubiertas.id_externo` (a `'N/A'` value would collide during dedup — registration deduplicates by `id_externo`) and `ofertas_descubiertas.fecha_ultima_verificacion` (explicitly exempted by the user, D31 point 4: empty until a re-visit refreshes it).
-- **Scope:** currently enforced on `ofertas_descubiertas` and `eventos`. `corridas`, `sesiones`, `bloqueo`, `empresas`, `ubicaciones` and `secuencia_ids` are not restructured (their columns are either always complete or reserved); the rule applies to any future modification or new entity.
+- **Scope:** currently enforced on `ofertas_descubiertas` and `eventos`. `corridas`, `sesiones`, `bloqueo`, `empresas`, `ubicaciones` and `secuencia_ids` are not restructured (their columns are either always complete or reserved); the rule applies to any future modification or new entity. **As-built D33 (2026-08-20):** the rule extends to the Module 2 additions — `ofertas_descubiertas.ubicacion_nombre`/`modalidad` and the re-added `eventos.id_oferta` all declare `DEFAULT 'N/A'`; `ubicaciones` components (`ciudad`, `region`, `pais`) store `'N/A'` when not provided; the new `corridas.total_preparadas`/`total_duplicadas` columns default to `0`.
 - **Query semantics:** value-counting queries treat `'N/A'` as empty — `contar_distintos` excludes NULL, `''` and `'N/A'` (keeps `fuentes_procesadas` correct, since run-level events carry `fuente_id='N/A'`).
-- **Physical cleanup (same decision):** the `fuentes` table and the `FNT-` prefix, `ofertas_descubiertas.identificador_origen` and `eventos.id_oferta` are removed from the physical model; migration `_migrate_limpieza_d31` is idempotent (`DROP TABLE IF EXISTS`, guarded `ALTER TABLE ... DROP COLUMN`, backfill).
+- **Physical cleanup (D31):** the `fuentes` table and the `FNT-` prefix, `ofertas_descubiertas.identificador_origen` and `eventos.id_oferta` are removed from the physical model; migration `_migrate_limpieza_d31` is idempotent (`DROP TABLE IF EXISTS`, guarded `ALTER TABLE ... DROP COLUMN`, backfill).
+- **Re-addition (D33):** `eventos.id_oferta` is re-added (default `'N/A'`) so that Module 2 per-offer events can carry the offer id; module-level and orchestration events keep `id_oferta = 'N/A'`.
 
 ## 3. Catalogs and Reference Tables
 
@@ -523,21 +525,24 @@ Any addition, modification, or deletion of attributes must update this dictionar
 
 - `id` — Unique identifier. UUID; required; PK. Sensitivity Internal; Permanent. Actual name: `id`.
 - `fuente_id` — Reference to the source where the offer was discovered. UUID; required; FK Source. Constraint: mandatory source. Internal; Permanent. Actual name: `fuente_id`; MVP stores raw `fuente_id` string without FK constraint — D4.
-- `company_id` — Reference to the company publishing the offer. UUID; logically mandatory association; FK Company. Constraint: mandatory company. Internal; Permanent. Actual name: `empresa_id`; MVP capture may be `NULL` — D4. **As-built D29 (2026-08-17):** Module 1 does not extract the company from the cards; the adapter writes `NULL` and the `empresas` catalog stays unpopulated (PMD-021). **As-built D31 (2026-08-18):** stores `'N/A'` when the company is unknown (no-empty-field rule; supersedes D4/D29 on this column).
-- `location_id` — Reference to the location associated with the offer. UUID; optional; FK Location. Public; Permanent. Actual name: `ubicacion_id`; MVP capture may be `NULL` — D4. **As-built D29 (2026-08-17):** Module 1 does not extract the location from the cards; the adapter writes `NULL` and the `ubicaciones` catalog stays unpopulated (PMD-021). **As-built D31 (2026-08-18):** stores `'N/A'` when the location is unknown (no-empty-field rule; supersedes D4/D29 on this column).
-- `id_corrida` — Run that discovered the offer. UUID; optional; FK Corrida. Discovery traceability — RN-01. Internal; Permanent. Actual name: `id_corrida`.
+- `company_id` — Reference to the company publishing the offer. UUID; logically mandatory association; FK Company. Constraint: mandatory company. Internal; Permanent. Actual name: `empresa_id`; MVP capture may be `NULL` — D4. **As-built D29 (2026-08-17):** Module 1 does not extract the company from the cards; the adapter writes `NULL` and the `empresas` catalog stays unpopulated (PMD-021). **As-built D31 (2026-08-18):** stores `'N/A'` when the company is unknown (no-empty-field rule; supersedes D4/D29 on this column). **As-built D33 (2026-08-20):** populated by Module 2 (Preparation — Nodo 2) via upsert by `nombre_normalizado`; stores the catalog id, or `'N/A'` if the offer page did not expose the company.
+- `location_id` — Reference to the location associated with the offer. UUID; optional; FK Location. Public; Permanent. Actual name: `ubicacion_id`; MVP capture may be `NULL` — D4. **As-built D29 (2026-08-17):** Module 1 does not extract the location from the cards; the adapter writes `NULL` and the `ubicaciones` catalog stays unpopulated (PMD-021). **As-built D31 (2026-08-18):** stores `'N/A'` when the location is unknown (no-empty-field rule; supersedes D4/D29 on this column). **As-built D33 (2026-08-20):** populated by Module 2 (Nodo 2); stores the catalog id (UBI-xxxx), or `'N/R'` for "Remoto"/not-reported, or `'N/A'` for pending AI classification.
+- `id_corrida` — Run that discovered the offer. UUID; optional; FK Corrida. Discovery traceability — RN-01. Internal; Permanent. Actual name: `id_corrida`. **As-built D33 (2026-08-20):** Module 2 does not overwrite this column — it always reflects the discovery run; the preparation traceability lives in `eventos`.
 - `id_sesion` — Platform session used to discover the offer. UUID; optional; module 1. Internal; Permanent. Actual name: `id_sesion`.
 - `indice_set` — Index of the filter set that produced the offer. Integer; optional; module 1. Internal; Permanent. Actual name: `indice_set`.
 - `id_externo` — External identifier of the offer in the source of origin; best effort. Text; optional. Public; Permanent. Actual name: `id_externo`. **As-built D31 (2026-08-18):** `identificador_origen` was removed from the physical model as a dead duplicate; `id_externo` is the single dedup key (D4) and is excluded from the `N/A` normalization.
 - `enlace` — Original offer link. Text; required. Constraint: preserved throughout lifecycle. Public; Permanent.
-- `title` — Original offer title. Text; required. Public; Permanent. Actual name: `titulo`.
-- `original_description` — Original content obtained during discovery. Long Text; required. Constraint: must not be overwritten after discovery. Public; Permanent. Actual name: `descripcion_original`. **As-built D31 (2026-08-18):** stores `'N/A'` when no description is available (no-empty-field rule).
+- `title` — Original offer title. Text; required. Public; Permanent. Actual name: `titulo`. **As-built D33 (2026-08-20):** Module 2 (Nodo 2) may overwrite this column best-effort with the `<h1>` of the offer page when one is available; otherwise the value from Module 1 is preserved.
+- `original_description` — Original content obtained during discovery. Long Text; required. Constraint: must not be overwritten after discovery. Public; Permanent. Actual name: `descripcion_original`. **As-built D31 (2026-08-18):** stores `'N/A'` when no description is available (no-empty-field rule). **As-built D33 (2026-08-20):** Module 1 leaves this column at `'N/A'`; Module 2 (Nodo 2) populates it from the offer page (captured once — original content, not overwritten after preparation).
 - `publication_date` — Publication date indicated by the source. Date/Time; optional. Public; Permanent. Actual name: `fecha_publicacion`. **As-built D28 (2026-08-17):** in Module 1 the value is an **approximate absolute timestamp** derived from the card's relative date "Publicado hace N <unidad>" (`FORMATO_TIMESTAMP`; precision ±1 h due to LinkedIn rounding; month unit = 30 days); the raw source text is preserved verbatim in `observations`. Normalization (Module 2) still applies on the raw text. **As-built D31 (2026-08-18):** stores `'N/A'` when the card has no relative date (no-empty-field rule).
 - `fecha_descubrimiento` — Date/time when automation discovered the offer. Date/Time; required. Internal; Permanent.
-- `status` — Current offer status in the processing flow. Catalog; required; FK Catalog. Default: `descubierta`. Domain: Offer Statuses — 7 values. Constraint: follows official state machine. Internal; Permanent. Actual name: `estado`.
+- `status` — Current offer status in the processing flow. Catalog; required; FK Catalog. Default: `descubierta`. Domain: Offer Statuses — 8 values (`descubierta`, `preparada`, `duplicada`, `evaluada`, `aceptada`, `descartada`, `procesada`, `finalizada`; `duplicada` added by D33). Constraint: follows official state machine. Internal; Permanent. Actual name: `estado`.
 - `active` — Indicates whether the offer remains valid. Boolean; required; default `true`. Internal; Permanent.
-- `observations` — Additional relevant offer information. Long Text; optional. Internal; Permanent. Actual name: `observaciones`. **As-built D28 (2026-08-17):** carries the raw adapter text of the relative publication date (e.g. "Publicado hace 9 horas") captured during discovery. **As-built D31 (2026-08-18):** stores `'N/A'` when empty (no-empty-field rule).
-- `fecha_ultima_verificacion` — Last re-visit timestamp of the listing. Date/Time; optional. Internal; Permanent. **As-built D31 (2026-08-18):** exempted from the `N/A` rule by explicit user instruction — empty until a dedup re-visit refreshes it.
+- `observations` — Additional relevant offer information. Long Text; optional. Internal; Permanent. Actual name: `observaciones`. **As-built D28 (2026-08-17):** carries the raw adapter text of the relative publication date (e.g. "Publicado hace 9 horas") captured during discovery. **As-built D31 (2026-08-18):** stores `'N/A'` when empty (no-empty-field rule). **As-built D33 (2026-08-20):** also stores the duplicate-detection evidence (e.g. "Duplicado de OFE-xxx — título 100 %, descripción 96 %") written by Module 2 Nodo 3.
+- `fecha_ultima_verificacion` — Last re-visit timestamp of the listing. Date/Time; optional. Internal; Permanent. **As-built D31 (2026-08-18):** exempted from the `N/A` rule by explicit user instruction — empty until a dedup re-visit refreshes it. **As-built D33 (2026-08-20):** Module 2 reuses the column as the **duplicate-verification marker**; the Verification node (Nodo 3) is the only writer inside Module 2 (`''` = pending verification). Module 1's upsert keeps refreshing the column on dedup hits. Both writers are correct within their module; the column carries the timestamp of the most recent writer (dual semantics documented in `decision log.md` D33).
+- `ubicacion_nombre` — Raw location text taken from the offer page by Module 2 (Nodo 2). Text; optional. Internal; Permanent. Actual name: `ubicacion_nombre`. **As-built D33 (2026-08-20):** column re-added (`DEFAULT 'N/A'`, D31 no-empty-field rule applies); reversión parcial justificada de D29 documentada en el decision log; preserva el texto crudo de la ubicación para su clasificación por IA y para la gestión posterior del lote (b) del nodo.
+- `modalidad` — Work modality of the offer (on-site, remote, hybrid). Text; optional. Internal; Permanent. Actual name: `modalidad`. **As-built D33 (2026-08-20):** column re-added (`DEFAULT 'N/A'`); dato de la oferta (la IA no la toca); se clasifica sin IA en el Nodo 2.
+- `id_duplicidad` — Reference to the original offer when this offer is a duplicate. UUID; optional; FK self (Offer). Internal; Permanent. Actual name: `id_duplicidad`. **As-built D33 (2026-08-20):** columna nueva (`DEFAULT 'N/A'`); la escribe el Nodo 3 de Verificación de duplicidad cuando confirma duplicado; el original queda intacto.
 
 #### 5.5.2. Source
 
@@ -555,25 +560,24 @@ Any addition, modification, or deletion of attributes must update this dictionar
 #### 5.5.3. Company
 
 - `id` — Unique identifier. UUID; required; PK. Internal; Permanent.
-- `name` — Official company name. Text; required. Public; Permanent. Actual name: `nombre`.
-- `nombre_normalizado` — Standardized name used to avoid duplicates. Text; required. Internal; Permanent.
-- `website` — Official website. Text; optional. Public; Permanent. Actual name: `sitio_web`.
-- `linkedin` — Official LinkedIn profile URL. Text; optional. Public; Permanent. Actual name: `perfil_linkedin`.
-- `sector` — Economic sector. Catalog; optional; FK Catalog. Domain: Business Sectors. Constraint: valid catalog value. Internal; Permanent.
-- `size` — Company size classification. Catalog; optional; FK Catalog. Domain: Company Size. Constraint: valid catalog value. Internal; Permanent. Actual name: `tamano`.
-- `description` — General company description. Long Text; optional. Public; Permanent. Actual name: `descripcion`.
+- `name` — Official company name. Text; required. Public; Permanent. Actual name: `nombre`. **As-built D33 (2026-08-20):** populated by Module 2 (Nodo 2) via upsert by `nombre_normalizado`.
+- `nombre_normalizado` — Standardized name used to avoid duplicates. Text; required. Internal; Permanent. **As-built D33 (2026-08-20):** the upsert key for Module 2 (Nodo 2); `normalizar_texto` from `shared/utilidades.py` produces it.
+- `website` — Official website. Text; optional. Public; Permanent. Actual name: `sitio_web`. **As-built D33 (2026-08-20):** populated by the decoupled enrichment step (Nodo 5 paso 6) when `preparacion.profundidad_catalogo_empresa > 0` (D4).
+- `linkedin` — Official LinkedIn profile URL. Text; optional. Public; Permanent. Actual name: `perfil_linkedin`. **As-built D33 (2026-08-20):** captured by Module 2 (Nodo 2) from the offer page.
+- `sector` — Economic sector. Catalog; optional; FK Catalog. Domain: Business Sectors. Constraint: valid catalog value. Internal; Permanent. **As-built D33 (2026-08-20):** populated by the decoupled enrichment step (D4).
+- `size` — Company size classification. Catalog; optional; FK Catalog. Domain: Company Size. Constraint: valid catalog value. Internal; Permanent. Actual name: `tamano`. **As-built D33 (2026-08-20):** populated by the decoupled enrichment step (D4).
+- `description` — General company description. Long Text; optional. Public; Permanent. Actual name: `descripcion`. **As-built D33 (2026-08-20):** populated by the decoupled enrichment step (D4).
 - `observations` — Additional relevant information. Long Text; optional. Internal; Permanent.
 
 #### 5.5.4. Location
 
-- `id` — Unique identifier. UUID; required; PK. Internal; Permanent.
-- `country` — Country where the vacancy is offered. Text; required. Constraint: at least country is mandatory. Public; Permanent. Actual name: `pais`.
-- `region` — State, province, or department. Text; optional. Public; Permanent.
-- `city` — City of the vacancy. Text; optional. Public; Permanent. Actual name: `ciudad`.
-- `address` — Specific address when available. Text; optional. Public; Permanent.
-- `modality` — Work modality associated with the location. Catalog; required; FK Catalog. Domain: Work Modalities. Constraint: valid catalog value. Public; Permanent. Actual name: `modalidad`.
-- `location_type` — Classification of offer location. Catalog; required; FK Catalog. Domain: Catalog. Constraint: valid catalog value. Internal; Permanent.
-- `observations` — Additional location information. Long Text; optional. Internal; Permanent.
+- `id` — Unique identifier. UUID; required; PK. Internal; Permanent. Actual name: `id`.
+- `ciudad` — City of the vacancy. Text; optional. Public; Permanent. Actual name: `ciudad`. **As-built D33 (2026-08-20):** stores `'N/A'` when the source did not specify the city.
+- `region` — State, province or department. Text; optional. Public; Permanent. Actual name: `region`. **As-built D33 (2026-08-20):** stores `'N/A'` when not provided.
+- `pais` — Country where the vacancy is offered. Text; optional. Public; Permanent. Actual name: `pais`. **As-built D33 (2026-08-20):** dedup key component; stores `'N/A'` when the source did not specify the country (e.g. "Colombia" alone → `(N/A, N/A, Colombia)` shared across offers).
+- `fecha_creacion` — Record creation timestamp. Date/Time; required. Sensitivity Internal; Permanent.
+- `fecha_ultima_edicion` — Last record update timestamp. Date/Time; required. Sensitivity Internal; Permanent.
+- **Dedup:** by full normalized tuple `(ciudad, region, pais)` — `normalizar_texto` produces the tuple. There is no individual mandatory component. "Remoto" → no row (the offer's `ubicacion_id` becomes `'N/R'`). `modalidad`/`address`/`location_type`/`observations` from the target model are not implemented in the physical table; `modalidad` moved to `ofertas_descubiertas.modalidad` (D33).
 
 #### 5.5.5. Processed Offer
 
@@ -669,7 +673,8 @@ Any addition, modification, or deletion of attributes must update this dictionar
 #### 5.5.10. Event
 
 - `id` — Unique identifier. UUID; required; PK. Internal; Permanent.
-- `id_corrida` — Run that generated the event. UUID; required; FK Corrida. Constraint: mandatory in module 1 — RN-01. Internal; Permanent. Actual name: `id_corrida`.
+- `id_corrida` — Run that generated the event. UUID; required; FK Corrida. Constraint: mandatory in modules 1 and 2, and in the transversal orchestrator — RN-01. Internal; Permanent. Actual name: `id_corrida`.
+- `id_oferta` — Offer associated with the event. UUID; optional. No FK constraint at the physical level. Internal; Permanent. Actual name: `id_oferta`. **As-built D33 (2026-08-20):** column **re-added** (`DEFAULT 'N/A'`); used by Module 2 for per-offer events (`oferta_preparada`, `preparacion_fallida`, `oferta_duplicada`, `revision_pendientes`); module-level and orchestration events keep `id_oferta = 'N/A'`. Supersedes D31 D-1 on this column.
 - `fuente_id` — Source on which the event occurred. UUID; optional; FK Source. Module 1 traceability. Internal; Permanent. **As-built D31 (2026-08-18):** run-level events store `'N/A'` (no-empty-field rule).
 - `id_sesion` — Platform session in which the event occurred. UUID; optional; module 1. Internal; Permanent. **As-built D31 (2026-08-18):** stores `'N/A'` when the event is not session-scoped.
 - `indice_set` — Filter-set index where the event occurred. Integer; optional; module 1. Internal; Permanent. **As-built D31 (2026-08-18):** stores `'N/A'` when not applicable; `0` is a valid value.
@@ -732,15 +737,17 @@ Any addition, modification, or deletion of attributes must update this dictionar
 #### 5.5.14. Corrida
 
 - `id` — Unique identifier of run record. UUID; required; PK. Internal; Permanent.
-- `id_corrida` — Public unique run identifier. UUID; required; AK. Constraint: referenced by every module record — RN-01. Internal; Permanent. Actual name: `id_corrida`.
+- `id_corrida` — Public unique run identifier. UUID; required; AK. Constraint: referenced by every module record — RN-01. Internal; Permanent. Actual name: `id_corrida`. **As-built D33/D34 (2026-08-20):** the transversal orchestrator also creates a row here for each scheduled run (`ejecutar_corrida_programada`), distinct from the module runs it orchestrates.
 - `fecha_inicio` — Run start date/time. Date/Time; required. Internal; Permanent.
 - `fecha_fin` — Run end date/time. Date/Time; optional. Applies to normal, concurrency, or failure termination. Internal; Permanent.
-- `estado` — Run status. Catalog; required; FK Catalog. Default: `en_ejecucion`. Domain: `en_ejecucion`, `completada`, `sin_fuentes`, `abortada` (decision D4, 2026-08-10; as-built 2026-08-14, decision D25: `error`/`concurrencia` retired, domain enforced by the Pydantic model `EstadoCorrida`). Constraint: follows Discovery technical sheet. Internal; Permanent. Actual name: `estado`.
-- `motivo_terminacion` — Termination motive of the run. Text; optional. Values: `corrida_completada`, `sin_fuentes`, `aborto`. Internal; Permanent. Actual name: `motivo_terminacion`.
-- `total_ofertas` — Offers registered during the run. Integer; optional. Computed by SQL closure metrics (`contar_filas`). Internal; Permanent.
-- `total_sucesos` — Success events recorded during the run. Integer; optional. Computed by SQL closure metrics. Internal; Permanent.
+- `estado` — Run status. Catalog; required; FK Catalog. Default: `en_ejecucion`. Domain: `en_ejecucion`, `completada`, `sin_fuentes`, `sin_pendientes`, `abortada` (decision D4, 2026-08-10; as-built 2026-08-14, decision D25: `error`/`concurrencia` retired, domain enforced by the Pydantic model `EstadoCorrida`. As-built D33, 2026-08-20: `sin_pendientes` added for Module 2 runs that had no candidates). Constraint: follows each module's technical sheet. Internal; Permanent. Actual name: `estado`.
+- `motivo_terminacion` — Termination motive of the run. Text; optional. Values: `corrida_completada`, `sin_fuentes`, `sin_pendientes`, `error_total`, `error_critico`, `aborto`, `concurrencia` (the last two already existed for Discovery; `sin_pendientes` and `error_total` were added by D33 for Module 2 — `no_iniciada` is an evidence value in the orchestrator, not a status). Internal; Permanent. Actual name: `motivo_terminacion`.
+- `total_ofertas` — Offers registered during the run. Integer; optional. Computed by SQL closure metrics (`contar_filas`). Internal; Permanent. **As-built D33 (2026-08-20):** for Module 2 the value is `total_preparadas + total_duplicadas` (offers processed by this run).
+- `total_sucesos` — Success events recorded during the run. Integer; optional. Computed by SQL closure metrics. Internal; Permanent. **As-built D33 (2026-08-20):** for Module 2 the value counts success events written **before** the termination event (semantics D30 intact — the termination event is never counted).
 - `total_errores` — Error events recorded during the run. Integer; optional. Computed by SQL closure metrics. Internal; Permanent.
 - `fuentes_procesadas` — Distinct sources processed during the run. Integer; optional. Computed by SQL closure metrics (`contar_distintos`). Internal; Permanent.
+- `total_preparadas` — Offers prepared by a Module 2 run. Integer; optional; default `0`. Computed by SQL closure metrics (`contar_filas(eventos, {id_corrida, codigo='oferta_preparada'})`). Internal; Permanent. **As-built D33 (2026-08-20).**
+- `total_duplicadas` — Offers marked duplicate by a Module 2 run. Integer; optional; default `0`. Computed by SQL closure metrics (`contar_filas(eventos, {id_corrida, codigo='oferta_duplicada'})`). Internal; Permanent. **As-built D33 (2026-08-20).**
 
 #### 5.5.15. Sesion
 
@@ -760,7 +767,7 @@ Any addition, modification, or deletion of attributes must update this dictionar
 - `id_corrida` — Run owning the lock. UUID; required; FK Corrida. Internal; Permanent.
 - `marca_temporal` — Lock acquisition date/time. Date/Time; required. Internal; Permanent.
 - `umbral_obsolescencia` — Seconds after which lock may become obsolete. Integer; required. Constraint: from configuration; no hardcoded values; defined in configuration file. Internal; Permanent.
-- `estado` — Lock state. Catalog; required; FK Catalog. Default: `activo`. Domain: `activo`, `obsoleto`, `liberado`. Constraint: single active lock per run. Internal; Permanent.
+- `estado` — Lock state. Catalog; required; FK Catalog. Default: `activo`. Domain: `activo`, `obsoleto`, `liberado`. Constraint: at most one active lock across the whole pipeline — Modules 1 and 2 share the same global lock (decision D3 module 2 / D33). Internal; Permanent.
 
 ## 6. Entity–Relationship Diagram
 
@@ -836,6 +843,7 @@ Every data-model modification must be recorded before becoming official. Each ve
 
 | Version | Date | Author | Change description |
 | --- | --- | --- | --- |
+| 1.11 | 2026-08-20 | System | Module 2 «Preparación de ofertas» — decisions D33/D34: `ofertas_descubiertas` gains `ubicacion_nombre`, `modalidad`, `id_duplicidad`; `estado` domain extends to 8 values (`+duplicada`); `ofertas_descubiertas.descripcion_original`/`titulo` are filled/refreshed by Module 2 (best-effort `<h1>`); `fecha_ultima_verificacion` becomes the duplicate-verification marker with dual semantics (Module 1 dedup hit + Module 2 Nodo 3 verification); `eventos.id_oferta` is re-added (`DEFAULT 'N/A'`) for per-offer traceability in Module 2; `corridas` gains `total_preparadas`/`total_duplicadas` (`DEFAULT 0`); `EstadoCorrida` adds `sin_pendientes`; `Bloqueo` describes a single active run across the whole pipeline; `ubicaciones` is restructured — physical attributes reduce to `id`/`ciudad`/`region`/`pais` (tuple dedup, components `'N/A'`, "Remoto" → no row + `ubicacion_id='N/R'`), `modalidad`/`address`/`location_type` move to target model; `empresas` is populated by Module 2 (upsert by `nombre_normalizado`; enrichment decoupled per `preparacion.profundidad_catalogo_empresa`); the transversal orchestrator creates its own `corridas` row (D34) without schema changes. §2.1/§2.3/§2.4/§2.10/§2.14/§2.16/§2.17, §5.5.1/§5.5.3/§5.5.4/§5.5.10/§5.5.14/§5.5.16 and scope note updated; ERD unchanged (no new relationships); historical version rows are left intact (original wording in git). |
 | 1.10 | 2026-08-19 | System | Table rename — decision D32: the physical table `ofertas` was renamed to `ofertas_descubiertas` (schema, `secuencia_ids` row, queries, discovery nodes, tests, docs); idempotent migration `_migrate_ofertas_descubiertas` runs first in `init_db()`; prefix `OFE`, indexes and function names unchanged; live DB migrated in place via `init_db()`, no backup, 62 offers preserved; physical references in the scope note, §2.2/§2.17 and §5.5.2 updated to the current naming (precedent D7/D8); historical version rows are left intact (original wording in git). |
 | 1.0 | 2026-07-30 | System | Initial creation of Document 13A — Detailed Data Model Design. |
 | 1.1 | 2026-07-30 | System | Alignment with implementation: official Offer Statuses catalog reduced to the 7 states of `shared/state_machine.py`; attribute names aligned with `shared/models.py` — `version_modelo`, `region`; recorded Processed Offer deviations — PMD-020; implemented-persistence scope note. |

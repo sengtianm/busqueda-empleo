@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 32 | 20/08/2026 | `ses_fe33fd2dfffeQS3bPEmnaiJW1h` | Phase 5 documentation: Module 2 (Preparation) + transversal orchestrator technical sheets created and aligned across project docs (decision log, DOC-13A, database-tables, Appendix 5A, ficha M1, plan, guide, README); tracker 4.26 |
 | 31 | 19/08/2026 | `ses_fe539fd2ffferuSLgK6EE88f5b` | Table rename D32: `ofertas` → `ofertas_descubiertas` everywhere (schema, secuencia_ids, nodes, tests, docs); idempotent migration first in `init_db`; live DB migrated in place, no backup; prefix OFE, indexes and function names unchanged; 331 tests |
 | 30 | 18/08/2026 | `ses_fea037d3dffeR12tTJoQEt4IFq` | Multi-search Q&A in Module 1: `sets_de_filtros` natively supports several queries per run (search → capture → register per set, dedup by external id); contiguous-index rule documented in `config.yaml` (option A, config-only) — no code changes |
 | 29 | 18/08/2026 | `ses_feb0c7a29ffe0jOcMvPYiDv5wa` | Schema cleanup + no-empty-field rule (D31): `eventos.id_oferta`, `ofertas.identificador_origen` and the `fuentes` table/FNT prefix removed; N/A/N/R placeholders enforced at the persistence boundary, `fecha_ultima_verificacion` exempted; live DB migrated 9→8 tables with backup (329 tests) |
@@ -25,6 +26,30 @@ Unless noted, decisions from previous sessions remain in effect.
 | 14 | 09/08/2026 | `ses_01bcc78adffemcqFEiZxT52Eli` | Sub-fase 4.4: capture/registration nodes implemented, audited, and post-audit fixes applied (FK-free schema, name columns, upsert tests) |
 | 13 | 08/08/2026 | `ses_01be77680ffeuyoKct4Qrfx1GG` | Repo sync to `fase-4`; new `/save` section with general git commit and push guidance |
 | 12 | 08/08/2026 | `ses_01c089ce2ffe9MvQT4F1pC0MJN` | Sub-fase 4.2 deep audit + post-audit fixes (credentials mapping, playwright lifecycle) |
+
+## Session 32 — 20/08/2026
+`ses_fe33fd2dfffeQS3bPEmnaiJW1h` · `fase-5`
+
+**Topics**
+- Phase 5 plan formally closed: 5 macro decisions + corrections + 7 gap mitigations + 6 optimizations approved as the M2 construction base
+- Two technical sheets created as authoritative construction bases: Module 2 (Preparation) with 6 nodes + 11 consolidated schema migrations; transversal orchestrator with the scheduled-run node + 7 RNs
+- Module 2 design: company capture via fresh-guest httpx session with browser fallback (offer pages capturable without login); deep catalog enrichment decoupled from the critical path as the last step of Finalizar (configurable depth); two-stage duplicate detection (exact title+company, then fuzzy description with RapidFuzz); in-memory caches for companies and locations; metrics by events (offer id_corrida never overwritten); `sin_pendientes` as a new run state for "nothing to do"; `fecha_ultima_verificacion` re-used as the verification marker with dual semantics (M1 dedup hit + M2 verification)
+- Transversal orchestrator design: launches modules in pipeline order, never touches the global lock, result derived from the database (last run closed in the window since T0), module failure does not stop the scheduled run, dedicated row in `corridas` for the scheduled run, summary events with `campo=valor` evidence format, config-driven module list
+- 11 consolidated migrations: `duplicada` state + `id_duplicidad`/`ubicacion_nombre`/`modalidad` on offers; `total_preparadas`/`total_duplicadas` + `sin_pendientes` on runs; `id_oferta` re-added on events; `ubicaciones` restructured to (city, region, country) tuple dedup with N/A components and no row for remote
+- Documentation alignment: decision log v1.19 (D33, D34); DOC-13A v1.11 (entities, dictionary, version history); database-tables.md (writers per module, schema, events catalog); Appendix 5A (FNT retired, OFE → `ofertas_descubiertas`, module scope generalized); ficha M1 as-built note on the dual semantics of the verification marker; plan fase 5 with pointers to the two fichas; guide for new sources updated to reference the transversal orchestrator and the M2 ficha; README.md with explicit rows for the two new fichas
+- Reviewer: docs-reviewer approval + 5 minor corrections (evidence format, exclusion-table clarification, run-state vocabulary precision, dual-semantics note, dual dependencia with shared utilities); all applied
+- No code changes this session — documentation only, implementation pending approval
+
+**Decisions**
+- D33 (2026-08-20): Module 2 (Preparation) technical sheet approved — macro decisions D1–D5 (terminal `duplicada` state, `id_duplicidad` to original, module own run + new closure metrics, decoupled company capture and enrichment, two-stage duplicate verification); corrections; H1–H7; 6 optimizations; 11 consolidated schema migrations (decision log v1.19)
+- D34 (2026-08-20): transversal orchestrator technical sheet approved — dedicated layer, scheduled-run row in `corridas`, module result derived from the database, module failure does not stop the run, `orquestador:` config section, no migrations
+- Decisions from previous sessions remain in effect
+
+**Status**
+- Phase 5 plan closed ✅ (tracker 4.26); documentation aligned across 7 files (decision log, DOC-13A, database-tables, Appendix 5A, ficha M1, plan fase 5, adding-a-new-source) + README; the two new fichas remain as authoritative construction bases
+- No code changes: ruff/mypy/pytest not executed; suite unchanged (331 tests)
+- Single commit + push on `fase-5`; no merge
+- Next: Module 2 implementation (cards task TBD: shared utilities, `modules/preparation/` structure, `modules/orchestrator/` skeleton, real sequential 1→2 run); MVP Execution Plan and tracker pending alignment
 | 11 | 08/08/2026 | `ses_01c312689ffewPDBUxLcQIRb5L` | Sub-fase 4.3: Filter search + generic register implemented and validated (171 tests) |
 | 10 | 08/08/2026 | `ses_01d9bc3d2ffe0OwXiVc3Mw8NWO` | Sub-fase 4.2: Ingreso flow implemented (3 nodes) and validated (152 tests) |
 | 9 | 08/08/2026 | `ses_01ebcd885ffe7UB5IsfCrylV90` | Sub-fase 4.1: INICIO node implemented and validated (123 tests), reviewer fixes applied, branch `fase-4` created |

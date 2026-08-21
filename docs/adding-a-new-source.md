@@ -1,7 +1,8 @@
 # Adding a New Source (Guía para añadir una nueva fuente)
 
 Guía operativa para incorporar una nueva plataforma de empleo (p. ej. un portal
-de ofertas) al pipeline sin tocar el flujo de los nodos ni el orquestador.
+de ofertas) al pipeline sin tocar el flujo de los nodos ni el orquestador
+transversal (`modules/orchestrator/`).
 Estado del proyecto: **solo LinkedIn** está registrado; esta guía prepara la
 incorporación futura de cualquier otra fuente.
 
@@ -45,7 +46,9 @@ Antes de escribir código, documenta (fuera del repo o en borrador):
 - **Oferta**: qué identifica a una oferta de forma única (URL canónica
   `id_externo`), qué campos mínimos se pueden extraer del listado sin entrar
   al detalle (título, enlace). El enriquecimiento con descripción es tarea
-  posterior del Módulo de Preparación (Fase 5), no del adaptador.
+  posterior del Módulo 2 (Preparación de ofertas, fase 5), no del adaptador —
+  ver la ficha técnica autoritativa
+  [`docs/diagrams/Ficha técnica - Diagrama de flujo (Preparación de ofertas).md`](docs/diagrams/Ficha%20técnica%20-%20Diagrama%20de%20flujo%20(Preparación%20de%20ofertas).md).
 
 ### Paso 1 — Configuración (`config/config.yaml`)
 
@@ -177,6 +180,7 @@ Actualizar (con autorización, según el flujo de trabajo de AGENTS.md):
 | Documento | Qué se actualiza |
 |---|---|
 | Ficha técnica del módulo (`docs/diagrams/`) | Flujo, reglas de negocio y códigos de error específicos de la nueva fuente |
+| Ficha técnica del orquestador transversal (`docs/diagrams/`) | Solo si el cambio afecta a la coordinación entre módulos (p. ej. añadir un módulo nuevo al registro `MODULOS` y a la sección `orquestador:` de `config.yaml`) |
 | Decision log (`docs/history/decision log.md`) | Nueva decisión (p. ej. D13 del registro de adaptadores; mecanismo de captura elegido) |
 | tracker.md (`docs/history/tracker.md`) | Estado de la nueva tarea/fase |
 | session history.md (`docs/history/session history.md`) | Entrada de la sesión (solo vía `/save`) |
@@ -198,7 +202,8 @@ Actualizar (con autorización, según el flujo de trabajo de AGENTS.md):
 ## 4. Qué NO hacer
 
 - No modificar los nodos (`ingreso.py`, `busqueda.py`, `captura.py`) ni el
-  orquestador para añadir la fuente — se resuelve vía registro.
+  orquestador transversal (`modules/orchestrator/`) para añadir la fuente — se
+  resuelve vía registro (`REGISTRO_ADAPTADORES` y `MODULOS`).
 - No poner el mecanismo de captura en la configuración (RN-10).
 - No acceder a la BD desde el adaptador.
 - No guardar credenciales ni secretos en archivos del repositorio.

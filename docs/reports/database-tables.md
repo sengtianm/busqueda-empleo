@@ -17,13 +17,13 @@ Estado actual (conteos al momento del reporte, tras la migración D31 y el renam
 | Tabla | Filas | Escritor principal |
 |---|---|---|
 | `secuencia_ids` | 4 | Automática (generador de IDs) |
-| `empresas` | 0 | — (catálogo reservado; sin escritura en Módulo 1) |
-| `ubicaciones` | 0 | — (catálogo reservado; sin escritura en Módulo 1) |
-| `ofertas_descubiertas` | 62 | Nodo Captura → `upsert_oferta()` |
-| `corridas` | 1 | Nodo INICIO → `registrar_corrida()`; Nodo Finalizar → `actualizar_corrida()` |
-| `eventos` | 28 | Nodos del flujo → `escribir_evento()` |
-| `sesiones` | 13 | Nodo Captura → `escribir_fila("sesiones")` |
-| `bloqueo` | 0 | Nodo INICIO → `adquirir_bloqueo()`; Nodo Finalizar → `liberar_bloqueo()` |
+| `empresas` | 0 | Módulo 2 — Nodo 2 (upsert por `nombre_normalizado`); Módulo 2 — Nodo 5 paso 6 (enriquecimiento, si `preparacion.profundidad_catalogo_empresa > 0`) |
+| `ubicaciones` | 0 | Módulo 2 — Nodo 2 (upsert por tupla `(ciudad, region, pais)` normalizada; "Remoto" no crea fila) |
+| `ofertas_descubiertas` | 62 | Módulo 1 — Nodo Captura → `upsert_oferta()`; Módulo 2 — Nodo 2 (sobrescribe `titulo`/`descripcion_original`/`empresa_id`/`ubicacion_id`/`modalidad`); Módulo 2 — Nodo 3 (escribe `estado`, `id_duplicidad`, `fecha_ultima_verificacion`, `observaciones`) |
+| `corridas` | 1 | Módulo 1/2 — Nodo INICIO → `registrar_corrida()`; Nodo Finalizar → `actualizar_corrida()`; Orquestador transversal → `registrar_corrida()` para la corrida programada |
+| `eventos` | 28 | Nodos del flujo → `escribir_evento()` (incluye los eventos del Módulo 2 — `oferta_preparada`/`preparacion_fallida`/`oferta_duplicada`/`revision_pendientes` — y del orquestador — `modulo_ejecutado`/`corrida_programada`/`modulo_fallido`) |
+| `sesiones` | 13 | Módulo 1 — Nodo Captura → `escribir_fila("sesiones")` |
+| `bloqueo` | 0 | Módulo 1/2 — Nodo INICIO → `adquirir_bloqueo()` (global del pipeline); Nodo Finalizar → `liberar_bloqueo()` |
 
 ### Momentos del flujo que diligencian las tablas
 
@@ -49,97 +49,102 @@ Control interno del generador de IDs secuenciales (`PREFIJO-NNNN`). No se escrib
 
 ### 2.2. `empresas`
 
-Catálogo de empresas. **En el MVP del Módulo 1 no se escribe en esta tabla** (0 filas): el Módulo 1 no extrae la empresa de las tarjetas (decisión D29; las columnas crudas `empresa_nombre`/`ubicacion_nombre` de `ofertas_descubiertas` fueron eliminadas); la tabla queda reservada para la gestión del catálogo.
+Catálogo de empresas. **El Módulo 1 no escribe en esta tabla** (0 filas): no extrae la empresa de las tarjetas (decisión D29; las columnas crudas `empresa_nombre`/`ubicacion_nombre` de `ofertas_descubiertas` fueron eliminadas). **El Módulo 2 la puebla** (decisión D33): el Nodo 2 (Preparación de ofertas) hace upsert por `nombre_normalizado` sin IA; el Nodo 5 paso 6 (enriquecimiento desacoplado, D4) actualiza `sitio_web`/`sector`/`tamano`/`descripcion` cuando `preparacion.profundidad_catalogo_empresa > 0`.
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
-| `id` | TEXT (PK) | ID único (prefijo `EMP`) | No se diligencia en el Módulo 1 |
-| `nombre` | TEXT NOT NULL | Nombre oficial de la empresa | No se diligencia en el Módulo 1 |
-| `nombre_normalizado` | TEXT DEFAULT '' | Nombre estandarizado para evitar duplicados | No se diligencia en el Módulo 1 |
-| `sitio_web` | TEXT DEFAULT '' | Sitio web oficial | No se diligencia en el Módulo 1 |
-| `perfil_linkedin` | TEXT DEFAULT '' | URL del perfil de LinkedIn | No se diligencia en el Módulo 1 |
-| `sector` | TEXT DEFAULT '' | Sector económico | No se diligencia en el Módulo 1 |
-| `tamano` | TEXT DEFAULT '' | Clasificación de tamaño de empresa | No se diligencia en el Módulo 1 |
-| `descripcion` | TEXT DEFAULT '' | Descripción general | No se diligencia en el Módulo 1 |
+| `id` | TEXT (PK) | ID único (prefijo `EMP`) | Módulo 2 — Nodo 2 (`generar_id` al insertar) |
+| `nombre` | TEXT NOT NULL | Nombre oficial de la empresa | Módulo 2 — Nodo 2 (desde la página de la oferta); el Módulo 1 no escribe |
+| `nombre_normalizado` | TEXT DEFAULT '' | Nombre estandarizado para evitar duplicados (clave del upsert) | Módulo 2 — Nodo 2 (vía `normalizar_texto` en `shared/utilidades.py`) |
+| `sitio_web` | TEXT DEFAULT '' | Sitio web oficial | Módulo 2 — Nodo 5 paso 6 (enriquecimiento, si `profundidad_catalogo_empresa > 0`); opcional |
+| `perfil_linkedin` | TEXT DEFAULT '' | URL del perfil de LinkedIn | Módulo 2 — Nodo 2 (capturado de la página de la oferta) |
+| `sector` | TEXT DEFAULT '' | Sector económico | Módulo 2 — Nodo 5 paso 6 (enriquecimiento) |
+| `tamano` | TEXT DEFAULT '' | Clasificación de tamaño de empresa | Módulo 2 — Nodo 5 paso 6 (enriquecimiento) |
+| `descripcion` | TEXT DEFAULT '' | Descripción general | Módulo 2 — Nodo 5 paso 6 (enriquecimiento) |
 | `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática al insertar |
 | `fecha_ultima_edicion` | TEXT DEFAULT '' | Fecha/hora de la última actualización | Automática en cada insert/update |
 
 ### 2.3. `ubicaciones`
 
-Catálogo de ubicaciones. **En el MVP del Módulo 1 no se escribe en esta tabla** (0 filas): el Módulo 1 no extrae la ubicación de las tarjetas (decisión D29); la tabla queda reservada para la gestión del catálogo.
+Catálogo de ubicaciones. **El Módulo 1 no escribe en esta tabla** (0 filas): no extrae la ubicación de las tarjetas (decisión D29). **El Módulo 2 la puebla** (decisión D33): el Nodo 2 (Preparación de ofertas) hace upsert por **tupla normalizada `(ciudad, region, pais)`** (la IA solo clasifica el texto crudo; el Nodo 2 dirige la BD). Cada componente guarda `'N/A'` cuando la fuente no lo especificó (p. ej. "Colombia" solo → tupla `(N/A, N/A, Colombia)` con un único ID compartido). **"Remoto" no crea fila**; la oferta queda con `ubicacion_id = 'N/R'` (no requerido). La columna `modalidad` se eliminó del modelo físico (D33); la modalidad vive ahora en `ofertas_descubiertas.modalidad`.
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
-| `id` | TEXT (PK) | ID único (prefijo `UBI`) | No se diligencia en el Módulo 1 |
-| `ciudad` | TEXT DEFAULT '' | Ciudad de la vacante | No se diligencia en el Módulo 1 |
-| `region` | TEXT DEFAULT '' | Estado, provincia o departamento | No se diligencia en el Módulo 1 |
-| `pais` | TEXT DEFAULT '' | País | No se diligencia en el Módulo 1 |
-| `modalidad` | TEXT DEFAULT '' | Modalidad de trabajo asociada | No se diligencia en el Módulo 1 |
+| `id` | TEXT (PK) | ID único (prefijo `UBI`) | Módulo 2 — Nodo 2 (`generar_id` al insertar) |
+| `ciudad` | TEXT DEFAULT 'N/A' | Ciudad de la vacante (`'N/A'` si la fuente no la especificó — regla D31) | Módulo 2 — Nodo 2 (tras clasificación por IA) |
+| `region` | TEXT DEFAULT 'N/A' | Estado, provincia o departamento (`'N/A'` si no aplica o no vino) | Módulo 2 — Nodo 2 (tras clasificación por IA) |
+| `pais` | TEXT DEFAULT 'N/A' | País (`'N/A'` si la oferta solo dio ciudad) | Módulo 2 — Nodo 2 (tras clasificación por IA) |
 | `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática al insertar |
 | `fecha_ultima_edicion` | TEXT DEFAULT '' | Fecha/hora de la última actualización | Automática en cada insert/update |
 
 ### 2.4. `ofertas_descubiertas`
 
-Oportunidades (vacantes) descubiertas. La escribe el **nodo Captura** mediante `upsert_oferta()`: si ya existe una fila con el mismo `id_externo` no inserta de nuevo, solo refresca `fecha_ultima_verificacion` y devuelve el `id` existente; si no, genera un ID (`OFE-NNNN`) e inserta la fila. Regla D31: los campos sin valor se guardan como `N/A` (nunca `''`/NULL); `fecha_ultima_verificacion` queda exenta (vacía hasta una re-visita).
+Oportunidades (vacantes) descubiertas. **Módulo 1 — Nodo Captura** la escribe mediante `upsert_oferta()`: si ya existe una fila con el mismo `id_externo` no inserta de nuevo, solo refresca `fecha_ultima_verificacion` y devuelve el `id` existente; si no, genera un ID (`OFE-NNNN`) e inserta la fila. **Módulo 2** la actualiza en pasos posteriores: el Nodo 2 (Preparación) sobrescribe `titulo` (best-effort con el `<h1>` de la página), rellena `descripcion_original` desde la página, escribe `empresa_id`/`ubicacion_id`/`modalidad` (sin tocar `fecha_ultima_verificacion`); el Nodo 3 (Verificación de duplicidad) escribe `estado`, `id_duplicidad` y actualiza `fecha_ultima_verificacion` + `observaciones` con la evidencia del duplicado. Regla D31: los campos sin valor se guardan como `N/A` (nunca `''`/NULL); `fecha_ultima_verificacion` queda exenta (vacía hasta que el Módulo 1 refresca en dedup hits **o** el Módulo 2 Nodo 3 escribe tras verificar). El `id_corrida` de la oferta sigue siendo el del descubrimiento — la trazabilidad de preparación vive en `eventos` con su propio `id_corrida` (D33).
 
-> **D32:** la tabla se llamaba `ofertas` y fue renombrada a `ofertas_descubiertas` (2026-08-19) para distinguirla de las tablas de etapas posteriores (Preparación, Evaluación, Procesamiento). El prefijo `OFE`, la secuencia y los índices conservan su nombre; la migración `_migrate_ofertas_descubiertas` en `init_db()` es idempotente.
+> **D32:** la tabla se llamaba `ofertas` y fue renombrada a `ofertas_descubiertas` (2026-08-19) para distinguirla de las tablas de etapas posteriores (Preparación, Evaluación, Procesamiento). El prefijo `OFE`, la secuencia y los índices conservan su nombre; la migración `_migrate_ofertas_descubiertas` en `init_db()` es idempotente. **D33:** añade `ubicacion_nombre`, `modalidad`, `id_duplicidad` y `duplicada` al CHECK de `estado` (8 valores); `eventos.id_oferta` se re-añade para la trazabilidad por oferta del Módulo 2.
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
 | `id` | TEXT (PK) | ID único de la oferta (prefijo `OFE`) | Automático en la inserción (`upsert_oferta`) |
-| `enlace` | TEXT NOT NULL | Enlace original de la oferta | En la inserción, desde la oferta capturada (obligatorio) |
-| `titulo` | TEXT DEFAULT '' | Título original de la oferta | En la inserción, desde la oferta capturada |
-| `descripcion_original` | TEXT DEFAULT 'N/A' | Contenido original obtenido en el descubrimiento (no se sobrescribe); `N/A` si no hay descripción (D31) | En la inserción, desde la oferta capturada |
-| `fecha_publicacion` | TEXT DEFAULT 'N/A' | Fecha de publicación indicada por la fuente; en el Módulo 1 es timestamp aproximado derivado de "Publicado hace N <unidad>" (±1 h; mes = 30 días) (D28); `N/A` si la tarjeta no muestra fecha relativa (D31) | En la inserción, desde la oferta capturada |
-| `fecha_descubrimiento` | TEXT DEFAULT '' | Fecha/hora en que la automatización descubrió la oferta | En la inserción, con la hora actual (`_now()`) |
-| `estado` | TEXT DEFAULT 'descubierta' | Estado en el flujo de procesamiento (7 valores: `descubierta`, `preparada`, `evaluada`, `aceptada`, `descartada`, `procesada`, `finalizada`) | En la inserción queda `descubierta` (valor por defecto); los demás estados los asumirán módulos posteriores |
-| `observaciones` | TEXT DEFAULT 'N/A' | Información adicional relevante; en el Módulo 1 conserva el texto crudo de la fecha relativa (p. ej. "Publicado hace 9 horas") (D28); `N/A` si no hay texto (D31) | En la inserción, desde la oferta capturada |
+| `enlace` | TEXT NOT NULL | Enlace original de la oferta | Módulo 1 — Nodo Captura: en la inserción, desde la oferta capturada (obligatorio) |
+| `titulo` | TEXT DEFAULT '' | Título original de la oferta | Módulo 1 — Nodo Captura: en la inserción, desde la tarjeta; Módulo 2 — Nodo 2 lo sobrescribe best-effort con el `<h1>` de la página de la oferta si existe (RN-10, D33); nunca deja el campo vacío |
+| `descripcion_original` | TEXT DEFAULT 'N/A' | Contenido original obtenido en el descubrimiento (no se sobrescribe tras preparación); `N/A` si no hay descripción (D31) | Módulo 1 — Nodo Captura la deja `N/A` (no captura la página completa); Módulo 2 — Nodo 2 la rellena desde la página de la oferta |
+| `fecha_publicacion` | TEXT DEFAULT 'N/A' | Fecha de publicación indicada por la fuente; en el Módulo 1 es timestamp aproximado derivado de "Publicado hace N <unidad>" (±1 h; mes = 30 días) (D28); `N/A` si la tarjeta no muestra fecha relativa (D31) | Módulo 1 — Nodo Captura: en la inserción |
+| `fecha_descubrimiento` | TEXT DEFAULT '' | Fecha/hora en que la automatización descubrió la oferta | Módulo 1 — Nodo Captura: en la inserción, con la hora actual (`_now()`) |
+| `estado` | TEXT DEFAULT 'descubierta' | Estado en el flujo de procesamiento (8 valores: `descubierta`, `preparada`, `duplicada`, `evaluada`, `aceptada`, `descartada`, `procesada`, `finalizada` — `duplicada` añadido por D33) | Módulo 1 — Nodo Captura: `descubierta` por defecto; Módulo 2 — Nodo 2: `preparada`; Módulo 2 — Nodo 3: `duplicada` (terminal) cuando confirma duplicado |
+| `observaciones` | TEXT DEFAULT 'N/A' | Información adicional relevante; en el Módulo 1 conserva el texto crudo de la fecha relativa (p. ej. "Publicado hace 9 horas") (D28); el Módulo 2 escribe la evidencia de duplicado (D33); `N/A` si vacío (D31) | Módulo 1 — Nodo Captura: texto de la tarjeta; Módulo 2 — Nodo 3: evidencia del duplicado |
 | `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática en la inserción |
 | `fecha_ultima_edicion` | TEXT DEFAULT '' | Fecha/hora de la última actualización | Automática en la inserción y en cada actualización |
-| `fuente_id` | TEXT DEFAULT '' | Fuente de origen de la oferta (identificador de la fuente configurada) | En la inserción, desde la oferta capturada |
-| `empresa_id` | TEXT DEFAULT 'N/A' | Referencia a la empresa del catálogo; `N/A` mientras no haya catálogo (D4: NULL en MVP; D29: el Módulo 1 no extrae la empresa; D31: NULL → `N/A`) | Sin escritura en el Módulo 1 (futuros módulos) |
-| `ubicacion_id` | TEXT DEFAULT 'N/A' | Referencia a la ubicación del catálogo; `N/A` mientras no haya catálogo (D4: NULL en MVP; D29: el Módulo 1 no extrae la ubicación; D31: NULL → `N/A`) | Sin escritura en el Módulo 1 (futuros módulos) |
-| `id_corrida` | TEXT DEFAULT '' | Corrida que descubrió la oferta | En la inserción, desde el contexto de la corrida |
-| `id_sesion` | TEXT DEFAULT '' | Sesión de plataforma usada al descubrirla | En la inserción, desde el contexto de la sesión |
-| `indice_set` | INTEGER DEFAULT '' | Índice del set de filtros que la produjo | En la inserción, desde el contexto del set actual |
-| `id_externo` | TEXT DEFAULT '' | Identificador externo de la oferta en la fuente; clave de deduplicación del upsert (no se normaliza a `N/A` — D31) | En la inserción, desde la oferta capturada |
-| `fecha_ultima_verificacion` | TEXT DEFAULT '' | Última fecha/hora en que la oferta fue vista de nuevo en una captura (exenta de la regla N/A — D31, punto 4) | Solo en re-visitas: `upsert_oferta()` la actualiza cuando ya existe una fila con el mismo `id_externo` |
+| `fuente_id` | TEXT DEFAULT '' | Fuente de origen de la oferta (identificador de la fuente configurada) | Módulo 1 — Nodo Captura: en la inserción |
+| `empresa_id` | TEXT DEFAULT 'N/A' | Referencia a la empresa del catálogo (`EMP-xxxx`); `N/A` si la página de la oferta no expone empresa (D31) | Módulo 1 — no escribe; Módulo 2 — Nodo 2: upsert por `nombre_normalizado` → `empresa_id` (o `N/A`) |
+| `ubicacion_id` | TEXT DEFAULT 'N/A' | Referencia a la ubicación del catálogo (`UBI-xxxx`); `N/R` si remoto/no reportada; `N/A` si la IA no clasificó | Módulo 1 — no escribe; Módulo 2 — Nodo 2: upsert por tupla `(ciudad, region, pais)` → `ubicacion_id` (o `N/R`/`N/A`) |
+| `id_corrida` | TEXT DEFAULT '' | Corrida que descubrió la oferta (no se sobrescribe) | Módulo 1 — Nodo Captura: en la inserción; el Módulo 2 nunca lo sobrescribe |
+| `id_sesion` | TEXT DEFAULT '' | Sesión de plataforma usada al descubrirla | Módulo 1 — Nodo Captura: en la inserción |
+| `indice_set` | INTEGER DEFAULT '' | Índice del set de filtros que la produjo | Módulo 1 — Nodo Captura: en la inserción |
+| `id_externo` | TEXT DEFAULT '' | Identificador externo de la oferta en la fuente; clave de deduplicación del upsert (no se normaliza a `N/A` — D31) | Módulo 1 — Nodo Captura: en la inserción |
+| `fecha_ultima_verificacion` | TEXT DEFAULT '' | Marcador con semántica dual (D33): re-visita de dedup (Módulo 1, upsert) **o** verificación de duplicidad (Módulo 2 Nodo 3); `''` = pendiente. Exenta de la regla `N/A` (D31, punto 4) | Módulo 1 — Nodo Captura: re-Visita de dedup (D4); Módulo 2 — Nodo 3: tras evaluar la oferta |
+| `ubicacion_nombre` | TEXT DEFAULT 'N/A' | Texto crudo de la ubicación capturado de la página de la oferta (D33) | Módulo 2 — Nodo 2: paso 1 (captura); reusado por el lote (b) del Nodo 2 sin re-capturar la página |
+| `modalidad` | TEXT DEFAULT 'N/A' | Modalidad de trabajo de la oferta (presencial / remoto / híbrido); dato de la oferta, la IA no la toca | Módulo 2 — Nodo 2: paso 1 (sin IA) |
+| `id_duplicidad` | TEXT DEFAULT 'N/A' | ID de la oferta original cuando esta es `duplicada`; `N/A` para ofertas originales o sin verificar | Módulo 2 — Nodo 3: cuando confirma duplicado (terminal) |
 
-> **D31:** la columna `identificador_origen` fue eliminada (duplicado muerto de `id_externo`, nunca escrita).
+> **D31:** la columna `identificador_origen` fue eliminada (duplicado muerto de `id_externo`, nunca escrita). **D33:** se re-añade `eventos.id_oferta` (`DEFAULT 'N/A'`) para la trazabilidad por oferta del Módulo 2.
 
 ### 2.5. `corridas`
 
-Registro de cada corrida (ejecución completa del flujo). Se crea en el **nodo INICIO** con `registrar_corrida()` (insert idempotente por `id_corrida`) y se cierra en el **nodo Finalizar** con `actualizar_corrida()`.
+Registro de cada corrida (ejecución completa del flujo). Se crea en el **nodo INICIO** con `registrar_corrida()` (insert idempotente por `id_corrida`) y se cierra en el **nodo Finalizar** con `actualizar_corrida()`. La escriben también el **orquestador transversal** (`modules/orchestrator/orchestrator.py` → `ejecutar_corrida_programada`) para la corrida programada (resumen de módulos) — fila propia con su `id_corrida` distinto de los de los módulos (D34). Vocabulario de `estado` alineado al `EstadoCorrida` de `shared/models.py`: `en_ejecucion`, `completada`, `sin_fuentes`, `sin_pendientes`, `abortada` (D25 + D33 — `sin_pendientes` añadido por el Módulo 2; `error`/`concurrencia` retirados del vocabulario y mantenidos solo como `motivo_terminacion`).
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
-| `id_corrida` | TEXT (PK) | ID único de la corrida (prefijo `COR`) | En el INICIO, al crear la corrida |
-| `fecha_inicio` | TEXT NOT NULL | Fecha/hora de inicio de la corrida | En el INICIO, al crear la corrida |
-| `estado` | TEXT NOT NULL | Estado de la corrida (`en_ejecucion`, `corrida_completada`, `sin_fuentes`, `error`, `concurrencia`) | En el INICIO queda `en_ejecucion`; en el Finalizar se actualiza al estado final |
+| `id_corrida` | TEXT (PK) | ID único de la corrida (prefijo `COR`) | En el INICIO del módulo (Módulo 1/2), al crear la corrida; también por el orquestador transversal al iniciar la corrida programada |
+| `fecha_inicio` | TEXT NOT NULL | Fecha/hora de inicio de la corrida | En el INICIO / orquestador (`T0` del orquestador) |
+| `estado` | TEXT NOT NULL | Estado de la corrida (`en_ejecucion`, `completada`, `sin_fuentes`, `sin_pendientes`, `abortada`) | En el INICIO queda `en_ejecucion`; en el Finalizar se actualiza al estado final (vocabulario `EstadoCorrida`) |
 | `fecha_fin` | TEXT DEFAULT '' | Fecha/hora de fin de la corrida | En el Finalizar, al cerrar la corrida |
-| `motivo_terminacion` | TEXT DEFAULT '' | Motivo de terminación (`corrida_completada`, `sin_fuentes`, aborto, etc.) | En el Finalizar, al cerrar la corrida |
-| `total_ofertas` | INTEGER DEFAULT 0 | Ofertas registradas en la corrida (solo nuevas, por deduplicación) | En el Finalizar, desde las métricas del cierre |
+| `motivo_terminacion` | TEXT DEFAULT '' | Motivo de terminación (`corrida_completada`, `sin_fuentes`, `sin_pendientes`, `error_total`, `error_critico`, `aborto`, `concurrencia`) | En el Finalizar, al cerrar la corrida; el orquestador usa `corrida_completada`/`aborto` |
+| `total_ofertas` | INTEGER DEFAULT 0 | Ofertas registradas en la corrida; para Mód2 = `total_preparadas + total_duplicadas` (ofertas procesadas, comparable entre módulos) | En el Finalizar, desde las métricas del cierre |
 | `total_errores` | INTEGER DEFAULT 0 | Total de eventos de error de la corrida | En el Finalizar, desde las métricas del cierre |
-| `total_sucesos` | INTEGER DEFAULT 0 | Total de eventos de éxito de la corrida | En el Finalizar, desde las métricas del cierre |
-| `fuentes_procesadas` | INTEGER DEFAULT 0 | Número de fuentes procesadas en la corrida | En el Finalizar, desde las métricas del cierre |
+| `total_sucesos` | INTEGER DEFAULT 0 | Total de eventos de éxito de la corrida (semántica D30: escritos antes del evento de terminación; este último nunca se incluye) | En el Finalizar, desde las métricas del cierre |
+| `fuentes_procesadas` | INTEGER DEFAULT 0 | Número de fuentes procesadas en la corrida (D31: `contar_distintos` excluye `''`/`NULL`/`'N/A'`) | En el Finalizar, desde las métricas del cierre |
+| `total_preparadas` | INTEGER DEFAULT 0 | Ofertas preparadas por la corrida del Módulo 2 (`contar_filas(eventos, {id_corrida, codigo='oferta_preparada'})`) | En el Finalizar del Módulo 2, desde las métricas por eventos |
+| `total_duplicadas` | INTEGER DEFAULT 0 | Ofertas marcadas como duplicadas por la corrida del Módulo 2 (`contar_filas(eventos, {id_corrida, codigo='oferta_duplicada'})`) | En el Finalizar del Módulo 2, desde las métricas por eventos |
 
 ### 2.6. `eventos`
 
-Bitácora de eventos (errores y sucesos) de las corridas, con `tipo` `error` o `suceso` y código de negocio. La escribe `escribir_evento()` desde los nodos: INICIO (fallos de inicialización, p. ej. ERR-10), Control de fuentes (abortos, ERR-01), Registro (resultado del registro), Captura (éxito `ofertas_registradas`, `registro_parcial`), Finalizar (terminación: `corrida_completada` como suceso o el motivo como error). Nunca se eliminan (auditoría). Regla D31: los campos sin valor se guardan como `N/A` (p. ej. el evento de terminación no tiene fuente ni sesión); `indice_set` conserva `0` como valor válido.
+Bitácora de eventos (errores y sucesos) de las corridas, con `tipo` `error` o `suceso` y código de negocio. La escribe `escribir_evento()` desde los nodos: INICIO (fallos de inicialización, p. ej. ERR-10), Control de fuentes (abortos, ERR-01), Registro (resultado del registro), Captura (éxito `ofertas_registradas`, `registro_parcial`), Finalizar (terminación: `corrida_completada` como suceso o el motivo como error). El Módulo 2 añade: `oferta_preparada` (suceso, Nodo 2), `preparacion_fallida` (error, Nodo 2), `oferta_duplicada` (suceso, Nodo 3), `revision_pendientes` (suceso, Nodo 4). El orquestador transversal añade: `modulo_ejecutado` (suceso), `corrida_programada` (suceso final), `modulo_fallido` (error). Nunca se eliminan (auditoría). Regla D31: los campos sin valor se guardan como `N/A` (p. ej. el evento de terminación no tiene fuente ni sesión); `indice_set` conserva `0` como valor válido.
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
 | `evento_id` | TEXT (PK) | ID único del evento (prefijo `EVT`) | Automático en cada `escribir_evento()` |
 | `id_corrida` | TEXT NOT NULL | Corrida a la que pertenece el evento (obligatorio) | En cada `escribir_evento()`, desde el contexto de la corrida |
-| `fuente_id` | TEXT DEFAULT 'N/A' | Fuente sobre la que ocurrió el evento; `N/A` en eventos de corrida (INICIO, Finalizar) | En eventos con contexto de fuente (Captura, Registro); `N/A` en el resto (D31) |
+| `id_oferta` | TEXT DEFAULT 'N/A' | Oferta a la que se refiere el evento (re-añadido por D33 — supersede D31 D-1); `N/A` en eventos de módulo/orquestador | Módulo 2: eventos por oferta (`oferta_preparada`, `preparacion_fallida`, `oferta_duplicada`); `N/A` en el resto (D33) |
+| `fuente_id` | TEXT DEFAULT 'N/A' | Fuente sobre la que ocurrió el evento; `N/A` en eventos de corrida (INICIO, Finalizar) y en el Módulo 2 / orquestador (sin fuentes) | En eventos con contexto de fuente (Captura, Registro); `N/A` en el resto (D31) |
 | `id_sesion` | TEXT DEFAULT 'N/A' | Sesión de plataforma del evento; `N/A` si el evento no es de sesión | En eventos de Captura/Registro con sesión activa; `N/A` en el resto (D31) |
 | `indice_set` | INTEGER DEFAULT 'N/A' | Índice del set de filtros donde ocurrió; `N/A` si no aplica (`0` es válido) | En eventos de Captura/Registro con set activo; `N/A` en el resto (D31) |
 | `marca_temporal` | TEXT NOT NULL | Fecha/hora exacta del evento | En cada `escribir_evento()` (o automática si no se provee) |
 | `tipo` | TEXT NOT NULL | Clasificación: `error` o `suceso` | En cada `escribir_evento()`, según el resultado del nodo |
-| `codigo` | TEXT NOT NULL | Código de negocio (`ERR-01`, `ERR-10`, `ofertas_registradas`, `registro_parcial`, motivo de terminación, etc.) | En cada `escribir_evento()` |
-| `evidencia` | TEXT DEFAULT 'N/A' | Evidencia: trazas, fragmentos, métricas asociadas; `N/A` si no hay payload | En cada `escribir_evento()` (nunca credenciales); `N/A` si vacío (D31) |
+| `codigo` | TEXT NOT NULL | Código de negocio (`ERR-01`, `ERR-10`, `ofertas_registradas`, `registro_parcial`, `oferta_preparada`, `preparacion_fallida`, `oferta_duplicada`, `revision_pendientes`, `modulo_ejecutado`, `corrida_programada`, `modulo_fallido`, motivo de terminación, etc.) | En cada `escribir_evento()` |
+| `evidencia` | TEXT DEFAULT 'N/A' | Evidencia: trazas, fragmentos, métricas asociadas; `N/A` si no hay payload | En cada `escribir_evento()` (nunca credenciales); formato `campo=valor` en eventos del orquestador (D34); `N/A` si vacío (D31) |
 
-> **D31:** la columna `id_oferta` fue eliminada (nunca escrita en el Módulo 1; la trazabilidad evento-oferta no está implementada).
+> **D31:** la columna `id_oferta` se eliminó inicialmente (nunca escrita en el Módulo 1; la trazabilidad evento-oferta no estaba implementada). **D33:** la columna se **re-añade** (`DEFAULT 'N/A'`) para soportar la trazabilidad por oferta del Módulo 2.
 
 ### 2.7. `sesiones`
 
@@ -161,7 +166,7 @@ Auditoría de las sesiones de plataforma por lote capturado. La escribe el **nod
 
 ### 2.8. `bloqueo`
 
-Bloqueo de concurrencia de corridas (una sola corrida activa a la vez). Máximo una fila. La escribe el **nodo INICIO** con `adquirir_bloqueo()` (insert, o update por obsolescencia o con `forzar`) y la elimina el **nodo Finalizar** con `liberar_bloqueo()`. El INICIO también hace una prueba de escritura con `sondear_escritura()` (insert + rollback, sin dejar datos).
+Bloqueo de concurrencia de corridas (una sola corrida activa a la vez **en todo el pipeline** — Módulo 1 y Módulo 2 comparten el mismo bloqueo global, D3/D33). Máximo una fila. La escribe el **nodo INICIO** con `adquirir_bloqueo()` (insert, o update por obsolescencia o con `forzar`) y la elimina el **nodo Finalizar** con `liberar_bloqueo()`. El INICIO también hace una prueba de escritura con `sondear_escritura()` (insert + rollback, sin dejar datos). El orquestador transversal **no gestiona el bloqueo** — lo asume tomado por el módulo en su INICIO.
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
