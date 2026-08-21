@@ -680,6 +680,29 @@ def leer_tabla(
         conn.close()
 
 
+def leer_candidatas_descubiertas() -> list[dict[str, Any]]:
+    """Reads offers in `descubierta` in FIFO order (Módulo 2 INICIO, VAL-06).
+
+    FIFO selection per ficha M2 RN-07: oldest discovery date first, `id ASC`
+    as tiebreaker. Lives in the persistence layer so functional modules never
+    write SQL directly (architecture rule).
+    """
+    conn = _connection()
+    try:
+        cursor = conn.execute(
+            "SELECT * FROM ofertas_descubiertas WHERE estado = 'descubierta' "
+            "ORDER BY fecha_descubrimiento ASC, id ASC"
+        )
+        results: list[dict[str, Any]] = []
+        for f in cursor.fetchall():
+            r = _deserialize(f)
+            if r is not None:
+                results.append(r)
+        return results
+    finally:
+        conn.close()
+
+
 def contar_filas(tabla: str, filtros: dict[str, Any] | None = None) -> int:
     """Counts rows of a table; optional equality filters."""
     conn = _connection()

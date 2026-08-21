@@ -8,6 +8,7 @@ from shared.persistence import (
     buscar_por_id,
     escribir_fila,
     generar_id,
+    leer_candidatas_descubiertas,
     leer_tabla,
 )
 
@@ -1571,3 +1572,42 @@ def test_actualizar_corrida_acepta_sin_pendientes(temp_db_file: Path) -> None:
 
     corridas = leer_tabla("corridas", {"id_corrida": "COR-0004"})
     assert corridas[0]["estado"] == EstadoCorrida.SIN_PENDIENTES.value
+
+
+def test_leer_candidatas_descubiertas_orden_fifo(temp_db_file: Path) -> None:
+    escribir_fila(
+        "ofertas_descubiertas",
+        {"id": "OFE-0002", "enlace": "e2", "fecha_descubrimiento": "2026-08-21 09:00:00"},
+    )
+    escribir_fila(
+        "ofertas_descubiertas",
+        {"id": "OFE-0001", "enlace": "e1", "fecha_descubrimiento": "2026-08-21 09:00:00"},
+    )
+    escribir_fila(
+        "ofertas_descubiertas",
+        {"id": "OFE-0003", "enlace": "e3", "fecha_descubrimiento": "2026-08-20 10:00:00"},
+    )
+    filas = leer_candidatas_descubiertas()
+    # Empate de fecha entre OFE-0001 y OFE-0002: el id ASC rompe el empate.
+    assert [f["id"] for f in filas] == ["OFE-0003", "OFE-0001", "OFE-0002"]
+
+
+def test_leer_candidatas_descubiertas_excluye_otros_estados(
+    temp_db_file: Path,
+) -> None:
+    for oferta_id, estado in (
+        ("OFE-A", "descubierta"),
+        ("OFE-B", "preparada"),
+        ("OFE-C", "duplicada"),
+    ):
+        escribir_fila(
+            "ofertas_descubiertas",
+            {
+                "id": oferta_id,
+                "enlace": f"e-{oferta_id}",
+                "fecha_descubrimiento": "2026-08-21 09:00:00",
+                "estado": estado,
+            },
+        )
+    filas = leer_candidatas_descubiertas()
+    assert [f["id"] for f in filas] == ["OFE-A"]

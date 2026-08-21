@@ -1,0 +1,48 @@
+"""Execution context of a preparation run (nodo INICIO, ficha Módulo 2).
+
+RunContext is the single object passed between the nodes of the official
+Preparation flow. It holds the validated `preparacion:` configuration, the
+FIFO candidate list loaded from `ofertas_descubiertas`, the per-run counters
+and the closure-motive slot that the candidate decision fixes and
+"Finalizar Proceso" consumes. It is created by the INICIO node and contains
+no node logic: nodes only read and update its fields.
+
+Mirror of `modules/discovery/run_context.py` per the Module 2 sheet
+("Estructura espejo de la ficha del Módulo 1"); Spanish identifiers follow
+the same convention exception approved for functional modules.
+"""
+
+from typing import Any
+
+from shared.persistence import generar_id
+from shared.utilidades import ahora
+
+
+class RunContext:
+    """Carries all the state a single preparation run needs across its nodes."""
+
+    def __init__(
+        self,
+        config_preparacion: dict[str, Any] | None = None,
+        candidatas: list[dict[str, Any]] | None = None,
+        id_corrida: str | None = None,
+    ) -> None:
+        self.id_corrida = id_corrida or generar_id("corridas")
+        if not self.id_corrida:
+            raise ValueError("id_corrida vacio")
+        self.fecha_inicio: str = ahora()
+        self.config_preparacion: dict[str, Any] = (
+            config_preparacion if config_preparacion is not None else {}
+        )
+        self.candidatas: list[dict[str, Any]] = (
+            candidatas if candidatas is not None else []
+        )
+        self.hubo_candidatas: bool = len(self.candidatas) > 0
+        self.contador_preparadas: int = 0
+        self.contador_duplicadas: int = 0
+        self.contador_errores: int = 0
+        self.bloqueo_adquirido: bool = False
+        # Slot de terminación controlada: la decisión de candidatas fija
+        # `sin_pendientes`; "Finalizar Proceso" lo consume y registra.
+        self.motivo_cierre: str | None = None
+        self.motivo_marca_temporal: str | None = None
