@@ -3,7 +3,7 @@ from shared.models import OfferState
 
 VALID_TRANSITIONS: dict[OfferState, list[OfferState]] = {
     OfferState.DESCUBIERTA: [OfferState.PREPARADA],
-    OfferState.PREPARADA: [OfferState.EVALUADA],
+    OfferState.PREPARADA: [OfferState.EVALUADA, OfferState.DUPLICADA],
     OfferState.EVALUADA: [OfferState.ACEPTADA, OfferState.DESCARTADA],
     OfferState.ACEPTADA: [OfferState.PROCESADA],
     OfferState.DESCARTADA: [OfferState.FINALIZADA],

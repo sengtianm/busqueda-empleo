@@ -82,3 +82,22 @@ def test_yaml_invalido_propaga_error(tmp_path: Path) -> None:
     ):
         with pytest.raises(yaml.YAMLError):
             config_module.reload_config()
+
+
+def test_config_real_define_seccion_preparacion_y_ruteo() -> None:
+    """D33 dependency 10: the real config.yaml carries the `preparacion:`
+    section with the keys Module 2 nodes validate (ficha VAL-02) and routes
+    location classification to the local provider."""
+    config_module.reload_config()
+    config = config_module.load()
+
+    preparacion = config["preparacion"]
+    assert preparacion["profundidad_catalogo_empresa"] == 0
+    assert 0 <= preparacion["umbral_titulo"] <= 100
+    assert 0 <= preparacion["umbral_descripcion"] <= 100
+    assert preparacion["max_pasadas"] >= 1
+    assert preparacion["pausa_entre_ofertas_segundos"] >= 0
+    assert preparacion["limite_vida_sesion"] >= 1
+    assert preparacion["retries"]["max_attempts"] >= 1
+
+    assert config["ai_routing"]["preparacion"] == "local"

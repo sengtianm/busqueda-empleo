@@ -15,6 +15,22 @@ def test_transition_prepared_to_evaluated() -> None:
     assert result == OfferState.EVALUADA
 
 
+def test_transition_preparada_a_duplicada_valida() -> None:
+    result = transition(OfferState.PREPARADA, OfferState.DUPLICADA)
+    assert result == OfferState.DUPLICADA
+
+
+def test_transition_descubierta_a_duplicada_invalida() -> None:
+    with pytest.raises(InternalError):
+        transition(OfferState.DESCUBIERTA, OfferState.DUPLICADA)
+
+
+def test_possible_transitions_preparada_incluye_duplicada() -> None:
+    posibles = possible_transitions(OfferState.PREPARADA)
+    assert OfferState.EVALUADA in posibles
+    assert OfferState.DUPLICADA in posibles
+
+
 def test_transition_evaluated_to_accepted() -> None:
     result = transition(OfferState.EVALUADA, OfferState.ACEPTADA)
     assert result == OfferState.ACEPTADA

@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class OfferState(str, Enum):
     DESCUBIERTA = "descubierta"
     PREPARADA = "preparada"
+    DUPLICADA = "duplicada"
     EVALUADA = "evaluada"
     ACEPTADA = "aceptada"
     DESCARTADA = "descartada"
@@ -52,7 +53,6 @@ class Location(BaseModel):
     ciudad: str = ""
     region: str = ""
     pais: str = ""
-    modalidad: str = ""
     fecha_creacion: str = ""
     fecha_ultima_edicion: str = ""
 
@@ -91,12 +91,14 @@ class EstadoCorrida(str, Enum):
     EN_EJECUCION = "en_ejecucion"
     COMPLETADA = "completada"
     SIN_FUENTES = "sin_fuentes"
+    SIN_PENDIENTES = "sin_pendientes"
     ABORTADA = "abortada"
 
 
 class Corrida(BaseModel):
     """Run row model; validates both INICIO registration and the Finalizar
-    Proceso closure update (run vocabulary per decision D4)."""
+    Proceso closure update (run vocabulary per decision D4). Module 2 adds
+    the preparation metrics `total_preparadas`/`total_duplicadas` (D33)."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -109,6 +111,8 @@ class Corrida(BaseModel):
     total_sucesos: int = 0
     total_errores: int = 0
     fuentes_procesadas: int = 0
+    total_preparadas: int = 0
+    total_duplicadas: int = 0
 
 
 class EventoAlmacen(BaseModel):
@@ -121,6 +125,7 @@ class EventoAlmacen(BaseModel):
     tipo: TipoEvento
     codigo: str
     evidencia: str = "N/A"
+    id_oferta: str = "N/A"
 
 
 class AuditoriaSesion(BaseModel):

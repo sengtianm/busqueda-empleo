@@ -810,7 +810,8 @@ def test_migracion_4_4_fks_anulables_idempotente(tmp_path: Path) -> None:
             ).fetchall()
         }
         assert "empresa_nombre" not in columnas
-        assert "ubicacion_nombre" not in columnas
+        # D33 re-adds `ubicacion_nombre` for Module 2 (partial D29 reversal).
+        assert "ubicacion_nombre" in columnas
         fks = sqlite3.connect(str(path)).execute(
             "PRAGMA foreign_key_list(ofertas_descubiertas)"
         ).fetchall()
@@ -1119,7 +1120,7 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
             assert esperadas_ofertas.issubset(columnas_ofertas)
             assert "identificador_origen" not in columnas_ofertas
             assert "empresa_nombre" not in columnas_ofertas
-            assert "ubicacion_nombre" not in columnas_ofertas
+            assert "ubicacion_nombre" in columnas_ofertas
             sql_ofertas = conn.execute(
                 "SELECT sql FROM sqlite_master WHERE type='table' "
                 "AND name='ofertas_descubiertas'"
@@ -1150,7 +1151,8 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
                     "PRAGMA table_info(eventos)"
                 ).fetchall()
             }
-            assert "id_oferta" not in columnas_eventos
+            # D33 re-adds `eventos.id_oferta` (supersedes D31 D-1).
+            assert "id_oferta" in columnas_eventos
         finally:
             conn.close()
 
@@ -1174,7 +1176,7 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
         eventos = leer_tabla("eventos")
         assert eventos[0]["id_corrida"] == "COR-1839"
         assert eventos[0]["fuente_id"] == "linkedin"
-        assert "id_oferta" not in eventos[0]
+        assert eventos[0]["id_oferta"] == "N/A"
         sesiones = leer_tabla("sesiones")
         assert len(sesiones) == 1
         assert sesiones[0]["id"] == "SES-0218"
@@ -1239,3 +1241,333 @@ def test_migracion_espanol_total_base_nueva_no_reconstruye(tmp_path: Path) -> No
         assert "fecha_descubrimiento" in columnas
     finally:
         reset_path()
+
+
+def _crear_bd_legado_pre_d33(path: Path) -> None:
+    """Builds a post-D31 / pre-D33 legacy DB (7-state CHECK, no preparation
+    columns, `ubicaciones` with `modalidad`, `eventos` without `id_oferta`)."""
+    import sqlite3
+
+    conn = sqlite3.connect(str(path))
+    conn.execute(
+        "CREATE TABLE ofertas_descubiertas ("
+        "id TEXT PRIMARY KEY,"
+        "enlace TEXT NOT NULL,"
+        "titulo TEXT DEFAULT '',"
+        "descripcion_original TEXT DEFAULT 'N/A',"
+        "fecha_publicacion TEXT DEFAULT 'N/A',"
+        "fecha_descubrimiento TEXT DEFAULT '',"
+        "estado TEXT DEFAULT 'descubierta' "
+        "CHECK(estado IN ('descubierta','preparada','evaluada',"
+        "'aceptada','descartada','procesada','finalizada')),"
+        "observaciones TEXT DEFAULT 'N/A',"
+        "fecha_creacion TEXT DEFAULT '',"
+        "fecha_ultima_edicion TEXT DEFAULT '',"
+        "fuente_id TEXT DEFAULT '',"
+        "empresa_id TEXT DEFAULT 'N/A',"
+        "ubicacion_id TEXT DEFAULT 'N/A',"
+        "id_corrida TEXT DEFAULT '',"
+        "id_sesion TEXT DEFAULT '',"
+        "indice_set INTEGER DEFAULT '',"
+        "id_externo TEXT DEFAULT '',"
+        "fecha_ultima_verificacion TEXT DEFAULT ''"
+        ")"
+    )
+    conn.execute(
+        "INSERT INTO ofertas_descubiertas (id, enlace, titulo, estado, id_externo) "
+        "VALUES ('OFE-0001', 'https://x.com/1', 'Titulo Legado', 'descubierta', 'li-1')"
+    )
+    conn.execute(
+        "CREATE TABLE ubicaciones ("
+        "id TEXT PRIMARY KEY,"
+        "ciudad TEXT DEFAULT '',"
+        "region TEXT DEFAULT '',"
+        "pais TEXT DEFAULT '',"
+        "modalidad TEXT DEFAULT '',"
+        "fecha_creacion TEXT DEFAULT '',"
+        "fecha_ultima_edicion TEXT DEFAULT ''"
+        ")"
+    )
+    conn.execute(
+        "INSERT INTO ubicaciones (id, ciudad, pais, modalidad) "
+        "VALUES ('UBI-0001', 'Madrid', 'Espana', 'remoto')"
+    )
+    conn.execute(
+        "CREATE TABLE eventos ("
+        "evento_id TEXT PRIMARY KEY,"
+        "id_corrida TEXT NOT NULL,"
+        "fuente_id TEXT DEFAULT 'N/A',"
+        "id_sesion TEXT DEFAULT 'N/A',"
+        "indice_set INTEGER DEFAULT 'N/A',"
+        "marca_temporal TEXT NOT NULL,"
+        "tipo TEXT NOT NULL CHECK(tipo IN ('error','suceso')),"
+        "codigo TEXT NOT NULL,"
+        "evidencia TEXT DEFAULT 'N/A'"
+        ")"
+    )
+    conn.execute(
+        "INSERT INTO eventos (evento_id, id_corrida, marca_temporal, tipo, codigo) "
+        "VALUES ('EVT-0001', 'COR-0001', '2026-08-20 10:00:00', 'suceso', "
+        "'captura_completada')"
+    )
+    conn.execute(
+        "CREATE TABLE corridas ("
+        "id_corrida TEXT PRIMARY KEY,"
+        "fecha_inicio TEXT NOT NULL,"
+        "estado TEXT NOT NULL"
+        ")"
+    )
+    conn.execute(
+        "INSERT INTO corridas (id_corrida, fecha_inicio, estado) "
+        "VALUES ('COR-0001', '2026-08-20 10:00:00', 'en_ejecucion')"
+    )
+    conn.execute(
+        "CREATE TABLE secuencia_ids ("
+        "tabla_nombre TEXT PRIMARY KEY,"
+        "prefijo TEXT NOT NULL,"
+        "ultimo_numero INTEGER NOT NULL DEFAULT 0"
+        ")"
+    )
+    conn.execute(
+        "INSERT INTO secuencia_ids (tabla_nombre, prefijo, ultimo_numero) "
+        "VALUES ('ofertas_descubiertas', 'OFE', 1)"
+    )
+    conn.execute(
+        "INSERT INTO secuencia_ids (tabla_nombre, prefijo, ultimo_numero) "
+        "VALUES ('eventos', 'EVT', 5)"
+    )
+    conn.commit()
+    conn.close()
+
+
+def test_esquema_fresco_d33_columnas_check_y_ubicaciones(temp_db_file: Path) -> None:
+    from shared.persistence import _connection
+
+    conn = _connection()
+    try:
+        columnas_ofertas = {
+            fila["name"]
+            for fila in conn.execute(
+                "PRAGMA table_info(ofertas_descubiertas)"
+            ).fetchall()
+        }
+        assert {"id_duplicidad", "ubicacion_nombre", "modalidad"} <= columnas_ofertas
+        columnas_corridas = {
+            fila["name"]
+            for fila in conn.execute("PRAGMA table_info(corridas)").fetchall()
+        }
+        assert {"total_preparadas", "total_duplicadas"} <= columnas_corridas
+        columnas_eventos = {
+            fila["name"]
+            for fila in conn.execute("PRAGMA table_info(eventos)").fetchall()
+        }
+        assert "id_oferta" in columnas_eventos
+        columnas_ubicaciones = {
+            fila["name"]
+            for fila in conn.execute("PRAGMA table_info(ubicaciones)").fetchall()
+        }
+        assert "modalidad" not in columnas_ubicaciones
+        conn.execute(
+            "INSERT INTO ofertas_descubiertas (id, enlace, estado) "
+            "VALUES ('OFE-9001', 'https://x.com/9001', 'duplicada')"
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def test_migracion_d33_desde_esquema_legado(tmp_path: Path) -> None:
+    import sqlite3
+
+    from shared.persistence import change_path, init_db, leer_tabla, reset_path
+
+    path = tmp_path / "legado_d33.db"
+    _crear_bd_legado_pre_d33(path)
+
+    change_path(path)
+    try:
+        init_db()
+        filas = leer_tabla("ofertas_descubiertas")
+        assert len(filas) == 1
+        assert filas[0]["id"] == "OFE-0001"
+        assert filas[0]["titulo"] == "Titulo Legado"
+        assert filas[0]["id_duplicidad"] == "N/A"
+        assert filas[0]["ubicacion_nombre"] == "N/A"
+        assert filas[0]["modalidad"] == "N/A"
+
+        conn = sqlite3.connect(str(path))
+        try:
+            conn.execute(
+                "UPDATE ofertas_descubiertas SET estado = 'duplicada' "
+                "WHERE id = 'OFE-0001'"
+            )
+            conn.commit()
+            columnas_ubicaciones = {
+                fila[1]
+                for fila in conn.execute(
+                    "PRAGMA table_info(ubicaciones)"
+                ).fetchall()
+            }
+            columnas_corridas = {
+                fila[1]
+                for fila in conn.execute("PRAGMA table_info(corridas)").fetchall()
+            }
+        finally:
+            conn.close()
+        assert "modalidad" not in columnas_ubicaciones
+        assert {"total_preparadas", "total_duplicadas"} <= columnas_corridas
+
+        corrida = leer_tabla("corridas", {"id_corrida": "COR-0001"})[0]
+        assert corrida["total_preparadas"] == 0
+        assert corrida["total_duplicadas"] == 0
+
+        ubis = leer_tabla("ubicaciones")
+        assert len(ubis) == 1
+        assert ubis[0]["ciudad"] == "Madrid"
+
+        evs = leer_tabla("eventos")
+        assert len(evs) == 1
+        assert evs[0]["codigo"] == "captura_completada"
+        assert evs[0]["id_oferta"] == "N/A"
+
+        assert leer_tabla("ofertas_descubiertas")[0]["estado"] == "duplicada"
+    finally:
+        reset_path()
+
+
+def test_ubicacion_nombre_legada_sobrevive_init_db(tmp_path: Path) -> None:
+    """Regression guard: `_migrate_ofertas_empresa_nombre` no longer drops
+    `ubicacion_nombre` (D33 re-adds it; partial D29 reversal), so a pre-D29
+    populated value survives `init_db()` instead of being silently lost."""
+    import sqlite3
+
+    from shared.persistence import change_path, init_db, leer_tabla, reset_path
+
+    path = tmp_path / "pre_d29.db"
+    _crear_bd_legado_pre_d33(path)
+    conn = sqlite3.connect(str(path))
+    try:
+        conn.execute(
+            "ALTER TABLE ofertas_descubiertas "
+            "ADD COLUMN ubicacion_nombre TEXT DEFAULT ''"
+        )
+        conn.execute(
+            "UPDATE ofertas_descubiertas SET ubicacion_nombre = 'Bogotá, Colombia' "
+            "WHERE id = 'OFE-0001'"
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    change_path(path)
+    try:
+        init_db()
+        filas = leer_tabla("ofertas_descubiertas")
+        assert len(filas) == 1
+        assert filas[0]["ubicacion_nombre"] == "Bogotá, Colombia"
+    finally:
+        reset_path()
+
+
+def test_migracion_d33_idempotente(tmp_path: Path) -> None:
+    import sqlite3
+
+    from shared.persistence import change_path, init_db, leer_tabla, reset_path
+
+    path = tmp_path / "legado_d33_idem.db"
+    _crear_bd_legado_pre_d33(path)
+
+    change_path(path)
+    try:
+        init_db()
+        init_db()
+        assert len(leer_tabla("ofertas_descubiertas")) == 1
+        assert len(leer_tabla("ubicaciones")) == 1
+        assert len(leer_tabla("eventos")) == 1
+        conn = sqlite3.connect(str(path))
+        try:
+            columnas_ubicaciones = {
+                fila[1]
+                for fila in conn.execute(
+                    "PRAGMA table_info(ubicaciones)"
+                ).fetchall()
+            }
+        finally:
+            conn.close()
+        assert "modalidad" not in columnas_ubicaciones
+    finally:
+        reset_path()
+
+
+def test_eventos_id_oferta_sobrevive_doble_init_db(tmp_path: Path) -> None:
+    """Regression guard: `_migrate_limpieza_d31` no longer drops
+    `eventos.id_oferta` (D33 supersedes D31 D-1 on that column), so a value
+    written after the first init survives subsequent inits."""
+    from shared.persistence import (
+        change_path,
+        escribir_evento,
+        init_db,
+        leer_tabla,
+        reset_path,
+    )
+
+    path = tmp_path / "legado_d33_evento.db"
+    _crear_bd_legado_pre_d33(path)
+
+    change_path(path)
+    try:
+        init_db()
+        escribir_evento(
+            {
+                "id_corrida": "COR-0002",
+                "tipo": "suceso",
+                "codigo": "oferta_preparada",
+                "id_oferta": "OFE-0009",
+            }
+        )
+        init_db()
+        evs = leer_tabla("eventos", {"codigo": "oferta_preparada"})
+        assert len(evs) == 1
+        assert evs[0]["id_oferta"] == "OFE-0009"
+    finally:
+        reset_path()
+
+
+def test_escribir_evento_normaliza_id_oferta_vacio(temp_db_file: Path) -> None:
+    from shared.persistence import escribir_evento, leer_tabla
+
+    evento_id = escribir_evento(
+        {
+            "id_corrida": "COR-0003",
+            "tipo": "suceso",
+            "codigo": "oferta_preparada",
+            "id_oferta": "",
+        }
+    )
+    filas = leer_tabla("eventos", {"evento_id": evento_id})
+    assert len(filas) == 1
+    assert filas[0]["id_oferta"] == "N/A"
+
+
+def test_actualizar_corrida_acepta_sin_pendientes(temp_db_file: Path) -> None:
+    from shared.models import EstadoCorrida
+    from shared.persistence import actualizar_corrida, registrar_corrida
+
+    registrar_corrida(
+        {
+            "id_corrida": "COR-0004",
+            "fecha_inicio": "2026-08-21 08:00:00",
+            "estado": "en_ejecucion",
+        }
+    )
+    assert actualizar_corrida(
+        "COR-0004",
+        {
+            "estado": EstadoCorrida.SIN_PENDIENTES,
+            "motivo_terminacion": "sin_pendientes",
+        },
+    )
+    from shared.persistence import leer_tabla
+
+    corridas = leer_tabla("corridas", {"id_corrida": "COR-0004"})
+    assert corridas[0]["estado"] == EstadoCorrida.SIN_PENDIENTES.value

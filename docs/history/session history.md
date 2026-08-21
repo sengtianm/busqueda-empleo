@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 34 | 21/08/2026 | `ses_fdafc2fd0ffexoEFYn60IjcuYQ` | Sub-fase 5.1 (fundamentos) implementada: las 11 dependencias consolidadas D33 — esquema al estado M2, modelos/máquina de estados, `normalizar_texto`, config `preparacion:`, PRM-006 verificado con gpt-oss:20b-cloud; BD real migrada con backup; D35 registrada |
 | 33 | 21/08/2026 | `ses_fdba95353ffezwVG7roiPKaX2c` | Phase 5 build plan defined from the two technical sheets: 7 sub-phases approved and written into MVP Execution Plan + tracker replacing the obsolete generic task list; docs-reviewer findings corrected |
 | 32 | 20/08/2026 | `ses_fe33fd2dfffeQS3bPEmnaiJW1h` | Phase 5 documentation: Module 2 (Preparation) + transversal orchestrator technical sheets created and aligned across project docs (decision log, DOC-13A, database-tables, Appendix 5A, ficha M1, plan, guide, README); tracker 4.26 |
 | 31 | 19/08/2026 | `ses_fe539fd2ffferuSLgK6EE88f5b` | Table rename D32: `ofertas` → `ofertas_descubiertas` everywhere (schema, secuencia_ids, nodes, tests, docs); idempotent migration first in `init_db`; live DB migrated in place, no backup; prefix OFE, indexes and function names unchanged; 331 tests |
@@ -27,6 +28,29 @@ Unless noted, decisions from previous sessions remain in effect.
 | 14 | 09/08/2026 | `ses_01bcc78adffemcqFEiZxT52Eli` | Sub-fase 4.4: capture/registration nodes implemented, audited, and post-audit fixes applied (FK-free schema, name columns, upsert tests) |
 | 13 | 08/08/2026 | `ses_01be77680ffeuyoKct4Qrfx1GG` | Repo sync to `fase-4`; new `/save` section with general git commit and push guidance |
 | 12 | 08/08/2026 | `ses_01c089ce2ffe9MvQT4F1pC0MJN` | Sub-fase 4.2 deep audit + post-audit fixes (credentials mapping, playwright lifecycle) |
+
+## Session 34 — 21/08/2026
+`ses_fdafc2fd0ffexoEFYn60IjcuYQ` · `fase-5`
+
+**Topics**
+- Sub-phase 5.1 foundations implemented: all 11 consolidated D33 dependencies (schema to the M2 state, models, state machine, shared utility, config, location prompt)
+- Migration chain: new guarded idempotent `_migrate_preparacion_d33` after D31; `_migrar_espanol_total` rebuild applies additions + 8-state CHECK on legacy DBs
+- Anti-loss guards symmetric with D31: d31 no longer drops `eventos.id_oferta`, d29 no longer drops `ubicacion_nombre` (both re-added by D33; regression tests with double init)
+- Prompt PRM-006 created (template C.9) and manually tested against the routed model: 3/3 valid JSON
+- Live DB migrated via `init_db()` with backup; 136 offers preserved; second init no-op
+- Reviewers: docs-reviewer CONFORME; code-reviewer major fixed (D29 drop/re-add of `ubicacion_nombre`) plus minors applied
+
+**Decisions**
+- D35: `ai_routing.preparacion: "local"` with `ai_local.model: "gpt-oss:20b-cloud"` (Ollama-hosted via local proxy) — user choice avoiding cloud quota limits and undersized models; per-purpose model selection in `ia_service` deferred until a second local purpose exists (decision log v1.20)
+- Config defaults approved for `preparacion:`: pausa 2 s, limite_vida_sesion 50, umbrales 90/85, max_pasadas 2, profundidad 0, retries block mirroring global
+- Decisions from previous sessions remain in effect
+
+**Status**
+- Sub-fase 5.1 ✅ (tracker); sub-fases 5.2–5.7 pending
+- Ruff 0 · mypy 0 · pytest 346 passing (15 new)
+- Live DB at the M2 schema state (backup `job_search_pre_d33_20260821_114251.db`)
+- Single commit + push on `fase-5`; no merge
+- Next: sub-fase 5.2 — INICIO + decisión de candidatas del Módulo 2
 
 ## Session 33 — 21/08/2026
 `ses_fdba95353ffezwVG7roiPKaX2c` · `fase-5`

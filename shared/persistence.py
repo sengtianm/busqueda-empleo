@@ -55,10 +55,9 @@ ESQUEMAS: dict[str, str] = {
     "ubicaciones": (
         "CREATE TABLE IF NOT EXISTS ubicaciones ("
         "id TEXT PRIMARY KEY,"
-        "ciudad TEXT DEFAULT '',"
-        "region TEXT DEFAULT '',"
-        "pais TEXT DEFAULT '',"
-        "modalidad TEXT DEFAULT '',"
+        "ciudad TEXT DEFAULT 'N/A',"
+        "region TEXT DEFAULT 'N/A',"
+        "pais TEXT DEFAULT 'N/A',"
         "fecha_creacion TEXT DEFAULT '',"
         "fecha_ultima_edicion TEXT DEFAULT ''"
         ")"
@@ -72,7 +71,7 @@ ESQUEMAS: dict[str, str] = {
         "fecha_publicacion TEXT DEFAULT 'N/A',"
         "fecha_descubrimiento TEXT DEFAULT '',"
         "estado TEXT DEFAULT 'descubierta' "
-        "CHECK(estado IN ('descubierta','preparada','evaluada',"
+        "CHECK(estado IN ('descubierta','preparada','duplicada','evaluada',"
         "'aceptada','descartada','procesada','finalizada')),"
         "observaciones TEXT DEFAULT 'N/A',"
         "fecha_creacion TEXT DEFAULT '',"
@@ -84,7 +83,10 @@ ESQUEMAS: dict[str, str] = {
         "id_sesion TEXT DEFAULT '',"
         "indice_set INTEGER DEFAULT '',"
         "id_externo TEXT DEFAULT '',"
-        "fecha_ultima_verificacion TEXT DEFAULT ''"
+        "fecha_ultima_verificacion TEXT DEFAULT '',"
+        "id_duplicidad TEXT DEFAULT 'N/A',"
+        "ubicacion_nombre TEXT DEFAULT 'N/A',"
+        "modalidad TEXT DEFAULT 'N/A'"
         ")"
     ),
     "corridas": (
@@ -97,7 +99,9 @@ ESQUEMAS: dict[str, str] = {
         "total_ofertas INTEGER DEFAULT 0,"
         "total_errores INTEGER DEFAULT 0,"
         "total_sucesos INTEGER DEFAULT 0,"
-        "fuentes_procesadas INTEGER DEFAULT 0"
+        "fuentes_procesadas INTEGER DEFAULT 0,"
+        "total_preparadas INTEGER DEFAULT 0,"
+        "total_duplicadas INTEGER DEFAULT 0"
         ")"
     ),
     "eventos": (
@@ -110,7 +114,8 @@ ESQUEMAS: dict[str, str] = {
         "marca_temporal TEXT NOT NULL,"
         "tipo TEXT NOT NULL CHECK(tipo IN ('error','suceso')),"
         "codigo TEXT NOT NULL,"
-        "evidencia TEXT DEFAULT 'N/A'"
+        "evidencia TEXT DEFAULT 'N/A',"
+        "id_oferta TEXT DEFAULT 'N/A'"
         ")"
     ),
     "sesiones": (
@@ -215,6 +220,7 @@ def init_db() -> None:
         _migrate_corridas_finalizacion(conn)
         _migrate_sesiones_id(conn)
         _migrate_limpieza_d31(conn)
+        _migrate_preparacion_d33(conn)
         for sentencia in _INDICES:
             conn.execute(sentencia)
         conn.commit()
@@ -460,14 +466,16 @@ def _migrate_ofertas(conn: sqlite3.Connection) -> None:
 
 
 def _migrate_ofertas_empresa_nombre(conn: sqlite3.Connection) -> None:
-    """D29 migration: drop `empresa_nombre`/`ubicacion_nombre` from `ofertas_descubiertas`.
+    """D29 migration: drop `empresa_nombre` from `ofertas_descubiertas`.
 
-    D4 (2026-08-09) added these raw-string columns for company/location; D29
-    (2026-08-17) removes them from the model: the adapter no longer extracts
-    company/location from the cards (only the publication date), so the raw
-    strings are not persisted. SQLite >= 3.35 supports in-place
+    D4 (2026-08-09) added raw-string company/location columns; D29
+    (2026-08-17) removes them from the model: the adapter no longer
+    extracts company/location from the cards (only the publication date),
+    so raw strings are not persisted. SQLite >= 3.35 supports in-place
     `ALTER TABLE ... DROP COLUMN`; each column is dropped only if present
-    (idempotent).
+    (idempotent). `ubicacion_nombre` is NO LONGER dropped here: decision
+    D33 re-adds it for Module 2 (partial D29 reversal), so dropping it
+    first would silently destroy pre-D29 values.
     """
     columnas = {
         fila["name"]
@@ -475,11 +483,10 @@ def _migrate_ofertas_empresa_nombre(conn: sqlite3.Connection) -> None:
             "PRAGMA table_info(ofertas_descubiertas)"
         ).fetchall()
     }
-    for columna in ("empresa_nombre", "ubicacion_nombre"):
-        if columna in columnas:
-            conn.execute(
-                f"ALTER TABLE ofertas_descubiertas DROP COLUMN {columna}"
-            )
+    if "empresa_nombre" in columnas:
+        conn.execute(
+            "ALTER TABLE ofertas_descubiertas DROP COLUMN empresa_nombre"
+        )
 
 
 def _migrate_ofertas_timestamp_ultima_verificacion(conn: sqlite3.Connection) -> None:
@@ -507,8 +514,9 @@ def _migrate_limpieza_d31(conn: sqlite3.Connection) -> None:
     (1) Drops the `fuentes` table and its `secuencia_ids` row (sources are
     config-driven; the catalog was never populated).
     (2) Drops `ofertas_descubiertas.identificador_origen` (dead duplicate of
-    `id_externo`) and `eventos.id_oferta` (never used; per-offer traceability
-    is out of Module 1 scope).
+    `id_externo`). `eventos.id_oferta` is NO LONGER dropped here: decision
+    D33 re-adds it for Module 2 per-offer traceability, superseding D31 D-1
+    on that column.
     (3) Backfills the no-empty-field rule (decision D31): empty/NULL values
     in the non-nullable-by-semantics columns become 'N/A' so no field stays
     empty (the backfill updates are per-column and safe no-ops when no row
@@ -519,17 +527,16 @@ def _migrate_limpieza_d31(conn: sqlite3.Connection) -> None:
     """
     conn.execute("DROP TABLE IF EXISTS fuentes")
     conn.execute("DELETE FROM secuencia_ids WHERE tabla_nombre = 'fuentes'")
-    for tabla, columnas in (
-        ("ofertas_descubiertas", ("identificador_origen",)),
-        ("eventos", ("id_oferta",)),
-    ):
-        actuales = {
-            fila["name"]
-            for fila in conn.execute(f"PRAGMA table_info({tabla})").fetchall()
-        }
-        for columna in columnas:
-            if columna in actuales:
-                conn.execute(f"ALTER TABLE {tabla} DROP COLUMN {columna}")
+    actuales_ofertas = {
+        fila["name"]
+        for fila in conn.execute(
+            "PRAGMA table_info(ofertas_descubiertas)"
+        ).fetchall()
+    }
+    if "identificador_origen" in actuales_ofertas:
+        conn.execute(
+            "ALTER TABLE ofertas_descubiertas DROP COLUMN identificador_origen"
+        )
     for columna in (
         "descripcion_original",
         "fecha_publicacion",
@@ -546,6 +553,51 @@ def _migrate_limpieza_d31(conn: sqlite3.Connection) -> None:
             f"UPDATE eventos SET {columna} = 'N/A' "
             f"WHERE {columna} IS NULL OR {columna} = ''"
         )
+
+
+_ADICIONES_PREPARACION: tuple[tuple[str, str], ...] = (
+    ("ofertas_descubiertas", "id_duplicidad TEXT DEFAULT 'N/A'"),
+    ("ofertas_descubiertas", "ubicacion_nombre TEXT DEFAULT 'N/A'"),
+    ("ofertas_descubiertas", "modalidad TEXT DEFAULT 'N/A'"),
+    ("corridas", "total_preparadas INTEGER DEFAULT 0"),
+    ("corridas", "total_duplicadas INTEGER DEFAULT 0"),
+    ("eventos", "id_oferta TEXT DEFAULT 'N/A'"),
+)
+
+
+def _migrate_preparacion_d33(conn: sqlite3.Connection) -> None:
+    """D33 migration: Module 2 (Preparation) consolidated schema dependencies.
+
+    (1) Adds the preparation columns when absent (on legacy DBs the
+    `_migrar_espanol_total` rebuild usually applies them from ESQUEMAS; this
+    guarded pass is the explicit safety net): `ofertas_descubiertas`.
+    `id_duplicidad`/`ubicacion_nombre`/`modalidad` ('N/A'), `corridas`.
+    `total_preparadas`/`total_duplicadas` (0) and `eventos`.`id_oferta`
+    ('N/A'; re-added, superseding D31 D-1).
+    (2) Drops `ubicaciones.modalidad`: `ubicaciones` is restructured to the
+    `(ciudad, region, pais)` tuple (components default 'N/A'); the extra
+    column does not trigger the rebuild path, so the drop must be explicit.
+    The `estado` CHECK with 'duplicada' comes from the updated ESQUEMAS via
+    the same rebuild. Idempotent: every step only runs when its target is
+    present.
+    """
+    columnas_por_tabla = {
+        tabla: {
+            fila["name"]
+            for fila in conn.execute(f"PRAGMA table_info({tabla})").fetchall()
+        }
+        for tabla in ("ofertas_descubiertas", "corridas", "eventos")
+    }
+    for tabla, definicion in _ADICIONES_PREPARACION:
+        nombre_columna = definicion.split(" ")[0]
+        if nombre_columna not in columnas_por_tabla[tabla]:
+            conn.execute(f"ALTER TABLE {tabla} ADD COLUMN {definicion}")
+    columnas_ubicaciones = {
+        fila["name"]
+        for fila in conn.execute("PRAGMA table_info(ubicaciones)").fetchall()
+    }
+    if "modalidad" in columnas_ubicaciones:
+        conn.execute("ALTER TABLE ubicaciones DROP COLUMN modalidad")
 
 
 _COLUMNAS_FINALIZACION_CORRIDAS: tuple[str, ...] = (
@@ -1002,7 +1054,7 @@ def escribir_evento(datos: dict[str, Any]) -> str:
     """
     EventoAlmacen.model_validate(datos)
     d = _serialize(datos)
-    for campo in ("fuente_id", "id_sesion", "evidencia"):
+    for campo in ("fuente_id", "id_sesion", "evidencia", "id_oferta"):
         if not d.get(campo):
             d[campo] = "N/A"
     if d.get("indice_set") is None:

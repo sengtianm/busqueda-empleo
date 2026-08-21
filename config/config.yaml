@@ -45,6 +45,28 @@ captura:
   tope_espera_paginas_sucesivas_segundos: 10
   estrategia_anti_bloqueo: "pausa_aleatoria"
 
+# --- Offer preparation (Module 2, D33) ---
+preparacion:
+  # Enriquecimiento profundo del catálogo de empresas desacoplado al
+  # Finalizar Proceso (0 = desactivado).
+  profundidad_catalogo_empresa: 0
+  # Umbrales RapidFuzz de la verificación de duplicidad (0-100):
+  # etapa 2 exige título >= umbral_titulo Y descripción >= umbral_descripcion.
+  umbral_titulo: 90
+  umbral_descripcion: 85
+  # Pasadas máximas del bucle de preparación por corrida (>= 1).
+  max_pasadas: 2
+  # Pausa anti-bloqueo entre ofertas consecutivas (>= 0).
+  pausa_entre_ofertas_segundos: 2
+  # Renovar la sesión httpx de invitado cada N ofertas (>= 1).
+  limite_vida_sesion: 50
+  # Reintentos por oferta/página (misma estructura que `retries` global).
+  retries:
+    max_attempts: 3
+    base_wait_seconds: 2
+    max_wait_seconds: 30
+    multiplier: 2
+
 # --- Concurrency (Module 1, lock) ---
 concurrencia:
   umbral_obsolescencia_minutos: 120
@@ -76,10 +98,13 @@ browser:
   profile_path: ""
 
 # --- Local AI (Ollama) ---
+# Modelo usado por los propósitos enrutados a "local". Hoy solo
+# `preparacion` (clasificación de ubicación, Módulo 2) usa esta ruta;
+# el tag -cloud corre en servidores de Ollama vía proxy local.
 ai_local:
   host: "localhost"
   port: 11434
-  model: "qwen3.5:4b"
+  model: "gpt-oss:20b-cloud"
   timeout_seconds: 60
 
 # --- AI Cloud (Ollama Cloud via local proxy) ---
@@ -92,6 +117,10 @@ ai_cloud:
 ai_routing:
   evaluation: "cloud"
   processing: "cloud"
+  # Clasificación de ubicación del Módulo 2 (D33): usa la ruta local,
+  # cuyo modelo es gpt-oss:20b-cloud vía proxy Ollama (aprobado en la
+  # sub-fase 5.1).
+  preparacion: "local"
 
 # --- Persistence ---
 persistence:
