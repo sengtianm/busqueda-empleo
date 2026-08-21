@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 33 | 21/08/2026 | `ses_fdba95353ffezwVG7roiPKaX2c` | Phase 5 build plan defined from the two technical sheets: 7 sub-phases approved and written into MVP Execution Plan + tracker replacing the obsolete generic task list; docs-reviewer findings corrected |
 | 32 | 20/08/2026 | `ses_fe33fd2dfffeQS3bPEmnaiJW1h` | Phase 5 documentation: Module 2 (Preparation) + transversal orchestrator technical sheets created and aligned across project docs (decision log, DOC-13A, database-tables, Appendix 5A, ficha M1, plan, guide, README); tracker 4.26 |
 | 31 | 19/08/2026 | `ses_fe539fd2ffferuSLgK6EE88f5b` | Table rename D32: `ofertas` → `ofertas_descubiertas` everywhere (schema, secuencia_ids, nodes, tests, docs); idempotent migration first in `init_db`; live DB migrated in place, no backup; prefix OFE, indexes and function names unchanged; 331 tests |
 | 30 | 18/08/2026 | `ses_fea037d3dffeR12tTJoQEt4IFq` | Multi-search Q&A in Module 1: `sets_de_filtros` natively supports several queries per run (search → capture → register per set, dedup by external id); contiguous-index rule documented in `config.yaml` (option A, config-only) — no code changes |
@@ -26,6 +27,26 @@ Unless noted, decisions from previous sessions remain in effect.
 | 14 | 09/08/2026 | `ses_01bcc78adffemcqFEiZxT52Eli` | Sub-fase 4.4: capture/registration nodes implemented, audited, and post-audit fixes applied (FK-free schema, name columns, upsert tests) |
 | 13 | 08/08/2026 | `ses_01be77680ffeuyoKct4Qrfx1GG` | Repo sync to `fase-4`; new `/save` section with general git commit and push guidance |
 | 12 | 08/08/2026 | `ses_01c089ce2ffe9MvQT4F1pC0MJN` | Sub-fase 4.2 deep audit + post-audit fixes (credentials mapping, playwright lifecycle) |
+
+## Session 33 — 21/08/2026
+`ses_fdba95353ffezwVG7roiPKaX2c` · `fase-5`
+
+**Topics**
+- Full project analysis requested: built vs remaining by phase, evaluation of what exists
+- Phase 5 construction plan designed from the two technical sheets: 7 functional sub-phases (foundations → module nodes → transversal orchestrator → real sequential run + documentation closure), mirroring the proven Module 1 strategy with one difference — consolidated schema/shared dependencies go first as their own sub-phase
+- MVP Execution Plan and tracker Phase 5 sections rewritten; obsolete generic task list replaced by the sheet-based plan
+- Reviewer: docs-reviewer on the doc changes — 3 minor findings corrected (loop decision is the only decision with I/O, official node count preserved, unbacked backup claim replaced by case-by-case precedent)
+
+**Decisions**
+- Phase 5 build plan approved: foundations-first ordering; location-classification prompt built in foundations with manual test before integration; default company-catalog enrichment depth 0; generic Phase 5 content superseded
+- Live DB backup for foundation migrations decided case-by-case at sub-phase start (project precedent) — no blanket rule
+- Decisions from previous sessions remain in effect
+
+**Status**
+- Phase 5 build plan defined ✅ (tracker rows 5.1–5.7 pending); implementation not started
+- Docs-only session: ruff/mypy/pytest n/a; suite unchanged (331 tests)
+- Single commit + push on `fase-5`; no merge
+- Next: sub-phase 5.1 — Foundations (schema, models, config, prompt)
 
 ## Session 32 — 20/08/2026
 `ses_fe33fd2dfffeQS3bPEmnaiJW1h` · `fase-5`

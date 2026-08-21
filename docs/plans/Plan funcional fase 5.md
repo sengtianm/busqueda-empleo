@@ -137,16 +137,16 @@ Instanciar la corrida de preparación y preparar el contexto de ejecución: traz
 
 | Código | Error / excepción | Acción | Estado |
 |---|---:|---|---|
-| ERR-01 | Colisión o fallo de generación de `id_corrida` | Reintento único; si persiste, aborto | `error` |
-| ERR-02 | Configuración ausente | Aborto | `error` |
-| ERR-03 | Configuración ilegible | Aborto | `error` |
-| ERR-04 | Configuración corrupta / estructura inconsistente | Aborto | `error` |
-| ERR-05 | BD indisponible / bloqueada / sin permisos | Aborto | `error` |
+| ERR-01 | Colisión o fallo de generación de `id_corrida` | Reintento único; si persiste, aborto | `abortada` |
+| ERR-02 | Configuración ausente | Aborto | `abortada` |
+| ERR-03 | Configuración ilegible | Aborto | `abortada` |
+| ERR-04 | Configuración corrupta / estructura inconsistente | Aborto | `abortada` |
+| ERR-05 | BD indisponible / bloqueada / sin permisos | Aborto | `abortada` |
 | ERR-06 | Concurrencia activa | Terminación controlada | `concurrencia` |
 | ERR-07 | Bloqueo obsoleto (antigüedad > umbral) | Sobrescribir bloqueo y continuar | continúa |
-| ERR-08 | Estado de bloqueo no decidible | Aborto | `error` |
+| ERR-08 | Estado de bloqueo no decidible | Aborto | `abortada` |
 | ERR-09 | Contienda de adquisición de bloqueo | Perdedor cae en ERR-06 | `concurrencia` |
-| ERR-10 | Falla interna de inicialización de estado | Aborto | `error` |
+| ERR-10 | Falla interna de inicialización de estado | Aborto | `abortada` |
 
 ---
 
@@ -399,7 +399,7 @@ El Nodo 3 **evalúa** todas las `preparada` con `fecha_ultima_verificacion = ''`
 
 1. `ofertas_descubiertas.estado` CHECK: añadir `duplicada` (D1) y columna `id_duplicidad` (D2).
 2. `shared/models.py` `OfferState`: añadir `DUPLICADA`.
-3. `shared/state_machine.py`: transiciones `descubierta → preparada` (Nodo 2) y `preparada → duplicada` (Nodo 3).
+3. `shared/state_machine.py`: transición nueva `preparada → duplicada` (Nodo 3); la transición `descubierta → preparada` ya existe.
 4. `corridas`: columnas `total_preparadas` y `total_duplicadas` (D3).
 5. `eventos.id_oferta`: re-añadida (ya decidido en el Nodo 1).
 
@@ -434,7 +434,7 @@ Decidir si quedan más ofertas en estado `descubierta` en `ofertas_descubiertas`
 2. Nodo 2 — Preparación (procesa todas las `descubierta`).
 3. Nodo 3 — Verificación de duplicidad (todas las `preparada` con `id_duplicidad = 'N/A'`).
 4. Nodo 4 — ¿Quedan `descubierta`?
-   - **Sí** → volver al paso 2 (mientras `pasadas ≤ max_pasadas`).
+   - **Sí** → volver al paso 2 (mientras `pasadas < max_pasadas`).
    - **No** → pasar al paso 5.
 5. Nodo 5 — FINALIZAR (consolida métricas, escribe evento de terminación, libera el bloqueo).
 
@@ -483,7 +483,7 @@ Siguiendo el patrón del Módulo 1, los nodos de decisión pura **no escriben ev
 
 | Código | Error / excepción | Acción | Estado |
 |---|---:|---|---|
-| ERR-01 | Falla al consultar ofertas `descubierta` (BD) | Reintento; si persiste, aborto | `error` (aborto `error_critico`) |
+| ERR-01 | Falla al consultar ofertas `descubierta` (BD) | Reintento; si persiste, aborto | `abortada` (`error_critico`) |
 | ERR-02 | Se alcanzó `max_pasadas` con pendientes | Cierre normal con evento `revision_pendientes` | continúa → Nodo 5 |
 
 ---
@@ -544,6 +544,7 @@ Cerrar la corrida de preparación de forma determinista y con trazabilidad compl
 | `error_total` | `hubo_candidatas` = sí (contexto del Nodo 1) pero **todas fallaron** (0 éxitos + ≥1 error) | `abortada` | error |
 | `error_critico` | Fallo crítico de BD/config en cualquier nodo | `abortada` | error |
 | `aborto` | Fallo de un nodo en el flujo | `abortada` | error |
+| `concurrencia` | INICIO ERR-06 (no obtuvo el bloqueo global) | `abortada` | suceso |
 
 **Fuente del dato:** `hubo_candidatas` (bool) lo registra el Nodo 1 en el contexto de la corrida (H3); el Nodo 5 lo usa para distinguir `error_total` de `sin_pendientes`.
 
@@ -573,6 +574,6 @@ Cerrar la corrida de preparación de forma determinista y con trazabilidad compl
 - **Espejo de `finalizar_proceso` del Módulo 1** (6 pasos, best-effort, el cierre nunca aborta; paso 6 = enriquecimiento desacoplado de empresas si `profundidad_catalogo_empresa > 0`).
 - **Métricas por eventos** (decisión del Nodo 3): `total_preparadas`, `total_duplicadas`, `total_errores`, `total_sucesos` — sin sobrescribir `id_corrida` de las ofertas.
 - **Semántica D30 intacta:** el evento de terminación nunca se cuenta en `total_sucesos`.
-- **Motivos confirmados:** `sin_pendientes`, `corrida_completada`, `error_total` (→ `abortada`, vía `hubo_candidatas` del Nodo 1), `error_critico`, `aborto`.
+- **Motivos confirmados:** `sin_pendientes`, `corrida_completada`, `error_total` (→ `abortada`, vía `hubo_candidatas` del Nodo 1), `error_critico`, `aborto`, `concurrencia` (INICIO ERR-06).
 - **`total_ofertas` = preparadas + duplicadas** (ofertas procesadas).
 - **Cierre de recursos:** sesión httpx + navegador Playwright si el enriquecimiento (paso 6) lo usó.

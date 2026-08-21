@@ -117,21 +117,19 @@
 
 ---
 
-## Phase 5. Module 2 — Offer Preparation
+## Phase 5. Module 2 — Offer Preparation + Transversal Orchestrator
 
-| # | Task | Source docs | Status | Notes |
-|---|------|-------------|--------|-------|
-| 1 | Structure modules/preparation/ | DOC-07 | ⬜ | |
-| 2 | Load raw offers from persistence | DOC-04 | ⬜ | |
-| 3 | Field cleaning (spaces, residual HTML) | DOC-05 | ⬜ | |
-| 4 | Normalization (dates, salaries, location, modality) | DOC-05, DOC-13 | ⬜ | |
-| 5 | Integrity and required field validation | DOC-01 | ⬜ | |
-| 6 | Duplicate detection (RapidFuzz) | DOC-01 | ⬜ | |
-| 7 | Initial state assignment | DOC-03 | ⬜ | |
-| 8 | Persistence of prepared version + log | DOC-04 | ⬜ | |
-| 9 | Error handling (ER-VAL, ER-DAT) | DOC-06 | ⬜ | |
-| 10 | Tests | — | ⬜ | |
-| 11 | Validation | — | ⬜ | |
+> Build strategy: functional sub-phases grouping nodes by testable unit. Each sub-phase goes through its own work cycle. Authoritative sources: ficha técnica Módulo 2 + ficha orquestador transversal (decisions D33/D34). See the MVP Execution Plan Phase 5. The generic task list was superseded by this ficha-based plan (approved 2026-08-21).
+
+| # | Sub-phase (content) | Source docs | Status | Notes |
+|---|---|---|---|---|
+| 5.1 | Foundations: schema, models, config, prompt (11 consolidated dependencies; live DB migration) | Ficha técnica M2 (Dependencias de esquema 1–11), DOC-13A v1.11, decision log v1.19 | ⬜ | |
+| 5.2 | INICIO + ¿Quedan ofertas por preparar en esta corrida? (2 nodes) | Ficha técnica M2 | ⬜ | |
+| 5.3 | Preparación de ofertas (guest httpx capture + catalogs + offer update, two lots per pass) | Ficha técnica M2 | ⬜ | |
+| 5.4 | Verificación de duplicidad + ¿Quedan ofertas en 'descubierta'? (2 nodes) | Ficha técnica M2 | ⬜ | |
+| 5.5 | Finalizar Proceso (terminal) + orquestador interno del módulo | Ficha técnica M2 | ⬜ | |
+| 5.6 | Orquestador transversal (corrida programada, `modules/orchestrator/`) | Ficha orquestador transversal | ⬜ | |
+| 5.7 | Real sequential run 1→2 + documentation closure | Fichas técnicas, decision log | ⬜ | |
 
 ---
 

@@ -186,17 +186,18 @@ Build strategy: functional sub-phases grouping nodes by testable unit, per canon
 
 > **As-built 2026-08-12 (D17, Lote 4):** el nodo "¿Quedan ofertas por capturar? (v1.0)" se retiró del flujo (decisión constante desde la captura por listado D11); la fila 4.4 queda como 2 processes + 1 decision y el flujo total tiene 12 nodos (5 decisiones). Las versiones de la tabla (v1.0/v1.1) son las originales de construcción; las vigentes están en la ficha técnica (as-built).
 
-## Phase 5. Module 2 — Offer Preparation
-- Create `modules/preparation/`.
-- Read raw offers from persistence.
-- Clean fields (spaces, line breaks, residual HTML).
-- Normalize: dates (ISO 8601), salaries (number + currency), locations, modality.
-- Validate required fields, integrity, consistency.
-- Detect duplicates (RapidFuzz on title + company).
-- Assign initial state (`descubierta` → `preparada`, EST-001 → EST-002).
-- Save prepared version + transformation log.
-- Error handling: ER-VAL, ER-DAT.
-- Tests: unit with anonymized real offers as fixtures; edge cases (empty fields, unusual formats, duplicates).
+## Phase 5. Module 2 — Offer Preparation + Transversal Orchestrator
+Build strategy: functional sub-phases grouping nodes by testable unit, per canonical specs in `docs/diagrams/Ficha técnica - Diagrama de flujo (Preparación de ofertas).md` and `docs/diagrams/Ficha técnica - Diagrama de flujo (Orquestador transversal).md` (technical sheets = authoritative construction bases; macro decisions D33/D34, decision log v1.19). Each sub-phase has full work cycle (analysis → plan → implementation → validation → close, per AGENTS.md) and approval before next. Nodes implemented in flow order; decision nodes grouped with preceding process node (the candidate decision is a pure in-memory evaluation; the loop decision — the module's only decision with I/O per its ficha RN-05 — is grouped by flow cohesion). Difference vs Phase 4: the 11 consolidated schema/shared dependencies (ficha M2, "Dependencias de esquema") go first as their own sub-phase — D33 consolidated them to apply coherently (one idempotent migration set) instead of interleaving migrations across node tasks.
+
+| Sub-phase | Content included | Type |
+|---|---|---|
+| 5.1 — Foundations: schema, models, config, prompt | The 11 consolidated dependencies: idempotent migrations (`duplicada` in `estado` CHECK, `id_duplicidad`, `ubicacion_nombre`+`modalidad` columns, `total_preparadas`/`total_duplicadas` on `corridas`, `eventos.id_oferta` re-added, `ubicaciones` restructured to `(ciudad, region, pais)`); models (`OfferState.DUPLICADA`, `EstadoCorrida.SIN_PENDIENTES`, `Corrida`/`EventoAlmacen` extended, `Location` without `modalidad`); state-machine transition `preparada → duplicada`; `normalizar_texto` utility; config section `preparacion:` (default `profundidad_catalogo_empresa: 0`) + `ai_routing.preparacion`; location-classification prompt `prompts/preparacion/ubicacion.md` manually tested against the routed model before integration. Live DB migration via the idempotent migrations in `init_db()`; backup decided case-by-case at sub-phase start (project precedent D31/D32) | Schema + shared foundations |
+| 5.2 — Startup and candidate decision | INICIO (module own run, execution context, shared global lock, FIFO candidate load, `hubo_candidatas`) + ¿Quedan ofertas por preparar en esta corrida? (`sin_pendientes` controlled termination) | 1 process + 1 decision |
+| 5.3 — Offer preparation | Preparación de ofertas: guest httpx session with browser fallback, page capture `/jobs/view/N`, company upsert (no AI), location classification with AI + caches, offer update, per-offer events with `id_oferta`, two lots per pass (H1), configurable pauses/session lifetime/retries | 1 process |
+| 5.4 — Duplicate verification and loop decision | Verificación de duplicidad (two-stage RapidFuzz: exact index O(1) + fuzzy with thresholds, marker `fecha_ultima_verificacion`, event `oferta_duplicada`) + ¿Quedan ofertas en 'descubierta'? (loop with `max_pasadas`, event `revision_pendientes`) | 1 process + 1 decision |
+| 5.5 — Closure and module orchestrator | Finalizar Proceso (metrics by events, official motive/state table incl. `sin_pendientes`, lock release conditional to ownership, best-effort resource close, decoupled company enrichment as step 6 gated by `profundidad_catalogo_empresa`) + module flow orchestrator (`ejecutar_flujo`, connects all 6 nodes) | 1 terminal + 1 integration |
+| 5.6 — Transversal orchestrator | `modules/orchestrator/`: scheduled-run node `ejecutar_corrida_programada()` (dedicated row in `corridas`, module result derived from the DB via `leer_ultima_corrida_cerrada`, module failure does not stop the run), declarative module registry, config section `orquestador:`, integration tests — built at Module 2 closure per its own ficha | 1 transversal node |
+| 5.7 — Real sequential run 1→2 and documentation closure | Production run validating M1→M2 chained through BD coordination + summary events (`modulo_ejecutado` × N, `corrida_programada`); as-built notes on deviations, database-tables writers per module, README, AGENTS.md status/test count; code-reviewer + docs-reviewer | E2E verification + doc closure |
 
 ## Phase 6. Module 3 — Initial Evaluation
 - Create `modules/evaluation/`.
