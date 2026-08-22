@@ -143,6 +143,12 @@ retries:
   max_wait_seconds: 30
   multiplier: 2
 
+# --- Transversal orchestrator (scheduled run, ficha D34) ---
+orquestador:
+  modo_ejecucion: "serie"
+  modulos: ["descubrimiento", "preparacion"]
+  pausa_entre_modulos_segundos: 5
+
 # --- Professional Profile (DOC-10) ---
 profile:
   tecnologias: {}

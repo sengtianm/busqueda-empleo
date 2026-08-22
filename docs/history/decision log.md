@@ -321,6 +321,14 @@ Format: `D<n>` — module/business decisions; `C<n>` — prompt/design alignment
 - **Decision:** Node files, tests, and `run_context.py` of `modules/preparation/` use Spanish identifiers for domain concepts (e.g., `ejecutar_preparacion`, `ResultadoPreparacion`, `_diligenciar_empresa`, `quedan_ofertas_por_preparar`, `cache_ubicaciones`), with the same scope and limits as `modules/discovery/`: English remains the norm for code/documentation/configuration outside this exception, shared-layer docstrings stay in English, and Spanish docstrings/error-evidence strings are allowed only inside these module files. User-approved during the sub-phase 5.2 analysis.
 - **Impact:** AGENTS.md Conventions section already reflects both modules; no schema/data changes; applies from sub-phase 5.2 onward (retroactive documentation of a convention already in force).
 
+### D38. Spanish identifier exception extended to the transversal orchestrator (`modules/orchestrator/`) (2026-08-21)
+
+- **Date:** 2026-08-21
+- **Status:** In effect
+- **Context:** D7/D8 established the Spanish naming catalog for the data layer, and D37 extended Spanish domain identifiers to `modules/discovery/` and `modules/preparation/`. Sub-phase 5.6 created the transversal orchestrator in `modules/orchestrator/`, whose authoritative ficha (D34) mandates Spanish public names (`ejecutar_corrida_programada`, `ModuloOrquestado`, registry `MODULOS`) — outside the then-current exception scope.
+- **Decision:** Files of `modules/orchestrator/` use Spanish identifiers for domain concepts (`ejecutar_corrida_programada`, `ModuloOrquestado`), with the same scope and limits as D37: English remains the norm for code/documentation/configuration outside this exception, shared-layer docstrings stay in English, and Spanish docstrings/error-evidence strings are allowed only inside these module files. User-approved during the sub-phase 5.6 analysis.
+- **Impact:** No schema/data changes; AGENTS.md Conventions section updated to list the third package; applies from sub-phase 5.6 onward.
+
 ## Prompt/design alignment decisions
 
 ### C2. Detailed Evaluation entity uses Spanish attribute names
@@ -384,6 +392,7 @@ Source: DOC-APPENDIX 9A — archived 2026-08-11; content consolidated here uncha
 
 | Version | Date | Change |
 |---|---|---|
+| 1.23 | 2026-08-21 | Added D38 (Spanish identifier exception extended to `modules/orchestrator/` — ficha-mandated Spanish public names for the transversal orchestrator, same scope/limits as D37, user-approved during sub-phase 5.6; tracker 512 tests). |
 | 1.22 | 2026-08-21 | Added D37 (Spanish identifier exception extended to `modules/preparation/` — node files/tests/run_context use Spanish domain identifiers with the same scope and limits as `modules/discovery/`, user-approved during sub-phase 5.2; AGENTS.md conventions already reflected it). |
 | 1.21 | 2026-08-21 | Added D36 (`total_preparadas` at Finalizar Proceso counts DISTINCT offer ids via `contar_distintos` — resolves the double-count between ficha paso 8 lot-(b) re-emission and plain row counting; both events kept for per-step traceability per user choice; implementation lands in 5.5; tracker 5.3; 424 tests). |
 | 1.20 | 2026-08-21 | Added D35 (location-classification routing for Module 2: `ai_routing.preparacion: "local"` with `ai_local.model: "gpt-oss:20b-cloud"` via the local Ollama proxy — user choice avoiding cloud quota limits and undersized hardware models; `ia_service` per-purpose model selection deferred until a second local purpose exists; PRM-006 manually verified 3/3 valid JSON; tracker 5.1; 346 tests). |

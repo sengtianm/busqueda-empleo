@@ -949,6 +949,38 @@ def actualizar_corrida(id_corrida: str, campos: dict[str, Any]) -> bool:
         conn.close()
 
 
+def leer_ultima_corrida_cerrada(
+    desde: str, excluir_ids: list[str] | None = None
+) -> dict[str, Any] | None:
+    """Returns the most recently closed run started at or after `desde`.
+
+    Transversal orchestrator helper (ficha D34): derives each module's result
+    from the database instead of a return contract — the global lock
+    guarantees only the just-executed module can close a run inside the
+    window. "Closed" means `fecha_fin` populated (never ''/NULL/'N/A' per the
+    D31 no-empty-field rule). `excluir_ids` removes already-attributed runs
+    (the scheduled run itself and previously derived modules) so attribution
+    stays one-to-one; ordering is by `fecha_fin DESC LIMIT 1`.
+    """
+    exclusiones = list(excluir_ids or [])
+    placeholders = ", ".join(f":excl_{i}" for i in range(len(exclusiones))) or ":ninguno"
+    parametros: dict[str, Any] = {"desde": desde, "ninguno": ""}
+    for i, valor in enumerate(exclusiones):
+        parametros[f"excl_{i}"] = valor
+    sql = (
+        "SELECT * FROM corridas "
+        "WHERE fecha_fin NOT IN ('', 'N/A') AND fecha_inicio >= :desde "
+        f"AND id_corrida NOT IN ({placeholders}) "
+        "ORDER BY fecha_fin DESC, id_corrida DESC LIMIT 1"
+    )
+    conn = _connection()
+    try:
+        fila = conn.execute(sql, parametros).fetchone()
+        return dict(fila) if fila is not None else None
+    finally:
+        conn.close()
+
+
 def _upsert_ofertas_en(
     conn: sqlite3.Connection, filas: list[dict[str, Any]]
 ) -> tuple[list[str], int]:
