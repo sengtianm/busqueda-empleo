@@ -22,12 +22,10 @@ from shared.persistence import (
 )
 
 PREPARACION_VALIDA: dict[str, Any] = {
-    "profundidad_catalogo_empresa": 0,
     "umbral_titulo": 90,
     "umbral_descripcion": 85,
     "max_pasadas": 2,
     "pausa_entre_ofertas_segundos": 2,
-    "pausa_entre_empresas_segundos": 2,
     "limite_vida_sesion": 50,
     "retries": {
         "max_attempts": 3,
@@ -120,13 +118,11 @@ def test_inicio_carga_candidatas_orden_fifo(temp_db_file: Path) -> None:
 @pytest.mark.parametrize(
     "clave,valor",
     [
-        ("profundidad_catalogo_empresa", -1),
         ("umbral_titulo", 101),
         ("umbral_titulo", -1),
         ("umbral_descripcion", "alta"),
         ("max_pasadas", 0),
         ("pausa_entre_ofertas_segundos", -1),
-        ("pausa_entre_empresas_segundos", -1),
         ("limite_vida_sesion", 0),
         (
             "retries",

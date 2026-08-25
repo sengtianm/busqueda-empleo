@@ -59,14 +59,6 @@ class RunContext:
         self.cache_empresas: dict[str, str] = {}
         self.cache_ubicaciones: dict[tuple[str, str, str], str] = {}
         self.cache_ia: dict[str, tuple[str, str, str]] = {}
-        # Enriquecimiento de empresas (D39, paso 2): ids ya completados en
-        # esta corrida y ids fallidos/bloqueados (no se reintentan dentro
-        # de la misma corrida; la autocuración los recupera en la siguiente),
-        # más el contador de visitas para el freno opcional
-        # `profundidad_catalogo_empresa` (> 0).
-        self.cache_empresas_enriquecidas: set[str] = set()
-        self.cache_empresas_fallidas: set[str] = set()
-        self.visitas_empresas: int = 0
         # Control del bucle de pasadas (nodo "¿Quedan ofertas en 'descubierta'?",
         # ficha M2): pasadas completadas que ese nodo contabiliza al evaluar
         # `pasadas_actuales < max_pasadas`; 0 hasta la primera evaluación.

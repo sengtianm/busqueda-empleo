@@ -39,11 +39,7 @@ class Company(BaseModel):
     id: str = ""
     nombre: str
     nombre_normalizado: str = ""
-    sitio_web: str = ""
     perfil_linkedin: str = ""
-    sector: str = ""
-    tamano: str = ""
-    descripcion: str = ""
     fecha_creacion: str = ""
     fecha_ultima_edicion: str = ""
 

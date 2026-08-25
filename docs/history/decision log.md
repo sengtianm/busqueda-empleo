@@ -332,7 +332,7 @@ Format: `D<n>` — module/business decisions; `C<n>` — prompt/design alignment
 ### D39. Company enrichment moves to the Preparation node step 2, with autocuración and no per-run cap (2026-08-25)
 
 - **Date:** 2026-08-25
-- **Status:** In effect
+- **Status:** Superseded by D40 (2026-08-25) — bulk enrichment proved to be a run bottleneck for informational-only value; the catalog returns to its identity shape.
 - **Context:** The approved M2 sheet (D33/D4) placed deep company enrichment as a decoupled step 6 of Finalizar Proceso behind `profundidad_catalogo_empresa` (0 = off), implemented only as the H2 gate-only stub in sub-phase 5.5. After the first clean orchestrated runs the user requested inline enrichment at company-registration time ("paso 2") as the logical placement. An empirical guest-access experiment (2026-08-25, 31 real profile visits, no login) verified: the four official fields plus `sede`/`tipo`/`fundación`/`especialidades` are readable from public profile pages; ~1 s load per page; transient 999 walls clear after ~45 s; a 2 s pause between visits yields 10/10 successes; successful pages contain sign-up strings that would false-positive the offer-page wall markers.
 - **Decision:**
   1. Enrichment runs inside «Preparación de ofertas» right after each company is registered (`_enriquecer_si_aplica` hook in `preparacion.py`, reader `nodes/enriquecimiento.py`); the Finalizar Proceso H2 stub is removed.
@@ -342,6 +342,19 @@ Format: `D<n>` — module/business decisions; `C<n>` — prompt/design alignment
   5. Schema: `empresas` gains `sede`/`tipo`/`fundacion`/`especialidades` (TEXT DEFAULT 'N/R', idempotent `_migrate_enriquecimiento_empresas_d39`) and the four pre-existing enrichment columns backfill '' → 'N/R' (D31 rule applied to this catalog; resolves the twice-deferred empty-format item). Fields the page does not show persist `'N/R'`.
   6. Traceability stays log-only (no events, no error counters): enrichment failures never abort the run nor count as preparation errors.
 - **Impact:** Live DB migrated via `init_db()` with backup (52 empresas preserved, double-init idempotent); ficha M2 as-built notes (RN-05, Nodo 5 step 6 retired, config semantics); DOC-13A v1.12; database-tables writers/columns updated; tracker 5.8; 544 tests.
+
+### D40. Company enrichment reverted: `empresas` returns to its identity shape (2026-08-25)
+
+- **Date:** 2026-08-25
+- **Status:** In effect
+- **Context:** The first full run with D39 enrichment active on a clean DB (92 offers, 57 companies) measured: total run 27 min 36 s, of which ~26.5 min (≈ 96%) were company-profile visits; 29 wall blocks triggered the fixed 40 s inline waits (~19 min of pure waiting) and still left 25/57 companies pending for autocuración. Every block was LinkedIn's throttle signature (status 999, ~1.5 KB stub body; zero authwall screens). The user concluded inline enrichment only delays the whole flow, and that deferred/on-demand enrichment equals never doing it; the correct question is whether those columns are worth filling at all. Since no downstream phase consumes them today and a future Evaluation-phase need can be served selectively (enrich the handful of finalist companies on demand — feasibility already proven by the D39 experiment), the user decided to revert to the minimal catalog: id, nombre, nombre_normalizado, perfil_linkedin + audit dates.
+- **Decision:**
+  1. The step-2 hook (`_enriquecer_si_aplica`) is removed from «Preparación de ofertas»; the guest reader `nodes/enriquecimiento.py` and its suite are deleted from the project (preserved in git history).
+  2. Schema: `empresas` drops all eight enrichment columns (`sitio_web`, `sector`, `tamano`, `descripcion`, `sede`, `tipo`, `fundacion`, `especialidades`) via idempotent `_migrate_revertir_enriquecimiento_d40` (SQLite ≥ 3.35 DROP COLUMN, guarded per column); identity columns plus `fecha_creacion`/`fecha_ultima_edicion` remain.
+  3. Config keys `profundidad_catalogo_empresa` and `pausa_entre_empresas_segundos` are removed along with their VAL-02 validations (nothing consumes them anymore).
+  4. Run-context enrichment caches/counters removed; preparation flow keeps no company-visit state.
+  5. If company attributes are ever needed again, they must be obtained selectively and outside the offer critical path (e.g., evaluation-time enrichment of finalists), not bulk-scraped at discovery/preparation time.
+- **Impact:** Live DB migrated with backup `job_search_pre_d40_20260825_125522.db` (57 empresas preserved with identity data only, double-init idempotent); DOC-13A v1.13; database-tables updated; ficha M2 as-built notes re-marked; tracker 5.9; 522 tests.
 
 ## Prompt/design alignment decisions
 
@@ -406,6 +419,7 @@ Source: DOC-APPENDIX 9A — archived 2026-08-11; content consolidated here uncha
 
 | Version | Date | Change |
 |---|---|---|
+| 1.25 | 2026-08-25 | Added D40, superseding D39 (enrichment reverted after measured bottleneck: ~96% of a full run in profile visits and ~19 min of inline wall waits leaving 25/57 companies pending; user verdict that informational columns are not worth the cost — catalog keeps only id/nombre/nombre_normalizado/perfil_linkedin + audit dates; step-2 hook, reader module and suite deleted; all eight enrichment columns dropped via idempotent `_migrate_revertir_enriquecimiento_d40`; config keys `profundidad_catalogo_empresa`/`pausa_entre_empresas_segundos` removed with their validations; future company attributes must be selective and off the critical path; live DB migrated with backup; tracker 5.9; 522 tests). |
 | 1.24 | 2026-08-25 | Added D39 (company-profile enrichment moved into the Preparation node step 2 replacing the decoupled Finalizar H2 stub: guest httpx reader with ES/EN label extraction of `sitio_web`/`sector`/`tamano`/`descripcion`/`sede`/`tipo`/`fundacion`/`especialidades` ('N/R' when unreported), autocuración of incomplete companies, no cap with `profundidad_catalogo_empresa` redefined as optional brake (0 = unlimited default) plus new `pausa_entre_empresas_segundos`, refined wall detection + one 40 s-cooldown retry, log-only traceability; idempotent `_migrate_enriquecimiento_empresas_d39` adds four columns and backfills legacy '' to 'N/R'; live DB migrated with backup; tracker 5.8; 544 tests). |
 | 1.23 | 2026-08-21 | Added D38 (Spanish identifier exception extended to `modules/orchestrator/` — ficha-mandated Spanish public names for the transversal orchestrator, same scope/limits as D37, user-approved during sub-phase 5.6; tracker 512 tests). |
 | 1.22 | 2026-08-21 | Added D37 (Spanish identifier exception extended to `modules/preparation/` — node files/tests/run_context use Spanish domain identifiers with the same scope and limits as `modules/discovery/`, user-approved during sub-phase 5.2; AGENTS.md conventions already reflected it). |

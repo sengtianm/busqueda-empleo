@@ -32,7 +32,7 @@ def test_generate_id_per_table(temp_db_file: Path) -> None:
 
 
 def test_write_and_read(temp_db_file: Path) -> None:
-    data = {"nombre": "Test", "sector": "tecnologia"}
+    data = {"nombre": "Test", "perfil_linkedin": "https://www.linkedin.com/company/test"}
     generated_id = escribir_fila("empresas", data)
     assert generated_id.startswith("EMP-")
     rows = leer_tabla("empresas")
@@ -42,8 +42,8 @@ def test_write_and_read(temp_db_file: Path) -> None:
 
 
 def test_find_by_id_existing(temp_db_file: Path) -> None:
-    id_1 = escribir_fila("empresas", {"nombre": "Uno", "sector": "tech"})
-    escribir_fila("empresas", {"nombre": "Dos", "sector": "fintech"})
+    id_1 = escribir_fila("empresas", {"nombre": "Uno", "perfil_linkedin": "li.com/uno"})
+    escribir_fila("empresas", {"nombre": "Dos", "perfil_linkedin": "li.com/dos"})
     result = buscar_por_id("empresas", id_1)
     assert result is not None
     assert result["nombre"] == "Uno"
@@ -55,7 +55,7 @@ def test_find_by_id_missing(temp_db_file: Path) -> None:
 
 
 def test_update(temp_db_file: Path) -> None:
-    id_1 = escribir_fila("empresas", {"nombre": "Viejo", "sector": "tech"})
+    id_1 = escribir_fila("empresas", {"nombre": "Viejo", "perfil_linkedin": "li.com/viejo"})
     ok = actualizar_fila("empresas", id_1, {"nombre": "Nuevo"})
     assert ok is True
     rows = leer_tabla("empresas")
@@ -1162,7 +1162,7 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
             }
             assert "fuentes" not in tablas
             for tabla, esperadas in {
-                "empresas": {"nombre_normalizado", "perfil_linkedin", "tamano"},
+                "empresas": {"nombre_normalizado", "perfil_linkedin"},
                 "corridas": {"id_corrida", "fecha_inicio"},
                 "eventos": {"id_corrida", "fuente_id", "marca_temporal"},
                 "sesiones": {"id", "id_sesion", "id_corrida", "fuente_id"},
@@ -1200,7 +1200,6 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
         empresas = leer_tabla("empresas")
         assert empresas[0]["nombre_normalizado"] == "techcorp"
         assert empresas[0]["perfil_linkedin"] == "https://www.linkedin.com/company/techcorp"
-        assert empresas[0]["tamano"] == "500-1000"
         eventos = leer_tabla("eventos")
         assert eventos[0]["id_corrida"] == "COR-1839"
         assert eventos[0]["fuente_id"] == "linkedin"

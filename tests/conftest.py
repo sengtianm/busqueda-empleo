@@ -60,7 +60,7 @@ def example_company() -> Company:
         id="EMP-0001",
         nombre="TechCorp",
         nombre_normalizado="techcorp",
-        sector="tecnologia",
+        perfil_linkedin="https://www.linkedin.com/company/techcorp",
     )
 
 

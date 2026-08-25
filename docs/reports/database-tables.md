@@ -12,17 +12,17 @@ La BD tiene 8 tablas. Se habilita con `init_db()` (crea tablas y aplica migracio
 
 Índices (creados con `CREATE INDEX IF NOT EXISTS`, no únicos — la unicidad estricta es del Módulo 2, decisión D4): `idx_ofertas_id_externo` (deduplicación por oferta), `idx_ofertas_id_corrida` y `idx_eventos_id_corrida` (métricas de cierre y auditoría).
 
-Estado actual (conteos al momento del reporte, tras la migración D31 y el rename D32):
+Estado actual (conteos tras la corrida real del 2026-08-25 sobre base limpia, con el esquema vigente de la decisión D40):
 
 | Tabla | Filas | Escritor principal |
 |---|---|---|
-| `secuencia_ids` | 4 | Automática (generador de IDs) |
-| `empresas` | 0 | Módulo 2 — Nodo 2 (upsert por `nombre_normalizado` + enriquecimiento del perfil en el paso 2, D39, con autocuración; freno opcional `profundidad_catalogo_empresa > 0`) |
-| `ubicaciones` | 0 | Módulo 2 — Nodo 2 (upsert por tupla `(ciudad, region, pais)` normalizada; "Remoto" no crea fila) |
-| `ofertas_descubiertas` | 62 | Módulo 1 — Nodo Captura → `upsert_oferta()`; Módulo 2 — Nodo 2 (sobrescribe `titulo`/`descripcion_original`/`empresa_id`/`ubicacion_id`/`modalidad`); Módulo 2 — Nodo 3 (escribe `estado`, `id_duplicidad`, `fecha_ultima_verificacion`, `observaciones`) |
-| `corridas` | 1 | Módulo 1/2 — Nodo INICIO → `registrar_corrida()`; Nodo Finalizar → `actualizar_corrida()`; Orquestador transversal → `registrar_corrida()` para la corrida programada |
-| `eventos` | 28 | Nodos del flujo → `escribir_evento()` (incluye los eventos del Módulo 2 — `oferta_preparada`/`preparacion_fallida`/`oferta_duplicada`/`revision_pendientes` — y del orquestador — `modulo_ejecutado`/`corrida_programada`/`modulo_fallido`) |
-| `sesiones` | 13 | Módulo 1 — Nodo Captura → `escribir_fila("sesiones")` |
+| `secuencia_ids` | 6 | Automática (generador de IDs) |
+| `empresas` | 57 | Módulo 2 — Nodo 2 (upsert por `nombre_normalizado`; catálogo mínimo de identidad tras D40) |
+| `ubicaciones` | 8 | Módulo 2 — Nodo 2 (upsert por tupla `(ciudad, region, pais)` normalizada; "Remoto" no crea fila) |
+| `ofertas_descubiertas` | 92 | Módulo 1 — Nodo Captura → `upsert_oferta()`; Módulo 2 — Nodo 2 (sobrescribe `titulo`/`descripcion_original`/`empresa_id`/`ubicacion_id`/`modalidad`); Módulo 2 — Nodo 3 (escribe `estado`, `id_duplicidad`, `fecha_ultima_verificacion`, `observaciones`) |
+| `corridas` | 3 | Módulo 1/2 — Nodo INICIO → `registrar_corrida()`; Nodo Finalizar → `actualizar_corrida()`; Orquestador transversal → `registrar_corrida()` para la corrida programada |
+| `eventos` | 107 | Nodos del flujo → `escribir_evento()` (incluye los eventos del Módulo 2 — `oferta_preparada`/`preparacion_fallida`/`oferta_duplicada`/`revision_pendientes` — y del orquestador — `modulo_ejecutado`/`corrida_programada`/`modulo_fallido`) |
+| `sesiones` | 1 | Módulo 1 — Nodo Captura → `escribir_fila("sesiones")` |
 | `bloqueo` | 0 | Módulo 1/2 — Nodo INICIO → `adquirir_bloqueo()` (global del pipeline); Nodo Finalizar → `liberar_bloqueo()` |
 
 ### Momentos del flujo que diligencian las tablas
@@ -49,24 +49,16 @@ Control interno del generador de IDs secuenciales (`PREFIJO-NNNN`). No se escrib
 
 ### 2.2. `empresas`
 
-Catálogo de empresas. **El Módulo 1 no escribe en esta tabla** (0 filas): no extrae la empresa de las tarjetas (decisión D29; las columnas crudas `empresa_nombre`/`ubicacion_nombre` de `ofertas_descubiertas` fueron eliminadas). **El Módulo 2 la puebla** (decisión D33): el Nodo 2 (Preparación de ofertas) hace upsert por `nombre_normalizado` sin IA y — **desde la decisión D39 (2026-08-25)** — enriquece cada empresa en el mismo paso 2 visitando su perfil público como invitado (sin login), completando las ocho columnas de enriquecimiento con autocuración de las aún `'N/R'`; el freno opcional `profundidad_catalogo_empresa > 0` limita las visitas por corrida. El antiguo paso 6 del Nodo 5 quedó retirado.
+Catálogo de empresas. **El Módulo 1 no escribe en esta tabla** (0 filas): no extrae la empresa de las tarjetas (decisión D29; las columnas crudas `empresa_nombre`/`ubicacion_nombre` de `ofertas_descubiertas` fueron eliminadas). **El Módulo 2 la puebla** (decisión D33): el Nodo 2 (Preparación de ofertas) hace upsert por `nombre_normalizado` sin IA. La tabla es un catálogo mínimo de identidad: el enriquecimiento de perfiles (D39) fue retirado por la decisión D40 (2026-08-25) tras medirse como cuello de botella (~96% del tiempo de una corrida completa); si algún futuro módulo necesitara atributos de empresa, se obtendrán selectivamente y fuera del camino crítico.
 
-> **D39:** las ocho columnas de enriquecimiento (`sitio_web`, `sector`, `tamano`, `descripcion`, `sede`, `tipo`, `fundacion`, `especialidades`) aplican la regla de no vacíos con `'N/R'` cuando la fuente no reporta el dato; la migración idempotente `_migrate_enriquecimiento_empresas_d39` añade las cuatro columnas nuevas y corrige los `''` históricos.
+> **D40:** las ocho columnas de enriquecimiento (`sitio_web`, `sector`, `tamano`, `descripcion`, `sede`, `tipo`, `fundacion`, `especialidades`) fueron eliminadas por la migración idempotente `_migrate_revertir_enriquecimiento_d40`; el catálogo conserva solo identidad (`id`, `nombre`, `nombre_normalizado`, `perfil_linkedin`) y trazabilidad (`fecha_creacion`, `fecha_ultima_edicion`).
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
 | `id` | TEXT (PK) | ID único (prefijo `EMP`) | Módulo 2 — Nodo 2 (`generar_id` al insertar) |
 | `nombre` | TEXT NOT NULL | Nombre oficial de la empresa | Módulo 2 — Nodo 2 (desde la página de la oferta); el Módulo 1 no escribe |
 | `nombre_normalizado` | TEXT DEFAULT '' | Nombre estandarizado para evitar duplicados (clave del upsert) | Módulo 2 — Nodo 2 (vía `normalizar_texto` en `shared/utilidades.py`) |
-| `sitio_web` | TEXT DEFAULT 'N/R' | Sitio web oficial (leído del perfil público) | Módulo 2 — Nodo 2 (enriquecimiento D39 en el paso 2); `'N/R'` si la fuente no lo reporta |
 | `perfil_linkedin` | TEXT DEFAULT '' | URL del perfil de LinkedIn | Módulo 2 — Nodo 2 (capturado de la página de la oferta) |
-| `sector` | TEXT DEFAULT 'N/R' | Sector económico | Módulo 2 — Nodo 2 (enriquecimiento D39); `'N/R'` si no se reporta |
-| `tamano` | TEXT DEFAULT 'N/R' | Clasificación de tamaño de empresa | Módulo 2 — Nodo 2 (enriquecimiento D39); `'N/R'` si no se reporta |
-| `descripcion` | TEXT DEFAULT 'N/R' | Descripción general (texto embebido del perfil) | Módulo 2 — Nodo 2 (enriquecimiento D39); `'N/R'` si no se reporta |
-| `sede` | TEXT DEFAULT 'N/R' | Sede principal | Módulo 2 — Nodo 2 (enriquecimiento D39); `'N/R'` si no se reporta |
-| `tipo` | TEXT DEFAULT 'N/R' | Tipo de organización | Módulo 2 — Nodo 2 (enriquecimiento D39); `'N/R'` si no se reporta |
-| `fundacion` | TEXT DEFAULT 'N/R' | Año de fundación | Módulo 2 — Nodo 2 (enriquecimiento D39); `'N/R'` si no se reporta |
-| `especialidades` | TEXT DEFAULT 'N/R' | Áreas de especialidad | Módulo 2 — Nodo 2 (enriquecimiento D39); `'N/R'` si no se reporta |
 | `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática al insertar |
 | `fecha_ultima_edicion` | TEXT DEFAULT '' | Fecha/hora de la última actualización | Automática en cada insert/update |
 

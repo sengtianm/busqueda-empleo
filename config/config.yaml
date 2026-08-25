@@ -45,18 +45,8 @@ captura:
   tope_espera_paginas_sucesivas_segundos: 10
   estrategia_anti_bloqueo: "pausa_aleatoria"
 
-# --- Offer preparation (Module 2, D33/D39) ---
+# --- Offer preparation (Module 2, D33) ---
 preparacion:
-  # Enriquecimiento de empresas en el paso 2 (D39): al registrar cada
-  # empresa se visita su perfil público como invitado y se completan
-  # sitio_web/sector/tamano/descripcion/sede/tipo/fundacion/especialidades.
-  # 0 = sin límite de visitas por corrida (comportamiento normal);
-  # N > 0 = freno de emergencia: máximo N visitas en esa corrida.
-  profundidad_catalogo_empresa: 0
-  # Pausa anti-bloqueo entre visitas consecutivas a perfiles de empresa
-  # (>= 0). Experimento 2026-08-25: con 2 s entre visitas entraron 10/10;
-  # sin pausas LinkedIn responde 999 (temporal: ~45 s de espera lo limpia).
-  pausa_entre_empresas_segundos: 2
   # Umbrales RapidFuzz de la verificación de duplicidad (0-100):
   # etapa 2 exige título >= umbral_titulo Y descripción >= umbral_descripcion.
   umbral_titulo: 90

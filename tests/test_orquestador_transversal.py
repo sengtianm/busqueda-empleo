@@ -44,18 +44,11 @@ ORQUESTADOR: dict[str, Any] = {
 CONFIG: dict[str, Any] = {"orquestador": dict(ORQUESTADOR)}
 
 
-@pytest.fixture(autouse=True)
-def _sin_enriquecimiento(monkeypatch: pytest.MonkeyPatch) -> None:
-    """D39 hook off in this suite: company enrichment has its own tests."""
-    monkeypatch.setattr(preparacion_mod, "_enriquecer_si_aplica", lambda *a: None)
-
 PREPARACION: dict[str, Any] = {
-    "profundidad_catalogo_empresa": 0,
     "umbral_titulo": 90,
     "umbral_descripcion": 85,
     "max_pasadas": 2,
     "pausa_entre_ofertas_segundos": 0,
-    "pausa_entre_empresas_segundos": 0,
     "limite_vida_sesion": 50,
     "retries": {
         "max_attempts": 2,

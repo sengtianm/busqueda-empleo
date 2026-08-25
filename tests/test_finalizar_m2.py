@@ -30,7 +30,6 @@ CONFIG_BASE: dict[str, Any] = {
     "umbral_titulo": 90,
     "umbral_descripcion": 85,
     "max_pasadas": 2,
-    "profundidad_catalogo_empresa": 0,
 }
 
 
