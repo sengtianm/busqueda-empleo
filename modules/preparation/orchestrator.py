@@ -37,6 +37,7 @@ from modules.preparation.nodes.inicio import (
 from modules.preparation.nodes.preparacion import ejecutar_preparacion
 from modules.preparation.nodes.verificacion import ejecutar_verificacion
 from modules.preparation.run_context import RunContext
+from shared.persistence import inicializar_si_ausente
 
 _MOTIVO_ABORTO = "aborto"
 _MOTIVO_CONCURRENCIA = "concurrencia"
@@ -108,6 +109,8 @@ def _ejecutar_nodo(
 
 def ejecutar_flujo(config: dict[str, Any] | None = None) -> None:
     """Run the complete Preparation flow; terminates in Finalizar Proceso."""
+    if inicializar_si_ausente():
+        logger.info("Esquema de base de datos creado automaticamente")
     resultado_inicio: ResultadoInicio = ejecutar_inicio(config)
     if resultado_inicio.estado == "error":
         if resultado_inicio.id_corrida:

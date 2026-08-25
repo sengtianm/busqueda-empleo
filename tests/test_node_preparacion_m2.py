@@ -5,6 +5,7 @@ Everything is mocked per the testing strategy: HTTP via `httpx.MockTransport`
 `temp_db_file` fixture, and zero pauses so the suite stays fast.
 """
 
+import time
 from pathlib import Path
 from typing import Any
 
@@ -65,6 +66,24 @@ HTML_SIN_DESCRIPCION = HTML_COMPLETO.replace(
     " vacante.</p></div>",
     "",
 )
+HTML_ESTRUCTURADO = """
+<html><body>
+<div class="top-card-layout__card">
+  <h1 class="top-card-layout__title">Ingeniero de Datos Senior</h1>
+</div>
+<div class="show-more-less-html__markup">
+  <p>Primer párrafo de la vacante.</p>
+  <p>Requisitos:</p>
+  <ul>
+    <li>Python avanzado</li>
+    <li>SQL y modelado de datos</li>
+  </ul>
+  Enviar hoja de vida a<br>vacantes@acme.com
+  <p>Acerca de <b>Acme Corp</b> y su equipo.</p>
+</div>
+<a class="topcard__org-name-link" href="/company/acme-corp/">Acme Corp</a>
+</body></html>
+"""
 HTML_AUTHWALL = (
     "<html><head><title>Sign Up | LinkedIn</title></head>"
     "<body>Please sign in to continue (authwall)</body></html>"
@@ -194,6 +213,43 @@ def test_extraccion_completa_actualiza_oferta(
     assert len(eventos) == 1
     assert eventos[0]["id_oferta"] == "OFE-0001"
     assert eventos[0]["tipo"] == "suceso"
+
+
+def test_descripcion_estructurada_d41(
+    temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _insertar_oferta("OFE-0001")
+    _instalar_servidor(monkeypatch, [[(200, HTML_ESTRUCTURADO)]])
+    _instalar_ia(monkeypatch, TUPLA_BOGOTA)
+
+    resultado = ejecutar_preparacion(_contexto())
+
+    assert resultado.estado == "completada"
+    fila = buscar_por_id("ofertas_descubiertas", "OFE-0001")
+    assert fila is not None
+    assert str(fila["descripcion_original"]) == (
+        "Primer párrafo de la vacante.\n"
+        "Requisitos:\n"
+        "- Python avanzado\n"
+        "- SQL y modelado de datos\n"
+        "Enviar hoja de vida a\nvacantes@acme.com\n"
+        "Acerca de Acme Corp y su equipo."
+    )
+
+
+def test_clave_empresa_conserva_caracteres_d41(
+    temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _insertar_oferta("OFE-0001")
+    html = HTML_COMPLETO.replace(">Acme Corp<", ">Clínica & Salud S.A.<")
+    _instalar_servidor(monkeypatch, [[(200, html)]])
+    _instalar_ia(monkeypatch, TUPLA_BOGOTA)
+
+    resultado = ejecutar_preparacion(_contexto())
+
+    assert resultado.estado == "completada"
+    fila = leer_tabla("empresas", {"nombre_normalizado": "clínica & salud s.a."})
+    assert len(fila) == 1
 
 
 def test_h1_ausente_conserva_titulo_tarjeta(
@@ -856,3 +912,73 @@ def test_m2_no_sobreescribe_ubicacion_ni_modalidad_de_m1(
     assert fila is not None and fila["estado"] == "preparada"
     assert fila["ubicacion"] == "Medellín, Antioquia"
     assert fila["modalidad"] == "hibrido"
+
+
+def test_pausa_con_jitter_d42(
+    temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D42: la espera efectiva es uniforme en [base-jitter, base+jitter]."""
+    import random as random_mod
+
+    llamadas_uniform: list[tuple[float, float]] = []
+    dormidos: list[float] = []
+    def _uniforme(a: float, b: float) -> float:
+        llamadas_uniform.append((a, b))
+        return 1.0
+
+    monkeypatch.setattr(random_mod, "uniform", _uniforme)
+    monkeypatch.setattr(time, "sleep", dormidos.append)
+    monkeypatch.setattr(
+        preparacion,
+        "_capturar_pagina",
+        lambda ctx, enlace: preparacion.DatosCaptura(
+            titulo_h1="T", descripcion="", empresa_nombre="", empresa_perfil=""
+        ),
+    )
+    monkeypatch.setattr(preparacion, "_diligenciar_empresa", lambda ctx, n, p: "EMP-0001")
+    monkeypatch.setattr(preparacion, "_diligenciar_ubicacion", lambda ctx, t: "N/R")
+
+    config = dict(CONFIG_RAPIDO)
+    config["pausa_entre_ofertas_segundos"] = 2.0
+    config["pausa_jitter_segundos"] = 0.5
+    contexto = _contexto(config)
+    lote = [{"id": f"OFE-{i:04d}", "enlace": f"https://x/{i}"} for i in range(3)]
+
+    ok = preparacion._procesar_lote_a(contexto, lote)
+
+    assert ok is True
+    assert len(llamadas_uniform) == 2  # entre ofertas; nunca tras la última
+    assert all(par == (1.5, 2.5) for par in llamadas_uniform)
+    assert dormidos == [1.0, 1.0]
+
+
+def test_pausa_sin_jitter_mantiene_fijo_d42(
+    temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import random as random_mod
+
+    llamadas_uniform: list[tuple[float, float]] = []
+    dormidos: list[float] = []
+    def _uniforme(a: float, b: float) -> float:
+        llamadas_uniform.append((a, b))
+        return 0.0
+
+    monkeypatch.setattr(random_mod, "uniform", _uniforme)
+    monkeypatch.setattr(time, "sleep", dormidos.append)
+    monkeypatch.setattr(
+        preparacion,
+        "_capturar_pagina",
+        lambda ctx, enlace: preparacion.DatosCaptura(
+            titulo_h1="T", descripcion="", empresa_nombre="", empresa_perfil=""
+        ),
+    )
+    monkeypatch.setattr(preparacion, "_diligenciar_empresa", lambda ctx, n, p: "EMP-0001")
+    monkeypatch.setattr(preparacion, "_diligenciar_ubicacion", lambda ctx, t: "N/R")
+
+    config = dict(CONFIG_RAPIDO)
+    config["pausa_entre_ofertas_segundos"] = 3.0
+    contexto = _contexto(config)
+    lote = [{"id": f"OFE-{i:04d}", "enlace": f"https://x/{i}"} for i in range(2)]
+    assert preparacion._procesar_lote_a(contexto, lote) is True
+    assert llamadas_uniform == []  # jitter ausente => pausa fija
+    assert dormidos == [3.0]

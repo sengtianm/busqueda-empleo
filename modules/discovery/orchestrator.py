@@ -28,6 +28,7 @@ from modules.discovery.nodes.ingreso import ejecutar_ingreso, ingreso_exitoso
 from modules.discovery.nodes.inicio import ejecutar_inicio
 from modules.discovery.nodes.registro import registrar_evento
 from modules.discovery.run_context import RunContext
+from shared.persistence import inicializar_si_ausente
 
 _MOTIVO_ABORTO = "aborto"
 _MOTIVO_SIN_FUENTES = "sin_fuentes"
@@ -82,6 +83,8 @@ def _ejecutar_nodo(
 
 def ejecutar_flujo() -> None:
     """Run the complete Discovery flow; terminates in Finalizar Proceso."""
+    if inicializar_si_ausente():
+        logger.info("Esquema de base de datos creado automaticamente")
     resultado_inicio = ejecutar_inicio()
     if resultado_inicio.estado != "ok":
         print(

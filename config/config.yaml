@@ -53,8 +53,12 @@ preparacion:
   umbral_descripcion: 85
   # Pasadas máximas del bucle de preparación por corrida (>= 1).
   max_pasadas: 2
-  # Pausa anti-bloqueo entre ofertas consecutivas (>= 0).
-  pausa_entre_ofertas_segundos: 2
+  # Pausa anti-bloqueo entre ofertas consecutivas (>= 0). D42: la pausa
+  # efectiva es aleatoria en [base - jitter, base + jitter] (mas parecida a
+  # un humano que un intervalo identico); con jitter 0 queda fija.
+  pausa_entre_ofertas_segundos: 1.2
+  # Jitter de la pausa anterior (>= 0); 0 desactiva la aleatoriedad.
+  pausa_jitter_segundos: 0.4
   # Renovar la sesión httpx de invitado cada N ofertas (>= 1).
   limite_vida_sesion: 50
   # Reintentos por oferta/página (misma estructura que `retries` global).

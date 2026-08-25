@@ -75,7 +75,7 @@ def mock_context() -> RunContext:
 @pytest.fixture(autouse=True)
 def _mock_evento_busqueda() -> Generator[MagicMock, None, None]:
     """D30: aislar la escritura de eventos (la rama de éxito con ofertas la emite)."""
-    with patch("modules.discovery.nodes.busqueda.escribir_evento_seguro") as mock:
+    with patch("modules.discovery.nodes.busqueda.registrar_evento") as mock:
         yield mock
 
 
@@ -111,7 +111,7 @@ def test_aplicar_filtros_exito_con_ofertas_escribe_consulta_exitosa(
         aplicar_filtros(mock_context)
 
     _mock_evento_busqueda.assert_called_once()
-    args = _mock_evento_busqueda.call_args.args[0]
+    args = _mock_evento_busqueda.call_args.kwargs
     assert args["codigo"] == "consulta_exitosa"
     assert args["tipo"] == "suceso"
     assert args["indice_set"] == 0

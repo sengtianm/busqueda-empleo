@@ -22,8 +22,7 @@ from dataclasses import dataclass
 from loguru import logger
 
 from modules.discovery.run_context import RunContext
-from shared.persistence import escribir_evento_seguro
-from shared.utilidades import ahora
+from shared.persistence import registrar_evento
 
 
 @dataclass
@@ -43,15 +42,11 @@ def _registrar_evento(contexto: RunContext | None, codigo: str, evidencia: str) 
     if not id_corrida:
         logger.error(f"{codigo} | sin id_corrida | {evidencia}")
         return
-    escribir_evento_seguro(
-        {
-            "id_corrida": id_corrida,
-            "tipo": "error",
-            "codigo": codigo,
-            "evidencia": evidencia,
-            "marca_temporal": ahora(),
-        },
-        contexto_log=id_corrida,
+    registrar_evento(
+        id_corrida=id_corrida,
+        tipo="error",
+        codigo=codigo,
+        evidencia=evidencia,
     )
 
 

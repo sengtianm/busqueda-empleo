@@ -135,7 +135,7 @@ def test_captura_timeout_todos_intentos(contexto: RunContext, adapter: MagicMock
     adapter.capture_batch.side_effect = FlowError("tiempo_agotado_captura", "Timeout")
 
     with patch("shared.retry.time.sleep"):
-        with patch("modules.discovery.nodes.captura.escribir_evento_seguro"):
+        with patch("modules.discovery.nodes.captura.registrar_evento"):
             res = capturar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -151,7 +151,7 @@ def test_captura_bloqueo_inmediato(contexto: RunContext, adapter: MagicMock) -> 
     contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
     adapter.capture_batch.side_effect = FlowError("bloqueo_plataforma", "Captcha")
 
-    with patch("modules.discovery.nodes.captura.escribir_evento_seguro"):
+    with patch("modules.discovery.nodes.captura.registrar_evento"):
         res = capturar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -168,7 +168,7 @@ def test_captura_sesion_expirada_inmediato(
     contexto.set_corriente = SetFiltros(fuente_id="LI-01", indice=0, filtros=[])
     adapter.capture_batch.side_effect = FlowError("sesion_expirada", "Authwall")
 
-    with patch("modules.discovery.nodes.captura.escribir_evento_seguro"):
+    with patch("modules.discovery.nodes.captura.registrar_evento"):
         res = capturar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -233,11 +233,11 @@ def test_captura_exito_evidencia_con_duracion(
     estado = EstadoCaptura(estado="exito", paginas_consumidas=2)
     adapter.capture_batch.return_value = (lote, estado)
 
-    with patch("modules.discovery.nodes.captura.escribir_evento_seguro") as mock_evento:
+    with patch("modules.discovery.nodes.captura.registrar_evento") as mock_evento:
         res = capturar_ofertas(contexto)
 
     assert res.estado == "ok"
-    evento = mock_evento.call_args.args[0]
+    evento = mock_evento.call_args.kwargs
     assert evento["codigo"] == "captura_completada"
     assert evento["evidencia"].startswith("páginas=2 | ofertas=1 | duracion_s=")
     assert evento["evidencia"].split("duracion_s=")[1].isdigit()
@@ -253,7 +253,7 @@ def test_registrar_una_oferta_upsert(
         "modules.discovery.nodes.captura.upsert_lote_ofertas",
         return_value=(1, 0),
     ) as mock_upsert:
-        with patch("modules.discovery.nodes.captura.escribir_evento_seguro"):
+        with patch("modules.discovery.nodes.captura.registrar_evento"):
             res = registrar_ofertas(contexto)
 
     assert res.estado == "ok"
@@ -265,6 +265,26 @@ def test_registrar_una_oferta_upsert(
     assert fila["fuente_id"] == "LI-01"
     assert fila["id_externo"] == "123"
     assert fila["id_corrida"] == contexto.id_corrida
+
+
+def test_registrar_oferta_persiste_empresa_de_tarjeta_d41(
+    contexto: RunContext,
+) -> None:
+    contexto.id_sesion = "SES-1"
+    oferta = _oferta()
+    oferta.empresa = "CI&T S.A."
+    contexto.capture_batch = CaptureBatch(ofertas=[oferta], indice_set=0)
+
+    with patch(
+        "modules.discovery.nodes.captura.upsert_lote_ofertas",
+        return_value=(1, 0),
+    ) as mock_upsert:
+        with patch("modules.discovery.nodes.captura.registrar_evento"):
+            res = registrar_ofertas(contexto)
+
+    assert res.estado == "ok"
+    fila = mock_upsert.call_args.args[0][0]
+    assert fila["empresa"] == "CI&T S.A."
 
 
 def test_registrar_lote_vacio(contexto: RunContext) -> None:
@@ -316,14 +336,14 @@ def test_registrar_ofertas_exito_registra_suceso(
         "modules.discovery.nodes.captura.upsert_lote_ofertas",
         return_value=(2, 0),
     ) as mock_upsert:
-        with patch("modules.discovery.nodes.captura.escribir_evento_seguro") as mock_evento:
+        with patch("modules.discovery.nodes.captura.registrar_evento") as mock_evento:
             res = registrar_ofertas(contexto)
 
     assert res.estado == "ok"
     mock_upsert.assert_called_once()
     assert len(mock_upsert.call_args.args[0]) == 2
     mock_evento.assert_called_once()
-    evento = mock_evento.call_args.args[0]
+    evento = mock_evento.call_args.kwargs
     assert evento["tipo"] == "suceso"
     assert evento["codigo"] == "ofertas_registradas"
     assert evento["evidencia"] == "ofertas registradas: 2 | total: 2"
@@ -341,15 +361,15 @@ def test_registrar_fallo_parcial(contexto: RunContext) -> None:
         "modules.discovery.nodes.captura.upsert_lote_ofertas",
         side_effect=[RuntimeError("db"), (1, 1)],
     ) as mock_upsert:
-        with patch("modules.discovery.nodes.captura.escribir_evento_seguro") as mock_evento:
+        with patch("modules.discovery.nodes.captura.registrar_evento") as mock_evento:
             with patch("modules.discovery.nodes.captura.logger"):
                 res = registrar_ofertas(contexto)
 
     assert res.estado == "ok"
     assert mock_upsert.call_count == 2
     assert mock_evento.call_count == 2
-    assert mock_evento.call_args_list[0].args[0]["codigo"] == "ofertas_registradas"
-    assert mock_evento.call_args_list[1].args[0]["codigo"] == "registro_parcial"
+    assert mock_evento.call_args_list[0].kwargs["codigo"] == "ofertas_registradas"
+    assert mock_evento.call_args_list[1].kwargs["codigo"] == "registro_parcial"
 
 
 def test_registrar_fallo_total(contexto: RunContext) -> None:
@@ -361,14 +381,14 @@ def test_registrar_fallo_total(contexto: RunContext) -> None:
         "modules.discovery.nodes.captura.upsert_lote_ofertas",
         side_effect=RuntimeError("db"),
     ) as mock_upsert:
-        with patch("modules.discovery.nodes.captura.escribir_evento_seguro") as mock_evento:
+        with patch("modules.discovery.nodes.captura.registrar_evento") as mock_evento:
             with patch("modules.discovery.nodes.captura.logger"):
                 res = registrar_ofertas(contexto)
 
     assert res.estado == "ok"
     assert mock_upsert.call_count == 2
     mock_evento.assert_called_once()
-    assert mock_evento.call_args.args[0]["codigo"] == "lote_degradado"
+    assert mock_evento.call_args.kwargs["codigo"] == "lote_degradado"
 
 
 def test_quedan_sets_si() -> None:

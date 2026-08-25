@@ -45,7 +45,7 @@ def mock_playwright() -> Generator[MagicMock, None, None]:
 @pytest.fixture(autouse=True)
 def _mock_evento_ingreso() -> Generator[MagicMock, None, None]:
     """D30: aislar la escritura de eventos (la rama de éxito la emite)."""
-    with patch("modules.discovery.nodes.ingreso.escribir_evento_seguro") as mock:
+    with patch("modules.discovery.nodes.ingreso.registrar_evento") as mock:
         yield mock
 
 
@@ -332,7 +332,7 @@ def test_ejecutar_ingreso_exito_escribe_evento_ingreso_exitoso(
     ejecutar_ingreso(mock_context)
 
     _mock_evento_ingreso.assert_called_once()
-    args = _mock_evento_ingreso.call_args.args[0]
+    args = _mock_evento_ingreso.call_args.kwargs
     assert args["codigo"] == "ingreso_exitoso"
     assert args["tipo"] == "suceso"
     assert args["id_sesion"] == mock_context.id_sesion

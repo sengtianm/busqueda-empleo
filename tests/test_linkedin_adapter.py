@@ -7,7 +7,10 @@ from modules.discovery.adapters.linkedin import (
     _URL_LOGIN,
     FlowError,
     LinkedInAdapter,
+)
+from modules.discovery.adapters.tarjetas import (
     _extraer_tarjeta_sdui,
+    _fecha_relativa_a_datetime,
 )
 from shared.models import FichaFuente, PoliticasCaptura, SetFiltros
 
@@ -826,6 +829,10 @@ def test_apply_filters_parsea_resultados_sdui_2026(
     assert ofertas[2].id_externo == "4455353156"
     assert ofertas[2].ubicacion == "Colombia"
     assert ofertas[2].modalidad == "remoto"
+    # D41: la tarjeta provee también la empresa cruda (caracteres intactos).
+    assert ofertas[0].empresa == "Inetum"
+    assert ofertas[1].empresa == "Emergent Cold LatAm"
+    assert ofertas[2].empresa == "CI&T"
     assert resultado.total_declarado == 89
 
 
@@ -1142,8 +1149,6 @@ def test_capture_batch_pagina_partir_de_url_canonica(
 def test_fecha_relativa_a_datetime_por_unidad() -> None:
     from datetime import datetime, timedelta
 
-    from modules.discovery.adapters.linkedin import _fecha_relativa_a_datetime
-
     ahora = datetime.now()
     casos = {
         "Publicado hace 5 minutos": timedelta(minutes=5),
@@ -1351,6 +1356,28 @@ def test_tarjeta_sdui_sin_segundo_candidato_devuelve_vacio_nr() -> None:
     div = _tarjeta_div(["Ingeniero de Datos", "Delta Corp", "Publicado hace 3 días"])
     tarjeta = _extraer_tarjeta_sdui(div)
     assert tarjeta is not None
+    assert tarjeta.empresa == "Delta Corp"
+    assert tarjeta.ubicacion == ""
+    assert tarjeta.modalidad == "N/R"
+
+
+def test_tarjeta_sdui_empresa_conserva_caracteres_d41() -> None:
+    div = _tarjeta_div(
+        ["Ingeniero de Datos", "CI&T S.A. (Grupo)", "Bogotá", "·",
+         "Publicado hace 5 horas|hace 5 horas"]
+    )
+    tarjeta = _extraer_tarjeta_sdui(div)
+    assert tarjeta is not None
+    assert tarjeta.empresa == "CI&T S.A. (Grupo)"
+    assert tarjeta.ubicacion == "Bogotá"
+
+
+def test_tarjeta_sdui_sin_candidatos_no_da_empresa() -> None:
+    div = _tarjeta_div(["Ingeniero de Datos", "Visto", "·",
+                        "Publicado hace 1 hora|hace 1 hora"])
+    tarjeta = _extraer_tarjeta_sdui(div)
+    assert tarjeta is not None
+    assert tarjeta.empresa == ""
     assert tarjeta.ubicacion == ""
     assert tarjeta.modalidad == "N/R"
 

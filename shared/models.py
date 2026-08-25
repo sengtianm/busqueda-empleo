@@ -60,6 +60,7 @@ class Offer(BaseModel):
     ubicacion_id: str = "N/A"
     ubicacion: str = "N/A"
     modalidad: str = "N/A"
+    empresa: str = "N/R"
     enlace: str
     titulo: str
     descripcion_original: str

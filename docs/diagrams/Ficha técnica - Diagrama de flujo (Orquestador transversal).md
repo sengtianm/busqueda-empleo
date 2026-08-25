@@ -115,9 +115,11 @@ Al recibir disparador manual:
 | Excepción no capturada de un módulo | A. Abortar. B. Capturar, evento `modulo_fallido`, continuar. | **B**: consistente con la decisión de fallo de módulo (mismo criterio de no detener la corrida programada). |
 
 ### Notas de implementación
+
+**Nota as-built 2026-08-25 (decisión D42):** el arranque (`ejecutar_corrida_programada`) inicializa el esquema automáticamente cuando la base no tiene tablas; el chequeo prevuelo de este lote vive en `scripts/preflight.py` y el diagnóstico post-corrida en `scripts/reporte_corrida.py`.
 - Estructura: `modules/orchestrator/orchestrator.py` con la función pública `ejecutar_corrida_programada()` (distinta de `ejecutar_flujo()` de los módulos) y el registro declarativo `MODULOS: list[ModuloOrquestado]` (nombre, `estado_entrada`, `estado_salida`, `ejecutar_flujo`). Tests de integración en `tests/test_orquestador_transversal.py` (patrón de `tests/test_orquestador_integracion.py`: flujo completo con nodos reales y arranque de plataforma simulado).
 - Configuración nueva en `config/config.yaml` → `orquestador:` (`modo_ejecucion: serie`, `modulos: [descubrimiento, preparacion]`, `pausa_entre_modulos_segundos`).
-- Sin migraciones de esquema: `corridas` y `eventos` ya existen; `motivo_terminacion` es TEXT libre; `EstadoCorrida` reutiliza `completada`/`abortada`.
+- Sin migraciones de esquema propias: `corridas` y `eventos` ya existen; `motivo_terminacion` es TEXT libre; `EstadoCorrida` reutiliza `completada`/`abortada`. *(As-built D42: el arranque además crea el esquema completo si la base está vacía, vía `inicializar_si_ausente`.)*
 - Hitos informativos con Loguru (patrón del orquestador del Módulo 1); el evento final nunca se cuenta en métricas de módulos (semántica D30 intacta: el resumen es trazabilidad de la corrida programada, no de los módulos).
 - La **prueba real 1→2** (al cierre del Módulo 2) valida: Módulo 1 termina su corrida, Módulo 2 la suya (lee `descubierta`, escribe `preparada`/`duplicada`), y la corrida programada queda con sus eventos `modulo_ejecutado` × 2 + `corrida_programada`.
 
@@ -141,4 +143,4 @@ Pendiente de implementación — se construye **al cierre del Módulo 2** con la
 2. `shared/persistence.py`: nueva helper `leer_ultima_corrida_cerrada(...)` (derivar el resultado por módulo desde `corridas`); `shared/retry.py`: `ejecutar_con_reintento` para los reintentos del nodo (ERR-02/ERR-05).
 3. `modules/orchestrator/`: `orchestrator.py` (público `ejecutar_corrida_programada()`) + registro declarativo de módulos; tests `tests/test_orquestador_transversal.py`.
 4. `modules/preparation/`: contrato público `ejecutar_flujo()` (se implementa con el Módulo 2).
-5. Sin migraciones de esquema (las tablas `corridas`/`eventos` y el vocabulario de estados ya existen).
+5. Sin migraciones de esquema propias (las tablas `corridas`/`eventos` y el vocabulario de estados ya existen). *(As-built D42: si la base no tiene tablas, el arranque las crea antes de registrar la corrida.)*

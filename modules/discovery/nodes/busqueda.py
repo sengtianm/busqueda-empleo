@@ -11,9 +11,9 @@ from modules.discovery.adapters.linkedin import FlowError
 from modules.discovery.adapters.registry import obtener_adaptador
 from modules.discovery.run_context import RunContext
 from shared.models import SearchResult
-from shared.persistence import escribir_evento_seguro
+from shared.persistence import registrar_evento
 from shared.retry import ejecutar_con_reintento
-from shared.utilidades import acotar_evidencia, ahora
+from shared.utilidades import acotar_evidencia
 
 
 @dataclass
@@ -126,25 +126,19 @@ def _registrar_evento_consulta_exitosa(
     offers and failures keep being typed by the register node
     (registro.py), so every search result ends with exactly one event.
     """
-    escribir_evento_seguro(
-        {
-            "id_corrida": contexto.id_corrida,
-            "fuente_id": (
-                contexto.fuente_corriente.fuente_id
-                if contexto.fuente_corriente
-                else ""
-            ),
-            "id_sesion": contexto.id_sesion,
-            "indice_set": res.indice_set,
-            "marca_temporal": ahora(),
-            "tipo": "suceso",
-            "codigo": "consulta_exitosa",
-            "evidencia": (
-                f"set={res.indice_set} | "
-                f"total={res.total_declarado if res.total_declarado is not None else 'desconocido'}"
-            ),
-        },
-        contexto_log=contexto.id_corrida,
+    registrar_evento(
+        id_corrida=contexto.id_corrida,
+        tipo="suceso",
+        codigo="consulta_exitosa",
+        evidencia=(
+            f"set={res.indice_set} | "
+            f"total={res.total_declarado if res.total_declarado is not None else 'desconocido'}"
+        ),
+        fuente_id=(
+            contexto.fuente_corriente.fuente_id if contexto.fuente_corriente else ""
+        ),
+        id_sesion=contexto.id_sesion,
+        indice_set=res.indice_set,
     )
 
 

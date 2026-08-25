@@ -1,6 +1,10 @@
 """Unit tests for the evidence truncation and text normalization helpers (DOC-06, DOC-13A, D33)."""
 
-from shared.utilidades import acotar_evidencia, normalizar_texto
+from shared.utilidades import (
+    acotar_evidencia,
+    normalizar_nombre_empresa,
+    normalizar_texto,
+)
 
 
 def test_acotar_evidencia_texto_corto() -> None:
@@ -29,3 +33,25 @@ def test_normalizar_texto_simbolos() -> None:
 
 def test_normalizar_texto_vacio() -> None:
     assert normalizar_texto("") == ""
+
+
+def test_normalizar_nombre_empresa_conserva_caracteres_d41() -> None:
+    assert normalizar_nombre_empresa("CI&T") == "ci&t"
+    assert normalizar_nombre_empresa("Claro Colombia S.A.") == "claro colombia s.a."
+    assert (
+        normalizar_nombre_empresa("Tata Consultancy Services (TCS)")
+        == "tata consultancy services (tcs)"
+    )
+
+
+def test_normalizar_nombre_empresa_conserva_tildes_d41() -> None:
+    assert normalizar_nombre_empresa("Clínica del País") == "clínica del país"
+
+
+def test_normalizar_nombre_empresa_colapsa_espacios_d41() -> None:
+    assert normalizar_nombre_empresa("  Inetum   \t Colombia\n ") == "inetum colombia"
+
+
+def test_normalizar_nombre_empresa_vacio_d41() -> None:
+    assert normalizar_nombre_empresa("") == ""
+    assert normalizar_nombre_empresa("   ") == ""

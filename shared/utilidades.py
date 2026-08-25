@@ -26,9 +26,9 @@ def normalizar_texto(texto: str) -> str:
     """Normaliza texto para dedup (D33): minúsculas, sin acentos,
     sin puntuación, espacios simples.
 
-    Usada por el Módulo 2 para `empresas.nombre_normalizado`, la tupla de
-    ubicación y los títulos de la verificación de duplicidad. Texto vacío
-    devuelve cadena vacía (el llamador aplica la regla D31).
+    Usada por el Módulo 2 para la tupla de ubicación y los títulos de la
+    verificación de duplicidad. Texto vacío devuelve cadena vacía (el
+    llamador aplica la regla D31).
     """
     if not texto:
         return ""
@@ -41,3 +41,17 @@ def normalizar_texto(texto: str) -> str:
         caracter if caracter.isalnum() else " " for caracter in sin_acentos
     )
     return " ".join(sin_puntuacion.split())
+
+
+def normalizar_nombre_empresa(texto: str) -> str:
+    """Clave del catálogo `empresas.nombre_normalizado` (D41): minúsculas y
+    espacios múltiples colapsados; conserva TODOS los caracteres (tildes,
+    ñ, puntuación, símbolos como `&`, `.`, paréntesis).
+
+    Sustituye a `normalizar_texto` solo para nombres de empresa — ubicaciones
+    y títulos de duplicidad mantienen la regla estricta. Texto vacío
+    devuelve cadena vacía (el llamador aplica la regla D31).
+    """
+    if not texto:
+        return ""
+    return " ".join(texto.lower().split())

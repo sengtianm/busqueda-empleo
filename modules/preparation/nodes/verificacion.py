@@ -37,11 +37,11 @@ from modules.preparation.nodes.preparacion import FalloPreparacion
 from modules.preparation.run_context import RunContext
 from shared.persistence import (
     actualizar_fila,
-    escribir_evento_seguro,
     leer_tabla,
+    registrar_evento,
 )
 from shared.retry import ejecutar_con_reintento
-from shared.utilidades import acotar_evidencia, ahora, normalizar_texto
+from shared.utilidades import ahora, normalizar_texto
 
 # Values meaning "no usable data" for the fuzzy stage (RN-08) and for the
 # same-company requirement (P1).
@@ -67,22 +67,14 @@ def _registrar_evento(
     """VAL-05: every offer event carries `id_oferta`; evidence bounded.
 
     Public so the sibling decision node reuses it (single implementation of
-    the M2 offer-event contract)."""
-    escribir_evento_seguro(
-        {
-            "id_corrida": id_corrida,
-            "fuente_id": "N/A",
-            "tipo": tipo,
-            "codigo": codigo,
-            "evidencia": acotar_evidencia(evidencia),
-            "id_oferta": id_oferta,
-            "marca_temporal": ahora(),
-        },
-        contexto_log=id_corrida,
+    the M2 offer-event contract). D42: delega en el emisor unico compartido."""
+    registrar_evento(
+        id_corrida=id_corrida,
+        tipo=tipo,
+        codigo=codigo,
+        evidencia=evidencia,
+        id_oferta=id_oferta,
     )
-
-
-registrar_evento = _registrar_evento
 
 
 def _abortar(

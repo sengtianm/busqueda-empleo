@@ -28,10 +28,10 @@ from shared.config import load
 from shared.persistence import (
     adquirir_bloqueo,
     consultar_bloqueo,
-    escribir_evento_seguro,
     generar_id,
     init_db,
     registrar_corrida,
+    registrar_evento,
     sondear_escritura,
     umbral_obsolescencia_minutos,
 )
@@ -81,16 +81,12 @@ def _registrar_evento(
     evidencia: str,
     fuente_id: str = "",
 ) -> None:
-    escribir_evento_seguro(
-        {
-            "id_corrida": id_corrida,
-            "fuente_id": fuente_id,
-            "tipo": tipo,
-            "codigo": codigo,
-            "evidencia": evidencia,
-            "marca_temporal": ahora(),
-        },
-        contexto_log=id_corrida,
+    registrar_evento(
+        id_corrida=id_corrida,
+        tipo=tipo,
+        codigo=codigo,
+        evidencia=evidencia,
+        fuente_id=fuente_id,
     )
 
 

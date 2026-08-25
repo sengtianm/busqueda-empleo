@@ -34,6 +34,7 @@ therefore registered as ERR-09 (persistence corruption family) and aborts
 the run, consistent with the abort branch of the sheet.
 """
 
+import random
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -49,13 +50,13 @@ from modules.preparation.run_context import RunContext
 from shared.ia_service import analyze
 from shared.persistence import (
     actualizar_fila,
-    escribir_evento_seguro,
     escribir_fila,
     leer_candidatas_descubiertas,
     leer_tabla,
+    registrar_evento,
 )
 from shared.retry import ejecutar_con_reintento
-from shared.utilidades import acotar_evidencia, ahora, normalizar_texto
+from shared.utilidades import normalizar_nombre_empresa, normalizar_texto
 
 # Technical capture constants (module-level like Module 1 selector constants;
 # business parameters — pauses, retries, session lifetime — come from config).
@@ -163,11 +164,44 @@ def _es_authwall(respuesta: httpx.Response) -> bool:
     return any(marcador in cuerpo for marcador in MARCADORES_AUTHWALL)
 
 
-def _primer_texto(soup: BeautifulSoup, selectores: list[str]) -> str:
+_ETIQUETAS_BLOQUE: tuple[str, ...] = (
+    "p", "div", "li", "tr", "section",
+    "h1", "h2", "h3", "h4", "h5", "h6",
+)
+
+_MARCA_SALTO = "\u0001"
+
+
+def _texto_con_estructura(nodo: Tag) -> str:
+    """Texto visible del anuncio respetando su estructura (D41): cada
+    párrafo/bloque en su propia línea, `<br>` como salto y viñetas de lista
+    con guion (`- `).
+
+    Los saltos se inyectan con un marcador interno (`_MARCA_SALTO`) para
+    distinguirlos del espacio en blanco original del HTML: la indentación o
+    los saltos de línea del fuente colapsan a espacio simple dentro de cada
+    línea y SOLO los saltos deliberados producen líneas nuevas.
+    """
+    for basura in nodo.find_all(["script", "style", "noscript"]):
+        basura.decompose()
+    for item in nodo.find_all("li"):
+        item.insert(0, "- ")
+    for salto in nodo.find_all("br"):
+        salto.replace_with(_MARCA_SALTO)
+    for bloque in nodo.find_all(list(_ETIQUETAS_BLOQUE)):
+        bloque.insert_before(_MARCA_SALTO)
+        bloque.insert_after(_MARCA_SALTO)
+    texto = nodo.get_text("")
+    lineas = (" ".join(linea.split()) for linea in texto.split(_MARCA_SALTO))
+    return "\n".join(linea for linea in lineas if linea)
+
+
+def _primer_texto_estructurado(soup: BeautifulSoup, selectores: list[str]) -> str:
+    """Extrae el primer selector con contenido, preservando la estructura."""
     for selector in selectores:
         nodo = soup.select_one(selector)
         if nodo is not None:
-            texto = nodo.get_text(" ", strip=True)
+            texto = _texto_con_estructura(nodo)
             if texto:
                 return texto
     return ""
@@ -185,7 +219,7 @@ def _extraer_datos(html: str) -> DatosCaptura:
     titulo_h1 = h1.get_text(" ", strip=True) if isinstance(h1, Tag) else None
     if titulo_h1 == "":
         titulo_h1 = None
-    descripcion = _primer_texto(
+    descripcion = _primer_texto_estructurado(
         soup,
         [
             ".show-more-less-html__markup",
@@ -276,14 +310,18 @@ def _capturar_pagina(contexto: RunContext, enlace: str) -> DatosCaptura:
 def _diligenciar_empresa(
     contexto: RunContext, nombre: str, perfil: str
 ) -> str:
-    """Paso 2: cache → normalize → upsert by `nombre_normalizado` (RN-05)."""
+    """Paso 2: cache → normalize → upsert by `nombre_normalizado` (RN-05).
+
+    D41: la clave usa `normalizar_nombre_empresa` (minúsculas + espacios
+    simples, conserva todos los caracteres).
+    """
     if not nombre or not nombre.strip():
         # ERR-07: página sin empresa; continúa con `N/A` (D31).
         logger.warning(
             f"ERR-07 | run={contexto.id_corrida} | empresa_no_disponible"
         )
         return "N/A"
-    clave = normalizar_texto(nombre)
+    clave = normalizar_nombre_empresa(nombre)
     en_cache = contexto.cache_empresas.get(clave)
     if en_cache:
         return en_cache
@@ -413,24 +451,22 @@ def _actualizar_oferta(
 def _registrar_evento(
     id_corrida: str, tipo: str, codigo: str, evidencia: str, id_oferta: str
 ) -> None:
-    """RN-09/VAL-05: every offer event carries `id_oferta`; evidence bounded."""
-    escribir_evento_seguro(
-        {
-            "id_corrida": id_corrida,
-            "fuente_id": "N/A",
-            "tipo": tipo,
-            "codigo": codigo,
-            "evidencia": acotar_evidencia(evidencia),
-            "id_oferta": id_oferta,
-            "marca_temporal": ahora(),
-        },
-        contexto_log=id_corrida,
+    """RN-09/VAL-05: every offer event carries `id_oferta`; evidence bounded.
+
+    D42: delega en el emisor unico compartido."""
+    registrar_evento(
+        id_corrida=id_corrida,
+        tipo=tipo,
+        codigo=codigo,
+        evidencia=evidencia,
+        id_oferta=id_oferta,
     )
 
 
 def _procesar_lote_a(contexto: RunContext, lote: list[dict[str, Any]]) -> bool:
     """Lots (a) steps 1-5 per offer; returns False on ERR-09 (abort)."""
     pausa = float(contexto.config_preparacion["pausa_entre_ofertas_segundos"])
+    jitter = float(contexto.config_preparacion.get("pausa_jitter_segundos", 0))
     total = len(lote)
     for indice, oferta in enumerate(lote):
         id_oferta = str(oferta["id"])
@@ -473,7 +509,14 @@ def _procesar_lote_a(contexto: RunContext, lote: list[dict[str, Any]]) -> bool:
             )
             return False
         if indice < total - 1 and pausa > 0:
-            time.sleep(pausa)  # VAL-03: pausa entre ofertas, no tras la última
+            # D42: pausa con jitter — aleatoria en [base-jitter, base+jitter]
+            # (mas humana que un intervalo identico); jitter 0 => fija.
+            espera = (
+                random.uniform(pausa - jitter, pausa + jitter)
+                if jitter > 0
+                else pausa
+            )
+            time.sleep(max(0.0, espera))  # VAL-03: entre ofertas, no tras la última
     return True
 
 

@@ -27,6 +27,7 @@ from shared.persistence import (
     contar_filas,
     escribir_evento,
     generar_id,
+    inicializar_si_ausente,
     leer_ultima_corrida_cerrada,
     registrar_corrida,
 )
@@ -152,6 +153,8 @@ def _cerrar_programada_best_effort(id_corrida: str, campos: dict[str, Any]) -> N
 
 def ejecutar_corrida_programada(config: dict[str, Any] | None = None) -> None:
     """Run every configured module in order and record the scheduled-run summary."""
+    if inicializar_si_ausente():
+        logger.info("Esquema de base de datos creado automaticamente")
     cfg = config if config is not None else load()
     seccion = cfg.get("orquestador") if isinstance(cfg, dict) else None
     detalle = _validar_configuracion(seccion)

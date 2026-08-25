@@ -23,7 +23,9 @@ from dataclasses import dataclass
 from loguru import logger
 
 from modules.preparation.nodes.preparacion import FalloPreparacion
-from modules.preparation.nodes.verificacion import registrar_evento
+from modules.preparation.nodes.verificacion import (
+    _registrar_evento as registrar_evento,
+)
 from modules.preparation.run_context import RunContext
 from shared.persistence import contar_filas
 from shared.retry import ejecutar_con_reintento

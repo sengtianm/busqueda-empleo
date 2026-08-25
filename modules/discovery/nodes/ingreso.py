@@ -9,9 +9,9 @@ from modules.discovery.adapters.registry import AdaptadorPlataforma, obtener_ada
 from modules.discovery.run_context import RunContext
 from shared.config import load
 from shared.models import EntryResult, FichaFuente
-from shared.persistence import escribir_evento_seguro, generar_id
+from shared.persistence import generar_id, registrar_evento
 from shared.retry import ejecutar_con_reintento
-from shared.utilidades import acotar_evidencia, ahora
+from shared.utilidades import acotar_evidencia
 
 
 @dataclass
@@ -177,21 +177,15 @@ def _registrar_evento_ingreso_exitoso(contexto: RunContext) -> None:
     """
     if contexto.id_sesion is None:
         return
-    escribir_evento_seguro(
-        {
-            "id_corrida": contexto.id_corrida,
-            "fuente_id": (
-                contexto.fuente_corriente.fuente_id
-                if contexto.fuente_corriente
-                else ""
-            ),
-            "id_sesion": contexto.id_sesion,
-            "marca_temporal": ahora(),
-            "tipo": "suceso",
-            "codigo": "ingreso_exitoso",
-            "evidencia": f"sesion={contexto.id_sesion}",
-        },
-        contexto_log=contexto.id_corrida,
+    registrar_evento(
+        id_corrida=contexto.id_corrida,
+        tipo="suceso",
+        codigo="ingreso_exitoso",
+        evidencia=f"sesion={contexto.id_sesion}",
+        fuente_id=(
+            contexto.fuente_corriente.fuente_id if contexto.fuente_corriente else ""
+        ),
+        id_sesion=contexto.id_sesion,
     )
 
 

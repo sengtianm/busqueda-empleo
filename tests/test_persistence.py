@@ -41,6 +41,28 @@ def test_write_and_read(temp_db_file: Path) -> None:
     assert rows[0]["id"] == generated_id
 
 
+def test_migracion_d41_renormaliza_nombres_empresas(temp_db_file: Path) -> None:
+    from shared.persistence import init_db
+
+    escribir_fila(
+        "empresas",
+        {
+            "nombre": "Clínica & Salud S.A. (Norte)",
+            # clave calculada con la regla antigua (sin puntuación ni tildes)
+            "nombre_normalizado": "clinica salud s a norte",
+        },
+    )
+    init_db()
+
+    filas = leer_tabla(
+        "empresas", {"nombre": "Clínica & Salud S.A. (Norte)"}
+    )
+    assert len(filas) == 1
+    assert (
+        filas[0]["nombre_normalizado"] == "clínica & salud s.a. (norte)"
+    )
+
+
 def test_find_by_id_existing(temp_db_file: Path) -> None:
     id_1 = escribir_fila("empresas", {"nombre": "Uno", "perfil_linkedin": "li.com/uno"})
     escribir_fila("empresas", {"nombre": "Dos", "perfil_linkedin": "li.com/dos"})
@@ -1645,3 +1667,24 @@ def test_leer_candidatas_descubiertas_excluye_otros_estados(
         )
     filas = leer_candidatas_descubiertas()
     assert [f["id"] for f in filas] == ["OFE-A"]
+
+
+def test_inicializar_si_ausente_d42(temp_db_file: Path) -> None:
+    from shared.persistence import inicializar_si_ausente
+
+    assert inicializar_si_ausente() is False  # esquema ya presente: no-op
+    import sqlite3
+
+    from shared.persistence import reset_path
+
+    con = sqlite3.connect(str(temp_db_file))
+    con.execute("DROP TABLE secuencia_ids")
+    for t in ("empresas", "ubicaciones", "ofertas_descubiertas", "corridas",
+              "eventos", "sesiones", "bloqueo"):
+        con.execute(f"DROP TABLE IF EXISTS {t}")
+    con.commit()
+    con.close()
+    # sin tablas -> inicializa; segunda vez -> no-op
+    assert inicializar_si_ausente() is True
+    assert inicializar_si_ausente() is False
+    reset_path()

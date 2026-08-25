@@ -18,8 +18,8 @@ from modules.discovery.adapters.registry import obtener_adaptador
 from modules.discovery.run_context import RunContext
 from shared.models import AuditoriaSesion, CaptureBatch, EstadoCaptura, Offer
 from shared.persistence import (
-    escribir_evento_seguro,
     escribir_fila,
+    registrar_evento,
     upsert_lote_ofertas,
 )
 from shared.retry import ejecutar_con_reintento
@@ -41,27 +41,19 @@ def _registrar_evento(
     codigo: str,
     evidencia: str,
 ) -> None:
-    """Escribe un evento en la tabla `eventos` sin abortar el flujo."""
-    escribir_evento_seguro(
-        {
-            "id_corrida": contexto.id_corrida,
-            "fuente_id": (
-                contexto.fuente_corriente.fuente_id
-                if contexto.fuente_corriente
-                else ""
-            ),
-            "id_sesion": contexto.id_sesion,
-            "indice_set": (
-                contexto.set_corriente.indice
-                if contexto.set_corriente
-                else None
-            ),
-            "marca_temporal": ahora(),
-            "tipo": tipo,
-            "codigo": codigo,
-            "evidencia": evidencia,
-        },
-        contexto_log=contexto.id_corrida,
+    """Escribe un evento en la tabla `eventos` sin abortar el flujo (D42)."""
+    registrar_evento(
+        id_corrida=contexto.id_corrida,
+        tipo=tipo,
+        codigo=codigo,
+        evidencia=evidencia,
+        fuente_id=(
+            contexto.fuente_corriente.fuente_id if contexto.fuente_corriente else ""
+        ),
+        id_sesion=contexto.id_sesion,
+        indice_set=(
+            contexto.set_corriente.indice if contexto.set_corriente else None
+        ),
     )
 
 
@@ -261,9 +253,9 @@ def _oferta_a_dict(oferta: Offer, contexto: RunContext) -> dict[str, Any]:
     """Construye el dict de la fila `ofertas_descubiertas` desde una oferta capturada.
 
     `empresa_id`/`ubicacion_id` se guardan como NULL (catálogos no poblados
-    en el MVP, D29), `fuente_id` conserva su fuente_id y la ubicación cruda
-    + modalidad provienen de la tarjeta (traspaso aprobado 2026-08-25: M1
-    las escribe; M2 ya no extrae nada del HTML de la página).
+    en el MVP, D29), `fuente_id` conserva su fuente_id y la empresa cruda +
+    ubicación cruda + modalidad provienen de la tarjeta (traspaso aprobado
+    2026-08-25; `empresa` añadida por D41).
     """
     return {
         "titulo": oferta.titulo,
@@ -280,6 +272,7 @@ def _oferta_a_dict(oferta: Offer, contexto: RunContext) -> dict[str, Any]:
             else None
         ),
         "observaciones": oferta.observaciones or "",
+        "empresa": oferta.empresa or None,
         "ubicacion": oferta.ubicacion or None,
         "modalidad": oferta.modalidad or None,
         "id_corrida": contexto.id_corrida,
