@@ -1364,3 +1364,54 @@ def test_tarjeta_sdui_segmento_solo_modalidad_no_es_ubicacion() -> None:
     assert tarjeta is not None
     assert tarjeta.ubicacion == ""
     assert tarjeta.modalidad == "remoto"
+
+
+@pytest.mark.parametrize(
+    "titulo",
+    [
+        "Backend Engineer, AI | Growth",
+        "Senior | Platform Engineer",
+        "Data | Ops | Lead",
+    ],
+)
+def test_tarjeta_sdui_titulo_con_pipe_embebido(titulo: str) -> None:
+    """COR-0003 (oferta 4455899476): un '|' dentro del título truncaba el
+    primer segmento del bloque de título y este no se descartaba — la
+    empresa terminaba leída como ubicación."""
+    div = _tarjeta_div(
+        [titulo, "Acme Corp", "Medellín (Híbrido)", "Visto", "Publicado hace 2 horas|hace 2 horas"],
+        titulo=titulo,
+    )
+    tarjeta = _extraer_tarjeta_sdui(div)
+    assert tarjeta is not None
+    assert tarjeta.ubicacion == "Medellín"
+    assert tarjeta.modalidad == "hibrido"
+
+
+def test_tarjeta_sdui_empresa_segmento_de_titulo_no_se_descarta() -> None:
+    """Una empresa de una sola parte cuyo nombre coincide con un segmento
+    del título NO se descarta por la vía multipartidista del filtro."""
+    div = _tarjeta_div(
+        ["Marketing | Growth", "Growth", "Bogotá"],
+        titulo="Marketing | Growth",
+    )
+    tarjeta = _extraer_tarjeta_sdui(div)
+    assert tarjeta is not None
+    assert tarjeta.ubicacion == "Bogotá"
+    assert tarjeta.modalidad == "N/R"
+
+
+def test_tarjeta_sdui_real_deel_2026_titulo_con_pipe() -> None:
+    """Tarjeta REAL capturada (búsqueda focalizada, oferta Deel): markup
+    completo con el título 'Backend Engineer, AI | Growth' embebido."""
+    from bs4 import BeautifulSoup
+
+    soup = BeautifulSoup(_leer("lista_linkedin_sdui_deel_2026.html"), "lxml")
+    div = soup.select_one("div[componentkey*='4455899476']")
+    assert div is not None
+    tarjeta = _extraer_tarjeta_sdui(div)
+    assert tarjeta is not None
+    assert tarjeta.titulo == "Backend Engineer, AI | Growth"
+    assert tarjeta.enlace.endswith("/4455899476")
+    assert tarjeta.ubicacion == "Colombia"
+    assert tarjeta.modalidad == "remoto"

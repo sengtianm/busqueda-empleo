@@ -106,11 +106,21 @@ ai_local:
   port: 11434
   model: "gpt-oss:20b-cloud"
   timeout_seconds: 60
+  # Muestreo determinista para tareas de clasificación (análisis
+  # Pereira 2026-08-25): temperature 0 elimina la varianza entre
+  # corridas de la clasificación PRM-006. Sin esta sección, Ollama
+  # usa sus defaults (temperature 0.8, muestreo aleatorio).
+  options:
+    temperature: 0.0
 
 # --- AI Cloud (Ollama Cloud via local proxy) ---
 ai_cloud:
   endpoint: "http://localhost:11434"
   model: "gemma4:31b-cloud"
+  # Espejo de ai_local.options: muestreo determinista también en la
+  # ruta cloud para propósitos de clasificación futuros.
+  options:
+    temperature: 0.0
   timeout_seconds: 120
 
 # --- AI Routing by Purpose ---

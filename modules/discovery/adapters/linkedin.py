@@ -812,16 +812,31 @@ def _ubicacion_sdui(div: Any, titulo: str) -> tuple[str, str]:
     candidato utilizable), ruido fijo de la UI y la fecha, el siguiente
     segmento es la ubicacion; puede llevar sufijo de modalidad "(En remoto)".
     Sin segundo candidato -> sin ubicacion ('', 'N/R').
+
+    Titulos con '|' embebido (COR-0003, oferta 4455899476): el primer
+    segmento del bloque de titulo queda truncado en la barra del propio
+    titulo, asi que ademas del prefijo sobre el titulo completo se acepta
+    la coincidencia exacta contra cualquier segmento del titulo cuando el
+    <p> es multiparte (bloque repetido); un candidato de una sola parte
+    nunca se descarta por esta via.
     """
+    claves_titulo = {
+        normalizar_texto(parte) for parte in titulo.split("|")
+    } - {""}
+    completo_titulo = normalizar_texto(titulo)
     candidatos: list[str] = []
     for p in div.find_all("p"):
-        segmento = str(p.get_text("|", strip=True)).split("|")[0].strip()
+        partes = str(p.get_text("|", strip=True)).split("|")
+        segmento = partes[0].strip()
         clave = normalizar_texto(segmento)
         if not clave or clave in _RUIDO_TARJETA_SDUI:
             continue
         if _RE_PUBLICADO_SDUI.search(segmento) or clave.startswith("hace "):
             continue
-        if titulo and clave.startswith(normalizar_texto(titulo)):
+        if titulo and (
+            clave.startswith(completo_titulo)
+            or (len(partes) > 1 and clave in claves_titulo)
+        ):
             continue
         candidatos.append(segmento)
     if len(candidatos) < 2:

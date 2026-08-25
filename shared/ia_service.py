@@ -59,11 +59,19 @@ def _get_local_config() -> dict[str, Any]:
     config = load()
     local_cfg = config.get("ai_local", {})
     env = config.get("_env", {})
+    options = local_cfg.get("options", {})
+    if not isinstance(options, dict):
+        raise ConfigurationError(
+            "003",
+            f"'ai_local.options' must be a mapping, got {type(options).__name__}",
+            source_module="ia_service",
+        )
     return {
         "host": env.get("OLLAMA_HOST") or local_cfg.get("host", "localhost"),
         "port": int(env.get("OLLAMA_PORT") or local_cfg.get("port", 11434)),
         "model": env.get("OLLAMA_MODEL") or local_cfg.get("model", "qwen3.5:4b"),
         "timeout": int(local_cfg.get("timeout_seconds", 60)),
+        "options": dict(options),
     }
 
 
@@ -71,11 +79,19 @@ def _get_cloud_config() -> dict[str, Any]:
     config = load()
     cloud_cfg = config.get("ai_cloud", {})
     env = config.get("_env", {})
+    options = cloud_cfg.get("options", {})
+    if not isinstance(options, dict):
+        raise ConfigurationError(
+            "003",
+            f"'ai_cloud.options' must be a mapping, got {type(options).__name__}",
+            source_module="ia_service",
+        )
     return {
         "endpoint": env.get("IA_CLOUD_ENDPOINT") or cloud_cfg.get("endpoint", ""),
         "model": cloud_cfg.get("model", "gemma4:31b"),
         "api_key": env.get("IA_CLOUD_API_KEY") or "",
         "timeout": int(cloud_cfg.get("timeout_seconds", 120)),
+        "options": dict(options),
     }
 
 
@@ -115,10 +131,17 @@ def _enviar(
 @retry_decorator()
 def _send_local(prompt: str) -> str:
     cfg = _get_local_config()
+    payload: dict[str, Any] = {
+        "model": cfg["model"],
+        "prompt": prompt,
+        "stream": False,
+    }
+    if cfg["options"]:
+        payload["options"] = cfg["options"]
     return _enviar(
         f"http://{cfg['host']}:{cfg['port']}/api/generate",
         {"Content-Type": "application/json"},
-        {"model": cfg["model"], "prompt": prompt, "stream": False},
+        payload,
         cfg["timeout"],
         "local Ollama",
     )
@@ -132,10 +155,17 @@ def _send_cloud(prompt: str) -> str:
     }
     if cfg["api_key"]:
         headers["Authorization"] = f"Bearer {cfg['api_key']}"
+    payload: dict[str, Any] = {
+        "model": cfg["model"],
+        "prompt": prompt,
+        "stream": False,
+    }
+    if cfg["options"]:
+        payload["options"] = cfg["options"]
     return _enviar(
         f"{cfg['endpoint']}/api/generate",
         headers,
-        {"model": cfg["model"], "prompt": prompt, "stream": False},
+        payload,
         cfg["timeout"],
         "AI Cloud",
     )

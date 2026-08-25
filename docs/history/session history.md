@@ -5,7 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
-| 35 | 25/08/2026 | `ses_fc9cdf2e5ffeMja2ZpSownJ82R` | First real orchestrated sequential run M1→M2 validated end-to-end; post-run corrections implemented: card capture of location/modality moved into Module 1, column renamed `ubicacion`, closure metric as DISTINCT union, orchestrator entry point; live DB migrated with backup (514 tests) |
+| 35 | 25/08/2026 | `ses_fc9cdf2e5ffeMja2ZpSownJ82R` | First real orchestrated sequential runs M1→M2 validated end-to-end on an emptied database (twice); traspaso fixes confirmed; capture bug with pipe-in-title fixed using real card evidence; deterministic AI sampling (temperature 0) both routes; tests isolated from the production database; operating contract gains the functional-communication instruction (525 tests) |
 | 34 | 21/08/2026 | `ses_fdafc2fd0ffexoEFYn60IjcuYQ` | Sub-fases 5.1–5.6 implementadas: fundamentos D33, nodos INICIO + decisión de candidatas, nodo Preparación de ofertas (captura httpx invitado, catálogos empresa/ubicación con IA PRM-006), Verificación de duplicidad + decisión de bucle (RapidFuzz dos etapas), Finalizar Proceso + orquestador del flujo del módulo (métricas por eventos, ruteo de terminaciones, fila de corrida registrada antes del bloqueo) y Orquestador transversal de corrida programada (lanza módulos en serie, resultados derivados desde la BD); D35–D38 registradas |
 | 33 | 21/08/2026 | `ses_fdba95353ffezwVG7roiPKaX2c` | Phase 5 build plan defined from the two technical sheets: 7 sub-phases approved and written into MVP Execution Plan + tracker replacing the obsolete generic task list; docs-reviewer findings corrected |
 | 32 | 20/08/2026 | `ses_fe33fd2dfffeQS3bPEmnaiJW1h` | Phase 5 documentation: Module 2 (Preparation) + transversal orchestrator technical sheets created and aligned across project docs (decision log, DOC-13A, database-tables, Appendix 5A, ficha M1, plan, guide, README); tracker 4.26 |
@@ -43,17 +43,34 @@ Unless noted, decisions from previous sessions remain in effect.
 - Closure metric corrected: total offers counts each physical offer once via DISTINCT union over both success codes (literal sum had reported 76 for 72 physical); persistence counting helper extended to accept list filters (SQL IN)
 - New official orchestrator entry point enabling direct module invocation
 - Reviewer subagents unavailable all session due to provider rate limits/endpoint failures — task closed without external review under explicit user authorization
+- Clean-run verification executed twice on an emptied database (no backup, user instruction): the first exposed follow-up findings, the second proved every fix end-to-end with zero errors and full catalog linking
+- Root-cause investigation of the offer whose location had stored the company name: guest-page check confirmed LinkedIn DOES report a location; real card markup then inspected through a logged-in browser session
+- Cause found: job titles containing a vertical bar broke the title-block filter (first pipe-segment truncated), shifting candidates so the company was read as the location; only that one card affected
+- Title filter corrected to recognize multi-part title blocks by individual title segments, guarded so single-part candidates are never discarded; regression fixture built from the REAL captured card plus parametrized pipe-position cases and an anti-false-positive guard test
+- Second clean run: the previously broken offer now stores Colombia/remoto; modality 100% canonical across all offers; every offer linked to company and location catalogs with zero unclassified-location warnings
+- Location misclassification investigated (Pereira stored under the wrong department): four identical AI calls produced three different answers — sampling randomness because requests omitted model options and Ollama defaults to temperature 0.8
+- Deterministic sampling added: configurable sampling options read from configuration for BOTH local and cloud AI routes; repeated identical calls now return identical correct answers (verified 3/3)
+- Wrong catalog row corrected manually (Pereira → Risaralda)
+- New defect discovered: running the test suite wrote junk rows into the production database (orphan sessions/events from node tests lacking isolation)
+- Global automatic test isolation adopted: every test now runs against its own temporary database; verified identical production-database counts before/after a full suite run; junk rows cleaned
+- Operating contract updated with the user's standing instruction: functional, jargon-free communication unless technical detail is expressly requested
 
 **Decisions**
 - Ownership transfer approved: location/modality capture belongs to Module 1 cards; Module 2 consumes stored text only (partially supersedes D29; ficha updates deferred)
 - Empty-from-source convention: adapter writes `N/R` when the source card lacks data ("source did not report"); model defaults stay `N/A`
 - `total_ofertas` semantics changed to physical-count DISTINCT union over {oferta_preparada, oferta_duplicada} (supersedes the literal preparadas+duplicadas formula; decision log entry pending)
+- All official documentation updates (decision log, fichas as-built, DOC-13A, database-tables.md, AGENTS.md) deliberately deferred to the documentation-closure task
+- User voided the initial "card without location" hypothesis with link evidence: real DOM showed the location present; the cause was the embedded bar in the job title
+- Deterministic sampling approved for classification-type AI calls on both routes (temperature 0 via configuration)
+- Company catalog empty-fields correction explicitly deferred again by user ("not yet")
+- Test isolation adopted globally (automatic per-test temporary database) instead of per-test opt-in
 - Prior unreviewed commit attempting this transfer declared void — not recovered nor referenced
 - All official documentation updates (decision log, fichas as-built, DOC-13A, database-tables.md, AGENTS.md) deliberately deferred to the documentation-closure task
 
 **Status**
-- Sub-phase 5.7 punto 1 ✅ (post-run corrections implemented and validated): ruff 0 · mypy 0 · pytest 514 passing; live DB migrated with backup and verified (double init no-op)
-- Sub-phase 5.7 punto 2 ⬜ pending: Phase 5 documentation closure (decision log entries, as-built ficha notes, DOC-13A, database-tables.md, AGENTS.md); optional clean re-run on corrected schema
+- Sub-phase 5.7 punto 1 ✅ complete: traspaso validated with two clean orchestrated runs (74 offers, 0 errors, full catalog linking, union metric correct) plus three follow-up fixes (pipe-in-title capture, deterministic AI sampling both routes, test-suite database isolation)
+- ruff 0 · mypy 0 · pytest 525 passing; production database verified untouched by the suite
+- Sub-phase 5.7 punto 2 ⬜ pending: Phase 5 documentation closure (decision log entries for traspaso/union/rename/pipe-fix/sampling, as-built ficha notes M1/M2/orchestrator + entry point, DOC-13A, database-tables.md writers matrix, AGENTS.md status); empresas empty-fields fix deferred by user
 - Single commit + push on `fase-5`; no merge
 
 ## Session 34 — 21/08/2026

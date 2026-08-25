@@ -20,6 +20,19 @@ def clear_config_cache() -> None:
     reload_config()
 
 
+@pytest.fixture(autouse=True)
+def base_datos_aislada(tmp_path: Path) -> Generator[None, None, None]:
+    """Aislamiento global de datos (2026-08-25): toda prueba opera sobre
+    una BD SQLite temporal; ninguna escritura alcanza la BD real del
+    proyecto (contaminación detectada tras correr la suite completa)."""
+    from shared.persistence import change_path, init_db, reset_path
+
+    change_path(tmp_path / "test_aislado.db")
+    init_db()
+    yield
+    reset_path()
+
+
 @pytest.fixture
 def temp_db_file(tmp_path: Path) -> Generator[Path, None, None]:
     from shared.persistence import change_path, init_db, reset_path

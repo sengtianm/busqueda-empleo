@@ -8,6 +8,8 @@ import pytest
 
 from shared.errors import ConfigurationError, LLMError
 from shared.ia_service import (
+    _get_cloud_config,
+    _get_local_config,
     _route_provider,
     _send_cloud,
     _send_local,
@@ -66,6 +68,37 @@ def test_send_local_timeout(mock_post: MagicMock) -> None:
 
 
 @patch("shared.ia_service.httpx.post")
+def test_send_local_incluye_options_del_config(mock_post: MagicMock) -> None:
+    """Muestreo determinista (análisis Pereira 2026-08-25): el payload
+    local lleva las opciones de muestreo del config oficial ai_local,
+    evitando la varianza de los defaults de Ollama (temperature 0.8)."""
+    mock_post.return_value.status_code = 200
+    mock_post.return_value.json.return_value = {"response": "{}"}
+
+    _send_local("test prompt")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["options"] == {"temperature": 0.0}
+
+
+@patch("shared.ia_service.load")
+def test_local_config_sin_options_da_diccionario_vacio(
+    mock_load: MagicMock,
+) -> None:
+    mock_load.return_value = {"ai_local": {"model": "m"}}
+    assert _get_local_config()["options"] == {}
+
+
+@patch("shared.ia_service.load")
+def test_local_config_options_invalidas_rechazadas(
+    mock_load: MagicMock,
+) -> None:
+    mock_load.return_value = {"ai_local": {"options": "temperature=0"}}
+    with pytest.raises(ConfigurationError, match="ER-CFG-003"):
+        _get_local_config()
+
+
+@patch("shared.ia_service.httpx.post")
 def test_send_cloud_success(mock_post: MagicMock) -> None:
     mock_post.return_value.status_code = 200
     mock_post.return_value.json.return_value = {"response": '{"ok": true}'}
@@ -73,6 +106,36 @@ def test_send_cloud_success(mock_post: MagicMock) -> None:
     result = _send_cloud("test prompt")
     assert result == '{"ok": true}'
     mock_post.assert_called_once()
+
+
+@patch("shared.ia_service.httpx.post")
+def test_send_cloud_incluye_options_del_config(mock_post: MagicMock) -> None:
+    """Espejo del camino local: el payload cloud lleva las opciones de
+    muestreo del config oficial ai_cloud."""
+    mock_post.return_value.status_code = 200
+    mock_post.return_value.json.return_value = {"response": "{}"}
+
+    _send_cloud("test prompt")
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["options"] == {"temperature": 0.0}
+
+
+@patch("shared.ia_service.load")
+def test_cloud_config_sin_options_da_diccionario_vacio(
+    mock_load: MagicMock,
+) -> None:
+    mock_load.return_value = {"ai_cloud": {"endpoint": "http://x"}}
+    assert _get_cloud_config()["options"] == {}
+
+
+@patch("shared.ia_service.load")
+def test_cloud_config_options_invalidas_rechazadas(
+    mock_load: MagicMock,
+) -> None:
+    mock_load.return_value = {"ai_cloud": {"options": [1, 2]}}
+    with pytest.raises(ConfigurationError, match="ER-CFG-003"):
+        _get_cloud_config()
 
 
 @patch("shared.ia_service.httpx.post")
