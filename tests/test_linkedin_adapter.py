@@ -1,8 +1,14 @@
 from pathlib import Path
+from typing import Any
 
 import pytest
 
-from modules.discovery.adapters.linkedin import _URL_LOGIN, FlowError, LinkedInAdapter
+from modules.discovery.adapters.linkedin import (
+    _URL_LOGIN,
+    FlowError,
+    LinkedInAdapter,
+    _extraer_tarjeta_sdui,
+)
 from shared.models import FichaFuente, PoliticasCaptura, SetFiltros
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
@@ -810,9 +816,16 @@ def test_apply_filters_parsea_resultados_sdui_2026(
     assert ofertas[0].enlace == "https://www.linkedin.com/jobs/view/4377518497"
     assert ofertas[0].observaciones == "Publicado hace 9 horas"
     assert ofertas[0].fecha_publicacion is not None
+    # Traspaso 2026-08-25: la tarjeta provee ubicación y modalidad.
+    assert ofertas[0].ubicacion == "Bogotá"
+    assert ofertas[0].modalidad == "N/R"
     assert ofertas[1].titulo == "Solutions Data and Analytics Specialist"
     assert ofertas[1].id_externo == "4454411536"
+    assert ofertas[1].ubicacion == "Bogotá"
+    assert ofertas[1].modalidad == "hibrido"
     assert ofertas[2].id_externo == "4455353156"
+    assert ofertas[2].ubicacion == "Colombia"
+    assert ofertas[2].modalidad == "remoto"
     assert resultado.total_declarado == 89
 
 
@@ -1256,3 +1269,98 @@ def test_capture_batch_variante_clasica_solo_titulos(
     assert oferta.titulo == "Data Engineer"
     assert oferta.fecha_publicacion is None
     assert oferta.observaciones == ""
+    # Variante clásica: ubicación por selector propio (best-effort).
+    assert oferta.ubicacion == "Madrid"
+    assert oferta.modalidad == "N/R"
+    # "Remoto" como texto completo: sin ubicación útil ('N/R'), sí modalidad.
+    assert lote.ofertas[1].ubicacion == "N/R"
+    assert lote.ofertas[1].modalidad == "remoto"
+
+
+# ---------------------------------------------- tarjeta SDUi: ubicación/modality
+
+
+def _tarjeta_div(
+    p_segmentos: list[str], titulo: str = "Ingeniero de Datos"
+) -> Any:
+    """Construye un div SDUi con el markup mínimo real (componentkey +
+    span[aria-hidden] + <p> en el orden observado, Exp 9).
+
+    `titulo` debe coincidir con el primer segmento para simular el bloque
+    de título que la clasificación descarta."""
+    parrafos = "".join(f"<p>{s}</p>" for s in p_segmentos)
+    html = (
+        '<div componentkey="job-card-component-ref-123">'
+        f"<span aria-hidden='true'>{titulo}</span>{parrafos}</div>"
+    )
+    from bs4 import BeautifulSoup
+
+    return BeautifulSoup(html, "lxml").select_one(
+        "div[componentkey^='job-card-component-ref-']"
+    )
+
+
+def test_tarjeta_sdui_ubicacion_con_sufijo_remoto() -> None:
+    div = _tarjeta_div(
+        [
+            "Ingeniero de Datos|Ingeniero de Datos",
+            "Acme Corp",
+            "Colombia (En remoto)",
+            "·",
+            "Publicado hace 2 horas|hace 2 horas",
+        ]
+    )
+    tarjeta = _extraer_tarjeta_sdui(div)
+    assert tarjeta is not None
+    assert tarjeta.ubicacion == "Colombia"
+    assert tarjeta.modalidad == "remoto"
+
+
+def test_tarjeta_sdui_ubicacion_con_sufijo_hibrido_y_ruido() -> None:
+    div = _tarjeta_div(
+        [
+            "Analista|Analista (Empleo verificado)|Analista",
+            "Beta Ltda",
+            "Bogotá (Híbrido)",
+            "Visto",
+            "Adelántate a solicitar el empleo",
+            "Solicitar",
+            "Evaluando solicitudes de forma activa",
+            "Publicado hace 30 minutos|hace 30 minutos",
+        ],
+        titulo="Analista",
+    )
+    tarjeta = _extraer_tarjeta_sdui(div)
+    assert tarjeta is not None
+    assert tarjeta.ubicacion == "Bogotá"
+    assert tarjeta.modalidad == "hibrido"
+
+
+def test_tarjeta_sdui_ubicacion_sin_modalidad_da_nr() -> None:
+    div = _tarjeta_div(
+        ["Ingeniero de Datos", "Gamma SA", "Medellín, Antioquia", "Visto",
+         "·", "Publicado hace 1 hora|hace 1 hora"]
+    )
+    tarjeta = _extraer_tarjeta_sdui(div)
+    assert tarjeta is not None
+    assert tarjeta.ubicacion == "Medellín, Antioquia"
+    assert tarjeta.modalidad == "N/R"
+
+
+def test_tarjeta_sdui_sin_segundo_candidato_devuelve_vacio_nr() -> None:
+    div = _tarjeta_div(["Ingeniero de Datos", "Delta Corp", "Publicado hace 3 días"])
+    tarjeta = _extraer_tarjeta_sdui(div)
+    assert tarjeta is not None
+    assert tarjeta.ubicacion == ""
+    assert tarjeta.modalidad == "N/R"
+
+
+def test_tarjeta_sdui_segmento_solo_modalidad_no_es_ubicacion() -> None:
+    div = _tarjeta_div(
+        ["Ingeniero de Datos", "Epsilon", "Remoto", "·",
+         "Publicado hace 4 horas|hace 4 horas"]
+    )
+    tarjeta = _extraer_tarjeta_sdui(div)
+    assert tarjeta is not None
+    assert tarjeta.ubicacion == ""
+    assert tarjeta.modalidad == "remoto"

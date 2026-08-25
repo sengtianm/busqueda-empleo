@@ -146,6 +146,23 @@ def test_metricas_distinct_d36_doble_emision_cuenta_uno() -> None:
 
 
 @pytest.mark.usefixtures("temp_db_file")
+def test_total_ofertas_union_cuenta_solape_una_vez() -> None:
+    """Traspaso 2026-08-25: una oferta preparada y LUEGO duplicada se cuenta
+    una sola vez en `total_ofertas` (unión DISTINCT), que reporta el total
+    físico en lugar de la suma literal preparadas+duplicadas."""
+    _registrar_corrida("COR-FIN")
+    _evento("suceso", "oferta_preparada", id_oferta="OFE-0001")
+    _evento("suceso", "oferta_preparada", id_oferta="OFE-0002")
+    _evento("suceso", "oferta_duplicada", id_oferta="OFE-0002")
+    res = finalizar_proceso(_contexto(), "corrida_completada")
+    m = res.metricas
+    assert m is not None
+    assert m["total_preparadas"] == 2
+    assert m["total_duplicadas"] == 1
+    assert m["total_ofertas"] == 2
+
+
+@pytest.mark.usefixtures("temp_db_file")
 def test_total_sucesos_excluye_evento_terminacion_d30() -> None:
     _registrar_corrida("COR-FIN")
     _evento("suceso", "revision_pendientes")

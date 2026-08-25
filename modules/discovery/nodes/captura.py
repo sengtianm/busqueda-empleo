@@ -261,7 +261,9 @@ def _oferta_a_dict(oferta: Offer, contexto: RunContext) -> dict[str, Any]:
     """Construye el dict de la fila `ofertas_descubiertas` desde una oferta capturada.
 
     `empresa_id`/`ubicacion_id` se guardan como NULL (catálogos no poblados
-    en el MVP, D29) y `fuente_id` conserva su fuente_id.
+    en el MVP, D29), `fuente_id` conserva su fuente_id y la ubicación cruda
+    + modalidad provienen de la tarjeta (traspaso aprobado 2026-08-25: M1
+    las escribe; M2 ya no extrae nada del HTML de la página).
     """
     return {
         "titulo": oferta.titulo,
@@ -278,6 +280,8 @@ def _oferta_a_dict(oferta: Offer, contexto: RunContext) -> dict[str, Any]:
             else None
         ),
         "observaciones": oferta.observaciones or "",
+        "ubicacion": oferta.ubicacion or None,
+        "modalidad": oferta.modalidad or None,
         "id_corrida": contexto.id_corrida,
         "id_sesion": contexto.id_sesion,
         "fecha_descubrimiento": ahora(),

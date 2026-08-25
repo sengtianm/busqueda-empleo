@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 35 | 25/08/2026 | `ses_fc9cdf2e5ffeMja2ZpSownJ82R` | First real orchestrated sequential run M1→M2 validated end-to-end; post-run corrections implemented: card capture of location/modality moved into Module 1, column renamed `ubicacion`, closure metric as DISTINCT union, orchestrator entry point; live DB migrated with backup (514 tests) |
 | 34 | 21/08/2026 | `ses_fdafc2fd0ffexoEFYn60IjcuYQ` | Sub-fases 5.1–5.6 implementadas: fundamentos D33, nodos INICIO + decisión de candidatas, nodo Preparación de ofertas (captura httpx invitado, catálogos empresa/ubicación con IA PRM-006), Verificación de duplicidad + decisión de bucle (RapidFuzz dos etapas), Finalizar Proceso + orquestador del flujo del módulo (métricas por eventos, ruteo de terminaciones, fila de corrida registrada antes del bloqueo) y Orquestador transversal de corrida programada (lanza módulos en serie, resultados derivados desde la BD); D35–D38 registradas |
 | 33 | 21/08/2026 | `ses_fdba95353ffezwVG7roiPKaX2c` | Phase 5 build plan defined from the two technical sheets: 7 sub-phases approved and written into MVP Execution Plan + tracker replacing the obsolete generic task list; docs-reviewer findings corrected |
 | 32 | 20/08/2026 | `ses_fe33fd2dfffeQS3bPEmnaiJW1h` | Phase 5 documentation: Module 2 (Preparation) + transversal orchestrator technical sheets created and aligned across project docs (decision log, DOC-13A, database-tables, Appendix 5A, ficha M1, plan, guide, README); tracker 4.26 |
@@ -28,6 +29,32 @@ Unless noted, decisions from previous sessions remain in effect.
 | 14 | 09/08/2026 | `ses_01bcc78adffemcqFEiZxT52Eli` | Sub-fase 4.4: capture/registration nodes implemented, audited, and post-audit fixes applied (FK-free schema, name columns, upsert tests) |
 | 13 | 08/08/2026 | `ses_01be77680ffeuyoKct4Qrfx1GG` | Repo sync to `fase-4`; new `/save` section with general git commit and push guidance |
 | 12 | 08/08/2026 | `ses_01c089ce2ffe9MvQT4F1pC0MJN` | Sub-fase 4.2 deep audit + post-audit fixes (credentials mapping, playwright lifecycle) |
+
+## Session 35 — 25/08/2026
+`ses_fc9cdf2e5ffeMja2ZpSownJ82R` · `fase-5`
+
+**Topics**
+- First real orchestrated sequential run M1→M2 executed end-to-end through the official entry point: scheduled run closed completed with zero errors, 72 offers discovered and prepared, 4 duplicates detected
+- Post-run database verification exposed modality pollution (63/72 offers stored raw guest-page text instead of canonical values); root causes traced to a header-dump fallback bug and raw-text canonization in preparation
+- Corrections plan (A–F) approved and implemented in one task; a prior unreviewed commit attempting the same transfer was declared void by the user — card patterns reconstructed from documented evidence plus fixture DOM inspection
+- Card-based capture added to the discovery adapter: SDUi paragraph classification extracts raw location and canonical modality (remoto/hibrido/presencial, N/R when absent), handling hybrid suffixes, noise segments and remoto-only segments; classic variant reads location via its own selector scoped inside the link element
+- Capture node persists both columns; preparation stripped of all page-based location/modality extraction and column writes — classifies only the stored row text via PRM-006 and links catalog ids; guard test ensures module 2 never overwrites module 1-owned fields
+- Column renamed `ubicacion_nombre` → `ubicacion`; idempotent migration ordered right after schema creation and before the Spanish rebuild so legacy populated values survive; regression test asserts survival across double init; live DB migrated with backup (72 rows preserved)
+- Closure metric corrected: total offers counts each physical offer once via DISTINCT union over both success codes (literal sum had reported 76 for 72 physical); persistence counting helper extended to accept list filters (SQL IN)
+- New official orchestrator entry point enabling direct module invocation
+- Reviewer subagents unavailable all session due to provider rate limits/endpoint failures — task closed without external review under explicit user authorization
+
+**Decisions**
+- Ownership transfer approved: location/modality capture belongs to Module 1 cards; Module 2 consumes stored text only (partially supersedes D29; ficha updates deferred)
+- Empty-from-source convention: adapter writes `N/R` when the source card lacks data ("source did not report"); model defaults stay `N/A`
+- `total_ofertas` semantics changed to physical-count DISTINCT union over {oferta_preparada, oferta_duplicada} (supersedes the literal preparadas+duplicadas formula; decision log entry pending)
+- Prior unreviewed commit attempting this transfer declared void — not recovered nor referenced
+- All official documentation updates (decision log, fichas as-built, DOC-13A, database-tables.md, AGENTS.md) deliberately deferred to the documentation-closure task
+
+**Status**
+- Sub-phase 5.7 punto 1 ✅ (post-run corrections implemented and validated): ruff 0 · mypy 0 · pytest 514 passing; live DB migrated with backup and verified (double init no-op)
+- Sub-phase 5.7 punto 2 ⬜ pending: Phase 5 documentation closure (decision log entries, as-built ficha notes, DOC-13A, database-tables.md, AGENTS.md); optional clean re-run on corrected schema
+- Single commit + push on `fase-5`; no merge
 
 ## Session 34 — 21/08/2026
 `ses_fdafc2fd0ffexoEFYn60IjcuYQ` · `fase-5`

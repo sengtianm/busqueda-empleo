@@ -76,7 +76,7 @@ def _insertar(
         "descripcion_original": descripcion,
         "observaciones": observaciones,
         "id_duplicidad": id_duplicidad,
-        "ubicacion_nombre": "Bogota",
+        "ubicacion": "Bogota",
     }
     datos["fecha_ultima_verificacion"] = (
         "2026-08-19 09:00:00" if marcador else ""

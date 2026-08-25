@@ -79,8 +79,6 @@ def flujo(monkeypatch: pytest.MonkeyPatch) -> None:
             "Descripcion de prueba suficientemente larga para la oferta.",
             "Acme Corp",
             "",
-            "Remoto",
-            "Bogota, Colombia",
         )
 
     monkeypatch.setattr(preparacion_mod, "_capturar_pagina", captura_variable)
@@ -101,8 +99,6 @@ def flujo_duplicado(monkeypatch: pytest.MonkeyPatch) -> None:
             "Descripcion de prueba suficientemente larga para la oferta.",
             "Acme Corp",
             "",
-            "Remoto",
-            "Bogota, Colombia",
         ),
     )
     monkeypatch.setattr(

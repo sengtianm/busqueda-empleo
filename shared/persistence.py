@@ -85,7 +85,7 @@ ESQUEMAS: dict[str, str] = {
         "id_externo TEXT DEFAULT '',"
         "fecha_ultima_verificacion TEXT DEFAULT '',"
         "id_duplicidad TEXT DEFAULT 'N/A',"
-        "ubicacion_nombre TEXT DEFAULT 'N/A',"
+        "ubicacion TEXT DEFAULT 'N/A',"
         "modalidad TEXT DEFAULT 'N/A'"
         ")"
     ),
@@ -213,6 +213,7 @@ def init_db() -> None:
                   "sesiones", "bloqueo")
         for nombre_tabla in tablas:
             conn.execute(ESQUEMAS[nombre_tabla])
+        _migrate_ubicacion_rename(conn)
         _migrar_espanol_total(conn)
         _migrate_ofertas(conn)
         _migrate_ofertas_timestamp_ultima_verificacion(conn)
@@ -473,9 +474,9 @@ def _migrate_ofertas_empresa_nombre(conn: sqlite3.Connection) -> None:
     extracts company/location from the cards (only the publication date),
     so raw strings are not persisted. SQLite >= 3.35 supports in-place
     `ALTER TABLE ... DROP COLUMN`; each column is dropped only if present
-    (idempotent). `ubicacion_nombre` is NO LONGER dropped here: decision
-    D33 re-adds it for Module 2 (partial D29 reversal), so dropping it
-    first would silently destroy pre-D29 values.
+    (idempotent). `ubicacion_nombre` is NOT dropped here: decision D33
+    re-added it for Module 2 and `_migrate_ubicacion_rename` later renames
+    it to `ubicacion`, so dropping it first would silently destroy data.
     """
     columnas = {
         fila["name"]
@@ -557,7 +558,6 @@ def _migrate_limpieza_d31(conn: sqlite3.Connection) -> None:
 
 _ADICIONES_PREPARACION: tuple[tuple[str, str], ...] = (
     ("ofertas_descubiertas", "id_duplicidad TEXT DEFAULT 'N/A'"),
-    ("ofertas_descubiertas", "ubicacion_nombre TEXT DEFAULT 'N/A'"),
     ("ofertas_descubiertas", "modalidad TEXT DEFAULT 'N/A'"),
     ("corridas", "total_preparadas INTEGER DEFAULT 0"),
     ("corridas", "total_duplicadas INTEGER DEFAULT 0"),
@@ -571,9 +571,11 @@ def _migrate_preparacion_d33(conn: sqlite3.Connection) -> None:
     (1) Adds the preparation columns when absent (on legacy DBs the
     `_migrar_espanol_total` rebuild usually applies them from ESQUEMAS; this
     guarded pass is the explicit safety net): `ofertas_descubiertas`.
-    `id_duplicidad`/`ubicacion_nombre`/`modalidad` ('N/A'), `corridas`.
+    `id_duplicidad`/`modalidad` ('N/A'), `corridas`.
     `total_preparadas`/`total_duplicadas` (0) and `eventos`.`id_oferta`
-    ('N/A'; re-added, superseding D31 D-1).
+    ('N/A'; re-added, superseding D31 D-1). The raw-location column is NOT
+    added here under its historical name: `_migrate_ubicacion_rename`
+    already renamed it to `ubicacion` earlier in the chain.
     (2) Drops `ubicaciones.modalidad`: `ubicaciones` is restructured to the
     `(ciudad, region, pais)` tuple (components default 'N/A'); the extra
     column does not trigger the rebuild path, so the drop must be explicit.
@@ -598,6 +600,35 @@ def _migrate_preparacion_d33(conn: sqlite3.Connection) -> None:
     }
     if "modalidad" in columnas_ubicaciones:
         conn.execute("ALTER TABLE ubicaciones DROP COLUMN modalidad")
+
+
+def _migrate_ubicacion_rename(conn: sqlite3.Connection) -> None:
+    """Renames `ofertas_descubiertas.ubicacion_nombre` to `ubicacion`.
+
+    User-requested naming simplification: the raw location text captured by
+    Module 1 lives in a column named simply `ubicacion` (D7/D8 catalog style,
+    no accents). Runs right after the schema loop and BEFORE
+    `_migrar_espanol_total`, so a legacy table carrying populated location
+    text gets its column renamed first and the Spanish rebuild then copies
+    it as `ubicacion` instead of dropping it as an unknown column. Fresh
+    DBs already create `ubicacion` from ESQUEMAS and skip the rename.
+    Idempotent: only runs when the old column exists and the new doesn't.
+    """
+    columnas = {
+        fila["name"]
+        for fila in conn.execute(
+            "PRAGMA table_info(ofertas_descubiertas)"
+        ).fetchall()
+    }
+    if (
+        columnas
+        and "ubicacion" not in columnas
+        and "ubicacion_nombre" in columnas
+    ):
+        conn.execute(
+            "ALTER TABLE ofertas_descubiertas "
+            "RENAME COLUMN ubicacion_nombre TO ubicacion"
+        )
 
 
 _COLUMNAS_FINALIZACION_CORRIDAS: tuple[str, ...] = (
@@ -726,7 +757,9 @@ def contar_distintos(
     """Counts distinct non-empty values of a column (equality filters).
 
     Empty values are NULL, '' and 'N/A' (no-empty-field rule, decision D31:
-    'N/A' is the placeholder for not-applicable fields).
+    'N/A' is the placeholder for not-applicable fields). A filter whose
+    value is a list/tuple matches any of its members (`IN`) — used by the
+    M2 closure to count the UNION of success codes as distinct offers.
     """
     conn = _connection()
     try:
@@ -736,8 +769,17 @@ def contar_distintos(
         )
         params: dict[str, Any] = {}
         if filtros:
-            condiciones += " AND " + " AND ".join(f"{k} = :{k}" for k in filtros.keys())
-            params = dict(filtros)
+            clausulas: list[str] = []
+            for i, (clave, valor) in enumerate(filtros.items()):
+                if isinstance(valor, (list, tuple)):
+                    marcadores = ", ".join(f":{clave}_{j}" for j in range(len(valor)))
+                    clausulas.append(f"{clave} IN ({marcadores})")
+                    for j, elemento in enumerate(valor):
+                        params[f"{clave}_{j}"] = elemento
+                else:
+                    clausulas.append(f"{clave} = :{clave}")
+                    params[clave] = valor
+            condiciones += " AND " + " AND ".join(clausulas)
         cursor = conn.execute(
             f"SELECT COUNT(DISTINCT {columna}) FROM {tabla} WHERE {condiciones}",
             params,
@@ -991,7 +1033,8 @@ def _upsert_ofertas_en(
     counted without aborting the remaining rows; the caller commits.
     Returns (ids_registradas, fallidas). No-empty-field rule (D31): empty
     values in `descripcion_original`/`fecha_publicacion`/`observaciones`/
-    `empresa_id`/`ubicacion_id` are persisted as 'N/A'.
+    `empresa_id`/`ubicacion_id`/`ubicacion`/`modalidad` are persisted as
+    'N/A'.
     """
     registradas: list[str] = []
     fallidas = 0
@@ -1005,6 +1048,8 @@ def _upsert_ofertas_en(
             "observaciones",
             "empresa_id",
             "ubicacion_id",
+            "ubicacion",
+            "modalidad",
         ):
             if not d.get(campo):
                 d[campo] = "N/A"

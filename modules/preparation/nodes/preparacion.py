@@ -10,10 +10,15 @@ write the per-offer event with `id_oferta` (RN-09). Duplication is NOT
 verified here (next node) and `fecha_ultima_verificacion` is never touched
 (RN-11).
 
+Traspaso aprobado (2026-08-25): the raw location (`ubicacion`) and the
+modality are captured by Module 1 from the SDUi card and live on the offer
+row; this node no longer extracts them from the page HTML — it only
+classifies the stored text via PRM-006 and links `ubicacion_id`.
+
 Two lots per pass (H1, RN-01): (a) `descubierta` — full capture steps 1-5;
 (b) `preparada` with `ubicacion_id = 'N/A'` — only classify / seek-create /
 update, without re-capturing the page (the raw text is already stored in
-`ubicacion_nombre`). Lot (b) is re-queried AFTER lot (a) so offers whose AI
+`ubicacion`). Lot (b) is re-queried AFTER lot (a) so offers whose AI
 classification failed in this same pass are retried immediately (RN-02:
 every pass re-queries the database; the INICIO iterator is never reused).
 
@@ -73,17 +78,6 @@ MARCADORES_AUTHWALL = (
     "join linkedin",
     "iniciar sesion para continuar",
 )
-_MODALIDAD_TOKENS = {
-    "remoto": "remoto",
-    "remote": "remoto",
-    "trabajo remoto": "remoto",
-    "hibrido": "hibrido",
-    "hybrid": "hibrido",
-    "presencial": "presencial",
-    "onsite": "presencial",
-    "on site": "presencial",
-    "en sitio": "presencial",
-}
 
 
 class ClasificacionUbicacion(BaseModel):
@@ -116,14 +110,16 @@ class ResultadoPreparacion:
 
 @dataclass
 class DatosCaptura:
-    """Raw data extracted from one offer page (paso 1)."""
+    """Raw data extracted from one offer page (paso 1).
+
+    La ubicación y la modalidad ya no se extraen aquí: llegan en la fila de
+    la oferta escritas por el Módulo 1 (traspaso aprobado 2026-08-25).
+    """
 
     titulo_h1: str | None
     descripcion: str
     empresa_nombre: str
     empresa_perfil: str
-    modalidad_texto: str
-    ubicacion_cruda: str
 
 
 def _construir_cliente() -> httpx.Client:
@@ -178,10 +174,11 @@ def _primer_texto(soup: BeautifulSoup, selectores: list[str]) -> str:
 
 
 def _extraer_datos(html: str) -> DatosCaptura:
-    """Extract title/description/company/modality/raw location (paso 1).
+    """Extract title/description/company (paso 1).
 
-    Selectors target the guest job-page markup known at build time; every
-    extraction degrades gracefully (empty string → `N/R`/`N/A` downstream).
+    La ubicación y la modalidad NO se extraen de la página (traspaso
+    aprobado 2026-08-25: las escribe el Módulo 1 desde la tarjeta); esta
+    extracción degrada con gracia (vacío → `N/R`/`N/A` downstream).
     """
     soup = BeautifulSoup(html, "lxml")
     h1 = soup.select_one("h1")
@@ -207,28 +204,6 @@ def _extraer_datos(html: str) -> DatosCaptura:
         href = ancla.get("href")
         if isinstance(href, str) and href:
             empresa_perfil = urljoin(BASE_LINKEDIN, href)
-    ubicacion_cruda = _primer_texto(
-        soup,
-        [
-            ".topcard__flavor--bullet",
-            "span.jobs-unified-top-card__subtitle",
-            ".jobs-unified-top-card__subtitle",
-            ".topcard__flavor",
-            "[class*='location']",
-        ],
-    )
-    modalidad_texto = _primer_texto(
-        soup,
-        [
-            ".workplace-type",
-            "span.jobs-job-top-card__workplace-type",
-            ".jobs-unified-top-card__job-insight",
-        ],
-    )
-    if not modalidad_texto:
-        cabecera = soup.select_one(".top-card-layout__card, .jobs-unified-top-card")
-        if isinstance(cabecera, Tag):
-            modalidad_texto = cabecera.get_text(" ", strip=True)[:500]
     if not any([titulo_h1, descripcion, empresa_nombre]):
         raise ValueError("html sin contenido interpretable")
     return DatosCaptura(
@@ -236,22 +211,7 @@ def _extraer_datos(html: str) -> DatosCaptura:
         descripcion=descripcion,
         empresa_nombre=empresa_nombre,
         empresa_perfil=empresa_perfil,
-        modalidad_texto=modalidad_texto,
-        ubicacion_cruda=ubicacion_cruda,
     )
-
-
-def _canonizar_modalidad(texto: str) -> str:
-    """Map the raw modality text to the canonical token; `N/R` when absent."""
-    if not texto or not texto.strip():
-        return "N/R"
-    clave = normalizar_texto(texto)
-    if clave in _MODALIDAD_TOKENS:
-        return _MODALIDAD_TOKENS[clave]
-    for token, canonica in _MODALIDAD_TOKENS.items():
-        if token in clave:
-            return canonica
-    return texto.strip()
 
 
 def _capturar_pagina(contexto: RunContext, enlace: str) -> DatosCaptura:
@@ -420,11 +380,14 @@ def _diligenciar_ubicacion(contexto: RunContext, texto_crudo: str) -> str:
 def _actualizar_oferta(
     oferta: dict[str, Any], datos: DatosCaptura, empresa_id: str, ubicacion_id: str
 ) -> None:
-    """Pasos 4: faithful update; never `fecha_ultima_verificacion` (RN-11)."""
+    """Pasos 4: faithful update; never `fecha_ultima_verificacion` (RN-11).
+
+    `ubicacion` y `modalidad` NO se tocan: son propiedad del Módulo 1
+    desde el traspaso aprobado (2026-08-25).
+    """
     campos: dict[str, Any] = {
         "empresa_id": empresa_id,
         "ubicacion_id": ubicacion_id,
-        "modalidad": _canonizar_modalidad(datos.modalidad_texto),
         "estado": "preparada",
     }
     if datos.titulo_h1:
@@ -441,8 +404,6 @@ def _actualizar_oferta(
             campos["observaciones"] = (
                 f"{base} | {marca}" if base and base != "N/A" else marca
             )
-    if datos.ubicacion_cruda:
-        campos["ubicacion_nombre"] = datos.ubicacion_cruda
     for clave, valor in list(campos.items()):
         if valor is None or str(valor).strip() == "":
             campos[clave] = "N/A"  # VAL-04/D31: sin vacíos
@@ -489,7 +450,9 @@ def _procesar_lote_a(contexto: RunContext, lote: list[dict[str, Any]]) -> bool:
             empresa_id = _diligenciar_empresa(
                 contexto, datos.empresa_nombre, datos.empresa_perfil
             )
-            ubicacion_id = _diligenciar_ubicacion(contexto, datos.ubicacion_cruda)
+            ubicacion_id = _diligenciar_ubicacion(
+                contexto, str(oferta.get("ubicacion", "") or "")
+            )
             _actualizar_oferta(oferta, datos, empresa_id, ubicacion_id)
             contexto.contador_preparadas += 1
             _registrar_evento(
@@ -497,7 +460,7 @@ def _procesar_lote_a(contexto: RunContext, lote: list[dict[str, Any]]) -> bool:
                 "suceso",
                 "oferta_preparada",
                 f"empresa={empresa_id} ubicacion={ubicacion_id} "
-                f"modalidad={_canonizar_modalidad(datos.modalidad_texto)}",
+                f"modalidad={str(oferta.get('modalidad', 'N/R') or 'N/R')}",
                 id_oferta,
             )
         except Exception as error:
@@ -518,7 +481,7 @@ def _procesar_lote_b(contexto: RunContext, lote: list[dict[str, Any]]) -> bool:
     """Lot (b) steps 3-5 without capture; returns False on ERR-09 (abort)."""
     for oferta in lote:
         id_oferta = str(oferta["id"])
-        texto_crudo = str(oferta.get("ubicacion_nombre", "") or "")
+        texto_crudo = str(oferta.get("ubicacion", "") or "")
         try:
             ubicacion_id = _diligenciar_ubicacion(contexto, texto_crudo)
             if ubicacion_id == "N/A":

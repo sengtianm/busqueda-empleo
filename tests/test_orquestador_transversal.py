@@ -433,8 +433,6 @@ def test_flujo_real_de_preparacion_como_modulo(
             descripcion="Oferta de prueba para la corrida programada",
             empresa_nombre="Acme",
             empresa_perfil="Tecnologia",
-            modalidad_texto="Remoto",
-            ubicacion_cruda="N/A",
         )
 
     monkeypatch.setattr(preparacion_mod, "_capturar_pagina", captura_ok)

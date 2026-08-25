@@ -80,12 +80,24 @@ def _consultar_metricas(id_corrida: str) -> dict[str, int] | None:
                 "id_oferta",
                 {**filtros, "codigo": "oferta_duplicada"},
             )
+            # Unión DISTINCT (traspaso 2026-08-25): el total reporta ofertas
+            # físicas — una oferta preparada y luego duplicada se cuenta una
+            # sola vez, en lugar de la suma literal prep+dup que la contaba
+            # dos veces (76 vs 72 reales en la corrida de validación).
+            total_ofertas = contar_distintos(
+                "eventos",
+                "id_oferta",
+                {
+                    **filtros,
+                    "codigo": ["oferta_preparada", "oferta_duplicada"],
+                },
+            )
             total_errores = contar_filas("eventos", {**filtros, "tipo": "error"})
             total_sucesos = contar_filas("eventos", filtros) - total_errores
             return {
                 "total_preparadas": total_preparadas,
                 "total_duplicadas": total_duplicadas,
-                "total_ofertas": total_preparadas + total_duplicadas,
+                "total_ofertas": total_ofertas,
                 "total_errores": total_errores,
                 "total_sucesos": total_sucesos,
             }

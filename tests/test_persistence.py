@@ -718,6 +718,32 @@ def test_contar_distintos_excluye_vacios(temp_db_file: Path) -> None:
     assert contar_distintos("eventos", "fuente_id") == 1
 
 
+def test_contar_distintos_acepta_filtro_con_lista(temp_db_file: Path) -> None:
+    """Un filtro cuyo valor es lista coincide por IN (unión de códigos del
+    cierre M2: total_ofertas cuenta el DISTINCT físico)."""
+    from shared.persistence import contar_distintos, escribir_evento
+
+    for codigo, id_oferta in (
+        ("oferta_preparada", "OFE-0001"),
+        ("oferta_preparada", "OFE-0002"),
+        ("oferta_duplicada", "OFE-0002"),
+        ("revision_pendientes", "N/A"),
+    ):
+        escribir_evento(
+            {
+                "id_corrida": "COR-0001",
+                "tipo": "suceso",
+                "codigo": codigo,
+                "id_oferta": id_oferta,
+            }
+        )
+    filtros = {
+        "id_corrida": "COR-0001",
+        "codigo": ["oferta_preparada", "oferta_duplicada"],
+    }
+    assert contar_distintos("eventos", "id_oferta", filtros) == 2
+
+
 def test_eventos_sin_vacios_se_guardan_como_n_a(temp_db_file: Path) -> None:
     from shared.persistence import escribir_evento, leer_tabla
 
@@ -811,8 +837,9 @@ def test_migracion_4_4_fks_anulables_idempotente(tmp_path: Path) -> None:
             ).fetchall()
         }
         assert "empresa_nombre" not in columnas
-        # D33 re-adds `ubicacion_nombre` for Module 2 (partial D29 reversal).
-        assert "ubicacion_nombre" in columnas
+        # Traspaso 2026-08-25: la columna D33 se renombra a `ubicacion`.
+        assert "ubicacion" in columnas
+        assert "ubicacion_nombre" not in columnas
         fks = sqlite3.connect(str(path)).execute(
             "PRAGMA foreign_key_list(ofertas_descubiertas)"
         ).fetchall()
@@ -1121,7 +1148,7 @@ def test_migracion_espanol_total_desde_esquema_ingles(tmp_path: Path) -> None:
             assert esperadas_ofertas.issubset(columnas_ofertas)
             assert "identificador_origen" not in columnas_ofertas
             assert "empresa_nombre" not in columnas_ofertas
-            assert "ubicacion_nombre" in columnas_ofertas
+            assert "ubicacion" in columnas_ofertas
             sql_ofertas = conn.execute(
                 "SELECT sql FROM sqlite_master WHERE type='table' "
                 "AND name='ofertas_descubiertas'"
@@ -1352,7 +1379,7 @@ def test_esquema_fresco_d33_columnas_check_y_ubicaciones(temp_db_file: Path) -> 
                 "PRAGMA table_info(ofertas_descubiertas)"
             ).fetchall()
         }
-        assert {"id_duplicidad", "ubicacion_nombre", "modalidad"} <= columnas_ofertas
+        assert {"id_duplicidad", "ubicacion", "modalidad"} <= columnas_ofertas
         columnas_corridas = {
             fila["name"]
             for fila in conn.execute("PRAGMA table_info(corridas)").fetchall()
@@ -1393,7 +1420,7 @@ def test_migracion_d33_desde_esquema_legado(tmp_path: Path) -> None:
         assert filas[0]["id"] == "OFE-0001"
         assert filas[0]["titulo"] == "Titulo Legado"
         assert filas[0]["id_duplicidad"] == "N/A"
-        assert filas[0]["ubicacion_nombre"] == "N/A"
+        assert filas[0]["ubicacion"] == "N/A"
         assert filas[0]["modalidad"] == "N/A"
 
         conn = sqlite3.connect(str(path))
@@ -1436,10 +1463,10 @@ def test_migracion_d33_desde_esquema_legado(tmp_path: Path) -> None:
         reset_path()
 
 
-def test_ubicacion_nombre_legada_sobrevive_init_db(tmp_path: Path) -> None:
-    """Regression guard: `_migrate_ofertas_empresa_nombre` no longer drops
-    `ubicacion_nombre` (D33 re-adds it; partial D29 reversal), so a pre-D29
-    populated value survives `init_db()` instead of being silently lost."""
+def test_ubicacion_nombre_legada_se_renombra_y_sobrevive(tmp_path: Path) -> None:
+    """Regression guard: `_migrate_ubicacion_rename` renames the D33-era
+    `ubicacion_nombre` to `ubicacion` preserving populated values, so no
+    raw location text is silently lost by `init_db()`."""
     import sqlite3
 
     from shared.persistence import change_path, init_db, leer_tabla, reset_path
@@ -1463,9 +1490,17 @@ def test_ubicacion_nombre_legada_sobrevive_init_db(tmp_path: Path) -> None:
     change_path(path)
     try:
         init_db()
+        columnas = {
+            fila[1]
+            for fila in sqlite3.connect(str(path)).execute(
+                "PRAGMA table_info(ofertas_descubiertas)"
+            ).fetchall()
+        }
+        assert "ubicacion" in columnas
+        assert "ubicacion_nombre" not in columnas
         filas = leer_tabla("ofertas_descubiertas")
         assert len(filas) == 1
-        assert filas[0]["ubicacion_nombre"] == "Bogotá, Colombia"
+        assert filas[0]["ubicacion"] == "Bogotá, Colombia"
     finally:
         reset_path()
 

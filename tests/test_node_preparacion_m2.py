@@ -13,7 +13,6 @@ import pytest
 
 import modules.preparation.nodes.preparacion as preparacion
 from modules.preparation.nodes.preparacion import (
-    _canonizar_modalidad,
     ejecutar_preparacion,
 )
 from modules.preparation.run_context import RunContext
@@ -86,8 +85,11 @@ def _insertar_oferta(
     oferta_id: str,
     estado: str = "descubierta",
     titulo: str = "Titulo tarjeta",
-    ubicacion_nombre: str | None = None,
+    ubicacion: str | None = None,
+    modalidad: str | None = None,
 ) -> None:
+    """Inserta una fila; `ubicacion`/`modalidad` simulan lo escrito por el
+    Módulo 1 en la captura (traspaso aprobado 2026-08-25)."""
     datos: dict[str, Any] = {
         "id": oferta_id,
         "enlace": f"https://www.linkedin.com/jobs/view/{oferta_id}",
@@ -95,8 +97,10 @@ def _insertar_oferta(
         "estado": estado,
         "titulo": titulo,
     }
-    if ubicacion_nombre is not None:
-        datos["ubicacion_nombre"] = ubicacion_nombre
+    if ubicacion is not None:
+        datos["ubicacion"] = ubicacion
+    if modalidad is not None:
+        datos["modalidad"] = modalidad
     escribir_fila("ofertas_descubiertas", datos)
 
 
@@ -159,7 +163,11 @@ TUPLA_BOGOTA = {"ciudad": "Bogotá", "region": "Distrito Capital", "pais": "Colo
 def test_extraccion_completa_actualiza_oferta(
     temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _insertar_oferta("OFE-0001")
+    _insertar_oferta(
+        "OFE-0001",
+        ubicacion="Bogotá, Distrito Capital, Colombia",
+        modalidad="remoto",
+    )
     _instalar_servidor(monkeypatch, [[(200, HTML_COMPLETO)]])
     _instalar_ia(monkeypatch, TUPLA_BOGOTA)
 
@@ -171,8 +179,9 @@ def test_extraccion_completa_actualiza_oferta(
     assert fila["estado"] == "preparada"
     assert fila["titulo"] == "Ingeniero de Datos Senior"
     assert "vacante" in str(fila["descripcion_original"])
+    # Propiedad del Módulo 1: M2 las conserva intactas.
     assert fila["modalidad"] == "remoto"
-    assert fila["ubicacion_nombre"] == "Bogotá, Distrito Capital, Colombia"
+    assert fila["ubicacion"] == "Bogotá, Distrito Capital, Colombia"
     empresa = leer_tabla("empresas", {"nombre_normalizado": "acme corp"})
     assert len(empresa) == 1
     assert empresa[0]["perfil_linkedin"] == (
@@ -448,8 +457,8 @@ def test_empresa_existente_se_reutiliza(
 def test_cache_evita_segunda_consulta_de_catalogos(
     temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _insertar_oferta("OFE-0001")
-    _insertar_oferta("OFE-0002")
+    _insertar_oferta("OFE-0001", ubicacion="Bogotá, Distrito Capital, Colombia")
+    _insertar_oferta("OFE-0002", ubicacion="Bogotá, Distrito Capital, Colombia")
     _instalar_servidor(
         monkeypatch, [[(200, HTML_COMPLETO)], [(200, HTML_COMPLETO)]]
     )
@@ -478,11 +487,8 @@ def test_cache_evita_segunda_consulta_de_catalogos(
 def test_remoto_no_crea_fila_ni_invoca_ia(
     temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    remoto = HTML_COMPLETO.replace(
-        "Bogotá, Distrito Capital, Colombia", "Remoto"
-    )
-    _insertar_oferta("OFE-0001")
-    _instalar_servidor(monkeypatch, [[(200, remoto)]])
+    _insertar_oferta("OFE-0001", ubicacion="Remoto")
+    _instalar_servidor(monkeypatch, [[(200, HTML_COMPLETO)]])
     llamadas = _instalar_ia(monkeypatch, TUPLA_BOGOTA)
 
     ejecutar_preparacion(_contexto())
@@ -496,7 +502,7 @@ def test_remoto_no_crea_fila_ni_invoca_ia(
 def test_ciudad_completa_crea_tupla_normalizada(
     temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _insertar_oferta("OFE-0001")
+    _insertar_oferta("OFE-0001", ubicacion="Bogotá, Distrito Capital, Colombia")
     _instalar_servidor(monkeypatch, [[(200, HTML_COMPLETO)]])
     _instalar_ia(monkeypatch, TUPLA_BOGOTA)
 
@@ -512,12 +518,13 @@ def test_ciudad_completa_crea_tupla_normalizada(
 def test_textos_distintos_misma_tupla_una_sola_fila(
     temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    segunda = HTML_COMPLETO.replace(
-        "Bogotá, Distrito Capital, Colombia", "Bogotá D.C."
+    _insertar_oferta(
+        "OFE-0001", ubicacion="Bogotá, Distrito Capital, Colombia"
     )
-    _insertar_oferta("OFE-0001")
-    _insertar_oferta("OFE-0002")
-    _instalar_servidor(monkeypatch, [[(200, HTML_COMPLETO)], [(200, segunda)]])
+    _insertar_oferta("OFE-0002", ubicacion="Bogotá D.C.")
+    _instalar_servidor(
+        monkeypatch, [[(200, HTML_COMPLETO)], [(200, HTML_COMPLETO)]]
+    )
     llamadas = _instalar_ia(monkeypatch, TUPLA_BOGOTA)
 
     ejecutar_preparacion(_contexto())
@@ -532,7 +539,7 @@ def test_textos_distintos_misma_tupla_una_sola_fila(
 def test_pais_solo_genera_fila_compartida(
     temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _insertar_oferta("OFE-0001")
+    _insertar_oferta("OFE-0001", ubicacion="Colombia")
     _instalar_servidor(monkeypatch, [[(200, HTML_COMPLETO)]])
     _instalar_ia(
         monkeypatch, {"ciudad": "N/A", "region": "N/A", "pais": "Colombia"}
@@ -552,7 +559,7 @@ def test_pais_solo_genera_fila_compartida(
 def test_json_ia_invalido_queda_pendiente_err08(
     temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _insertar_oferta("OFE-0001")
+    _insertar_oferta("OFE-0001", ubicacion="Bogotá, Distrito Capital, Colombia")
     _instalar_servidor(monkeypatch, [[(200, HTML_COMPLETO)]])
     _instalar_ia(monkeypatch, {"foo": "bar"})
 
@@ -568,7 +575,7 @@ def test_json_ia_invalido_queda_pendiente_err08(
 def test_ia_caida_llmerror_queda_pendiente_err08(
     temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _insertar_oferta("OFE-0001")
+    _insertar_oferta("OFE-0001", ubicacion="Bogotá, Distrito Capital, Colombia")
     _instalar_servidor(monkeypatch, [[(200, HTML_COMPLETO)]])
     _instalar_ia(monkeypatch, LLMError("001", "ollama down"))
 
@@ -588,7 +595,7 @@ def test_lote_b_resuelve_sin_http(
     _insertar_oferta(
         "OFE-0001",
         estado="preparada",
-        ubicacion_nombre="Medellín, Antioquia",
+        ubicacion="Medellín, Antioquia",
     )
     actualizar_fila(
         "ofertas_descubiertas", "OFE-0001", {"ubicacion_id": "N/A"}
@@ -614,7 +621,7 @@ def test_lote_b_ia_caida_deja_pendiente(
     temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _insertar_oferta(
-        "OFE-0001", estado="preparada", ubicacion_nombre="Medellín, Antioquia"
+        "OFE-0001", estado="preparada", ubicacion="Medellín, Antioquia"
     )
     actualizar_fila(
         "ofertas_descubiertas", "OFE-0001", {"ubicacion_id": "N/A"}
@@ -633,7 +640,7 @@ def test_lote_b_ia_caida_deja_pendiente(
 def test_fallo_ia_no_se_cachea_y_lote_b_lo_resuelve(
     temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _insertar_oferta("OFE-0001")
+    _insertar_oferta("OFE-0001", ubicacion="Bogotá, Distrito Capital, Colombia")
     _instalar_servidor(monkeypatch, [[(200, HTML_COMPLETO)]])
     llamadas = _instalar_ia(monkeypatch, LLMError("001", "down"))
     contexto = _contexto()
@@ -663,7 +670,7 @@ def test_lote_b_con_sentinela_na_termina_en_nr_sin_ia(
     """Fila legada `preparada`+`N/A` sin texto crudo: terminal `N/R`, la IA
     jamás recibe centinelas."""
     _insertar_oferta(
-        "OFE-0001", estado="preparada", ubicacion_nombre="N/A"
+        "OFE-0001", estado="preparada", ubicacion="N/A"
     )
     actualizar_fila(
         "ofertas_descubiertas", "OFE-0001", {"ubicacion_id": "N/A"}
@@ -683,7 +690,7 @@ def test_lote_b_corrupcion_al_persistir_aborta_err09(
     temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _insertar_oferta(
-        "OFE-0001", estado="preparada", ubicacion_nombre="Medellín, Antioquia"
+        "OFE-0001", estado="preparada", ubicacion="Medellín, Antioquia"
     )
     actualizar_fila(
         "ofertas_descubiertas", "OFE-0001", {"ubicacion_id": "N/A"}
@@ -826,20 +833,27 @@ def test_codigos_reintentables_incluyen_captura_m2() -> None:
 
 def test_offer_tiene_campos_nuevos_d33() -> None:
     oferta = Offer(enlace="https://x", titulo="t", descripcion_original="d")
-    assert oferta.ubicacion_nombre == "N/A"
+    assert oferta.ubicacion == "N/A"
     assert oferta.modalidad == "N/A"
 
 
-@pytest.mark.parametrize(
-    ("texto", "esperado"),
-    [
-        ("Remote", "remoto"),
-        ("Híbrido", "hibrido"),
-        ("Presencial", "presencial"),
-        ("On-site", "presencial"),
-        ("Tiempo completo", "Tiempo completo"),
-        ("", "N/R"),
-    ],
-)
-def test_canonizar_modalidad(texto: str, esperado: str) -> None:
-    assert _canonizar_modalidad(texto) == esperado
+def test_m2_no_sobreescribe_ubicacion_ni_modalidad_de_m1(
+    temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Traspaso 2026-08-25: la actualización de M2 jamás toca las columnas
+    propiedad del Módulo 1 (`ubicacion`, `modalidad`)."""
+    _insertar_oferta(
+        "OFE-0001",
+        ubicacion="Medellín, Antioquia",
+        modalidad="hibrido",
+    )
+    _instalar_servidor(monkeypatch, [[(200, HTML_COMPLETO)]])
+    _instalar_ia(monkeypatch, TUPLA_BOGOTA)
+
+    resultado = ejecutar_preparacion(_contexto())
+
+    assert resultado.estado == "completada"
+    fila = buscar_por_id("ofertas_descubiertas", "OFE-0001")
+    assert fila is not None and fila["estado"] == "preparada"
+    assert fila["ubicacion"] == "Medellín, Antioquia"
+    assert fila["modalidad"] == "hibrido"

@@ -37,7 +37,7 @@ from shared.models import (
     SearchResult,
     SetFiltros,
 )
-from shared.utilidades import acotar_evidencia
+from shared.utilidades import acotar_evidencia, normalizar_texto
 
 _PARAMETROS_FILTROS: dict[str, str] = {
     "keywords": "keywords",
@@ -79,6 +79,9 @@ _SEL_ENLACE_TARJETA_2026 = "div.job-card-container a.job-card-container__link"
 _SEL_ENLACE_TARJETA_GENERICO = "a[href*='/jobs/view/']"
 _SEL_TARJETA_SDUI = "div[componentkey^='job-card-component-ref-']"
 _SEL_TITULO_TARJETA = ".base-search-card__title"
+_SEL_UBICACION_TARJETA_CLASICA = (
+    ".job-search-card__location, .base-search-card__location"
+)
 _SEL_SIGUIENTE = (
     "button[aria-label='Next']",
     "a[aria-label='Next']",
@@ -94,12 +97,41 @@ _RE_ID_COMPONENTE = re.compile(r"job-card-component-ref-(\d+)")
 # D28/D29 (2026-08-17): las clases CSS reales de la tarjeta SDUi estan
 # hasheadas por pagina (obfuscacion); el parseo usa el texto de los <p> de la
 # tarjeta, validado empiricamente (Exp 9: 75/75 tarjetas, 3 paginas reales).
-# (D29) De la tarjeta solo se conserva la fecha relativa de publicacion; la
-# empresa y la ubicacion ya no se extraen (columnas eliminadas de `ofertas_descubiertas`).
+# (D29) De la tarjeta solo se conservaba la fecha relativa de publicacion.
+# Traspaso aprobado (2026-08-25): la tarjeta vuelve a proveer la ubicacion
+# cruda y la modalidad — M1 las escribe en `ofertas_descubiertas` y el M2
+# deja de extraerlas del HTML de la pagina invitado. La clasificacion por
+# <p> sigue la evidencia Exp 9: tras titulo y empresa, el siguiente <p>
+# utilizable es la ubicacion; puede llevar sufijo de modalidad "(En remoto)/
+# (Hibrido)/(Presencial)". Sin senal -> 'N/R' (fuente no lo reporta).
 _RE_PUBLICADO_SDUI = re.compile(
     r"Publicado hace\s+(\d+)\s+(minutos?|horas?|d[ií]as?|semanas?|mes(?:es)?)",
     re.IGNORECASE,
 )
+
+_RUIDO_TARJETA_SDUI: frozenset[str] = frozenset(
+    {
+        "visto",
+        "adelantate a solicitar el empleo",
+        "solicitar",
+        "evaluando solicitudes de forma activa",
+    }
+)
+
+_MODALIDAD_TARJETA: dict[str, str] = {
+    "remoto": "remoto",
+    "en remoto": "remoto",
+    "remote": "remoto",
+    "trabajo remoto": "remoto",
+    "hibrido": "hibrido",
+    "hybrid": "hibrido",
+    "presencial": "presencial",
+    "onsite": "presencial",
+    "on site": "presencial",
+    "en sitio": "presencial",
+}
+
+_RE_SUFIJO_MODALIDAD = re.compile(r"\(([^)]+)\)\s*$")
 
 _URL_LOGIN = "https://www.linkedin.com/login/es/?fromSignIn=true"
 _URL_JOBS_VIEW = "https://www.linkedin.com/jobs/view"
@@ -109,12 +141,15 @@ _RE_FECHA_PUBLICACION = re.compile(r"^r\d+$")
 
 @dataclass
 class _TarjetaExtraida:
-    """Datos de una tarjeta de resultado: enlace, titulo y fecha relativa
-    de publicacion (D29: empresa y ubicacion ya no se extraen)."""
+    """Datos de una tarjeta de resultado: enlace, titulo, fecha relativa,
+    ubicacion cruda y modalidad canonica ('N/R' cuando la tarjeta no la
+    reporta)."""
 
     enlace: str
     titulo: str
     fecha_relativa: str = ""
+    ubicacion: str = ""
+    modalidad: str = "N/R"
 
 
 class FlowError(Exception):
@@ -321,6 +356,8 @@ class LinkedInAdapter:
                             tarjeta.fecha_relativa
                         ),
                         observaciones=tarjeta.fecha_relativa,
+                        ubicacion=tarjeta.ubicacion or "N/R",
+                        modalidad=tarjeta.modalidad or "N/R",
                     )
                 )
             paginas_consumidas += 1
@@ -568,6 +605,8 @@ class LinkedInAdapter:
                         tarjeta.fecha_relativa
                     ),
                     observaciones=tarjeta.fecha_relativa,
+                    ubicacion=tarjeta.ubicacion or "N/R",
+                    modalidad=tarjeta.modalidad or "N/R",
                 )
             )
         total: int | None = None
@@ -688,8 +727,8 @@ def _url_absoluta(href: str, base: str) -> str:
 
 
 def _tarjetas_resultado(soup: BeautifulSoup, base: str = "") -> list[_TarjetaExtraida]:
-    """Tarjetas de oferta de las variantes SSR conocidas (D29: solo titulo y
-    fecha relativa donde la variante la expone).
+    """Tarjetas de oferta de las variantes SSR conocidas (titulo, fecha
+    relativa, ubicacion y modalidad donde la variante las expone).
 
     Priority: session SDUi cards (2026, ``componentkey`` divs without links),
     session SSR 2026 cards, classic logged-out cards, then any canonical
@@ -727,10 +766,17 @@ def _tarjetas_resultado(soup: BeautifulSoup, base: str = "") -> list[_TarjetaExt
                 titulo = _texto_de(enlace.parent, _SEL_TITULO_TARJETA)
             else:
                 titulo = enlace.get_text(strip=True)
+            ubicacion, modalidad = "", "N/R"
+            if selector == _SEL_ENLACE_TARJETA:
+                texto_ubi = _texto_de(enlace, _SEL_UBICACION_TARJETA_CLASICA)
+                if texto_ubi:
+                    ubicacion, modalidad = _modalidad_de_texto(texto_ubi)
             tarjeta = _TarjetaExtraida(
                 enlace=_url_absoluta(href, base),
                 titulo=titulo,
                 fecha_relativa="",
+                ubicacion=ubicacion,
+                modalidad=modalidad,
             )
         if not tarjeta.titulo or tarjeta.enlace in vistos:
             continue
@@ -749,11 +795,56 @@ def _extraer_tarjeta_sdui(div: Any) -> _TarjetaExtraida | None:
     span_titulo = div.select_one("span[aria-hidden='true']")
     titulo = span_titulo.get_text(strip=True) if span_titulo else ""
     fecha_relativa = _fecha_relativa_sdui(div)
+    ubicacion, modalidad = _ubicacion_sdui(div, titulo)
     return _TarjetaExtraida(
         enlace=href,
         titulo=titulo,
         fecha_relativa=fecha_relativa,
+        ubicacion=ubicacion,
+        modalidad=modalidad,
     )
+
+
+def _ubicacion_sdui(div: Any, titulo: str) -> tuple[str, str]:
+    """Ubicacion cruda + modalidad canonica desde los <p> de la tarjeta SDUi.
+
+    Clasificacion por texto (Exp 9): descartados titulo, empresa (primer
+    candidato utilizable), ruido fijo de la UI y la fecha, el siguiente
+    segmento es la ubicacion; puede llevar sufijo de modalidad "(En remoto)".
+    Sin segundo candidato -> sin ubicacion ('', 'N/R').
+    """
+    candidatos: list[str] = []
+    for p in div.find_all("p"):
+        segmento = str(p.get_text("|", strip=True)).split("|")[0].strip()
+        clave = normalizar_texto(segmento)
+        if not clave or clave in _RUIDO_TARJETA_SDUI:
+            continue
+        if _RE_PUBLICADO_SDUI.search(segmento) or clave.startswith("hace "):
+            continue
+        if titulo and clave.startswith(normalizar_texto(titulo)):
+            continue
+        candidatos.append(segmento)
+    if len(candidatos) < 2:
+        return "", "N/R"
+    return _modalidad_de_texto(candidatos[1])
+
+
+def _modalidad_de_texto(texto: str) -> tuple[str, str]:
+    """Separa un sufijo de modalidad "(…)" del texto de ubicacion.
+
+    Devuelve (texto_sin_sufijo, modalidad_canonica); 'N/R' cuando el texto
+    no declara modalidad. Si el texto COMPLETO es una modalidad ("Remoto"),
+    no queda ubicacion utilizable.
+    """
+    clave = normalizar_texto(texto)
+    if clave in _MODALIDAD_TARJETA:
+        return "", _MODALIDAD_TARJETA[clave]
+    sufijo = _RE_SUFIJO_MODALIDAD.search(texto)
+    if sufijo:
+        canonica = _MODALIDAD_TARJETA.get(normalizar_texto(sufijo.group(1)))
+        if canonica:
+            return texto[: sufijo.start()].rstrip(), canonica
+    return texto, "N/R"
 
 
 def _fecha_relativa_sdui(card: Any) -> str:
