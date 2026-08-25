@@ -44,6 +44,7 @@ from bs4 import BeautifulSoup, Tag
 from loguru import logger
 from pydantic import BaseModel
 
+from modules.preparation.nodes.enriquecimiento import enriquecer_empresa
 from modules.preparation.nodes.inicio import _validar_preparacion
 from modules.preparation.run_context import RunContext
 from shared.ia_service import analyze
@@ -303,6 +304,56 @@ def _diligenciar_empresa(
     return empresa_id
 
 
+_CAMPOS_ENRIQUECIMIENTO: tuple[str, ...] = (
+    "sitio_web",
+    "sector",
+    "tamano",
+    "descripcion",
+    "sede",
+    "tipo",
+    "fundacion",
+    "especialidades",
+)
+
+
+def _enriquecer_si_aplica(
+    contexto: RunContext, empresa_id: str, url_perfil: str
+) -> None:
+    """D39 step-2 hook: enrich new or still-incomplete companies.
+
+    Autocuración: a company already in the catalog whose profile fields are
+    all 'N/R' (e.g. blocked on a previous run) is visited again; complete
+    ones and this-run failures/fallbacks are skipped via the run caches.
+    Enrichment never aborts the run — unexpected interruptions are logged
+    and cached as failures for the next run.
+    """
+    if (
+        empresa_id in contexto.cache_empresas_enriquecidas
+        or empresa_id in contexto.cache_empresas_fallidas
+    ):
+        return
+    try:
+        filas = leer_tabla("empresas", {"id": empresa_id})
+        if not filas:
+            return
+        fila = filas[0]
+        if any(
+            str(fila.get(campo, "N/R")) != "N/R"
+            for campo in _CAMPOS_ENRIQUECIMIENTO
+        ):
+            contexto.cache_empresas_enriquecidas.add(empresa_id)
+            return
+        enriquecer_empresa(
+            contexto, empresa_id, url_perfil, _obtener_sesion(contexto)
+        )
+    except Exception as exc:
+        logger.warning(
+            f"enriquecimiento interrumpido | run={contexto.id_corrida} "
+            f"| empresa={empresa_id} | {exc}"
+        )
+        contexto.cache_empresas_fallidas.add(empresa_id)
+
+
 def _normalizar_componente(componente: str) -> str:
     """Normalize one tuple component, preserving the `N/A` sentinel (D31)."""
     if componente == "N/A":
@@ -449,6 +500,9 @@ def _procesar_lote_a(contexto: RunContext, lote: list[dict[str, Any]]) -> bool:
         try:
             empresa_id = _diligenciar_empresa(
                 contexto, datos.empresa_nombre, datos.empresa_perfil
+            )
+            _enriquecer_si_aplica(
+                contexto, empresa_id, datos.empresa_perfil
             )
             ubicacion_id = _diligenciar_ubicacion(
                 contexto, str(oferta.get("ubicacion", "") or "")

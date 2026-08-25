@@ -329,6 +329,20 @@ Format: `D<n>` — module/business decisions; `C<n>` — prompt/design alignment
 - **Decision:** Files of `modules/orchestrator/` use Spanish identifiers for domain concepts (`ejecutar_corrida_programada`, `ModuloOrquestado`), with the same scope and limits as D37: English remains the norm for code/documentation/configuration outside this exception, shared-layer docstrings stay in English, and Spanish docstrings/error-evidence strings are allowed only inside these module files. User-approved during the sub-phase 5.6 analysis.
 - **Impact:** No schema/data changes; AGENTS.md Conventions section updated to list the third package; applies from sub-phase 5.6 onward.
 
+### D39. Company enrichment moves to the Preparation node step 2, with autocuración and no per-run cap (2026-08-25)
+
+- **Date:** 2026-08-25
+- **Status:** In effect
+- **Context:** The approved M2 sheet (D33/D4) placed deep company enrichment as a decoupled step 6 of Finalizar Proceso behind `profundidad_catalogo_empresa` (0 = off), implemented only as the H2 gate-only stub in sub-phase 5.5. After the first clean orchestrated runs the user requested inline enrichment at company-registration time ("paso 2") as the logical placement. An empirical guest-access experiment (2026-08-25, 31 real profile visits, no login) verified: the four official fields plus `sede`/`tipo`/`fundación`/`especialidades` are readable from public profile pages; ~1 s load per page; transient 999 walls clear after ~45 s; a 2 s pause between visits yields 10/10 successes; successful pages contain sign-up strings that would false-positive the offer-page wall markers.
+- **Decision:**
+  1. Enrichment runs inside «Preparación de ofertas» right after each company is registered (`_enriquecer_si_aplica` hook in `preparacion.py`, reader `nodes/enriquecimiento.py`); the Finalizar Proceso H2 stub is removed.
+  2. Autocuración: offers pointing at companies whose enrichment fields are all `'N/R'` trigger a new visit (self-heals runs where LinkedIn blocked).
+  3. No artificial cap; `profundidad_catalogo_empresa` redefined — 0 = unlimited (default), N > 0 = emergency brake (max visits per run). New key `pausa_entre_empresas_segundos` (default 2 s).
+  4. Blocking strategy measured: refined wall detection for company profiles (status 999/429 or body < 10 KB; large bodies with sign-up strings are content), one retry after a fixed 40 s cooldown, then skip for the rest of the run (per-run failure cache).
+  5. Schema: `empresas` gains `sede`/`tipo`/`fundacion`/`especialidades` (TEXT DEFAULT 'N/R', idempotent `_migrate_enriquecimiento_empresas_d39`) and the four pre-existing enrichment columns backfill '' → 'N/R' (D31 rule applied to this catalog; resolves the twice-deferred empty-format item). Fields the page does not show persist `'N/R'`.
+  6. Traceability stays log-only (no events, no error counters): enrichment failures never abort the run nor count as preparation errors.
+- **Impact:** Live DB migrated via `init_db()` with backup (52 empresas preserved, double-init idempotent); ficha M2 as-built notes (RN-05, Nodo 5 step 6 retired, config semantics); DOC-13A v1.12; database-tables writers/columns updated; tracker 5.8; 544 tests.
+
 ## Prompt/design alignment decisions
 
 ### C2. Detailed Evaluation entity uses Spanish attribute names
@@ -392,6 +406,7 @@ Source: DOC-APPENDIX 9A — archived 2026-08-11; content consolidated here uncha
 
 | Version | Date | Change |
 |---|---|---|
+| 1.24 | 2026-08-25 | Added D39 (company-profile enrichment moved into the Preparation node step 2 replacing the decoupled Finalizar H2 stub: guest httpx reader with ES/EN label extraction of `sitio_web`/`sector`/`tamano`/`descripcion`/`sede`/`tipo`/`fundacion`/`especialidades` ('N/R' when unreported), autocuración of incomplete companies, no cap with `profundidad_catalogo_empresa` redefined as optional brake (0 = unlimited default) plus new `pausa_entre_empresas_segundos`, refined wall detection + one 40 s-cooldown retry, log-only traceability; idempotent `_migrate_enriquecimiento_empresas_d39` adds four columns and backfills legacy '' to 'N/R'; live DB migrated with backup; tracker 5.8; 544 tests). |
 | 1.23 | 2026-08-21 | Added D38 (Spanish identifier exception extended to `modules/orchestrator/` — ficha-mandated Spanish public names for the transversal orchestrator, same scope/limits as D37, user-approved during sub-phase 5.6; tracker 512 tests). |
 | 1.22 | 2026-08-21 | Added D37 (Spanish identifier exception extended to `modules/preparation/` — node files/tests/run_context use Spanish domain identifiers with the same scope and limits as `modules/discovery/`, user-approved during sub-phase 5.2; AGENTS.md conventions already reflected it). |
 | 1.21 | 2026-08-21 | Added D36 (`total_preparadas` at Finalizar Proceso counts DISTINCT offer ids via `contar_distintos` — resolves the double-count between ficha paso 8 lot-(b) re-emission and plain row counting; both events kept for per-step traceability per user choice; implementation lands in 5.5; tracker 5.3; 424 tests). |

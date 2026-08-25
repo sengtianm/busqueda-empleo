@@ -27,7 +27,7 @@ Instanciar la corrida de preparación (corrida propia del módulo, decisión D3)
 ### Descripción funcional
 Al recibir disparador:
 1. Crea instancia de corrida con `id_corrida` único y `fecha_inicio`.
-2. Carga configuración y valida nivel global: **toda** la sección `preparacion:` — `profundidad_catalogo_empresa`, `umbral_titulo`, `umbral_descripcion`, `max_pasadas`, `pausa_entre_ofertas_segundos`, `limite_vida_sesion`, reintentos.
+2. Carga configuración y valida nivel global: **toda** la sección `preparacion:` — `profundidad_catalogo_empresa`, `umbral_titulo`, `umbral_descripcion`, `max_pasadas`, `pausa_entre_ofertas_segundos`, `pausa_entre_empresas_segundos`, `limite_vida_sesion`, reintentos.
 3. Verifica disponibilidad y permisos de escritura de la BD del módulo (prueba de escritura con rollback).
 4. Valida concurrencia mediante bloqueo persistente **global compartido** con el Módulo 1.
 5. Carga ofertas candidatas: SELECT de `ofertas_descubiertas` con estado `descubierta`, orden FIFO (`fecha_descubrimiento ASC, id ASC`).
@@ -58,12 +58,12 @@ Error fatal de inicialización o concurrencia activa producen terminación contr
 - **RN-03**: el iterador de candidatas se reinicia al inicio de cada corrida; dentro de la corrida, cada pasada del bucle re-consulta la BD en lugar de reutilizar un iterador congelado.
 - **RN-04**: este nodo no valida si hay ofertas pendientes; esa validación es del nodo de decisión siguiente.
 - **RN-05**: este nodo no accede a LinkedIn ni a páginas de ofertas (eso es del nodo Preparación).
-- **RN-06**: la corrida procesa todas las ofertas en `descubierta` (sin `max_ofertas_por_corrida`); el tiempo se acota por pausas y enriquecimiento desacoplado (D4).
+- **RN-06**: la corrida procesa todas las ofertas en `descubierta` (sin `max_ofertas_por_corrida`); el tiempo se acota por las pausas configuradas y el enriquecimiento en línea del paso 2 (as-built D39: `pausa_entre_empresas_segundos` + freno opcional).
 - **RN-07**: selección FIFO — más antiguas primero; las fallidas de corridas previas quedaron en `descubierta` y vuelven a intentarse en orden.
 
 ### Validaciones
 - **VAL-01**: `id_corrida` único y no nulo.
-- **VAL-02**: configuración global: sección `preparacion:` completa y con rangos válidos (`0 ≤ umbral ≤ 100`, `max_pasadas ≥ 1`, `pausa ≥ 0`, `limite_vida_sesion ≥ 1`, `profundidad ≥ 0`, reintentos coherentes).
+- **VAL-02**: configuración global: sección `preparacion:` completa y con rangos válidos (`0 ≤ umbral ≤ 100`, `max_pasadas ≥ 1`, pausas ≥ 0, `limite_vida_sesion ≥ 1`, `profundidad ≥ 0`, reintentos coherentes).
 - **VAL-03**: BD: conexión abierta y prueba de escritura exitosa con rollback.
 - **VAL-04**: bloqueo legible; obsolescencia por marca_temporal contra umbral configurable; marcas temporales coherentes.
 - **VAL-05**: contexto completo antes de entregar control (`hubo_candidatas` presente).
@@ -212,7 +212,7 @@ Flujo por oferta (orden obligatorio, por dependencia natural):
 En fallo del paso 1: evento `preparacion_fallida` (error) con `id_oferta` + reintento configurable; si persiste, la oferta permanece en `descubierta` para la siguiente pasada/corrida. **Todos los eventos de oferta llevan `id_oferta`, éxito y fallo.**
 
 ### Entradas
-- Contexto: candidatas, `id_corrida`, configuración `preparacion:` (`pausa_entre_ofertas_segundos`, `limite_vida_sesion`, reintentos, `profundidad_catalogo_empresa`), sesión HTTP de invitado, cachés de corrida (empresas, ubicaciones, IA por texto).
+- Contexto: candidatas, `id_corrida`, configuración `preparacion:` (`pausa_entre_ofertas_segundos`, `pausa_entre_empresas_segundos`, `limite_vida_sesion`, reintentos, `profundidad_catalogo_empresa`), sesión HTTP de invitado, cachés de corrida (empresas, ubicaciones, IA por texto, enriquecimiento).
 - BD: `ofertas_descubiertas`, `empresas`, `ubicaciones`.
 - Servicio de IA (bajo demanda, solo ubicación; best-effort).
 
@@ -228,7 +228,7 @@ En fallo del paso 1: evento `preparacion_fallida` (error) con `id_oferta` + rein
 - **RN-02**: cada pasada re-consulta su lote en la BD (no usa el iterador congelado de INICIO).
 - **RN-03**: sesión HTTP reutilizada para todas las ofertas; **límite de vida configurable** (renovar cada N ofertas, p. ej. 50); **fallback authwall** → nueva sesión de invitado y se reintenta la oferta; **pausa entre ofertas** configurable (`pausa_entre_ofertas_segundos`, prudencia anti-bloqueo — se detectó `uc=scraping` en la investigación).
 - **RN-04**: reintento por oferta configurable; si persiste → oferta queda en `descubierta` (siguiente pasada/corrida).
-- **RN-05**: empresa — upsert por `nombre_normalizado` (sin IA); **caché en memoria de la corrida** (empresa → `empresa_id`); el enriquecimiento profundo (web, sector, tamaño, descripción) **no se hace aquí** — lo hace el paso 6 de `"Finalizar Proceso"` (desacoplado, `profundidad_catalogo_empresa`).
+- **RN-05**: empresa — upsert por `nombre_normalizado` (sin IA); **caché en memoria de la corrida** (empresa → `empresa_id`). **As-built D39 (2026-08-25): el enriquecimiento profundo SÍ se hace aquí, paso 2 del flujo** — justo tras registrar o encontrar cada empresa se visita su perfil público como invitado (sin login) y se completan `sitio_web`/`sector`/`tamano`/`descripcion` más los extras aprobados `sede`/`tipo`/`fundacion`/`especialidades` (`'N/R'` si la página no los muestra); autocuración revisita empresas aún todo-'N/R'; pausa `pausa_entre_empresas_segundos`; muro detectado por estado 999/429 o cuerpo diminuto (no por marcadores de registro) con un reintento tras 40 s; fallos quedan pendientes para la siguiente corrida y nunca abortan ni emiten eventos; `profundidad_catalogo_empresa` = freno opcional (0 = sin límite).
 - **RN-06**: ubicaciones — dedup por **tupla completa `(ciudad, región, país)` normalizada**; la IA completa país/región solo por conocimiento seguro; "Colombia" solo → `(N/A, N/A, Colombia)` con ID compartido; "Remoto" → **no se crea ubicación**; `ubicacion_id = 'N/R'`; la **modalidad es dato de la oferta** (la IA no la toca).
 - **RN-07**: IA — solo clasifica texto (recibe prompt, devuelve `{ciudad, región, país}` JSON validado con Pydantic); no selecciona ofertas, no lee la BD, no escribe, no tiene memoria del catálogo; **caché por texto distinto en el contexto de la corrida** (la IA se invoca una vez por texto de ubicación distinto); si la IA falla u Ollama está caído → la oferta se captura igual y queda `ubicacion_id = 'N/A'` (pendiente). **La IA jamás bloquea la captura.**
 - **RN-08**: tres estados de `ubicacion_id`: `N/A` (pendiente — la IA aún no la gestionó), `N/R` (gestionada — remoto/no reportada), `UBI-xxxx` (gestionada — identificada).
@@ -291,7 +291,7 @@ En fallo del paso 1: evento `preparacion_fallida` (error) con `id_oferta` + rein
 - **Impactos aprobados**:
   - `"Verificación de duplicidad"` consume `titulo`, `empresa_id` y `descripcion_original` (la descripción la captura este nodo; el Módulo 1 no la captura — D28/D29).
   - `"¿Quedan ofertas en 'descubierta'?"` consulta lo que quede sin procesar.
-  - `"Finalizar Proceso"` cierra la sesión HTTP y (paso 6) enriquece el catálogo de empresas.
+  - `"Finalizar Proceso"` cierra la sesión HTTP; el enriquecimiento del catálogo de empresas corre en este nodo (as-built D39, ver RN-05).
 
 ### Notas de implementación
 - httpx con sesión de invitado y headers de navegador; sin Playwright en el camino crítico (D4).
@@ -517,7 +517,7 @@ El evento `revision_pendientes` se escribe **siempre** al cerrar el bucle (traza
 **Versión**: 1.0 (aprobada)
 
 ### Identificación
-Punto de convergencia de todas las terminaciones de la corrida. Espejo de `"Finalizar Proceso"` del Módulo 1 (`modules/discovery/nodes/finalizar.py`), con tres diferencias: métricas por eventos, cierre de recursos propios (sesión HTTP + navegador si el enriquecimiento lo usó) y nuevos motivos de terminación.
+Punto de convergencia de todas las terminaciones de la corrida. Espejo de `"Finalizar Proceso"` del Módulo 1 (`modules/discovery/nodes/finalizar.py`), con tres diferencias: métricas por eventos, cierre de recursos propios (sesión HTTP de Preparación; el navegador era solo del paso 6, retirado por D39) y nuevos motivos de terminación.
 
 ### Objetivo
 Cerrar la corrida de preparación de forma determinista y con trazabilidad completa:
@@ -526,7 +526,7 @@ Cerrar la corrida de preparación de forma determinista y con trazabilidad compl
 3. persistir cierre de corrida;
 4. cerrar recursos abiertos;
 5. liberar bloqueo de concurrencia si esta corrida lo posee;
-6. enriquecer el catálogo de empresas (desacoplado, si aplica).
+6. *(retirado por D39)* enriquecer el catálogo de empresas — ocurre ahora en «Preparación de ofertas» (ver RN-05).
 
 ### Descripción funcional (pasos en orden obligatorio)
 
@@ -537,20 +537,20 @@ Cerrar la corrida de preparación de forma determinista y con trazabilidad compl
 | 3 | **Persistir cierre de corrida** | `actualizar_corrida`: estado, `fecha_fin`, `motivo_terminacion`, métricas (1 reintento, nunca aborta) | `corridas` |
 | 4 | **Cerrar recursos** | Cerrar la sesión HTTP reutilizada de Preparación (best-effort); si el paso 6 usó el fallback de navegador Playwright del enriquecimiento, cerrarlo también | — |
 | 5 | **Liberar bloqueo** | `liberar_bloqueo(id_corrida)` — solo si la corrida lo posee | `bloqueo` |
-| 6 | **Enriquecer catálogo de empresas (desacoplado, H2)** | Solo si `profundidad_catalogo_empresa > 0`: enriquecer por lotes (httpx sesión fresca, fallback navegador fresco — D4). Corre **después** de liberar el bloqueo: no bloquea el camino crítico ni a otras corridas. Errores → registro local; no aborta | `empresas` |
+| 6 | **Enriquecer catálogo de empresas (desacoplado, H2)** *(retirado por D39 — ver nota as-built en las notas de implementación)* | Solo si `profundidad_catalogo_empresa > 0`: enriquecer por lotes (httpx sesión fresca, fallback navegador fresco — D4). Corre **después** de liberar el bloqueo: no bloquea el camino crítico ni a otras corridas. Errores → registro local; no aborta | `empresas` |
 
 ### Entradas
 Contexto best-effort:
 - motivo/estado de terminación: `sin_pendientes`, `corrida_completada`, `error_total`, `error_critico`, `aborto`, `concurrencia`;
 - `id_corrida`; `hubo_candidatas` (bool, del INICIO);
-- sesión HTTP abierta, si existe; navegador del enriquecimiento, si existe;
+- sesión HTTP abierta, si existe;
 - estado de bloqueo; conexión de BD.
 
 ### Salidas
 - Evento de terminación persistido en `"errores o sucesos"` o registro crítico local si falla escritura.
 - Corrida cerrada (`corridas` con estado, `fecha_fin`, motivo y métricas).
 - Recursos cerrados; bloqueo liberado si esta corrida lo poseía.
-- Catálogo `empresas` enriquecido si aplica.
+- *(Retirado por D39)* el catálogo `empresas` se enriquece durante «Preparación de ofertas», no aquí.
 - Sin sucesor: fin del proceso.
 
 ### Ramas
@@ -591,7 +591,7 @@ No se sobrescribe `ofertas_descubiertas.id_corrida` (sigue siendo la corrida de 
 | Fallo de liberación del bloqueo | A. Aborto/error fatal. B. Reintento único + registro local + continuar. | **B**: ya en terminación; la obsolescencia del bloqueo auto-sana en la próxima corrida. |
 | Contexto corrupto al llegar | A. Aborto sin cierre. B. Cierre best-effort con motivo por defecto. | **B**: el productor ya escribió el evento crítico; Finalizar debe intentar liberar/cerrar con lo disponible. |
 | Limpieza de recursos | A. Implícita por fin de proceso. B. Cierre explícito best-effort. | **B**: la sesión HTTP/navegador puede sobrevivir según implementación; cierre explícito evita fugas. |
-| Enriquecimiento desacoplado | A. Antes de liberar el bloqueo. B. Después de liberar (paso 6). C. Fuera de la corrida. | **B**: mantiene la corrida como unidad de trabajo completa sin bloquear el camino crítico ni a otras corridas; errores no abortan. |
+| Enriquecimiento desacoplado | A. Antes de liberar el bloqueo. B. Después de liberar (paso 6). C. Fuera de la corrida. | **B** al construirse; **superado por D39**: el enriquecimiento corre en línea dentro de «Preparación de ofertas» (paso 2) — esta tabla conserva la decisión histórica. |
 
 ### Especificación funcional
 1. **Consultar métricas**. Entrada: `eventos`, `id_corrida`, `hubo_candidatas`. Proceso: contar por eventos (paso 1); decidir motivo según tabla oficial (si `hubo_candidatas` y 0 éxitos y ≥ 1 error → `error_total`). Salida: métricas + motivo. Excepción: fallo de conteo → reintento único; si persiste, motivo por defecto `aborto` con métricas vacías y continuar.
@@ -599,7 +599,7 @@ No se sobrescribe `ofertas_descubiertas.id_corrida` (sigue siendo la corrida de 
 3. **Persistir cierre de corrida**. Entrada: estado, motivo, métricas. Proceso: `actualizar_corrida` (estado, `fecha_fin`, `motivo_terminacion`, `total_preparadas`, `total_duplicadas`, `total_ofertas`, `total_sucesos`, `total_errores`); 1 reintento; nunca aborta. Salida: corrida cerrada. Excepción: fallo tras reintento → registro local y continuar.
 4. **Cerrar recursos (best-effort)**. Entrada: sesión HTTP; navegador si el enriquecimiento lo usó; conexión BD. Proceso: cerrar; errores se registran localmente y no impiden terminación. Salida: recursos cerrados. Excepción: errores de cierre no abortan.
 5. **Liberar bloqueo si corresponde**. Entrada: estado de bloqueo, `id_corrida`. Proceso: si el bloqueo existe y el propietario == `id_corrida`, liberar; fallo → reintento único; si persiste, registro local y continuar; si no propietario, sin acción. Salida: bloqueo liberado o sin acción. Excepción: fallo tras reintento no aborta.
-6. **Enriquecer catálogo de empresas (si `profundidad_catalogo_empresa > 0`)**. Entrada: `empresas`, configuración. Proceso: por lotes, sesión httpx fresca por empresa con fallback de navegador fresco (D4); actualizar `sitio_web`, `sector`, `tamano`, `descripcion`; errores → registro local y continuar. Salida: catálogo enriquecido (total o parcial). Excepción: errores no abortan.
+6. **Enriquecer catálogo de empresas (si `profundidad_catalogo_empresa > 0`)** *(retirado por D39 — corre en «Preparación de ofertas», ver RN-05)*. Entrada: `empresas`, configuración. Proceso: por lotes, sesión httpx fresca por empresa con fallback de navegador fresco (D4); actualizar `sitio_web`, `sector`, `tamano`, `descripcion`; errores → registro local y continuar. Salida: catálogo enriquecido (total o parcial). Excepción: errores no abortan.
 7. **Terminar proceso**. Entrada: —. Proceso: cerrar nodo. Salida: fin de corrida. Excepción: ninguna.
 
 ### Puntos de aprobación
@@ -621,7 +621,8 @@ No se sobrescribe `ofertas_descubiertas.id_corrida` (sigue siendo la corrida de 
 - Métricas por SQL (`contar_filas` sobre `eventos`), no por tablas completas.
 - Semántica D30: el evento de terminación nunca se cuenta en `total_sucesos`.
 - Best-effort en todo el cierre: ningún error del paso 1-6 aborta.
-- `profundidad_catalogo_empresa` configura si el paso 6 corre o no (0 = desactivado).
+- **As-built D39 (2026-08-25):** el paso 6 (enriquecimiento desacoplado H2) fue retirado — corre dentro de «Preparación de ofertas» justo tras registrar cada empresa (ver nota as-built en RN-05); el nodo termina tras liberar el bloqueo.
+- `profundidad_catalogo_empresa` ya no activa/desactiva nada aquí: es freno opcional del enriquecimiento del Nodo 2 (0 = sin límite; N > 0 = máximo de visitas por corrida).
 
 ### Estado del módulo
 Con este nodo queda completo el conjunto de nodos del Módulo 2 (INICIO, "¿Quedan ofertas por preparar…?", Preparación de ofertas, Verificación de duplicidad, "¿Quedan ofertas en 'descubierta'?", Finalizar Proceso). Pendientes de implementación: todos — este documento es la base autoritativa de construcción, derivada del `Plan funcional fase 5` (decisiones D1-D5, correcciones, H1-H7 y optimizaciones aprobadas). El orquestador transversal (`modules/orchestrator/`, capa separada de este módulo) se construirá al cierre del Módulo 2 con prueba real de corrida secuencial 1→2 — especificado en su propia ficha técnica: `docs/diagrams/Ficha técnica - Diagrama de flujo (Orquestador transversal).md`.
@@ -639,5 +640,5 @@ Con este nodo queda completo el conjunto de nodos del Módulo 2 (INICIO, "¿Qued
 7. `shared/models.py`: `OfferState.DUPLICADA`, `EstadoCorrida.SIN_PENDIENTES`, `Corrida` con `total_preparadas`/`total_duplicadas`, `EventoAlmacen` con `id_oferta`, `Location` sin `modalidad`.
 8. `shared/state_machine.py`: transición `preparada → duplicada` (`descubierta → preparada` ya existe).
 9. `shared/utilidades.py`: nueva función `normalizar_texto`.
-10. `config/config.yaml`: sección nueva `preparacion:` (`profundidad_catalogo_empresa`, `umbral_titulo: 90`, `umbral_descripcion: 85`, `max_pasadas: 2`, `pausa_entre_ofertas_segundos`, `limite_vida_sesion`, reintentos) y `ai_routing.preparacion`.
+10. `config/config.yaml`: sección nueva `preparacion:` (`profundidad_catalogo_empresa`, `umbral_titulo: 90`, `umbral_descripcion: 85`, `max_pasadas: 2`, `pausa_entre_ofertas_segundos`, `pausa_entre_empresas_segundos`, `limite_vida_sesion`, reintentos) y `ai_routing.preparacion`. *(As-built D39: `profundidad_catalogo_empresa` = freno opcional del enriquecimiento, 0 = sin límite.)*
 11. `prompts/`: prompt de clasificación de ubicación (`prompts/preparacion/ubicacion.md`).

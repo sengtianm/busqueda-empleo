@@ -43,11 +43,15 @@ ESQUEMAS: dict[str, str] = {
         "id TEXT PRIMARY KEY,"
         "nombre TEXT NOT NULL,"
         "nombre_normalizado TEXT DEFAULT '',"
-        "sitio_web TEXT DEFAULT '',"
+        "sitio_web TEXT DEFAULT 'N/R',"
         "perfil_linkedin TEXT DEFAULT '',"
-        "sector TEXT DEFAULT '',"
-        "tamano TEXT DEFAULT '',"
-        "descripcion TEXT DEFAULT '',"
+        "sector TEXT DEFAULT 'N/R',"
+        "tamano TEXT DEFAULT 'N/R',"
+        "descripcion TEXT DEFAULT 'N/R',"
+        "sede TEXT DEFAULT 'N/R',"
+        "tipo TEXT DEFAULT 'N/R',"
+        "fundacion TEXT DEFAULT 'N/R',"
+        "especialidades TEXT DEFAULT 'N/R',"
         "fecha_creacion TEXT DEFAULT '',"
         "fecha_ultima_edicion TEXT DEFAULT ''"
         ")"
@@ -222,6 +226,7 @@ def init_db() -> None:
         _migrate_sesiones_id(conn)
         _migrate_limpieza_d31(conn)
         _migrate_preparacion_d33(conn)
+        _migrate_enriquecimiento_empresas_d39(conn)
         for sentencia in _INDICES:
             conn.execute(sentencia)
         conn.commit()
@@ -600,6 +605,44 @@ def _migrate_preparacion_d33(conn: sqlite3.Connection) -> None:
     }
     if "modalidad" in columnas_ubicaciones:
         conn.execute("ALTER TABLE ubicaciones DROP COLUMN modalidad")
+
+
+_ADICIONES_ENRIQUECIMIENTO_D39: tuple[tuple[str, str], ...] = (
+    ("empresas", "sede TEXT DEFAULT 'N/R'"),
+    ("empresas", "tipo TEXT DEFAULT 'N/R'"),
+    ("empresas", "fundacion TEXT DEFAULT 'N/R'"),
+    ("empresas", "especialidades TEXT DEFAULT 'N/R'"),
+)
+
+
+def _migrate_enriquecimiento_empresas_d39(conn: sqlite3.Connection) -> None:
+    """D39 migration: enrichment columns + no-empty rule on `empresas`.
+
+    Adds `sede`/`tipo`/`fundacion`/`especialidades` (TEXT DEFAULT 'N/R')
+    when absent — fresh DBs already create them from ESQUEMAS, and legacy
+    DBs get them from the `_migrar_espanol_total` rebuild before this pass
+    (the guarded ALTER is the explicit safety net). Backfills the four
+    pre-existing enrichment columns (`sitio_web`/`sector`/`tamano`/
+    `descripcion`) from '' to 'N/R' per D31's no-empty-fields rule applied
+    to this catalog: those values were never populated and the enrichment
+    source has not reported them yet. Idempotent: every step only runs on
+    its target state.
+    """
+    columnas = {
+        fila["name"]
+        for fila in conn.execute("PRAGMA table_info(empresas)").fetchall()
+    }
+    if not columnas:
+        return
+    for tabla, definicion in _ADICIONES_ENRIQUECIMIENTO_D39:
+        nombre_columna = definicion.split(" ")[0]
+        if nombre_columna not in columnas:
+            conn.execute(f"ALTER TABLE {tabla} ADD COLUMN {definicion}")
+    for columna in ("sitio_web", "sector", "tamano", "descripcion"):
+        conn.execute(
+            f"UPDATE empresas SET {columna} = 'N/R' "
+            f"WHERE {columna} IS NULL OR {columna} = ''"
+        )
 
 
 def _migrate_ubicacion_rename(conn: sqlite3.Connection) -> None:

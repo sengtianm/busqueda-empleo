@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 36 | 25/08/2026 | `ses_fc6fa3931ffe4thZKiecpyCuhK` | Database wiped and first fully clean orchestrated run mapped end-to-end with zero findings; guest-access experiment proved company profiles enrichable without login; enrichment moved into preparation step 2 with autocuración, extra catalog fields and no cap (D39), implemented, migrated with backup, reviewers applied (546 tests) |
 | 35 | 25/08/2026 | `ses_fc9cdf2e5ffeMja2ZpSownJ82R` | First real orchestrated sequential runs M1→M2 validated end-to-end on an emptied database (twice); traspaso fixes confirmed; capture bug with pipe-in-title fixed using real card evidence; deterministic AI sampling (temperature 0) both routes; tests isolated from the production database; operating contract gains the functional-communication instruction (525 tests) |
 | 34 | 21/08/2026 | `ses_fdafc2fd0ffexoEFYn60IjcuYQ` | Sub-fases 5.1–5.6 implementadas: fundamentos D33, nodos INICIO + decisión de candidatas, nodo Preparación de ofertas (captura httpx invitado, catálogos empresa/ubicación con IA PRM-006), Verificación de duplicidad + decisión de bucle (RapidFuzz dos etapas), Finalizar Proceso + orquestador del flujo del módulo (métricas por eventos, ruteo de terminaciones, fila de corrida registrada antes del bloqueo) y Orquestador transversal de corrida programada (lanza módulos en serie, resultados derivados desde la BD); D35–D38 registradas |
 | 33 | 21/08/2026 | `ses_fdba95353ffezwVG7roiPKaX2c` | Phase 5 build plan defined from the two technical sheets: 7 sub-phases approved and written into MVP Execution Plan + tracker replacing the obsolete generic task list; docs-reviewer findings corrected |
@@ -29,6 +30,30 @@ Unless noted, decisions from previous sessions remain in effect.
 | 14 | 09/08/2026 | `ses_01bcc78adffemcqFEiZxT52Eli` | Sub-fase 4.4: capture/registration nodes implemented, audited, and post-audit fixes applied (FK-free schema, name columns, upsert tests) |
 | 13 | 08/08/2026 | `ses_01be77680ffeuyoKct4Qrfx1GG` | Repo sync to `fase-4`; new `/save` section with general git commit and push guidance |
 | 12 | 08/08/2026 | `ses_01c089ce2ffe9MvQT4F1pC0MJN` | Sub-fase 4.2 deep audit + post-audit fixes (credentials mapping, playwright lifecycle) |
+
+## Session 36 — 25/08/2026
+`ses_fc6fa3931ffe4thZKiecpyCuhK` · `fase-5`
+
+**Topics**
+- Production database wiped without backup and the first fully orchestrated sequential run executed on it; complete run mapping found zero defects (traceability, catalog linking, duplicate handling, canonical modality and the pipe-in-title regression all verified)
+- Guest-access experiment on real LinkedIn company pages (31 visits, no login): website/sector/size/description plus headquarters/type/founded/specialties are readable; about one second per page; transient rejection codes clear after roughly 45 seconds; a two-second pause between visits yielded 10/10 successes; successful pages contain sign-up strings that would false-positive the offer-page wall markers
+- User-requested design change approved: company enrichment runs inside offer preparation right when each company is registered, replacing the deferred closure-time placeholder
+- New guest profile reader with bilingual label extraction, refined wall detection (status/body-size heuristic instead of marker strings) and a single retry after a fixed cooldown
+- Autocuración re-visits companies still missing data on later runs; no artificial cap; optional emergency brake via configuration; courtesy pause between visits configurable
+- Companies catalog extended with four extra columns; legacy empty values corrected to the no-data marker; live database migrated with backup and double-init verified harmless
+- Reviewers applied: code minors (guarded database read inside the hook, tolerant pause lookup, persistence-failure test, nonexistent-company test) and three documentation drift fixes concentrated on the Module 2 sheet
+- Optional live verification run of the enrichment left pending user decision
+
+**Decisions**
+- D39: enrichment moves to preparation step 2 superseding the decoupled Finalizar stub; autocuración of still-empty companies; no cap (depth key redefined — zero means unlimited, positive means per-run brake); new pause key defaulting to two seconds; four extra company fields added with the not-reported marker, legacy empties backfilled; traceability log-only (failures never abort nor emit events)
+- Blocking strategy fixed by experiment evidence: wall is an atypical status or a tiny body, with one retry after a fixed cooldown
+- Decisions from previous sessions remain in effect
+
+**Status**
+- Company-enrichment task closed ✅ (tracker 5.8) with both reviewers applied after corrections
+- ruff 0 · mypy 0 · pytest 546 passing; production database migrated (backup preserved)
+- Sub-phase 5.7 punto 2 ⬜ still pending: phase documentation closure backlog from the previous session; live enrichment verification run optional, awaiting user choice
+- Single commit + push on `fase-5`; no merge
 
 ## Session 35 — 25/08/2026
 `ses_fc9cdf2e5ffeMja2ZpSownJ82R` · `fase-5`

@@ -92,6 +92,9 @@ def _validar_preparacion(seccion: Any) -> str | None:
     pausa = seccion.get("pausa_entre_ofertas_segundos")
     if not _es_numero(pausa) or pausa < 0:
         return "pausa_entre_ofertas_segundos invalida (numerico >= 0)"
+    pausa_empresas = seccion.get("pausa_entre_empresas_segundos")
+    if not _es_numero(pausa_empresas) or pausa_empresas < 0:
+        return "pausa_entre_empresas_segundos invalida (numerico >= 0)"
     if not _es_entero(seccion.get("limite_vida_sesion"), 1):
         return "limite_vida_sesion invalida (entero >= 1)"
     reintentos = seccion.get("retries")

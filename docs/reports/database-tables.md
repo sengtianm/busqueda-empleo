@@ -17,7 +17,7 @@ Estado actual (conteos al momento del reporte, tras la migración D31 y el renam
 | Tabla | Filas | Escritor principal |
 |---|---|---|
 | `secuencia_ids` | 4 | Automática (generador de IDs) |
-| `empresas` | 0 | Módulo 2 — Nodo 2 (upsert por `nombre_normalizado`); Módulo 2 — Nodo 5 paso 6 (enriquecimiento, si `preparacion.profundidad_catalogo_empresa > 0`) |
+| `empresas` | 0 | Módulo 2 — Nodo 2 (upsert por `nombre_normalizado` + enriquecimiento del perfil en el paso 2, D39, con autocuración; freno opcional `profundidad_catalogo_empresa > 0`) |
 | `ubicaciones` | 0 | Módulo 2 — Nodo 2 (upsert por tupla `(ciudad, region, pais)` normalizada; "Remoto" no crea fila) |
 | `ofertas_descubiertas` | 62 | Módulo 1 — Nodo Captura → `upsert_oferta()`; Módulo 2 — Nodo 2 (sobrescribe `titulo`/`descripcion_original`/`empresa_id`/`ubicacion_id`/`modalidad`); Módulo 2 — Nodo 3 (escribe `estado`, `id_duplicidad`, `fecha_ultima_verificacion`, `observaciones`) |
 | `corridas` | 1 | Módulo 1/2 — Nodo INICIO → `registrar_corrida()`; Nodo Finalizar → `actualizar_corrida()`; Orquestador transversal → `registrar_corrida()` para la corrida programada |
@@ -49,18 +49,24 @@ Control interno del generador de IDs secuenciales (`PREFIJO-NNNN`). No se escrib
 
 ### 2.2. `empresas`
 
-Catálogo de empresas. **El Módulo 1 no escribe en esta tabla** (0 filas): no extrae la empresa de las tarjetas (decisión D29; las columnas crudas `empresa_nombre`/`ubicacion_nombre` de `ofertas_descubiertas` fueron eliminadas). **El Módulo 2 la puebla** (decisión D33): el Nodo 2 (Preparación de ofertas) hace upsert por `nombre_normalizado` sin IA; el Nodo 5 paso 6 (enriquecimiento desacoplado, D4) actualiza `sitio_web`/`sector`/`tamano`/`descripcion` cuando `preparacion.profundidad_catalogo_empresa > 0`.
+Catálogo de empresas. **El Módulo 1 no escribe en esta tabla** (0 filas): no extrae la empresa de las tarjetas (decisión D29; las columnas crudas `empresa_nombre`/`ubicacion_nombre` de `ofertas_descubiertas` fueron eliminadas). **El Módulo 2 la puebla** (decisión D33): el Nodo 2 (Preparación de ofertas) hace upsert por `nombre_normalizado` sin IA y — **desde la decisión D39 (2026-08-25)** — enriquece cada empresa en el mismo paso 2 visitando su perfil público como invitado (sin login), completando las ocho columnas de enriquecimiento con autocuración de las aún `'N/R'`; el freno opcional `profundidad_catalogo_empresa > 0` limita las visitas por corrida. El antiguo paso 6 del Nodo 5 quedó retirado.
+
+> **D39:** las ocho columnas de enriquecimiento (`sitio_web`, `sector`, `tamano`, `descripcion`, `sede`, `tipo`, `fundacion`, `especialidades`) aplican la regla de no vacíos con `'N/R'` cuando la fuente no reporta el dato; la migración idempotente `_migrate_enriquecimiento_empresas_d39` añade las cuatro columnas nuevas y corrige los `''` históricos.
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
 | `id` | TEXT (PK) | ID único (prefijo `EMP`) | Módulo 2 — Nodo 2 (`generar_id` al insertar) |
 | `nombre` | TEXT NOT NULL | Nombre oficial de la empresa | Módulo 2 — Nodo 2 (desde la página de la oferta); el Módulo 1 no escribe |
 | `nombre_normalizado` | TEXT DEFAULT '' | Nombre estandarizado para evitar duplicados (clave del upsert) | Módulo 2 — Nodo 2 (vía `normalizar_texto` en `shared/utilidades.py`) |
-| `sitio_web` | TEXT DEFAULT '' | Sitio web oficial | Módulo 2 — Nodo 5 paso 6 (enriquecimiento, si `profundidad_catalogo_empresa > 0`); opcional |
+| `sitio_web` | TEXT DEFAULT 'N/R' | Sitio web oficial (leído del perfil público) | Módulo 2 — Nodo 2 (enriquecimiento D39 en el paso 2); `'N/R'` si la fuente no lo reporta |
 | `perfil_linkedin` | TEXT DEFAULT '' | URL del perfil de LinkedIn | Módulo 2 — Nodo 2 (capturado de la página de la oferta) |
-| `sector` | TEXT DEFAULT '' | Sector económico | Módulo 2 — Nodo 5 paso 6 (enriquecimiento) |
-| `tamano` | TEXT DEFAULT '' | Clasificación de tamaño de empresa | Módulo 2 — Nodo 5 paso 6 (enriquecimiento) |
-| `descripcion` | TEXT DEFAULT '' | Descripción general | Módulo 2 — Nodo 5 paso 6 (enriquecimiento) |
+| `sector` | TEXT DEFAULT 'N/R' | Sector económico | Módulo 2 — Nodo 2 (enriquecimiento D39); `'N/R'` si no se reporta |
+| `tamano` | TEXT DEFAULT 'N/R' | Clasificación de tamaño de empresa | Módulo 2 — Nodo 2 (enriquecimiento D39); `'N/R'` si no se reporta |
+| `descripcion` | TEXT DEFAULT 'N/R' | Descripción general (texto embebido del perfil) | Módulo 2 — Nodo 2 (enriquecimiento D39); `'N/R'` si no se reporta |
+| `sede` | TEXT DEFAULT 'N/R' | Sede principal | Módulo 2 — Nodo 2 (enriquecimiento D39); `'N/R'` si no se reporta |
+| `tipo` | TEXT DEFAULT 'N/R' | Tipo de organización | Módulo 2 — Nodo 2 (enriquecimiento D39); `'N/R'` si no se reporta |
+| `fundacion` | TEXT DEFAULT 'N/R' | Año de fundación | Módulo 2 — Nodo 2 (enriquecimiento D39); `'N/R'` si no se reporta |
+| `especialidades` | TEXT DEFAULT 'N/R' | Áreas de especialidad | Módulo 2 — Nodo 2 (enriquecimiento D39); `'N/R'` si no se reporta |
 | `fecha_creacion` | TEXT DEFAULT '' | Fecha/hora de alta del registro | Automática al insertar |
 | `fecha_ultima_edicion` | TEXT DEFAULT '' | Fecha/hora de la última actualización | Automática en cada insert/update |
 

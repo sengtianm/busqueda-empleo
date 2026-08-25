@@ -4,8 +4,9 @@ Convergence point of all run terminations. Mirror of the Discovery node with
 the differences the sheet declares: metrics computed from `eventos` (the offer
 `id_corrida` is never overwritten, so preparation traceability lives only in
 events), the official M2 motive/state table (including `sin_pendientes` and
-`concurrencia`), closure of the preparation HTTP session and the decoupled
-company-enrichment step gated by `profundidad_catalogo_empresa` (H2: stub).
+`concurrencia`) and closure of the preparation HTTP session. The decoupled
+company-enrichment step 6 (H2 stub) was removed by decision D39: enrichment
+runs in the Preparación de ofertas node (step 2) since 2026-08-25.
 
 Best-effort semantics (sheet decision B): every step logs and continues; a
 closure failure never aborts the termination. Metrics follow decision D36
@@ -182,7 +183,7 @@ def cerrar_recursos(contexto: RunContext | None) -> None:
 
     Public and reusable (mirror of the M1 node): closes `sesion_http`
     (httpx client) best-effort and resets the slot so a second call is a
-    no-op. The enrichment browser (H2) would be closed here too once built.
+    no-op.
     """
     if contexto is None:
         return
@@ -209,24 +210,6 @@ def _liberar_bloqueo(id_corrida: str) -> None:
         liberar_bloqueo(id_corrida)
     except Exception as exc:
         logger.error(f"liberar_bloqueo fallo | run={id_corrida} | {exc}")
-
-
-def _enriquecer_empresas_stub(contexto: RunContext | None) -> None:
-    """Step 6 (H2, stub): gate only — no network access in this sub-phase."""
-    if contexto is None:
-        return
-    try:
-        profundidad = int(
-            contexto.config_preparacion.get("profundidad_catalogo_empresa", 0)
-        )
-    except (TypeError, ValueError):
-        return
-    if profundidad > 0:
-        logger.warning(
-            "Enriquecimiento de empresas pendiente (H2) | "
-            f"run={contexto.id_corrida} | profundidad={profundidad} | "
-            "se omite sin acceso a red"
-        )
 
 
 def finalizar_proceso(
@@ -263,11 +246,12 @@ def finalizar_proceso(
             )
         _persistir_cierre_corrida(id_corrida, estado, motivo_resuelto, metricas)
 
-    # Sheet's mandatory order: (4) resources -> (5) lock -> (6) enrichment.
+    # Sheet's mandatory order: (4) resources -> (5) lock. Step 6 (H2
+    # enrichment stub) was removed by D39 — enrichment lives in the
+    # Preparación de ofertas node now.
     cerrar_recursos(contexto)
     if id_corrida:
         _liberar_bloqueo(id_corrida)
-    _enriquecer_empresas_stub(contexto)
 
     if metricas is not None:
         resumen = " | ".join(f"{c}={metricas[c]}" for c in _CAMPOS_METRICAS)

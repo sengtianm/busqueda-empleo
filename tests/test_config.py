@@ -97,6 +97,7 @@ def test_config_real_define_seccion_preparacion_y_ruteo() -> None:
     assert 0 <= preparacion["umbral_descripcion"] <= 100
     assert preparacion["max_pasadas"] >= 1
     assert preparacion["pausa_entre_ofertas_segundos"] >= 0
+    assert preparacion["pausa_entre_empresas_segundos"] >= 0
     assert preparacion["limite_vida_sesion"] >= 1
     assert preparacion["retries"]["max_attempts"] >= 1
 

@@ -356,32 +356,8 @@ def test_ruta_concurrencia_sin_contexto_cierra_por_id() -> None:
     assert leer_tabla("eventos")[-1]["tipo"] == "suceso"
 
 
-# ------------------------------------------------------------------ stub H2
-
-
-@pytest.mark.usefixtures("temp_db_file")
-def test_stub_enriquecimiento_avisa_sin_red_cuando_profundidad_mayor_cero(
-    mensajes_loguru: list[str],
-) -> None:
-    _registrar_corrida("COR-FIN")
-    ctx = _contexto()
-    ctx.config_preparacion["profundidad_catalogo_empresa"] = 3
-    finalizar_proceso(ctx, "corrida_completada")
-    assert any("H2" in m for m in mensajes_loguru)
-
-
 @pytest.mark.usefixtures("temp_db_file")
 def test_contexto_corrupto_no_explota() -> None:
     res = finalizar_proceso(None, "aborto", "")
     assert res.estado == "ok"
     assert res.codigo == "aborto"
-
-
-@pytest.mark.usefixtures("temp_db_file")
-def test_stub_enriquecimiento_silencioso_con_profundidad_cero(
-    mensajes_loguru: list[str],
-) -> None:
-    ctx = _contexto()
-    ctx.config_preparacion["profundidad_catalogo_empresa"] = 0
-    finalizar_proceso(ctx, "corrida_completada")
-    assert not any("H2" in m for m in mensajes_loguru)

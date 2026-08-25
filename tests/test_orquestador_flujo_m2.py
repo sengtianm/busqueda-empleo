@@ -30,6 +30,7 @@ PREPARACION: dict[str, Any] = {
     "umbral_descripcion": 85,
     "max_pasadas": 2,
     "pausa_entre_ofertas_segundos": 0,
+    "pausa_entre_empresas_segundos": 0,
     "limite_vida_sesion": 50,
     "retries": {
         "max_attempts": 2,
@@ -43,6 +44,12 @@ CONFIG: dict[str, Any] = {
     "concurrencia": {"umbral_obsolescencia_minutos": 120},
     "preparacion": PREPARACION,
 }
+
+
+@pytest.fixture(autouse=True)
+def _sin_enriquecimiento(monkeypatch: pytest.MonkeyPatch) -> None:
+    """D39 hook off in this suite: company enrichment has its own tests."""
+    monkeypatch.setattr(preparacion_mod, "_enriquecer_si_aplica", lambda *a: None)
 
 def _sembrar_oferta(oferta_id: str, fecha: str) -> None:
     escribir_fila(
