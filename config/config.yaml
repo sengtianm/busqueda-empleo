@@ -105,7 +105,7 @@ browser:
 ai_local:
   host: "localhost"
   port: 11434
-  model: "gpt-oss:20b-cloud"
+  model: "gpt-oss:120b-cloud"
   timeout_seconds: 60
   # Muestreo determinista para tareas de clasificación (análisis
   # Pereira 2026-08-25): temperature 0 elimina la varianza entre
@@ -129,8 +129,9 @@ ai_routing:
   evaluation: "cloud"
   processing: "cloud"
   # Clasificación de ubicación del Módulo 2 (D33): usa la ruta local,
-  # cuyo modelo es gpt-oss:20b-cloud vía proxy Ollama (aprobado en la
-  # sub-fase 5.1).
+  # cuyo modelo es gpt-oss:120b-cloud vía proxy Ollama (D44: swap desde
+  # gpt-oss:20b-cloud tras experimento comparado — igual calidad, ~3x
+  # más rápido, mejor cobertura para expansión América).
   preparacion: "local"
 
 # --- Persistence ---

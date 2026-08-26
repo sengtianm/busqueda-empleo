@@ -348,8 +348,61 @@ def _normalizar_componente(componente: str) -> str:
     return normalizar_texto(componente) or "N/A"
 
 
+# Chuleta determinista de departamentos de Colombia (D43): claves y valores
+# ya en forma `normalizar_texto`. Bogotá D.C. mapea a su región oficial.
+REGIONES_COLOMBIA: dict[str, str] = {
+    "amazonas": "amazonas",
+    "antioquia": "antioquia",
+    "arauca": "arauca",
+    "atlantico": "atlantico",
+    "bolivar": "bolivar",
+    "boyaca": "boyaca",
+    "distrito capital": "distrito capital",
+    "caldas": "caldas",
+    "caqueta": "caqueta",
+    "casanare": "casanare",
+    "cauca": "cauca",
+    "cesar": "cesar",
+    "choco": "choco",
+    "cordoba": "cordoba",
+    "cundinamarca": "cundinamarca",
+    "guainia": "guainia",
+    "guaviare": "guaviare",
+    "huila": "huila",
+    "la guajira": "la guajira",
+    "magdalena": "magdalena",
+    "meta": "meta",
+    "narino": "narino",
+    "norte de santander": "norte de santander",
+    "putumayo": "putumayo",
+    "quindio": "quindio",
+    "risaralda": "risaralda",
+    "san andres y providencia": "san andres y providencia",
+    "san andres": "san andres y providencia",
+    "santander": "santander",
+    "sucre": "sucre",
+    "tolima": "tolima",
+    "valle del cauca": "valle del cauca",
+    "vaupes": "vaupes",
+    "vichada": "vichada",
+}
+
+
+def _clasificar_departamento(texto: str) -> tuple[str, str, str] | None:
+    """Resuelve textos que SOLO nombran un departamento (D43): p. ej.
+    'CAUCA', 'Antioquia, Colombia'. Devuelve None si el texto no es uno,
+    dejando el camino normal cache → IA. Tupla en forma `normalizar_texto`.
+    """
+    clave = normalizar_texto(texto).removesuffix(" colombia").strip()
+    region = REGIONES_COLOMBIA.get(clave)
+    if region is None:
+        return None
+    return ("N/A", region, "colombia")
+
+
 def _diligenciar_ubicacion(contexto: RunContext, texto_crudo: str) -> str:
-    """Paso 3: remote → `N/R`; cache → AI (PRM-006) → tuple → seek/create.
+    """Paso 3: remote → `N/R`; cache → department cheat-sheet (D43) →
+    AI (PRM-006) → tuple → seek/create.
 
     Only successful classifications enter `cache_ia` (RN-07): failures stay
     uncached so lot (b) of this same pass retries them. Stored tuple
@@ -364,6 +417,12 @@ def _diligenciar_ubicacion(contexto: RunContext, texto_crudo: str) -> str:
     if normalizar_texto(texto) in {"remoto", "trabajo remoto", "remote"}:
         return "N/R"
     tupla = contexto.cache_ia.get(texto)
+    if tupla is None:
+        # Chuleta departamental (D43): acierto determinista previo a la IA,
+        # cacheable como cualquier otro éxito (RN-07).
+        tupla = _clasificar_departamento(texto)
+        if tupla is not None:
+            contexto.cache_ia[texto] = tupla
     if tupla is None:
         try:
             respuesta = analyze(

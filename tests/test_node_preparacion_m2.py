@@ -576,7 +576,7 @@ def test_textos_distintos_misma_tupla_una_sola_fila(
     _insertar_oferta(
         "OFE-0001", ubicacion="Bogotá, Distrito Capital, Colombia"
     )
-    _insertar_oferta("OFE-0002", ubicacion="Bogotá D.C.")
+    _insertar_oferta("OFE-0002", ubicacion="BOGOTÁ, Distrito Capital, Colombia")
     _instalar_servidor(
         monkeypatch, [[(200, HTML_COMPLETO)], [(200, HTML_COMPLETO)]]
     )
@@ -587,7 +587,7 @@ def test_textos_distintos_misma_tupla_una_sola_fila(
     assert len(leer_tabla("ubicaciones", {})) == 1  # RN-06 dedup por tupla
     assert llamadas == [
         "Bogotá, Distrito Capital, Colombia",
-        "Bogotá D.C.",
+        "BOGOTÁ, Distrito Capital, Colombia",
     ]  # RN-07: una invocación por TEXTO distinto; la tupla deduplica en BD
 
 
@@ -609,6 +609,54 @@ def test_pais_solo_genera_fila_compartida(
         ubicaciones[0]["region"],
         ubicaciones[0]["pais"],
     ) == ("N/A", "N/A", "colombia")
+
+
+def test_chuleta_departamentos_casos_directos() -> None:
+    """D43: variantes de texto que la chuleta resuelve sin IA (función pura)."""
+    resolver = preparacion._clasificar_departamento
+    assert resolver("CAUCA") == ("N/A", "cauca", "colombia")
+    assert resolver("Cauca") == ("N/A", "cauca", "colombia")
+    assert resolver("Antioquia, Colombia") == ("N/A", "antioquia", "colombia")
+    assert resolver("Distrito Capital, Colombia") == (
+        "N/A",
+        "distrito capital",
+        "colombia",
+    )
+    assert resolver("Bogotá D.C.") is None  # nombra ciudad: va a la IA
+    assert resolver("Bogotá, Distrito Capital, Colombia") is None
+    assert resolver("Valle del Cauca, COLOMBIA") == (
+        "N/A",
+        "valle del cauca",
+        "colombia",
+    )
+    assert resolver("Medellín, Antioquia") is None  # con ciudad: va a la IA
+    assert resolver("Lima, Perú") is None
+    assert resolver("Colombia") is None  # país solo: camino IA existente
+
+
+def test_departamento_en_mayusculas_resuelve_sin_ia(
+    temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D43: el caso real medido ('CAUCA' ×16 con ERR-08) se resuelve con una
+    fila de catálogo determinista y cero invocaciones a la IA."""
+    _insertar_oferta("OFE-0001", ubicacion="CAUCA")
+    _instalar_servidor(monkeypatch, [[(200, HTML_COMPLETO)]])
+    llamadas = _instalar_ia(monkeypatch, TUPLA_BOGOTA)
+
+    resultado = ejecutar_preparacion(_contexto())
+
+    assert resultado.estado == "completada"
+    assert llamadas == []
+    fila = buscar_por_id("ofertas_descubiertas", "OFE-0001")
+    assert fila is not None and fila["estado"] == "preparada"
+    ubicaciones = leer_tabla("ubicaciones", {})
+    assert len(ubicaciones) == 1
+    assert (
+        ubicaciones[0]["ciudad"],
+        ubicaciones[0]["region"],
+        ubicaciones[0]["pais"],
+    ) == ("N/A", "cauca", "colombia")
+    assert fila["ubicacion_id"] == ubicaciones[0]["id"]
 
 
 def test_json_ia_invalido_queda_pendiente_err08(

@@ -302,6 +302,8 @@ En fallo del paso 1: evento `preparacion_fallida` (error) con `id_oferta` + rein
 - No escribir `fecha_ultima_verificacion`; no sobrescribir `id_corrida` de la oferta.
 - Conservar texto crudo de ubicación en `ubicacion_nombre` (columna re-añadida; reversión parcial de D29 documentada).
 - Sin valores fijos: sesión, pausas, reintentos y límite de vida desde configuración.
+- **Nota as-built 2026-08-25 (decisión D43):** el paso 3 resuelve de forma determinista los textos que SOLO nombran un departamento colombiano (`REGIONES_COLOMBIA`, forma `normalizar_texto`; sufijo opcional "colombia") ANTES de invocar la IA — p. ej. "CAUCA" → `(N/A, cauca, colombia)`; los aciertos se cachean como éxitos (RN-07). Los textos con ciudad ("Bogotá D.C.", direcciones completas) siguen su camino normal hacia PRM-006 v3. Las filas legadas pendientes (`preparada`+`N/A`) se auto-reparan por el lote (b) sin HTTP.
+- **Nota as-built 2026-08-25 (decisión D44):** la ruta local de clasificación usa `gpt-oss:120b-cloud` (swap desde gpt-oss:20b-cloud tras experimento comparado — igual calidad, ~3x más rápido). PRM-006 v3: guía de reconocimiento confiado (formato inusual — mayúsculas, sin tildes, abreviaturas, sin país — jamás justifica N/A por sí solo), contrato de salida estricto (primer carácter `{`), y cuatro ejemplos resueltos (CAUCA, ESTADO DE MEXICO, Medellín, solo-país) orientados a la expansión América. La chuleta D43 sigue activa como vía rápida.
 
 ### Pasos funcionales
 1. **Leer insumos**. Entrada: contexto, configuración, sesión HTTP, cachés. Proceso: acceder desde contexto; resolver parámetros efectivos. Salida: insumos. Val: VAL-01. Err: ERR-01.
