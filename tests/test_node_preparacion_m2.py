@@ -622,7 +622,11 @@ def test_chuleta_departamentos_casos_directos() -> None:
         "distrito capital",
         "colombia",
     )
-    assert resolver("Bogotá D.C.") is None  # nombra ciudad: va a la IA
+    # D46: alias con tupla COMPLETA (no pierde la ciudad)
+    assert resolver("Bogotá D.C.") == ("bogota", "distrito capital", "colombia")
+    assert resolver(
+        "Área metropolitana de Bogotá D.C."
+    ) == ("bogota", "distrito capital", "colombia")
     assert resolver("Bogotá, Distrito Capital, Colombia") is None
     assert resolver("Valle del Cauca, COLOMBIA") == (
         "N/A",
@@ -657,6 +661,126 @@ def test_departamento_en_mayusculas_resuelve_sin_ia(
         ubicaciones[0]["pais"],
     ) == ("N/A", "cauca", "colombia")
     assert fila["ubicacion_id"] == ubicaciones[0]["id"]
+
+
+def test_guarda_alias_casos_directos(temp_db_file: Path) -> None:
+    """D46: reglas de la resolución exacta+fusión en una sola lectura."""
+    escribir_fila(
+        "ubicaciones", {"ciudad": "bogota", "region": "distrito capital",
+                        "pais": "colombia"}
+    )
+    escribir_fila(
+        "ubicaciones", {"ciudad": "gachala", "region": "boyaca",
+                        "pais": "colombia"}
+    )
+    resolver = preparacion._resolver_ubicacion_existente
+    contexto = _contexto()
+    id_bogota = [r["id"] for r in leer_tabla("ubicaciones", {"ciudad": "bogota"})][0]
+    id_gachala = [
+        r["id"] for r in leer_tabla("ubicaciones", {"ciudad": "gachala"})
+    ][0]
+
+    # Igualdad exacta gana siempre (aun con umbral 0)
+    assert resolver(contexto, ("bogota", "distrito capital", "colombia")) == (
+        id_bogota,
+        False,
+    )
+    # Variante de ciudad con región desconocida -> fusiona con bogota
+    assert resolver(contexto, ("bogota d c", "N/A", "colombia")) == (
+        id_bogota,
+        True,
+    )
+    # Conflicto de región (cundinamarca vs boyaca) bloquea la fusión
+    assert resolver(contexto, ("gachala", "cundinamarca", "colombia")) is None
+    # Sin ninguna coincidencia real (solo comodines) nunca fusiona
+    assert resolver(contexto, ("N/A", "antioquia", "colombia")) is None
+    # Solo-país jamás fusiona por esta vía
+    assert resolver(contexto, ("N/A", "N/A", "colombia")) is None
+    # Umbral 0 desactiva SOLO la vía difusa; la exacta sigue funcionando
+    contexto_sin = _contexto({**CONFIG_RAPIDO, "umbral_alias_ubicacion": 0})
+    assert resolver(contexto_sin, ("bogota d c", "N/A", "colombia")) is None
+    assert resolver(
+        contexto_sin, ("gachala", "boyaca", "colombia")
+    ) == (id_gachala, False)
+    # Otro país no es candidato
+    assert resolver(contexto, ("lima", "N/A", "peru"),) is None
+
+
+def _instalar_ia_por_texto(
+    monkeypatch: pytest.MonkeyPatch,
+    respuestas: dict[str, dict[str, str]],
+) -> list[str]:
+    """Variante de `_instalar_ia` con respuesta distinta por texto crudo."""
+    llamadas: list[str] = []
+
+    def falso_analyze(
+        prompt_id: str, context: dict[str, Any], purpose: str = "preparacion"
+    ) -> dict[str, Any]:
+        llamadas.append(context["texto_ubicacion"])
+        return dict(respuestas[context["texto_ubicacion"]])
+
+    monkeypatch.setattr(preparacion, "analyze", falso_analyze)
+    return llamadas
+
+
+def test_variante_bogota_dc_se_fusiona_con_fila_existente(
+    temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D46: el caso real medido — 'Bogotá' crea la fila canónica y una
+    variante clasificada distinto reusa esa fila en vez de duplicarla."""
+    _insertar_oferta("OFE-0001", ubicacion="Bogotá")
+    _insertar_oferta("OFE-0002", ubicacion="Bogota DC")  # no chuleta: va a IA
+    _instalar_servidor(
+        monkeypatch, [[(200, HTML_COMPLETO)], [(200, HTML_COMPLETO)]]
+    )
+    llamadas = _instalar_ia_por_texto(
+        monkeypatch,
+        {
+            "Bogotá": TUPLA_BOGOTA,
+            "Bogota DC": {
+                "ciudad": "Bogotá D.C.",
+                "region": "N/A",
+                "pais": "Colombia",
+            },
+        },
+    )
+
+    resultado = ejecutar_preparacion(_contexto())
+
+    assert resultado.estado == "completada"
+    assert llamadas == ["Bogotá", "Bogota DC"]
+    assert len(leer_tabla("ubicaciones", {})) == 1  # sin duplicado
+    fila1 = buscar_por_id("ofertas_descubiertas", "OFE-0001")
+    fila2 = buscar_por_id("ofertas_descubiertas", "OFE-0002")
+    assert fila1 is not None and fila2 is not None
+    assert fila1["ubicacion_id"] == fila2["ubicacion_id"]
+
+
+def test_alias_desactivado_crea_fila_distinta(
+    temp_db_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D46: umbral 0 desactiva la fusión — comportamiento previo intacto."""
+    config = {**CONFIG_RAPIDO, "umbral_alias_ubicacion": 0}
+    _insertar_oferta("OFE-0001", ubicacion="Bogotá")
+    _insertar_oferta("OFE-0002", ubicacion="Bogota DC")
+    _instalar_servidor(
+        monkeypatch, [[(200, HTML_COMPLETO)], [(200, HTML_COMPLETO)]]
+    )
+    _instalar_ia_por_texto(
+        monkeypatch,
+        {
+            "Bogotá": TUPLA_BOGOTA,
+            "Bogota DC": {
+                "ciudad": "Bogotá D.C.",
+                "region": "N/A",
+                "pais": "Colombia",
+            },
+        },
+    )
+
+    ejecutar_preparacion(_contexto(config))
+
+    assert len(leer_tabla("ubicaciones", {})) == 2
 
 
 def test_json_ia_invalido_queda_pendiente_err08(

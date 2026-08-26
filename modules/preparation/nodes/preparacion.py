@@ -44,6 +44,7 @@ import httpx
 from bs4 import BeautifulSoup, Tag
 from loguru import logger
 from pydantic import BaseModel
+from rapidfuzz import fuzz
 
 from modules.preparation.nodes.inicio import _validar_preparacion
 from modules.preparation.run_context import RunContext
@@ -389,20 +390,76 @@ REGIONES_COLOMBIA: dict[str, str] = {
 
 
 def _clasificar_departamento(texto: str) -> tuple[str, str, str] | None:
-    """Resuelve textos que SOLO nombran un departamento (D43): p. ej.
-    'CAUCA', 'Antioquia, Colombia'. Devuelve None si el texto no es uno,
-    dejando el camino normal cache → IA. Tupla en forma `normalizar_texto`.
+    """Resuelve textos con variante conocida ANTES de la IA (D46/D43):
+    primero alias de tupla completa (p. ej. 'Bogotá D.C.'), luego textos
+    que SOLO nombran un departamento (D43, tupla con ciudad N/A).
+    Devuelve None si nada aplica, dejando el camino normal cache → IA.
     """
     clave = normalizar_texto(texto).removesuffix(" colombia").strip()
+    alias = ALIAS_UBICACIONES.get(clave)
+    if alias is not None:
+        return alias
     region = REGIONES_COLOMBIA.get(clave)
     if region is None:
         return None
     return ("N/A", region, "colombia")
 
 
+# Alias deterministas de lugares con variantes de nombre conocidas (D46):
+# claves y valores ya en forma `normalizar_texto`; la tupla es COMPLETA para
+# no perder información (razón por la que D43 los excluyó originalmente).
+ALIAS_UBICACIONES: dict[str, tuple[str, str, str]] = {
+    "bogota d c": ("bogota", "distrito capital", "colombia"),
+    "area metropolitana de bogota d c": ("bogota", "distrito capital", "colombia"),
+}
+
+
+def _veredicto_componente(
+    candidato: str, existente: str, umbral: float
+) -> str:
+    """Clasifica un par ciudad/región: `coincide` (iguales o similitud >=
+    umbral), `desconocido` (alguno es centinela N/A) o `conflicto`."""
+    if candidato == "N/A" or existente == "N/A":
+        return "desconocido"
+    if candidato == existente:
+        return "coincide"
+    if fuzz.token_set_ratio(candidato, existente) >= umbral:
+        return "coincide"
+    return "conflicto"
+
+
+def _resolver_ubicacion_existente(
+    contexto: RunContext, clave_tupla: tuple[str, str, str]
+) -> tuple[str, bool] | None:
+    """Busca una fila de `ubicaciones` para la tupla candidata con UNA sola
+    lectura del catálogo (filtro por país): igualdad exacta primero (D33);
+    sin éxito y con `umbral_alias_ubicacion` > 0, fusión por similitud
+    (D46) — sin conflictos de componente y al menos una coincidencia real;
+    un centinela N/A cuenta como desconocido y jamás fusiona por sí solo.
+    Las filas solo-país nunca se crean por vía difusa. Devuelve
+    `(id, fusionada_por_alias)` o None.
+    """
+    ciudad_c, region_c, pais_c = clave_tupla
+    umbral = float(contexto.config_preparacion.get("umbral_alias_ubicacion", 90))
+    alias_posible = umbral > 0 and not (ciudad_c == "N/A" and region_c == "N/A")
+    for fila in leer_tabla("ubicaciones", {"pais": pais_c}):
+        ciudad_e = str(fila["ciudad"])
+        region_e = str(fila["region"])
+        if (ciudad_e, region_e) == (ciudad_c, region_c):
+            return str(fila["id"]), False
+        if alias_posible:
+            ver_ciudad = _veredicto_componente(ciudad_c, ciudad_e, umbral)
+            ver_region = _veredicto_componente(region_c, region_e, umbral)
+            if "conflicto" not in (ver_ciudad, ver_region) and (
+                "coincide" in (ver_ciudad, ver_region)
+            ):
+                return str(fila["id"]), True
+    return None
+
+
 def _diligenciar_ubicacion(contexto: RunContext, texto_crudo: str) -> str:
-    """Paso 3: remote → `N/R`; cache → department cheat-sheet (D43) →
-    AI (PRM-006) → tuple → seek/create.
+    """Paso 3: remote → `N/R`; cache → alias/department cheat-sheet
+    (D46/D43) → AI (PRM-006) → tuple → seek/fuse/create.
 
     Only successful classifications enter `cache_ia` (RN-07): failures stay
     uncached so lot (b) of this same pass retries them. Stored tuple
@@ -455,12 +512,14 @@ def _diligenciar_ubicacion(contexto: RunContext, texto_crudo: str) -> str:
     en_cache = contexto.cache_ubicaciones.get(clave_tupla)
     if en_cache:
         return en_cache
-    existentes = leer_tabla(
-        "ubicaciones",
-        {"ciudad": clave_tupla[0], "region": clave_tupla[1], "pais": clave_tupla[2]},
-    )
-    if existentes:
-        ubicacion_id = str(existentes[0]["id"])
+    resuelta = _resolver_ubicacion_existente(contexto, clave_tupla)
+    if resuelta is not None:
+        ubicacion_id, fusionada = resuelta
+        if fusionada:
+            logger.info(
+                f"D46 | run={contexto.id_corrida} | alias_ubicacion_fusionado"
+                f" | {clave_tupla} -> {ubicacion_id}"
+            )
     else:
         ubicacion_id = escribir_fila(
             "ubicaciones",
