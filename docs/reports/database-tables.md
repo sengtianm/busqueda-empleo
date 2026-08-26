@@ -12,17 +12,17 @@ La BD tiene 8 tablas. Se habilita con `init_db()` (crea tablas y aplica migracio
 
 Índices (creados con `CREATE INDEX IF NOT EXISTS`, no únicos — la unicidad estricta es del Módulo 2, decisión D4): `idx_ofertas_id_externo` (deduplicación por oferta), `idx_ofertas_id_corrida` y `idx_eventos_id_corrida` (métricas de cierre y auditoría).
 
-Estado actual (conteos tras la corrida de verificación del lote D42 del 2026-08-25; esquema sin cambios desde D33/D41):
+Estado actual (conteos tras la corrida manual del 2026-08-25 con el modelo gpt-oss:120b-cloud; esquema sin cambios desde D33/D41):
 
 | Tabla | Filas | Escritor principal |
 |---|---|---|
 | `secuencia_ids` | 6 | Automática (generador de IDs) |
-| `empresas` | 56 | Módulo 2 — Nodo 2 (upsert por `nombre_normalizado`; catálogo mínimo de identidad tras D40) |
-| `ubicaciones` | 9 | Módulo 2 — Nodo 2 (upsert por tupla `(ciudad, region, pais)` normalizada; "Remoto" no crea fila) |
-| `ofertas_descubiertas` | 86 | Módulo 1 — Nodo Captura → `upsert_oferta()` (incluye `empresa` cruda de la tarjeta, D41); Módulo 2 — Nodo 2 (sobrescribe `titulo`/`descripcion_original`/`empresa_id`/`ubicacion_id`/`modalidad`); Módulo 2 — Nodo 3 (escribe `estado`, `id_duplicidad`, `fecha_ultima_verificacion`, `observaciones`) |
-| `corridas` | 6 | Módulo 1/2 — Nodo INICIO → `registrar_corrida()`; Nodo Finalizar → `actualizar_corrida()`; Orquestador transversal → `registrar_corrida()` para la corrida programada |
-| `eventos` | 110 | Nodos del flujo → `escribir_evento()` (incluye los eventos del Módulo 2 — `oferta_preparada`/`preparacion_fallida`/`oferta_duplicada`/`revision_pendientes` — y del orquestador — `modulo_ejecutado`/`corrida_programada`/`modulo_fallido`) |
-| `sesiones` | 2 | Módulo 1 — Nodo Captura → `escribir_fila("sesiones")` |
+| `empresas` | 54 | Módulo 2 — Nodo 2 (upsert por `nombre_normalizado`; catálogo mínimo de identidad tras D40) |
+| `ubicaciones` | 10 | Módulo 2 — Nodo 2 (upsert por tupla `(ciudad, region, pais)` normalizada; "Remoto" no crea fila) |
+| `ofertas_descubiertas` | 129 | Módulo 1 — Nodo Captura → `upsert_oferta()` (incluye `empresa`, `ubicacion` y `modalidad` crudas de la tarjeta, D41/traspaso D45); Módulo 2 — Nodo 2 (sobrescribe `titulo`/`descripcion_original`/`empresa_id`/`ubicacion_id`); Módulo 2 — Nodo 3 (escribe `estado`, `id_duplicidad`, `fecha_ultima_verificacion`, `observaciones`) |
+| `corridas` | 3 | Módulo 1/2 — Nodo INICIO → `registrar_corrida()`; Nodo Finalizar → `actualizar_corrida()`; Orquestador transversal → `registrar_corrida()` para la corrida programada |
+| `eventos` | 151 | Nodos del flujo → `escribir_evento()` (incluye los eventos del Módulo 2 — `oferta_preparada`/`preparacion_fallida`/`oferta_duplicada`/`revision_pendientes` — y del orquestador — `modulo_ejecutado`/`corrida_programada`/`modulo_fallido`) |
+| `sesiones` | 1 | Módulo 1 — Nodo Captura → `escribir_fila("sesiones")` |
 | `bloqueo` | 0 | Módulo 1/2 — Nodo INICIO → `adquirir_bloqueo()` (global del pipeline); Nodo Finalizar → `liberar_bloqueo()` |
 
 ### Momentos del flujo que diligencian las tablas
@@ -66,7 +66,7 @@ Catálogo de empresas. **El Módulo 1 no escribe en esta tabla** (0 filas): desd
 
 ### 2.3. `ubicaciones`
 
-Catálogo de ubicaciones. **El Módulo 1 no escribe en esta tabla** (0 filas): no extrae la ubicación de las tarjetas (decisión D29). **El Módulo 2 la puebla** (decisión D33): el Nodo 2 (Preparación de ofertas) hace upsert por **tupla normalizada `(ciudad, region, pais)`** (la IA solo clasifica el texto crudo; el Nodo 2 dirige la BD). Cada componente guarda `'N/A'` cuando la fuente no lo especificó (p. ej. "Colombia" solo → tupla `(N/A, N/A, Colombia)` con un único ID compartido). **"Remoto" no crea fila**; la oferta queda con `ubicacion_id = 'N/R'` (no requerido). La columna `modalidad` se eliminó del modelo físico (D33); la modalidad vive ahora en `ofertas_descubiertas.modalidad`.
+Catálogo de ubicaciones. **El Módulo 1 no escribe en esta tabla** (0 filas): desde D41/D45 extrae el texto crudo de la ubicación de la tarjeta hacia `ofertas_descubiertas.ubicacion`, pero poblar el catálogo sigue siendo del Módulo 2 (D29 eliminó la extracción con vínculo; D33 la asignó al Nodo 2). **El Módulo 2 la puebla** (decisión D33): el Nodo 2 (Preparación de ofertas) hace upsert por **tupla normalizada `(ciudad, region, pais)`** (la IA solo clasifica el texto crudo; el Nodo 2 dirige la BD). Cada componente guarda `'N/A'` cuando la fuente no lo especificó (p. ej. "Colombia" solo → tupla `(N/A, N/A, Colombia)` con un único ID compartido). **"Remoto" no crea fila**; la oferta queda con `ubicacion_id = 'N/R'` (no requerido). La columna `modalidad` se eliminó de esta tabla (D33); la modalidad vive en `ofertas_descubiertas.modalidad`.
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
@@ -79,11 +79,11 @@ Catálogo de ubicaciones. **El Módulo 1 no escribe en esta tabla** (0 filas): n
 
 ### 2.4. `ofertas_descubiertas`
 
-Oportunidades (vacantes) descubiertas. **Módulo 1 — Nodo Captura** la escribe mediante `upsert_oferta()`: si ya existe una fila con el mismo `id_externo` no inserta de nuevo, solo refresca `fecha_ultima_verificacion` y devuelve el `id` existente; si no, genera un ID (`OFE-NNNN`) e inserta la fila. **Módulo 2** la actualiza en pasos posteriores: el Nodo 2 (Preparación) sobrescribe `titulo` (best-effort con el `<h1>` de la página), rellena `descripcion_original` desde la página, escribe `empresa_id`/`ubicacion_id`/`modalidad` (sin tocar `fecha_ultima_verificacion`); el Nodo 3 (Verificación de duplicidad) escribe `estado`, `id_duplicidad` y actualiza `fecha_ultima_verificacion` + `observaciones` con la evidencia del duplicado. Regla D31: los campos sin valor se guardan como `N/A` (nunca `''`/NULL); `fecha_ultima_verificacion` queda exenta (vacía hasta que el Módulo 1 refresca en dedup hits **o** el Módulo 2 Nodo 3 escribe tras verificar). El `id_corrida` de la oferta sigue siendo el del descubrimiento — la trazabilidad de preparación vive en `eventos` con su propio `id_corrida` (D33).
+Oportunidades (vacantes) descubiertas. **Módulo 1 — Nodo Captura** la escribe mediante `upsert_oferta()`: si ya existe una fila con el mismo `id_externo` no inserta de nuevo, solo refresca `fecha_ultima_verificacion` y devuelve el `id` existente; si no, genera un ID (`OFE-NNNN`) e inserta la fila. Desde el traspaso aprobado (2026-08-25; D45), la inserción también trae `ubicacion`, `modalidad` y `empresa` extraídas de la tarjeta del listado. **Módulo 2** la actualiza en pasos posteriores: el Nodo 2 (Preparación) sobrescribe `titulo` (best-effort con el `<h1>` de la página), rellena `descripcion_original` desde la página y escribe `empresa_id`/`ubicacion_id` (sin tocar `fecha_ultima_verificacion`, `ubicacion` ni `modalidad`); el Nodo 3 (Verificación de duplicidad) escribe `estado`, `id_duplicidad` y actualiza `fecha_ultima_verificacion` + `observaciones` con la evidencia del duplicado. Regla D31: los campos sin valor se guardan como `N/A` (nunca `''`/NULL); `fecha_ultima_verificacion` queda exenta (vacía hasta que el Módulo 1 refresca en dedup hits **o** el Módulo 2 Nodo 3 escribe tras verificar). El `id_corrida` de la oferta sigue siendo el del descubrimiento — la trazabilidad de preparación vive en `eventos` con su propio `id_corrida` (D33).
 
 > **D41:** nueva columna `empresa` (texto crudo de la tarjeta, escrita por el Módulo 1 junto a `ubicacion`/`modalidad`; `'N/R'` cuando la tarjeta no la trae; filas históricas quedan en `'N/R'`; el alta nunca la sobreescribe). La extracción de `descripcion_original` pasa a respetar la estructura visible del anuncio (párrafos/listas/saltos) para las preparaciones posteriores a D41; y `empresas.nombre_normalizado` usa la regla que conserva todos los caracteres (ver §2.2).
 
-> **D32:** la tabla se llamaba `ofertas` y fue renombrada a `ofertas_descubiertas` (2026-08-19) para distinguirla de las tablas de etapas posteriores (Preparación, Evaluación, Procesamiento). El prefijo `OFE`, la secuencia y los índices conservan su nombre; la migración `_migrate_ofertas_descubiertas` en `init_db()` es idempotente. **D33:** añade `ubicacion_nombre`, `modalidad`, `id_duplicidad` y `duplicada` al CHECK de `estado` (8 valores); `eventos.id_oferta` se re-añade para la trazabilidad por oferta del Módulo 2.
+> **D32:** la tabla se llamaba `ofertas` y fue renombrada a `ofertas_descubiertas` (2026-08-19) para distinguirla de las tablas de etapas posteriores (Preparación, Evaluación, Procesamiento). El prefijo `OFE`, la secuencia y los índices conservan su nombre; la migración `_migrate_ofertas_descubiertas` en `init_db()` es idempotente. **D33:** añade `ubicacion_nombre`, `modalidad`, `id_duplicidad` y `duplicada` al CHECK de `estado` (8 valores); `eventos.id_oferta` se re-añade para la trazabilidad por oferta del Módulo 2. **D45:** `ubicacion_nombre` pasa a llamarse `ubicacion` y su captura se traslada al Módulo 1 (tarjeta del listado, junto con `modalidad`).
 
 | Columna | Tipo | Qué hace | Cuándo se diligencia |
 |---|---|---|---|
@@ -105,8 +105,8 @@ Oportunidades (vacantes) descubiertas. **Módulo 1 — Nodo Captura** la escribe
 | `indice_set` | INTEGER DEFAULT '' | Índice del set de filtros que la produjo | Módulo 1 — Nodo Captura: en la inserción |
 | `id_externo` | TEXT DEFAULT '' | Identificador externo de la oferta en la fuente; clave de deduplicación del upsert (no se normaliza a `N/A` — D31) | Módulo 1 — Nodo Captura: en la inserción |
 | `fecha_ultima_verificacion` | TEXT DEFAULT '' | Marcador con semántica dual (D33): re-visita de dedup (Módulo 1, upsert) **o** verificación de duplicidad (Módulo 2 Nodo 3); `''` = pendiente. Exenta de la regla `N/A` (D31, punto 4) | Módulo 1 — Nodo Captura: re-Visita de dedup (D4); Módulo 2 — Nodo 3: tras evaluar la oferta |
-| `ubicacion_nombre` | TEXT DEFAULT 'N/A' | Texto crudo de la ubicación capturado de la página de la oferta (D33) | Módulo 2 — Nodo 2: paso 1 (captura); reusado por el lote (b) del Nodo 2 sin re-capturar la página |
-| `modalidad` | TEXT DEFAULT 'N/A' | Modalidad de trabajo de la oferta (presencial / remoto / híbrido); dato de la oferta, la IA no la toca | Módulo 2 — Nodo 2: paso 1 (sin IA) |
+| `ubicacion` | TEXT DEFAULT 'N/A' | Texto crudo de la ubicación tal como aparece en la tarjeta del listado (traspaso D45; antes `ubicacion_nombre` capturado por el Módulo 2 desde la página) | Módulo 1 — Nodo Captura: en la inserción, desde la tarjeta (`'N/R'` si no viene); el lote (b) del Nodo 2 lo reusa para clasificar sin re-capturar la página |
+| `modalidad` | TEXT DEFAULT 'N/A' | Modalidad de trabajo de la oferta (presencial / remoto / híbrido); dato de la oferta, la IA no la toca | Módulo 1 — Nodo Captura: en la inserción, desde la tarjeta (traspaso D45); el Módulo 2 nunca la sobrescribe |
 | `empresa` | TEXT DEFAULT 'N/R' | Nombre crudo de la empresa tal como aparece en la tarjeta del listado (espejo de `ubicacion`; el enlace al catálogo sigue siendo `empresa_id`) | Módulo 1 — Nodo Captura (D41); `'N/R'` si la tarjeta no lo trae; filas previas a D41 quedan en `'N/R'` |
 | `id_duplicidad` | TEXT DEFAULT 'N/A' | ID de la oferta original cuando esta es `duplicada`; `N/A` para ofertas originales o sin verificar | Módulo 2 — Nodo 3: cuando confirma duplicado (terminal) |
 
@@ -123,7 +123,7 @@ Registro de cada corrida (ejecución completa del flujo). Se crea en el **nodo I
 | `estado` | TEXT NOT NULL | Estado de la corrida (`en_ejecucion`, `completada`, `sin_fuentes`, `sin_pendientes`, `abortada`) | En el INICIO queda `en_ejecucion`; en el Finalizar se actualiza al estado final (vocabulario `EstadoCorrida`) |
 | `fecha_fin` | TEXT DEFAULT '' | Fecha/hora de fin de la corrida | En el Finalizar, al cerrar la corrida |
 | `motivo_terminacion` | TEXT DEFAULT '' | Motivo de terminación (`corrida_completada`, `sin_fuentes`, `sin_pendientes`, `error_total`, `error_critico`, `aborto`, `concurrencia`) | En el Finalizar, al cerrar la corrida; el orquestador usa `corrida_completada`/`aborto` |
-| `total_ofertas` | INTEGER DEFAULT 0 | Ofertas registradas en la corrida; para Mód2 = `total_preparadas + total_duplicadas` (ofertas procesadas, comparable entre módulos) | En el Finalizar, desde las métricas del cierre |
+| `total_ofertas` | INTEGER DEFAULT 0 | Ofertas únicas de la corrida; para Mód2 = unión DISTINCT entre los eventos `oferta_preparada` y `oferta_duplicada` vía `contar_distintos` (D45 — sustituye la suma literal `total_preparadas + total_duplicadas`; comparable entre módulos) | En el Finalizar, desde las métricas del cierre |
 | `total_errores` | INTEGER DEFAULT 0 | Total de eventos de error de la corrida | En el Finalizar, desde las métricas del cierre |
 | `total_sucesos` | INTEGER DEFAULT 0 | Total de eventos de éxito de la corrida (semántica D30: escritos antes del evento de terminación; este último nunca se incluye) | En el Finalizar, desde las métricas del cierre |
 | `fuentes_procesadas` | INTEGER DEFAULT 0 | Número de fuentes procesadas en la corrida (D31: `contar_distintos` excluye `''`/`NULL`/`'N/A'`) | En el Finalizar, desde las métricas del cierre |
