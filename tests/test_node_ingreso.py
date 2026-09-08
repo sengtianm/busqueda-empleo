@@ -38,7 +38,12 @@ def mock_playwright() -> Generator[MagicMock, None, None]:
     instance.start.return_value = instance
     browser = instance.chromium.launch.return_value
     browser.new_page.return_value = MagicMock()
-    with patch("modules.discovery.nodes.ingreso.sync_playwright", return_value=instance):
+    # Sin memoria por defecto: los tests existentes usan el modo efímero.
+    instance.chromium.launch_persistent_context.side_effect = Exception("sin perfil")
+    with (
+        patch("modules.discovery.nodes.ingreso.sync_playwright", return_value=instance),
+        patch("modules.discovery.nodes.ingreso._resolver_perfil", return_value=""),
+    ):
         yield instance
 
 
@@ -295,7 +300,9 @@ def test_ejecutar_ingreso_headless_override(
         res = ejecutar_ingreso(mock_context)
 
         assert res.estado == "ok"
-        mock_playwright.chromium.launch.assert_called_once_with(headless=False)
+        mock_playwright.chromium.launch.assert_called_once_with(
+            headless=False, args=["--window-size=1600,900"]
+        )
 
 
 def test_ejecutar_ingreso_headless_default(
@@ -314,7 +321,9 @@ def test_ejecutar_ingreso_headless_default(
         res = ejecutar_ingreso(mock_context)
 
         assert res.estado == "ok"
-        mock_playwright.chromium.launch.assert_called_once_with(headless=True)
+        mock_playwright.chromium.launch.assert_called_once_with(
+            headless=True, args=["--window-size=1600,900"]
+        )
 
 
 def test_ejecutar_ingreso_exito_escribe_evento_ingreso_exitoso(
@@ -339,6 +348,23 @@ def test_ejecutar_ingreso_exito_escribe_evento_ingreso_exitoso(
     assert args["evidencia"] == f"sesion={mock_context.id_sesion}"
 
 
+def test_ejecutar_ingreso_ventana_maximizada_sin_viewport_fijo(
+    mock_context: RunContext,
+    mock_adapter: MagicMock,
+    mock_playwright: MagicMock,
+) -> None:
+    """La ventana abre en tamaño normal y el contenido acompaña al tamaño."""
+    mock_context.fuente_corriente = mock_context.fuentes_filtradas[0]
+    mock_adapter.enter_source.return_value = EntryResult(
+        estado="exito", evidencia_acotada="ok", numero_de_intentos=1
+    )
+
+    ejecutar_ingreso(mock_context)
+
+    browser = mock_playwright.chromium.launch.return_value
+    browser.new_page.assert_called_once_with(no_viewport=True)
+
+
 def test_ejecutar_ingreso_fallo_no_escribe_evento_exito(
     mock_context: RunContext,
     mock_adapter: MagicMock,
@@ -353,3 +379,87 @@ def test_ejecutar_ingreso_fallo_no_escribe_evento_exito(
         ejecutar_ingreso(mock_context)
 
     _mock_evento_ingreso.assert_not_called()
+
+
+def test_ejecutar_ingreso_con_memoria_sin_credenciales_procede(
+    mock_context: RunContext,
+    mock_adapter: MagicMock,
+) -> None:
+    """Con memoria no se exigen credenciales: el usuario ingresa a mano."""
+    ficha = mock_context.fuentes_filtradas[0]
+    ficha.tipo_acceso = "con_autenticacion"
+    ficha.credenciales_referencia = ["USER"]
+    mock_context.fuente_corriente = ficha
+    mock_adapter.enter_source.return_value = EntryResult(
+        estado="exito", evidencia_acotada="ok", numero_de_intentos=1
+    )
+    instance = MagicMock()
+    instance.start.return_value = instance
+    contexto_persistente = instance.chromium.launch_persistent_context.return_value
+    contexto_persistente.new_page.return_value = MagicMock()
+
+    with (
+        patch("modules.discovery.nodes.ingreso.sync_playwright", return_value=instance),
+        patch("modules.discovery.nodes.ingreso._resolver_perfil", return_value="data/x"),
+        patch("modules.discovery.nodes.ingreso.load", return_value={"_env": {}}),
+        patch("pathlib.Path.mkdir"),
+    ):
+        res = ejecutar_ingreso(mock_context)
+
+    assert res.estado == "ok"
+    assert _entry_result(mock_context).estado == "exito"
+    assert mock_adapter.enter_source.call_args.args[2] is None
+
+
+def test_ejecutar_ingreso_con_perfil_usa_contexto_persistente(
+    mock_context: RunContext,
+    mock_adapter: MagicMock,
+) -> None:
+    """Con carpeta configurada usa memoria de sesión y no el modo efímero."""
+    mock_context.fuente_corriente = mock_context.fuentes_filtradas[0]
+    mock_adapter.enter_source.return_value = EntryResult(
+        estado="exito", evidencia_acotada="ok", numero_de_intentos=1
+    )
+    instance = MagicMock()
+    instance.start.return_value = instance
+    contexto_persistente = instance.chromium.launch_persistent_context.return_value
+    contexto_persistente.new_page.return_value = MagicMock()
+
+    with (
+        patch("modules.discovery.nodes.ingreso.sync_playwright", return_value=instance),
+        patch("modules.discovery.nodes.ingreso._resolver_perfil", return_value="data/x"),
+        patch("modules.discovery.nodes.ingreso._resolver_headless", return_value=False),
+        patch("pathlib.Path.mkdir"),
+    ):
+        res = ejecutar_ingreso(mock_context)
+
+    assert res.estado == "ok"
+    instance.chromium.launch_persistent_context.assert_called_once()
+    instance.chromium.launch.assert_not_called()
+    assert mock_context.browser is contexto_persistente
+
+
+def test_ejecutar_ingreso_perfil_fallido_vuelve_a_efimero(
+    mock_context: RunContext,
+    mock_adapter: MagicMock,
+) -> None:
+    """Carpeta corrupta: vuelve al modo actual sin abortar."""
+    mock_context.fuente_corriente = mock_context.fuentes_filtradas[0]
+    mock_adapter.enter_source.return_value = EntryResult(
+        estado="exito", evidencia_acotada="ok", numero_de_intentos=1
+    )
+    instance = MagicMock()
+    instance.start.return_value = instance
+    instance.chromium.launch_persistent_context.side_effect = Exception("corrupto")
+    instance.chromium.launch.return_value.new_page.return_value = MagicMock()
+
+    with (
+        patch("modules.discovery.nodes.ingreso.sync_playwright", return_value=instance),
+        patch("modules.discovery.nodes.ingreso._resolver_perfil", return_value="data/x"),
+        patch("modules.discovery.nodes.ingreso._resolver_headless", return_value=False),
+        patch("pathlib.Path.mkdir"),
+    ):
+        res = ejecutar_ingreso(mock_context)
+
+    assert res.estado == "ok"
+    instance.chromium.launch.assert_called_once()

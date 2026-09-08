@@ -2,10 +2,17 @@
 
 import unicodedata
 from datetime import datetime
+from typing import Any
 
 FORMATO_TIMESTAMP = "%Y-%m-%d %H:%M:%S"
 
 TIPOS_ACCESO = ("publico", "con_autenticacion")
+
+# Ajustes de la ventana del Módulo 1 (sección `browser:` del config):
+# tamaño normal de ventana y espera máxima del ingreso manual con memoria.
+VENTANA_ANCHO_DEFECTO = 1600
+VENTANA_ALTO_DEFECTO = 900
+ESPERA_MANUAL_DEFECTO_SEGUNDOS = 300
 
 _SUFIJO_TRUNCAMIENTO = "..."
 
@@ -55,3 +62,37 @@ def normalizar_nombre_empresa(texto: str) -> str:
     if not texto:
         return ""
     return " ".join(texto.lower().split())
+
+
+def _entero_positivo(valor: Any, defecto: int) -> int:
+    """Entero positivo tolerante para ajustes numéricos (0/negativo → defecto)."""
+    try:
+        numero = int(valor)
+    except (TypeError, ValueError):
+        return defecto
+    return numero if numero > 0 else defecto
+
+
+def ruta_perfil_navegador(navegador: Any) -> str:
+    """Carpeta de sesión persistente (`browser.profile_path`); "" = sin memoria."""
+    if not isinstance(navegador, dict):
+        return ""
+    valor = navegador.get("profile_path", "")
+    return valor.strip() if isinstance(valor, str) else ""
+
+
+def ventana_navegador(navegador: Any) -> tuple[int, int]:
+    """Tamaño normal de la ventana del Módulo 1 (`ventana_ancho/alto`)."""
+    if not isinstance(navegador, dict):
+        return (VENTANA_ANCHO_DEFECTO, VENTANA_ALTO_DEFECTO)
+    return (
+        _entero_positivo(navegador.get("ventana_ancho"), VENTANA_ANCHO_DEFECTO),
+        _entero_positivo(navegador.get("ventana_alto"), VENTANA_ALTO_DEFECTO),
+    )
+
+
+def espera_manual_navegador(navegador: Any, defecto: int = ESPERA_MANUAL_DEFECTO_SEGUNDOS) -> int:
+    """Espera máxima del ingreso manual (`espera_manual_segundos`)."""
+    if not isinstance(navegador, dict):
+        return defecto
+    return _entero_positivo(navegador.get("espera_manual_segundos"), defecto)

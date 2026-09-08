@@ -2,8 +2,11 @@
 
 from shared.utilidades import (
     acotar_evidencia,
+    espera_manual_navegador,
     normalizar_nombre_empresa,
     normalizar_texto,
+    ruta_perfil_navegador,
+    ventana_navegador,
 )
 
 
@@ -55,3 +58,25 @@ def test_normalizar_nombre_empresa_colapsa_espacios_d41() -> None:
 def test_normalizar_nombre_empresa_vacio_d41() -> None:
     assert normalizar_nombre_empresa("") == ""
     assert normalizar_nombre_empresa("   ") == ""
+
+
+def test_ruta_perfil_navegador_configurada_y_vacia() -> None:
+    assert ruta_perfil_navegador({"profile_path": "data/browser_profile"}) == (
+        "data/browser_profile"
+    )
+    assert ruta_perfil_navegador({"profile_path": "  "}) == ""
+    assert ruta_perfil_navegador({}) == ""
+    assert ruta_perfil_navegador(None) == ""
+
+
+def test_ventana_navegador_valores_y_defectos() -> None:
+    assert ventana_navegador({"ventana_ancho": 1600, "ventana_alto": 900}) == (1600, 900)
+    assert ventana_navegador({}) == (1600, 900)
+    assert ventana_navegador({"ventana_ancho": 0, "ventana_alto": -5}) == (1600, 900)
+    assert ventana_navegador(None) == (1600, 900)
+
+
+def test_espera_manual_navegador_valor_y_defecto() -> None:
+    assert espera_manual_navegador({"espera_manual_segundos": 300}) == 300
+    assert espera_manual_navegador({}) == 300
+    assert espera_manual_navegador({"espera_manual_segundos": 0}) == 300

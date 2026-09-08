@@ -45,7 +45,11 @@ from shared.models import (
     SearchResult,
     SetFiltros,
 )
-from shared.utilidades import acotar_evidencia
+from shared.utilidades import (
+    acotar_evidencia,
+    espera_manual_navegador,
+    ruta_perfil_navegador,
+)
 
 _PARAMETROS_FILTROS: dict[str, str] = {
     "keywords": "keywords",
@@ -103,6 +107,36 @@ _SEL_SIGUIENTE = (
 # utilizable es la ubicacion; puede llevar sufijo de modalidad "(En remoto)/
 # (Hibrido)/(Presencial)". Sin senal -> 'N/R' (fuente no lo reporta).
 _URL_LOGIN = "https://www.linkedin.com/login/es/?fromSignIn=true"
+_URL_FEED = "https://www.linkedin.com/feed/"
+
+# Espera máxima del ingreso manual con memoria de sesión (una sola vez por
+# equipo nuevo): la ventana queda abierta para que el usuario complete
+# usuario, clave y la verificación que pida LinkedIn; la corrida sigue sola.
+_ESPERA_MANUAL_SEGUNDOS = 300
+
+
+def _hay_memoria_sesion() -> bool:
+    """Indica si hay carpeta de sesión persistente configurada."""
+    try:
+        from shared.config import load
+    except Exception:
+        return False
+    cfg = load()
+    if not isinstance(cfg, dict):
+        return False
+    return bool(ruta_perfil_navegador(cfg.get("browser", {})))
+
+
+def _espera_manual() -> int:
+    """Espera máxima del ingreso manual (config `espera_manual_segundos`)."""
+    try:
+        from shared.config import load
+    except Exception:
+        return _ESPERA_MANUAL_SEGUNDOS
+    cfg = load()
+    if not isinstance(cfg, dict):
+        return _ESPERA_MANUAL_SEGUNDOS
+    return espera_manual_navegador(cfg.get("browser", {}), _ESPERA_MANUAL_SEGUNDOS)
 
 _RE_FECHA_PUBLICACION = re.compile(r"^r\d+$")
 
@@ -132,6 +166,8 @@ class LinkedInAdapter:
     ) -> EntryResult:
         """Enter the source and verify the DOC-09 Section 6.1 entry criteria."""
         if ficha.tipo_acceso == "con_autenticacion":
+            if _hay_memoria_sesion():
+                return self._ingreso_con_memoria(page, ficha)
             if not credenciales:
                 raise FlowError(
                     "credenciales_no_disponibles",
@@ -157,6 +193,95 @@ class LinkedInAdapter:
             estado="exito",
             evidencia_acotada=f"criterio: {ficha.criterio_exito}",
             numero_de_intentos=1,
+        )
+
+    def _formulario_ingreso_presente(self, page: Any, html: str) -> bool:
+        """Indica si el formulario de ingreso sigue visible (D9).
+
+        La marca de éxito también aparece dentro del código de la página de
+        ingreso, así que solo vale cuando el campo de usuario ya se desprendió.
+        """
+        metodo = getattr(page, "query_selector", None)
+        if callable(metodo):
+            try:
+                return metodo("input[autocomplete^='username']") is not None
+            except Exception:
+                return True
+        return "autocomplete" in html.lower()
+
+    def _ingreso_con_memoria(self, page: Any, ficha: FichaFuente) -> EntryResult:
+        """Entrada con sesión persistente: reutiliza o espera el ingreso manual.
+
+        Con sesión guardada válida va directo sin tocar el formulario.
+        Sin sesión abre el ingreso y espera hasta 5 minutos a que el usuario
+        complete usuario, clave y verificación en esa misma ventana.
+        Nunca escribe credenciales.
+        """
+        try:
+            page.goto(_URL_FEED)
+        except Exception as exc:
+            raise FlowError("fuente_inalcanzable", f"Entry navigation failed: {exc}") from exc
+        try:
+            html = self._contenido(page)
+            self._revisar_estado(html, "tiempo_agotado_ingreso")
+        except FlowError as exc:
+            if exc.codigo_motivo not in (
+                "sesion_expirada",
+                "bloqueo_plataforma",
+                "tiempo_agotado_ingreso",
+            ):
+                raise
+            html = ""
+        if (
+            html
+            and ficha.criterio_exito in html
+            and not self._formulario_ingreso_presente(page, html)
+        ):
+            return EntryResult(
+                estado="exito",
+                evidencia_acotada=f"criterio: {ficha.criterio_exito} | sesion persistente",
+                numero_de_intentos=1,
+            )
+        try:
+            page.goto(_URL_LOGIN)
+        except Exception as exc:
+            raise FlowError("fuente_inalcanzable", f"Entry navigation failed: {exc}") from exc
+        logger.warning(
+            "Sesión no guardada: inicie sesión usted en esta ventana "
+            "(usuario, clave y verificación si la pide); la corrida espera "
+            "hasta 5 minutos y sigue sola."
+        )
+        limite = time.monotonic() + _espera_manual()
+        while time.monotonic() < limite:
+            try:
+                html = self._contenido(page)
+                self._revisar_estado(html, "tiempo_agotado_ingreso")
+            except FlowError as exc:
+                if exc.codigo_motivo not in (
+                    "sesion_expirada",
+                    "bloqueo_plataforma",
+                    "tiempo_agotado_ingreso",
+                ):
+                    raise
+                self._sleep(2)
+                continue
+            except Exception as exc:
+                if "navigating" not in str(exc):
+                    raise
+                self._sleep(2)
+                continue
+            if ficha.criterio_exito in html and not self._formulario_ingreso_presente(
+                page, html
+            ):
+                return EntryResult(
+                    estado="exito",
+                    evidencia_acotada=f"criterio: {ficha.criterio_exito} | ingreso manual",
+                    numero_de_intentos=1,
+                )
+            self._sleep(2)
+        raise FlowError(
+            "criterio_no_cumplido",
+            "Manual login not completed in time.",
         )
 
     def _esperar_resultados(self, page: Any, timeout_segundos: int) -> None:

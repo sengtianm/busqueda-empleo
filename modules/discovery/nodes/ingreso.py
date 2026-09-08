@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, cast
 
 from loguru import logger
@@ -11,7 +12,11 @@ from shared.config import load
 from shared.models import EntryResult, FichaFuente
 from shared.persistence import generar_id, registrar_evento
 from shared.retry import ejecutar_con_reintento
-from shared.utilidades import acotar_evidencia
+from shared.utilidades import (
+    acotar_evidencia,
+    ruta_perfil_navegador,
+    ventana_navegador,
+)
 
 
 @dataclass
@@ -35,9 +40,15 @@ def ejecutar_ingreso(contexto: RunContext) -> ResultadoIngreso:
             estado="error", codigo="ERR-01", descripcion="Fuente corriente ausente"
         )
 
-    # Paso 2: Resolver credenciales (una sola vez; el loop las recibe)
+    # Paso 2: Resolver credenciales (una sola vez; el loop las recibe).
+    # Con memoria de sesión no se exigen: la primera vez ingresa el usuario
+    # a mano y las siguientes reutilizan la sesión guardada.
     credenciales = _resolver_credenciales(ficha)
-    if ficha.tipo_acceso == "con_autenticacion" and credenciales is None:
+    if (
+        ficha.tipo_acceso == "con_autenticacion"
+        and credenciales is None
+        and not _resolver_perfil()
+    ):
         # ERR-02: Credenciales no disponibles
         contexto.entry_result = EntryResult(
             estado="fallo",
@@ -64,6 +75,39 @@ def _resolver_headless() -> bool:
     if not isinstance(cfg_browser, dict):
         return True
     return cfg_browser.get("headless", True) is not False
+
+
+def _resolver_perfil() -> str:
+    """Carpeta de sesión persistente (`browser.profile_path`); "" = sin memoria."""
+    cfg = load()
+    return ruta_perfil_navegador(cfg.get("browser", {}))
+
+
+def _abrir_pagina(
+    playwright_instance: Any, headless: bool
+) -> tuple[Any, Any]:
+    """Abre la ventana normal del Módulo 1 con contenido que acompaña.
+
+    Con `profile_path` usa contexto persistente (memoria de sesión);
+    sin él, modo efímero actual. Ante cualquier fallo del persistente,
+    vuelve al efímero sin abortar.
+    """
+    ancho, alto = ventana_navegador(load().get("browser", {}))
+    argumentos = [f"--window-size={ancho},{alto}"]
+    perfil = _resolver_perfil()
+    if perfil:
+        try:
+            Path(perfil).mkdir(parents=True, exist_ok=True)
+            contexto = playwright_instance.chromium.launch_persistent_context(
+                perfil, headless=headless, args=argumentos, no_viewport=True
+            )
+            return contexto, contexto.new_page()
+        except Exception as exc:
+            logger.warning(f"Perfil persistente no usable ({exc}); uso modo efímero")
+    browser = playwright_instance.chromium.launch(
+        headless=headless, args=argumentos
+    )
+    return browser, browser.new_page(no_viewport=True)
 
 
 def _ejecutar_ingreso_loop(
@@ -105,8 +149,7 @@ def _ejecutar_ingreso_loop(
             playwright_activo = True
 
         headless = _resolver_headless()
-        browser = playwright_instance.chromium.launch(headless=headless)
-        page = browser.new_page()
+        browser, page = _abrir_pagina(playwright_instance, headless)
 
         # Cast context.fuente_corriente to FichaFuente since we verified it's not
         # None in ejecutar_ingreso

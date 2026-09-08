@@ -13,7 +13,7 @@ All official documentation is located in `docs/`:
 | [Ficha técnica — Orquestador transversal](docs/diagrams/Ficha%20técnica%20-%20Diagrama%20de%20flujo%20(Orquestador%20transversal).md) | Transversal orchestrator (modules 1 → 2) — authoritative construction base (D34, 2026-08-20). |
 | [DOC-13A](docs/project-design/Document%2013A%20-%20Detailed%20Data%20Model%20Design.md) | Detailed data model (entities, attributes, catalogs, ERD) — v1.15. |
 | [Appendix 5A](docs/project-design/DOC-Appendix%205A%20-%20Official%20Prefix%20Catalog.md) | Official prefix catalog (IDs, codes) — FNT retired (D31); module scope generalized (D33/D34). |
-| [Decision log](docs/history/decision%20log.md) | Approved decisions and deviations — D1 through D45. |
+| [Decision log](docs/history/decision%20log.md) | Approved decisions and deviations — D1 through D47. |
 | [MVP Execution Plan](docs/plans/MVP%20Execution%20Plan.md) | Build order and acceptance criteria |
 | [tracker.md](docs/history/tracker.md) | Current status of each phase and task |
 | [Database tables](docs/reports/database-tables.md) | As-built reference of `job_search.db` (tables, columns, writers) |
@@ -22,7 +22,7 @@ All official documentation is located in `docs/`:
 
 ## Status
 
-Phases 0–5 complete: Module 1 (Opportunity Discovery), Module 2 (Offer Preparation) and the transversal orchestrator are implemented, tested (546 tests) and running in production use — the pipeline discovers and prepares offers end-to-end. Phases 6–9 (Evaluation, Processing, Management, MVP integration) pending.
+Phases 0–5 complete: Module 1 (Opportunity Discovery), Module 2 (Offer Preparation) and the transversal orchestrator are implemented, tested (563 tests) and running in production use — the pipeline discovers and prepares offers end-to-end. Phases 6–9 (Evaluation, Processing, Management, MVP integration) pending.
 
 ## Running the pipeline
 
@@ -43,6 +43,12 @@ Notes:
 - `preflight.py --db` expects an explicit database path as an argument; omit it to check the default `data/job_search.db`.
 - Logs default to INFO; set `LOG_LEVEL=DEBUG` in `.env` for verbose output.
 - All persistent data lives in `data/job_search.db`; backups are stored under `data/backup/`.
+
+## LinkedIn session (persistent login)
+
+Module 1 keeps its LinkedIn session in `data/browser_profile/` (set via `browser.profile_path` in `config/config.yaml`, a folder owned by the system — never your personal browser profile). Log in once manually in the visible window (up to 5 minutes, including any verification LinkedIn asks for); later runs reuse the session and enter directly. Module 2 always works as a guest and never uses this session.
+
+**Reverting to fully automatic login:** empty `browser.profile_path` in `config/config.yaml` (leave it as `""`). Effect: entry goes back to the ephemeral mode (throwaway window per run), typing the `.env` credentials and waiting ~30 s for the main page; if LinkedIn asks for extra verification, the run ends with `criterio_no_cumplido`/`autenticacion_rechazada` instead of waiting. The `data/browser_profile/` folder can be deleted (it is git-ignored). No migrations or code changes needed.
 
 ## Technology Stack
 

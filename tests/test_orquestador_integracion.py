@@ -154,6 +154,7 @@ class _PlaywrightFalso:
         browser.new_page.return_value = self.page
         self.chromium = MagicMock()
         self.chromium.launch.return_value = browser
+        self.chromium.launch_persistent_context.return_value = browser
         return self
 
     def stop(self) -> None:

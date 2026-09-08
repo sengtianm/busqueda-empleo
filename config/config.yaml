@@ -101,7 +101,16 @@ evaluation:
 browser:
   headless: true
   timeout_seconds: 30
-  profile_path: ""
+  # Memoria de sesión de LinkedIn (equipo nuevo tras reinstalar el sistema):
+  # tras un único ingreso manual con verificación, LinkedIn reconoce este
+  # PC y las corridas siguientes entran directo. Vacío = modo actual sin
+  # memoria. Carpeta propia del sistema, nunca el perfil personal.
+  profile_path: "data/browser_profile"
+  # Ventana normal del Módulo 1 (ancho × alto) con contenido que acompaña;
+  # espera máxima del ingreso manual con memoria (segundos).
+  ventana_ancho: 1600
+  ventana_alto: 900
+  espera_manual_segundos: 300
 
 # --- Local AI (Ollama) ---
 # Modelo usado por los propósitos enrutados a "local". Hoy solo

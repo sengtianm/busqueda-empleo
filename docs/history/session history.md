@@ -5,6 +5,7 @@ Unless noted, decisions from previous sessions remain in effect.
 ## Sessions index
 | № | Date | Session ID | Summary |
 |---|---|---|---|
+| 37 | 08/09/2026 | `ses_f7ef9f510ffe2YkCmvje0FKH6S` | Entry unblocked after OS reinstall with a persistent session (one manual login, later runs automatic); window fixed to a normal size with content following resizes; guest completion path proven still anonymous from real evidence; polish batch with shared settings readers plus decision record and operations docs; full runs green with zero errors |
 | 36 | 25/08/2026 | `ses_fc6fa3931ffe4thZKiecpyCuhK` | Enrichment era closed (built as D39, measured as bottleneck, reverted as D40); three clean-run verifications mapped end-to-end; data-fidelity batch landed keeping every character in company keys, verbatim offer descriptions and a raw card company column (D41); full ops/performance program shipped: run-report and preflight CLIs, schema auto-init, jittered pacing, unified event emitter, persistence split into a package and card parser extracted (D42); live DB migrated twice with backups; final dogfooded verification preflight→run→reporte; second half: self-service run instructions proven by the user's first fully manual corridor on a wiped database, ERR-08 cluster traced to one all-caps department string, deterministic Colombian-department fast path added (D43) and local model swapped to gpt-oss:120b-cloud with a confidence-oriented prompt rewrite (D44); phase 5 formally closed by registering the orphaned handover-session changes as a consolidated decision (D45) and aligning data model, tables reference, README operations guide and both module sheets; final stretch: development branch merged into main and retired (single-branch state), third full wipe, user's fastest real run yet (123 offers under six minutes) exposed a location name-variant duplicate that was fixed generically with similarity-based catalog fusion (D46) |
 | 35 | 25/08/2026 | `ses_fc9cdf2e5ffeMja2ZpSownJ82R` | First real orchestrated sequential runs M1→M2 validated end-to-end on an emptied database (twice); traspaso fixes confirmed; capture bug with pipe-in-title fixed using real card evidence; deterministic AI sampling (temperature 0) both routes; tests isolated from the production database; operating contract gains the functional-communication instruction (525 tests) |
 | 34 | 21/08/2026 | `ses_fdafc2fd0ffexoEFYn60IjcuYQ` | Sub-fases 5.1–5.6 implementadas: fundamentos D33, nodos INICIO + decisión de candidatas, nodo Preparación de ofertas (captura httpx invitado, catálogos empresa/ubicación con IA PRM-006), Verificación de duplicidad + decisión de bucle (RapidFuzz dos etapas), Finalizar Proceso + orquestador del flujo del módulo (métricas por eventos, ruteo de terminaciones, fila de corrida registrada antes del bloqueo) y Orquestador transversal de corrida programada (lanza módulos en serie, resultados derivados desde la BD); D35–D38 registradas |
@@ -30,6 +31,25 @@ Unless noted, decisions from previous sessions remain in effect.
 | 14 | 09/08/2026 | `ses_01bcc78adffemcqFEiZxT52Eli` | Sub-fase 4.4: capture/registration nodes implemented, audited, and post-audit fixes applied (FK-free schema, name columns, upsert tests) |
 | 13 | 08/08/2026 | `ses_01be77680ffeuyoKct4Qrfx1GG` | Repo sync to `fase-4`; new `/save` section with general git commit and push guidance |
 | 12 | 08/08/2026 | `ses_01c089ce2ffe9MvQT4F1pC0MJN` | Sub-fase 4.2 deep audit + post-audit fixes (credentials mapping, playwright lifecycle) |
+
+## Session 37 — 08/09/2026
+`ses_f7ef9f510ffe2YkCmvje0FKH6S` · `fase-6`
+
+**Topics**
+- Verification run requested by the user; entry blocked by unknown-device challenge after OS reinstall and full reinstallation
+- Browser review: bundled test browser confirmed as the correct application in both modes; entry window fixed to a normal size with content following resizes (then un-maximized per user taste)
+- Persistent entry session: single manual login with up-to-five-minute guided wait, later runs fully automatic; valid-session shortcut with detached-form guard; ephemeral automatic mode kept as one-setting reversal
+- Guest completion path proven still anonymous from production evidence (wall retries) and code inspection; console-only retry messages and volume effect explained
+- Polish batch: shared settings readers, config-driven window and manual wait, single content fetch, tidied imports, new decision record and operations-guide notes
+
+**Decisions**
+- D47: persistent entry session plus normal window, session-aware entry, one-setting reversal, polish batch with shared readers; no schema changes
+- Decisions from previous sessions remain in effect
+
+**Status**
+- Entry, window, session, polish and docs ✅ complete; three real runs green with zero errors (77+2 and 80 offers)
+- ruff 0 · mypy 0 · pytest 563 passing across 83 files
+- Active branch: `fase-6`; database wiped without backup per user instruction, then re-run by the user (80 offers, 0 errors)
 
 ## Session 36 — 25/08/2026
 `ses_fc6fa3931ffe4thZKiecpyCuhK` · `fase-5`

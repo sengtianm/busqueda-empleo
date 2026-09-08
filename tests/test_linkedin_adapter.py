@@ -1,9 +1,12 @@
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 
+from modules.discovery.adapters import linkedin as linkedin_mod
 from modules.discovery.adapters.linkedin import (
+    _URL_FEED,
     _URL_LOGIN,
     FlowError,
     LinkedInAdapter,
@@ -35,6 +38,15 @@ URL_SIN_MODALIDAD = (
 
 def _leer(nombre: str) -> str:
     return (FIXTURES / nombre).read_text(encoding="utf-8")
+
+
+@pytest.fixture(autouse=True)
+def _sin_memoria() -> Any:
+    """Los tests históricos usan el modo automático sin memoria."""
+    with patch(
+        "modules.discovery.adapters.linkedin._hay_memoria_sesion", return_value=False
+    ):
+        yield
 
 
 class FakePage:
@@ -210,6 +222,87 @@ def test_enter_source_detach_lento_fallback_no_falla(
     )
     assert resultado.estado == "exito"
     assert pagina.clickes == 1
+
+
+def test_enter_source_con_memoria_sesion_valida_no_toca_formulario(
+    ficha_autenticada: FichaFuente,
+) -> None:
+    """Con sesión guardada va directo sin escribir credenciales."""
+    pagina = FakePage({_URL_FEED: "<html><body>global-nav feed</body></html>"})
+    with patch(
+        "modules.discovery.adapters.linkedin._hay_memoria_sesion", return_value=True
+    ):
+        resultado = LinkedInAdapter().enter_source(pagina, ficha_autenticada)
+
+    assert resultado.estado == "exito"
+    assert "persistente" in resultado.evidencia_acotada
+    assert pagina.gotos == [_URL_FEED]
+
+
+def test_enter_source_con_memoria_espera_ingreso_manual(
+    ficha_autenticada: FichaFuente,
+) -> None:
+    """Sin sesión muestra el ingreso y sigue cuando el usuario entra."""
+    class PaginaManual(FakePage):
+        def __init__(self) -> None:
+            super().__init__({_URL_FEED: "<html><body>login</body></html>"})
+            self.lecturas = 0
+
+        def content(self) -> str:
+            self.lecturas += 1
+            if self.url == _URL_LOGIN and self.lecturas > 3:
+                return "<html><body>global-nav feed</body></html>"
+            return super().content()
+
+    pagina = PaginaManual()
+    with patch.object(linkedin_mod, "_hay_memoria_sesion", return_value=True):
+        resultado = LinkedInAdapter(sleep_fn=lambda _: None).enter_source(
+            pagina, ficha_autenticada
+        )
+
+    assert resultado.estado == "exito"
+    assert "manual" in resultado.evidencia_acotada
+    assert pagina.gotos[0] == _URL_FEED
+    assert _URL_LOGIN in pagina.gotos
+
+
+def test_enter_source_con_memoria_tiempo_agotado(
+    ficha_autenticada: FichaFuente,
+) -> None:
+    """Si el usuario no ingresa a tiempo falla sin escribir nada."""
+    pagina = FakePage({_URL_FEED: "<html><body>login</body></html>"})
+    with (
+        patch.object(linkedin_mod, "_hay_memoria_sesion", return_value=True),
+        patch.object(linkedin_mod, "_espera_manual", return_value=0),
+    ):
+        with pytest.raises(FlowError) as exc:
+            LinkedInAdapter(sleep_fn=lambda _: None).enter_source(
+                pagina, ficha_autenticada
+            )
+    assert exc.value.codigo_motivo == "criterio_no_cumplido"
+
+
+def test_enter_source_con_memoria_no_acepta_marca_en_pagina_de_ingreso(
+    ficha_autenticada: FichaFuente,
+) -> None:
+    """D9: la marca dentro del código del formulario no vale como sesión."""
+    pagina = FakePage(
+        {
+            _URL_FEED: (
+                "<html><body>MainFeed bundles "
+                '<input autocomplete="username"></body></html>'
+            )
+        }
+    )
+    with (
+        patch.object(linkedin_mod, "_hay_memoria_sesion", return_value=True),
+        patch.object(linkedin_mod, "_espera_manual", return_value=0),
+    ):
+        with pytest.raises(FlowError) as exc:
+            LinkedInAdapter(sleep_fn=lambda _: None).enter_source(
+                pagina, ficha_autenticada
+            )
+    assert exc.value.codigo_motivo == "criterio_no_cumplido"
 
 
 def test_enter_source_criterio_no_cumplido() -> None:
